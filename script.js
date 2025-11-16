@@ -461,6 +461,105 @@ function openInvoice(id) {
     updateInvoicePreview();
     show('invoice-screen');
 }
+// -----------------------------
+// BUSINESS PROFILE + LOGO
+// -----------------------------
+
+let businessProfile = null;
+
+function loadBusinessProfileFromStorage() {
+  try {
+    const raw = localStorage.getItem(TB_BUSINESS_KEY);
+    businessProfile = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error("Failed to load business profile", e);
+    businessProfile = {};
+  }
+}
+
+function saveBusinessProfileToStorage() {
+  localStorage.setItem(TB_BUSINESS_KEY, JSON.stringify(businessProfile || {}));
+}
+
+function renderBusinessPreview() {
+  const preview = document.getElementById("business-preview");
+  if (!preview || !businessProfile) return;
+
+  preview.innerHTML = `
+    <div class="preview-header">
+      <div class="preview-logo-wrap">
+        ${
+          businessProfile.logoDataUrl
+            ? `<img src="${businessProfile.logoDataUrl}" class="preview-logo" alt="Logo" />`
+            : `<div class="preview-logo placeholder">Logo</div>`
+        }
+      </div>
+      <div class="preview-biz-info">
+        <h1>${businessProfile.name || "Your Business Name"}</h1>
+        <pre class="preview-address">${businessProfile.address || ""}</pre>
+        <div>${businessProfile.phone || ""}</div>
+        <div>${businessProfile.email || ""}</div>
+      </div>
+    </div>
+  `;
+}
+
+function openBusinessScreen() {
+  loadBusinessProfileFromStorage();
+
+  // Fill inputs
+  document.getElementById("biz-name").value = businessProfile.name || "";
+  document.getElementById("biz-address").value = businessProfile.address || "";
+  document.getElementById("biz-phone").value = businessProfile.phone || "";
+  document.getElementById("biz-email").value = businessProfile.email || "";
+
+  renderBusinessPreview();
+  show("business-screen"); // reuse your screen switcher
+}
+
+function initBusinessScreen() {
+  const saveBtn = document.getElementById("save-business-btn");
+  const backBtn = document.getElementById("back-from-business-btn");
+  const logoInput = document.getElementById("biz-logo");
+
+  if (!saveBtn || !backBtn) return; // screen not present
+
+  loadBusinessProfileFromStorage();
+
+  saveBtn.addEventListener("click", () => {
+    businessProfile = businessProfile || {};
+    businessProfile.name = document.getElementById("biz-name").value.trim();
+    businessProfile.address = document.getElementById("biz-address").value.trim();
+    businessProfile.phone = document.getElementById("biz-phone").value.trim();
+    businessProfile.email = document.getElementById("biz-email").value.trim();
+
+    saveBusinessProfileToStorage();
+    renderBusinessPreview();
+    alert("Business profile saved on this device.");
+  });
+
+  backBtn.addEventListener("click", () => {
+    show("app-screen"); // or your home screen id
+  });
+
+  if (logoInput) {
+    logoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        businessProfile = businessProfile || {};
+        businessProfile.logoDataUrl = ev.target.result;
+        saveBusinessProfileToStorage();
+        renderBusinessPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  renderBusinessPreview();
+}
 
 // --------------------------
 // INITIAL APP BOOT
