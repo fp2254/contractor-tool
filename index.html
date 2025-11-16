@@ -214,6 +214,53 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
+<!-- My Business Screen -->
+<div id="business-screen" class="screen hidden">
+  <div class="app-layout">
+    <section class="invoice-editor">
+      <h2>My Business</h2>
+
+      <div class="field-group">
+        <label>Business Name</label>
+        <input id="biz-name" type="text" />
+      </div>
+
+      <div class="field-group">
+        <label>Business Address</label>
+        <textarea id="biz-address"></textarea>
+      </div>
+
+      <div class="field-group two-col">
+        <div>
+          <label>Phone</label>
+          <input id="biz-phone" type="text" />
+        </div>
+        <div>
+          <label>Email</label>
+          <input id="biz-email" type="email" />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Logo (PNG/JPG)</label>
+        <input id="biz-logo" type="file" accept="image/*" />
+        <small>Logo is stored only on this device (base64 in browser).</small>
+      </div>
+
+      <div class="field-group">
+        <button id="save-business-btn" type="button">Save Business Profile</button>
+        <button id="back-from-business-btn" type="button">Back</button>
+      </div>
+    </section>
+
+    <section class="invoice-preview">
+      <h2>Preview</h2>
+      <div id="business-preview" class="preview-card">
+        <!-- Filled from JS -->
+      </div>
+    </section>
+  </div>
+</div>
 
 </body>
 </html>
