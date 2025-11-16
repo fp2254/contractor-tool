@@ -338,7 +338,37 @@ function updateInvoicePreview() {
         const img = document.createElement('img');
         img.src = p.dataUrl;
         prevPhotos.appendChild(img);
-    });
+    }); // --------------------------
+    // BUSINESS INFO + LOGO IN PREVIEW
+    // --------------------------
+    // Make sure we have the latest business profile
+    if (!businessProfile) {
+        loadBusinessProfileFromStorage();
+    }
+
+    const biz = businessProfile || {};
+
+    // Logo
+    const logoImg = document.getElementById('prev-logo');
+    if (logoImg) {
+        if (biz.logoDataUrl) {
+            logoImg.src = biz.logoDataUrl;
+            logoImg.classList.remove('hidden');
+        } else {
+            logoImg.classList.add('hidden');
+        }
+    }
+
+    // Business text fields
+    const bizNameEl = document.getElementById('prev-biz-name');
+    const bizAddrEl = document.getElementById('prev-biz-address');
+    const bizPhoneEl = document.getElementById('prev-biz-phone');
+    const bizEmailEl = document.getElementById('prev-biz-email');
+
+    if (bizNameEl)  bizNameEl.textContent  = biz.name   || 'Your Business Name';
+    if (bizAddrEl)  bizAddrEl.textContent  = biz.address || '';
+    if (bizPhoneEl) bizPhoneEl.textContent = biz.phone   || '';
+    if (bizEmailEl) bizEmailEl.textContent = biz.email   || '';
 }
 
 // --------------------------
