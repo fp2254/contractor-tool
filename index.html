@@ -2,462 +2,173 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>TradeBase — Blue Collar Invoice Toolkit</title>
+  <title>TradeBase – Invoices</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/style.css" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div id="app">
+<body class="bg-slate-100 min-h-screen flex flex-col">
 
-    <!-- AUTH WRAPPER -->
-    <div id="auth-wrapper">
-      <!-- Login Screen -->
-      <section id="login-screen" class="auth-screen">
-        <div class="auth-card">
-          <h1 class="app-title">TradeBase</h1>
-          <p class="app-subtitle">Blue-collar invoice + business toolkit</p>
+  <!-- Top bar -->
+  <header class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold">
+        TB
+      </div>
+      <div>
+        <h1 class="text-base font-semibold">TradeBase</h1>
+        <p class="text-xs text-slate-300" id="plan-label">Free Plan</p>
+      </div>
+    </div>
+    <button id="logout-btn" class="text-xs border border-slate-500 px-3 py-1 rounded">
+      Logout
+    </button>
+  </header>
 
-          <div class="form-group">
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" autocomplete="email" />
-          </div>
+  <!-- Main content -->
+  <main id="app-main" class="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-4">
 
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" autocomplete="current-password" />
-          </div>
-
-          <button id="login-btn" class="btn primary">Log In</button>
-
-          <p class="auth-link-row">
-            <button id="go-signup" class="link-btn">Create account</button> ·
-            <button id="go-reset" class="link-btn">Forgot password?</button>
-          </p>
-
-          <p id="login-message" class="status-message"></p>
-        </div>
-      </section>
-
-      <!-- Signup Screen -->
-      <section id="signup-screen" class="auth-screen hidden">
-        <div class="auth-card">
-          <h1 class="app-title">Create TradeBase Account</h1>
-          <p class="app-subtitle">Email + password. Confirm via email.</p>
-
-          <div class="form-group">
-            <label for="signup-email">Email</label>
-            <input id="signup-email" type="email" autocomplete="email" />
-          </div>
-
-          <div class="form-group">
-            <label for="signup-password">Password</label>
-            <input id="signup-password" type="password" autocomplete="new-password" />
-          </div>
-
-          <button id="signup-btn" class="btn primary">Sign Up</button>
-
-          <p class="auth-link-row">
-            <button id="go-login-from-signup" class="link-btn">Back to login</button>
-          </p>
-
-          <p id="signup-message" class="status-message"></p>
-        </div>
-      </section>
-
-      <!-- Reset Screen -->
-      <section id="reset-screen" class="auth-screen hidden">
-        <div class="auth-card">
-          <h1 class="app-title">Password Reset</h1>
-          <p class="app-subtitle">Enter your email to get a reset link.</p>
-
-          <div class="form-group">
-            <label for="reset-email">Email</label>
-            <input id="reset-email" type="email" autocomplete="email" />
-          </div>
-
-          <button id="reset-btn" class="btn primary">Send Reset Link</button>
-
-          <p class="auth-link-row">
-            <button id="go-login-from-reset" class="link-btn">Back to login</button>
-          </p>
-
-          <p id="reset-message" class="status-message"></p>
-        </div>
-      </section>
+    <!-- ALERT / STATUS -->
+    <div id="status-bar" class="hidden text-xs px-3 py-2 rounded bg-amber-100 text-amber-800">
+      <!-- Filled by JS -->
     </div>
 
-    <!-- PAYWALL (shown after login if not paid) -->
-    <div id="paywall-wrapper" class="hidden">
-      <section class="paywall-card">
-        <h1 class="app-title">TradeBase Membership</h1>
-        <p class="app-subtitle">
-          Unlock your blue-collar toolkit. Your business, your logo, your invoices — all stored locally on your device.
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="space-y-4">
+      <!-- Stats -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white rounded-lg shadow p-3">
+          <p class="text-xs text-slate-500">This Month</p>
+          <p id="stat-month-total" class="text-lg font-semibold">$0.00</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-3">
+          <p class="text-xs text-slate-500">Total Invoices</p>
+          <p id="stat-invoice-count" class="text-lg font-semibold">0</p>
+        </div>
+      </div>
+
+      <!-- Invoice list -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="flex items-center justify-between px-4 py-3 border-b">
+          <h2 class="text-sm font-semibold">Recent Invoices</h2>
+          <button id="refresh-invoices" class="text-xs text-indigo-600">Refresh</button>
+        </div>
+        <div id="invoice-list" class="divide-y text-sm max-h-80 overflow-y-auto">
+          <!-- Rows inserted by JS -->
+          <div class="px-4 py-3 text-xs text-slate-400" id="invoice-empty">
+            No invoices yet. Create your first one with the + button below.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEW INVOICE VIEW -->
+    <section id="view-new-invoice" class="hidden">
+      <div class="bg-white rounded-lg shadow p-4 space-y-3">
+        <h2 class="text-sm font-semibold mb-1">New Invoice</h2>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-medium">Client Name</label>
+          <input id="inv-client" type="text"
+                 class="w-full border rounded px-3 py-2 text-sm"
+                 placeholder="John Doe" />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-medium">Client Email</label>
+          <input id="inv-email" type="email"
+                 class="w-full border rounded px-3 py-2 text-sm"
+                 placeholder="client@email.com" />
+        </div>
+
+        <div class="flex gap-2">
+          <div class="flex-1 space-y-2">
+            <label class="block text-xs font-medium">Amount</label>
+            <input id="inv-amount" type="number" step="0.01"
+                   class="w-full border rounded px-3 py-2 text-sm"
+                   placeholder="0.00" />
+          </div>
+          <div class="flex-1 space-y-2">
+            <label class="block text-xs font-medium">Date</label>
+            <input id="inv-date" type="date"
+                   class="w-full border rounded px-3 py-2 text-sm" />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-medium">Notes</label>
+          <textarea id="inv-notes"
+                    class="w-full border rounded px-3 py-2 text-sm min-h-[70px]"
+                    placeholder="(Optional)"></textarea>
+        </div>
+
+        <button id="save-invoice"
+                class="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded mt-2">
+          Save & Generate PDF
+        </button>
+      </div>
+    </section>
+
+    <!-- SETTINGS / PLAN VIEW -->
+    <section id="view-settings" class="hidden space-y-4">
+      <div class="bg-white rounded-lg shadow p-4 space-y-3">
+        <h2 class="text-sm font-semibold mb-1">Your Account</h2>
+        <p class="text-xs text-slate-500">Logged in as:</p>
+        <p id="user-email" class="text-sm font-medium"></p>
+        <p class="text-xs mt-2">
+          Plan: <span id="settings-plan-label" class="font-semibold">Free</span>
+        </p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-4 space-y-3">
+        <h3 class="text-sm font-semibold mb-1">Upgrade</h3>
+        <p class="text-xs text-slate-500">
+          Unlock unlimited invoices, logo branding, and PDF exports.
         </p>
 
-        <div class="plans-grid">
-          <div class="plan-card">
-            <h2>$9.99<span>/mo</span></h2>
-            <p>Full access, billed monthly.</p>
-            <button class="btn primary full-width" data-plan="monthly">Choose Monthly</button>
+        <div class="border rounded-lg px-3 py-2 text-sm flex items-center justify-between">
+          <div>
+            <p class="font-semibold">$9.99 / month</p>
+            <p class="text-xs text-slate-500">Cancel anytime.</p>
           </div>
-          <div class="plan-card">
-            <h2>$99<span>/yr</span></h2>
-            <p>Save over 15% compared to monthly.</p>
-            <button class="btn secondary full-width" data-plan="yearly">Choose Yearly</button>
-          </div>
-          <div class="plan-card">
-            <h2>$199<span> lifetime</span></h2>
-            <p>One payment, yours forever.</p>
-            <button class="btn outline full-width" data-plan="lifetime">Choose Lifetime</button>
-          </div>
+          <button id="btn-upgrade-monthly"
+                  class="bg-indigo-600 text-white text-xs px-3 py-1 rounded">
+            Choose
+          </button>
         </div>
 
-        <p id="paywall-message" class="status-message"></p>
-        <p class="auth-link-row">
-          <button id="paywall-logout" class="link-btn">Log out</button>
-        </p>
-      </section>
-    </div>
-
-    <!-- MAIN APP -->
-    <div id="main-app" class="hidden">
-      <!-- Top Bar -->
-      <header class="top-bar">
-        <div class="top-bar-left">
-          <span class="top-app-title">TradeBase</span>
-          <span id="membership-tag" class="tag tag-plan hidden"></span>
+        <div class="border rounded-lg px-3 py-2 text-sm flex items-center justify-between">
+          <div>
+            <p class="font-semibold">$99 lifetime</p>
+            <p class="text-xs text-slate-500">One payment. No subscriptions.</p>
+          </div>
+          <button id="btn-upgrade-lifetime"
+                  class="bg-emerald-600 text-white text-xs px-3 py-1 rounded">
+            Lifetime
+          </button>
         </div>
-        <div class="top-bar-right">
-          <span id="current-user-email" class="user-email"></span>
-          <button id="logout-btn" class="btn ghost small">Log Out</button>
-        </div>
-      </header>
-
-      <!-- Main layout -->
-      <div class="layout">
-        <!-- Sidebar Nav -->
-        <nav class="sidebar">
-          <button class="nav-item active" data-screen="dashboard-screen">Dashboard</button>
-          <button class="nav-item" data-screen="new-invoice-screen">New Invoice</button>
-          <button class="nav-item" data-screen="invoices-screen">My Invoices</button>
-          <button class="nav-item" data-screen="business-screen">My Business</button>
-          <button class="nav-item" data-screen="clients-screen">Clients</button>
-          <button class="nav-item" data-screen="backup-screen">Backup / Restore</button>
-          <button class="nav-item" data-screen="estimates-screen">Estimates (Soon)</button>
-        </nav>
-
-        <!-- Content -->
-        <main class="content">
-
-          <!-- DASHBOARD -->
-          <section id="dashboard-screen" class="app-screen">
-            <h2>Home</h2>
-            <div class="grid">
-              <div class="card">
-                <h3>Overview</h3>
-                <ul class="stats-list">
-                  <li>
-                    <span>Total Invoices</span>
-                    <strong id="stat-total-invoices">0</strong>
-                  </li>
-                  <li>
-                    <span>Total Clients</span>
-                    <strong id="stat-total-clients">0</strong>
-                  </li>
-                  <li>
-                    <span>Last Backup</span>
-                    <strong id="stat-last-backup">Never</strong>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="card">
-                <h3>Quick Actions</h3>
-                <div class="quick-actions">
-                  <button id="quick-new-invoice" class="btn primary full-width">New Invoice</button>
-                  <button id="quick-view-invoices" class="btn secondary full-width">View Invoices</button>
-                  <button id="quick-business" class="btn secondary full-width">Business Info</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- NEW INVOICE -->
-          <section id="new-invoice-screen" class="app-screen hidden">
-            <div class="screen-header">
-              <h2>New Invoice</h2>
-              <button id="reset-invoice-form" class="btn ghost small">Clear</button>
-            </div>
-
-            <form id="invoice-form" class="card">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="invoice-number">Invoice #</label>
-                  <input id="invoice-number" type="text" />
-                </div>
-                <div class="form-group">
-                  <label for="invoice-date">Invoice Date</label>
-                  <input id="invoice-date" type="date" />
-                </div>
-                <div class="form-group">
-                  <label for="invoice-due">Due Date</label>
-                  <input id="invoice-due" type="date" />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="invoice-client">Client</label>
-                  <select id="invoice-client"></select>
-                  <button id="quick-add-client" type="button" class="btn ghost small mt-4">
-                    + Quick Add Client
-                  </button>
-                </div>
-                <div class="form-group">
-                  <label for="invoice-client-address">Client Address</label>
-                  <textarea id="invoice-client-address" rows="3"></textarea>
-                </div>
-              </div>
-
-              <h3>Line Items</h3>
-              <div class="invoice-items-header">
-                <span>Description</span>
-                <span>Qty</span>
-                <span>Rate</span>
-                <span>Total</span>
-                <span></span>
-              </div>
-              <div id="invoice-items"></div>
-              <button id="add-item-btn" type="button" class="btn secondary mt-8">+ Add Item</button>
-
-              <div class="totals-row">
-                <div class="totals-left">
-                  <div class="form-group">
-                    <label for="invoice-notes">Notes</label>
-                    <textarea id="invoice-notes" rows="3" placeholder="Work details, payment terms, etc."></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="invoice-photos">Photos</label>
-                    <input id="invoice-photos" type="file" multiple accept="image/*" />
-                    <div id="invoice-photo-preview" class="photo-grid"></div>
-                  </div>
-                </div>
-
-                <div class="totals-right">
-                  <div class="totals-group">
-                    <div class="total-row">
-                      <span>Subtotal</span>
-                      <span id="subtotal-display">$0.00</span>
-                    </div>
-                    <div class="total-row">
-                      <label for="tax-input">Tax (%)</label>
-                      <input id="tax-input" type="number" step="0.01" />
-                    </div>
-                    <div class="total-row">
-                      <label for="discount-input">Discount ($)</label>
-                      <input id="discount-input" type="number" step="0.01" />
-                    </div>
-                    <div class="total-row total-row-strong">
-                      <span>Total</span>
-                      <span id="total-display">$0.00</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button id="save-invoice-btn" type="submit" class="btn primary">Save Invoice</button>
-              </div>
-            </form>
-          </section>
-
-          <!-- INVOICES LIST -->
-          <section id="invoices-screen" class="app-screen hidden">
-            <div class="screen-header">
-              <h2>My Invoices</h2>
-              <div>
-                <button id="refresh-invoice-list" class="btn ghost small">Refresh</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Client</th>
-                    <th>Date</th>
-                    <th>Due</th>
-                    <th>Total</th>
-                    <th>Created</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="invoice-table-body"></tbody>
-              </table>
-              <p id="no-invoices-msg" class="muted hidden">No invoices yet. Create your first one.</p>
-            </div>
-          </section>
-
-          <!-- BUSINESS PROFILE -->
-          <section id="business-screen" class="app-screen hidden">
-            <h2>My Business Profile</h2>
-
-            <form id="business-form" class="card">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="biz-name">Business Name</label>
-                  <input id="biz-name" type="text" />
-                </div>
-                <div class="form-group">
-                  <label for="biz-owner">Owner Name</label>
-                  <input id="biz-owner" type="text" />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="biz-phone">Phone</label>
-                  <input id="biz-phone" type="tel" />
-                </div>
-                <div class="form-group">
-                  <label for="biz-email">Email</label>
-                  <input id="biz-email" type="email" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="biz-address">Business Address</label>
-                <textarea id="biz-address" rows="3"></textarea>
-              </div>
-
-              <div class="form-group">
-                <label for="biz-logo">Logo (optional)</label>
-                <input id="biz-logo" type="file" accept="image/*" />
-                <div id="biz-logo-preview-wrapper" class="logo-preview-wrapper hidden">
-                  <img id="biz-logo-preview" alt="Logo preview" />
-                  <button id="remove-logo-btn" type="button" class="btn ghost small mt-4">Remove Logo</button>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button id="save-business-btn" type="submit" class="btn primary">Save Business Profile</button>
-              </div>
-              <p id="business-message" class="status-message"></p>
-            </form>
-          </section>
-
-          <!-- CLIENTS -->
-          <section id="clients-screen" class="app-screen hidden">
-            <div class="screen-header">
-              <h2>Clients</h2>
-              <button id="add-client-btn" class="btn primary small">+ New Client</button>
-            </div>
-
-            <div class="grid">
-              <div class="card">
-                <h3>Client List</h3>
-                <div id="client-list" class="client-list"></div>
-                <p id="no-clients-msg" class="muted hidden">No clients yet.</p>
-              </div>
-
-              <div class="card">
-                <h3>Client Details</h3>
-                <form id="client-form">
-                  <input type="hidden" id="client-id" />
-                  <div class="form-group">
-                    <label for="client-name">Name</label>
-                    <input id="client-name" type="text" />
-                  </div>
-                  <div class="form-group">
-                    <label for="client-email">Email</label>
-                    <input id="client-email" type="email" />
-                  </div>
-                  <div class="form-group">
-                    <label for="client-phone">Phone</label>
-                    <input id="client-phone" type="tel" />
-                  </div>
-                  <div class="form-group">
-                    <label for="client-address">Address</label>
-                    <textarea id="client-address" rows="3"></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label for="client-notes">Notes</label>
-                    <textarea id="client-notes" rows="3"></textarea>
-                  </div>
-
-                  <div class="form-actions">
-                    <button id="save-client-btn" type="submit" class="btn primary">Save Client</button>
-                    <button id="delete-client-btn" type="button" class="btn danger ghost">Delete</button>
-                  </div>
-                  <p id="client-message" class="status-message"></p>
-                </form>
-              </div>
-            </div>
-          </section>
-
-          <!-- BACKUP / RESTORE -->
-          <section id="backup-screen" class="app-screen hidden">
-            <h2>Backup / Restore</h2>
-
-            <div class="grid">
-              <div class="card">
-                <h3>Backup Data</h3>
-                <p class="muted">
-                  Export all TradeBase data (invoices, business, clients) as a single JSON file.
-                </p>
-                <button id="backup-btn" class="btn primary">Download Backup</button>
-              </div>
-
-              <div class="card">
-                <h3>Restore Data</h3>
-                <p class="muted">
-                  Import a JSON backup created by TradeBase. This will overwrite current data on this device.
-                </p>
-                <input id="restore-file" type="file" accept="application/json" />
-                <button id="restore-btn" class="btn danger mt-8">Restore From File</button>
-              </div>
-            </div>
-
-            <p id="backup-message" class="status-message mt-16"></p>
-          </section>
-
-          <!-- ESTIMATES PLACEHOLDER -->
-          <section id="estimates-screen" class="app-screen hidden">
-            <h2>Estimates (Coming Soon)</h2>
-            <div class="card">
-              <p class="muted">
-                Estimates will live here: convert estimates to invoices, track status, and send PDFs.
-                For now, this is just a placeholder. Your current build focuses on invoices, business
-                profile, clients, local save, photos, and backup/restore.
-              </p>
-            </div>
-          </section>
-
-        </main>
       </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav (mobile-style) -->
+  <nav class="bg-white border-t mt-4">
+    <div class="max-w-md mx-auto flex">
+      <button data-view="dashboard"
+              class="tab-btn flex-1 py-2 text-xs flex flex-col items-center justify-center gap-1 text-indigo-600">
+        <span>Dashboard</span>
+      </button>
+      <button data-view="new-invoice"
+              class="tab-btn flex-1 py-2 text-xs flex flex-col items-center justify-center gap-1">
+        <span>New Invoice</span>
+      </button>
+      <button data-view="settings"
+              class="tab-btn flex-1 py-2 text-xs flex flex-col items-center justify-center gap-1">
+        <span>Settings</span>
+      </button>
     </div>
-  </div>
+  </nav>
 
-  <!-- Invoice View Modal -->
-  <div id="invoice-view-modal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content" id="invoice-print-root">
-      <div class="modal-header no-print">
-        <h3>Invoice</h3>
-        <button id="close-invoice-modal" class="btn ghost small">Close</button>
-      </div>
-      <div id="invoice-view-body" class="modal-body"></div>
-      <div class="modal-footer no-print">
-        <button id="print-invoice-btn" class="btn primary">Print / Download</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Supabase & Stripe -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://js.stripe.com/v3/"></script>
-  <script src="/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
