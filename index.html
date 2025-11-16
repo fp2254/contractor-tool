@@ -1,28 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contractor Toolkit</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <title>TradeBase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <h1>Contractor Toolkit</h1>
-        <p>Your all-in-one invoice + measurement + photo tool.</p>
-    </header>
 
-    <section class="container">
-        <button onclick="openInvoice()" class="main-btn">Create Invoice</button>
-        <button onclick="openMeasurements()" class="main-btn">Measurements Tool</button>
-        <button onclick="openPhotos()" class="main-btn">Photo Notes</button>
-        <button onclick="openSaved()" class="main-btn">Saved Jobs</button>
-    </section>
+<!-- LOGIN SCREEN -->
+<div id="auth-screen" class="screen">
+    <h1 class="logo">TradeBase</h1>
+    <div class="auth-box">
+        <h2>Log In</h2>
+        <input id="login-email" type="email" placeholder="Email" />
+        <input id="login-password" type="password" placeholder="Password" />
+        <button onclick="login()">Log In</button>
+        <p class="link" onclick="showSignup()">Create Account</p>
+        <p class="link" onclick="showReset()">Forgot Password?</p>
+    </div>
+</div>
 
-    <footer>
-        <p>© 2025 Contractor Toolkit</p>
-    </footer>
+<!-- SIGNUP SCREEN -->
+<div id="signup-screen" class="screen hidden">
+    <h1 class="logo">TradeBase</h1>
+    <div class="auth-box">
+        <h2>Create Account</h2>
+        <input id="signup-email" type="email" placeholder="Email" />
+        <input id="signup-password" type="password" placeholder="Password" />
+        <button onclick="signup()">Create Account</button>
+        <p class="link" onclick="showLogin()">Back to Login</p>
+    </div>
+</div>
 
-    <script src="script.js"></script>
+<!-- RESET SCREEN -->
+<div id="reset-screen" class="screen hidden">
+    <h1 class="logo">TradeBase</h1>
+    <div class="auth-box">
+        <h2>Reset Password</h2>
+        <input id="reset-email" type="email" placeholder="Your Email" />
+        <button onclick="resetPassword()">Send Reset Email</button>
+        <p class="link" onclick="showLogin()">Back</p>
+    </div>
+</div>
+
+<!-- LICENSE SCREEN -->
+<div id="license-screen" class="screen hidden">
+    <h1 class="logo">TradeBase</h1>
+    <div class="auth-box">
+        <h2>Activate License</h2>
+        <input id="license-key" type="text" placeholder="Enter License Key" />
+        <button onclick="activateLicense()">Activate</button>
+        <p class="info">Enter your beta or paid license key to unlock the app.</p>
+        <p class="link" onclick="logout()">Log Out</p>
+    </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home-screen" class="screen hidden">
+    <h1 class="logo-small">TradeBase</h1>
+
+    <div class="grid">
+        <button class="tile" onclick="openNewInvoice()">New Invoice</button>
+        <button class="tile" onclick="openInvoicesList()">My Invoices</button>
+        <button class="tile disabled">New Estimate (soon)</button>
+        <button class="tile disabled">My Clients (soon)</button>
+        <button class="tile disabled">My Business (soon)</button>
+        <button class="tile disabled">Backup / Restore (soon)</button>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Log Out</button>
+</div>
+
+<!-- INVOICE BUILDER SCREEN -->
+<div id="invoice-screen" class="screen hidden">
+    <div class="top-bar">
+        <button class="back-btn" onclick="backToHome()">&larr; Back</button>
+        <h2>New Invoice</h2>
+    </div>
+
+    <div class="invoice-layout">
+        <div class="invoice-form">
+            <h3>Invoice Details</h3>
+            <label>Client Name</label>
+            <input id="inv-client-name" type="text" placeholder="Client name" />
+
+            <label>Client Address</label>
+            <input id="inv-client-address" type="text" placeholder="Client address" />
+
+            <div class="row">
+                <div class="col">
+                    <label>Invoice #</label>
+                    <input id="inv-number" type="text" placeholder="Auto" />
+                </div>
+                <div class="col">
+                    <label>Date</label>
+                    <input id="inv-date" type="date" />
+                </div>
+                <div class="col">
+                    <label>Due Date</label>
+                    <input id="inv-due" type="date" />
+                </div>
+            </div>
+
+            <h3>Line Items</h3>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th style="width:80px;">Qty</th>
+                        <th style="width:100px;">Rate</th>
+                        <th style="width:100px;">Total</th>
+                        <th style="width:40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body">
+                </tbody>
+            </table>
+            <button class="small-btn" onclick="addItemRow()">Add Item</button>
+
+            <div class="row totals-row">
+                <div class="col"></div>
+                <div class="col">
+                    <label>Tax %</label>
+                    <input id="inv-tax" type="number" step="0.01" value="0" />
+                </div>
+                <div class="col">
+                    <label>Discount ($)</label>
+                    <input id="inv-discount" type="number" step="0.01" value="0" />
+                </div>
+            </div>
+
+            <label>Notes / Terms</label>
+            <textarea id="inv-notes" rows="3" placeholder="Payment terms, job notes, etc."></textarea>
+
+            <h3>Photos</h3>
+            <input id="inv-photos-input" type="file" accept="image/*" multiple />
+            <div id="inv-photos-preview" class="photo-grid"></div>
+
+            <div class="invoice-actions">
+                <button class="primary-btn" onclick="saveInvoice()">Save Invoice</button>
+                <button class="secondary-btn" onclick="printInvoice()">Print / PDF</button>
+            </div>
+        </div>
+
+        <div class="invoice-preview">
+            <h3>Preview</h3>
+            <div id="inv-preview-box" class="preview-box">
+                <!-- Simple text preview -->
+                <p><strong>Client:</strong> <span id="prev-client"></span></p>
+                <p><strong>Address:</strong> <span id="prev-address"></span></p>
+                <p><strong>Invoice #:</strong> <span id="prev-number"></span></p>
+                <p><strong>Date:</strong> <span id="prev-date"></span></p>
+                <p><strong>Due:</strong> <span id="prev-due"></span></p>
+
+                <h4>Items</h4>
+                <div id="prev-items"></div>
+
+                <p><strong>Subtotal:</strong> $<span id="prev-subtotal">0.00</span></p>
+                <p><strong>Tax:</strong> $<span id="prev-tax">0.00</span></p>
+                <p><strong>Discount:</strong> $<span id="prev-discount">0.00</span></p>
+                <p><strong>Total:</strong> $<span id="prev-total">0.00</span></p>
+
+                <h4>Notes</h4>
+                <p id="prev-notes"></p>
+
+                <h4>Photos</h4>
+                <div id="prev-photos" class="photo-grid small"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- INVOICES LIST SCREEN -->
+<div id="invoices-screen" class="screen hidden">
+    <div class="top-bar">
+        <button class="back-btn" onclick="backToHome()">&larr; Back</button>
+        <h2>My Invoices</h2>
+    </div>
+    <div class="list-container">
+        <table class="list-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="invoices-list-body">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
