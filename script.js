@@ -5,6 +5,10 @@ const SUPABASE_URL = "https://uafgyteczukkgmxfbeil.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhZmd5dGVjenVra2dteGZiZWlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNDEyODQsImV4cCI6MjA3ODgxNzI4NH0.tiddA-ORf1b3ZnQOxGEOgq3rJW-BJe3MMD7QahvDFO4";
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const TB_INVOICES_KEY = "tradebase:invoices";
+const TB_ESTIMATES_KEY = "tradebase:estimates";
+const TB_CLIENTS_KEY = "tradebase:clients";
+const TB_BUSINESS_KEY = "tradebase:businessProfile";
 
 // --------------------------
 // SIMPLE SCREEN HANDLING
