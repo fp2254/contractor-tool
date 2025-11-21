@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Base – $149 Lifetime</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@canvasjs/pdfjs-dist@2.0.0/build/pdf.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="script.js"></script>
+</body>
+</html>
