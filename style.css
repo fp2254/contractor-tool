@@ -81,6 +81,7 @@ body {
   padding: 8px 0;
   border-radius: 999px;
   font-size: 13px;
+  cursor: pointer;
 }
 
 .auth-tab.active {
@@ -240,6 +241,7 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+  margin-top: 10px;
 }
 
 .tile {
