@@ -1,3 +1,27 @@
+// SERVICE WORKER REGISTRATION
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('ServiceWorker registered:', registration.scope);
+      
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (confirm('New version available! Reload to update?')) {
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          }
+        });
+      });
+    } catch (error) {
+      console.error('ServiceWorker registration failed:', error);
+    }
+  });
+}
+
 // SUPABASE CLIENT
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -6,6 +30,8 @@ let currentUser = null;
 let pendingPhotos = [];
 let toastTimeout = null;
 let tourMode = false;
+let isOnline = navigator.onLine;
+let isSyncing = false;
 
 // DEMO DATA FOR TOUR MODE
 const DEMO_DATA = {
@@ -234,7 +260,116 @@ const DEMO_DATA = {
   }
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
+// OFFLINE/SYNC SYSTEM
+async function initializeOfflineSupport() {
+  try {
+    await tradebaseDB.init();
+    console.log('IndexedDB initialized');
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SYNC_REQUESTED') {
+        syncPendingChanges();
+      }
+    });
+    
+    updateOnlineStatus();
+    
+    if (navigator.onLine) {
+      syncPendingChanges();
+    }
+  } catch (error) {
+    console.error('Failed to initialize offline support:', error);
+  }
+}
+
+function handleOnline() {
+  isOnline = true;
+  updateOnlineStatus();
+  syncPendingChanges();
+}
+
+function handleOffline() {
+  isOnline = false;
+  updateOnlineStatus();
+}
+
+function updateOnlineStatus() {
+  const indicator = document.getElementById('online-status-indicator');
+  if (!indicator) return;
+  
+  if (isOnline) {
+    indicator.innerHTML = '<i class="fas fa-wifi"></i> Online';
+    indicator.className = 'online-status online';
+  } else {
+    indicator.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline';
+    indicator.className = 'online-status offline';
+  }
+  
+  if (isSyncing) {
+    indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Syncing...';
+    indicator.className = 'online-status syncing';
+  }
+}
+
+async function syncPendingChanges() {
+  if (!isOnline || isSyncing) return;
+  
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) {
+    console.log('No session, skipping sync');
+    return;
+  }
+  
+  try {
+    isSyncing = true;
+    updateOnlineStatus();
+    
+    const pending = await tradebaseDB.getPendingSyncs();
+    console.log(`Syncing ${pending.length} pending changes...`);
+    
+    let failedCount = 0;
+    
+    for (const item of pending) {
+      try {
+        const response = await apiFetch(item.endpoint, {
+          method: item.method,
+          body: JSON.stringify(item.data)
+        });
+        
+        if (response.ok) {
+          await tradebaseDB.markSyncComplete(item.id);
+        } else {
+          await tradebaseDB.markSyncFailed(item.id, `HTTP ${response.status}`);
+          failedCount++;
+        }
+      } catch (error) {
+        await tradebaseDB.markSyncFailed(item.id, error.message);
+        failedCount++;
+      }
+    }
+    
+    await tradebaseDB.clearCompletedSyncs();
+    
+    if (failedCount > 0) {
+      showToast(`⚠️ ${failedCount} change(s) failed to sync. Will retry later.`, 'error');
+    } else if (pending.length > 0) {
+      showToast(`✓ ${pending.length} change(s) synced successfully`, 'success');
+    }
+    
+    console.log('Sync complete');
+  } catch (error) {
+    console.error('Sync failed:', error);
+    showToast('⚠️ Sync failed. Will retry when online.', 'error');
+  } finally {
+    isSyncing = false;
+    updateOnlineStatus();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   loadTheme();
   wireAuthUI();
   wireDashboardUI();
@@ -249,6 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkTourMode();
   checkSession();
   updateTrialBanner();
+  await initializeOfflineSupport();
 });
 
 // API FETCH HELPER (sends JWT token in Authorization header)

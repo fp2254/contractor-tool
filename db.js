@@ -1,0 +1,208 @@
+const DB_NAME = 'TradeBaseDB';
+const DB_VERSION = 1;
+
+const STORES = {
+  INVOICES: 'invoices',
+  QUOTES: 'quotes',
+  CLIENTS: 'clients',
+  INVENTORY: 'inventory',
+  SYNC_QUEUE: 'sync_queue'
+};
+
+class TradeBaseDB {
+  constructor() {
+    this.db = null;
+  }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve(this.db);
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+
+        if (!db.objectStoreNames.contains(STORES.INVOICES)) {
+          const invoiceStore = db.createObjectStore(STORES.INVOICES, { keyPath: 'id' });
+          invoiceStore.createIndex('user_id', 'user_id', { unique: false });
+          invoiceStore.createIndex('updated_at', 'updated_at', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.QUOTES)) {
+          const quoteStore = db.createObjectStore(STORES.QUOTES, { keyPath: 'id' });
+          quoteStore.createIndex('user_id', 'user_id', { unique: false });
+          quoteStore.createIndex('updated_at', 'updated_at', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.CLIENTS)) {
+          const clientStore = db.createObjectStore(STORES.CLIENTS, { keyPath: 'id' });
+          clientStore.createIndex('user_id', 'user_id', { unique: false });
+          clientStore.createIndex('updated_at', 'updated_at', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.INVENTORY)) {
+          const inventoryStore = db.createObjectStore(STORES.INVENTORY, { keyPath: 'id' });
+          inventoryStore.createIndex('user_id', 'user_id', { unique: false });
+          inventoryStore.createIndex('updated_at', 'updated_at', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
+          const syncStore = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
+          syncStore.createIndex('timestamp', 'timestamp', { unique: false });
+          syncStore.createIndex('status', 'status', { unique: false });
+        }
+      };
+    });
+  }
+
+  async add(storeName, data) {
+    const transaction = this.db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    return new Promise((resolve, reject) => {
+      const request = store.add(data);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async put(storeName, data) {
+    const transaction = this.db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    return new Promise((resolve, reject) => {
+      const request = store.put(data);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async get(storeName, key) {
+    const transaction = this.db.transaction([storeName], 'readonly');
+    const store = transaction.objectStore(storeName);
+    return new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAll(storeName, indexName = null, indexValue = null) {
+    const transaction = this.db.transaction([storeName], 'readonly');
+    const store = transaction.objectStore(storeName);
+    
+    return new Promise((resolve, reject) => {
+      let request;
+      
+      if (indexName && indexValue) {
+        const index = store.index(indexName);
+        request = index.getAll(indexValue);
+      } else {
+        request = store.getAll();
+      }
+      
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async delete(storeName, key) {
+    const transaction = this.db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    return new Promise((resolve, reject) => {
+      const request = store.delete(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clear(storeName) {
+    const transaction = this.db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    return new Promise((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async saveInvoice(invoice) {
+    invoice.updated_at = new Date().toISOString();
+    return this.put(STORES.INVOICES, invoice);
+  }
+
+  async getInvoices(userId) {
+    return this.getAll(STORES.INVOICES, 'user_id', userId);
+  }
+
+  async saveQuote(quote) {
+    quote.updated_at = new Date().toISOString();
+    return this.put(STORES.QUOTES, quote);
+  }
+
+  async getQuotes(userId) {
+    return this.getAll(STORES.QUOTES, 'user_id', userId);
+  }
+
+  async saveClient(client) {
+    client.updated_at = new Date().toISOString();
+    return this.put(STORES.CLIENTS, client);
+  }
+
+  async getClients(userId) {
+    return this.getAll(STORES.CLIENTS, 'user_id', userId);
+  }
+
+  async saveInventory(item) {
+    item.updated_at = new Date().toISOString();
+    return this.put(STORES.INVENTORY, item);
+  }
+
+  async getInventory(userId) {
+    return this.getAll(STORES.INVENTORY, 'user_id', userId);
+  }
+
+  async addToSyncQueue(operation) {
+    const queueItem = {
+      ...operation,
+      timestamp: Date.now(),
+      status: 'pending'
+    };
+    return this.add(STORES.SYNC_QUEUE, queueItem);
+  }
+
+  async getPendingSyncs() {
+    return this.getAll(STORES.SYNC_QUEUE, 'status', 'pending');
+  }
+
+  async markSyncComplete(id) {
+    const item = await this.get(STORES.SYNC_QUEUE, id);
+    if (item) {
+      item.status = 'completed';
+      await this.put(STORES.SYNC_QUEUE, item);
+    }
+  }
+
+  async markSyncFailed(id, error) {
+    const item = await this.get(STORES.SYNC_QUEUE, id);
+    if (item) {
+      item.status = 'failed';
+      item.error = error;
+      await this.put(STORES.SYNC_QUEUE, item);
+    }
+  }
+
+  async clearCompletedSyncs() {
+    const allSyncs = await this.getAll(STORES.SYNC_QUEUE);
+    const completedSyncs = allSyncs.filter(sync => sync.status === 'completed');
+    
+    for (const sync of completedSyncs) {
+      await this.delete(STORES.SYNC_QUEUE, sync.id);
+    }
+  }
+}
+
+const tradebaseDB = new TradeBaseDB();
