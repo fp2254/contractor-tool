@@ -24,6 +24,8 @@ TradeBase is a comprehensive invoicing and billing application designed specific
 6. **Business Settings** - Logo upload, business info, default tax/markup rates
 7. **Referral Program** - 20% commission on referred users
 8. **Stripe Integration** - Multiple subscription plans (monthly, yearly, lifetime)
+9. **Light/Dark Mode** - Theme toggle with localStorage persistence
+10. **Invoice Download** - Export invoices as PNG images with company logo
 
 ## Project Structure
 ```
@@ -63,6 +65,14 @@ Storage buckets:
 - `invoice-photos` - Job photo attachments
 
 ## Recent Changes
+- **2025-11-22 (Latest)**: Feature enhancements and UI improvements
+  - Added light/dark mode toggle with CSS variables and localStorage persistence
+  - Optimized mobile layout with responsive CSS (breakpoint @600px)
+  - Implemented invoice download/export as PNG with company logo
+  - Added GET /api/invoices/:id endpoint for fetching invoice details
+  - Fixed dark mode text visibility across all UI elements
+  - Integrated html2canvas library for image generation
+  
 - **2025-11-22**: Initial import from GitHub
   - Configured server to bind to 0.0.0.0:5000 for Replit environment
   - Added cache control headers to prevent browser caching issues
@@ -99,6 +109,7 @@ The application is configured for Replit Autoscale deployment, which will:
 
 ### Invoices
 - `GET /api/invoices` - List all invoices
+- `GET /api/invoices/:id` - Get single invoice with items and client details
 - `POST /api/invoices` - Create new invoice
 - `POST /api/invoices/:id/photos` - Upload invoice photos
 
@@ -114,6 +125,8 @@ The application is configured for Replit Autoscale deployment, which will:
 ## Authentication
 The application uses Supabase Authentication with email/password. The frontend uses the Supabase client library to manage auth state, and passes the user ID to the backend via the `X-User-Id` header for API requests.
 
+⚠️ **SECURITY NOTE**: The current authentication implementation trusts the `X-User-Id` header without server-side validation of Supabase JWT tokens. This is a known architectural issue that should be addressed before production deployment. Consider implementing proper JWT validation on the server side to prevent user impersonation.
+
 ## User Preferences
 None currently documented.
 
@@ -122,3 +135,6 @@ None currently documented.
 - File uploads are handled via multer and stored in Supabase Storage
 - Stripe integration supports multiple subscription plans and one-time payments
 - Referral codes are auto-generated from user IDs
+- Theme preference is stored in localStorage and persists across sessions
+- Invoice downloads use html2canvas library for rendering (loaded before main script)
+- Mobile breakpoint set at 600px width for responsive design
