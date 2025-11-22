@@ -408,6 +408,173 @@ app.post(
   }
 );
 
+// PAYMENT ENDPOINTS
+
+// Generate Stripe Payment Link for an invoice
+app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const invoiceId = req.params.id;
+
+  try {
+    const { data: invoice, error: errInv } = await supabaseAdmin
+      .from("invoices")
+      .select("*")
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .single();
+
+    if (errInv || !invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("stripe_connect_enabled, business_name")
+      .eq("id", userId)
+      .single();
+
+    if (!profile || !profile.stripe_connect_enabled) {
+      return res.status(403).json({ error: "Payment collection not enabled" });
+    }
+
+    const amountInCents = Math.round((invoice.total || 0) * 100);
+    
+    const paymentLink = await stripe.paymentLinks.create({
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Invoice #${invoice.number || invoice.id}`,
+            description: `Payment for ${profile.business_name || 'invoice'}`,
+          },
+          unit_amount: amountInCents,
+        },
+        quantity: 1,
+      }],
+      metadata: {
+        invoice_id: invoiceId,
+        user_id: userId,
+      },
+      after_completion: {
+        type: 'hosted_confirmation',
+        hosted_confirmation: {
+          custom_message: 'Thank you for your payment! Your invoice has been marked as paid.',
+        },
+      },
+    });
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("invoices")
+      .update({ payment_link: paymentLink.url })
+      .eq("id", invoiceId)
+      .eq("user_id", userId);
+
+    if (updateErr) {
+      console.error("Error saving payment link:", updateErr);
+    }
+
+    res.json({ payment_link: paymentLink.url });
+  } catch (error) {
+    console.error("Error creating payment link:", error);
+    res.status(500).json({ error: "Failed to create payment link" });
+  }
+});
+
+// Manually update invoice payment status
+app.patch("/api/invoices/:id/payment-status", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const invoiceId = req.params.id;
+  const { payment_status } = req.body;
+
+  if (!["unpaid", "paid", "pending"].includes(payment_status)) {
+    return res.status(400).json({ error: "Invalid payment status" });
+  }
+
+  try {
+    const updateData = { payment_status };
+    if (payment_status === "paid") {
+      updateData.paid_at = new Date().toISOString();
+    } else {
+      updateData.paid_at = null;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .update(updateData)
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    res.json({ success: true, invoice: data });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({ error: "Failed to update payment status" });
+  }
+});
+
+// Get payment statistics
+app.get("/api/payments/stats", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.json({ outstanding: 0, paid_month: 0, pending: 0 });
+
+  try {
+    const { data: invoices, error } = await supabaseAdmin
+      .from("invoices")
+      .select("total, payment_status, paid_at")
+      .eq("user_id", userId);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    let outstanding = 0;
+    let paid_month = 0;
+    let pending = 0;
+
+    (invoices || []).forEach(inv => {
+      const total = parseFloat(inv.total) || 0;
+      const status = inv.payment_status || 'unpaid';
+
+      if (status === 'unpaid') {
+        outstanding += total;
+      } else if (status === 'pending') {
+        pending += total;
+      } else if (status === 'paid' && inv.paid_at) {
+        const paidDate = new Date(inv.paid_at);
+        if (paidDate.getMonth() === thisMonth && paidDate.getFullYear() === thisYear) {
+          paid_month += total;
+        }
+      }
+    });
+
+    res.json({
+      outstanding: outstanding.toFixed(2),
+      paid_month: paid_month.toFixed(2),
+      pending: pending.toFixed(2),
+    });
+  } catch (error) {
+    console.error("Error getting payment stats:", error);
+    res.status(500).json({ error: "Failed to get payment statistics" });
+  }
+});
+
 // QUOTES (formerly estimates)
 
 app.get("/api/quotes", requireSubscription, async (req, res) => {
@@ -676,8 +843,30 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       case "checkout.session.completed": {
         const session = event.data.object;
         const userId = session.client_reference_id || session.metadata?.user_id;
+        const invoiceId = session.metadata?.invoice_id;
         
-        if (userId && session.subscription) {
+        if (invoiceId && userId && session.payment_status === 'paid') {
+          const { data: invoice } = await supabaseAdmin
+            .from("invoices")
+            .select("user_id")
+            .eq("id", invoiceId)
+            .single();
+          
+          if (invoice && invoice.user_id === userId) {
+            await supabaseAdmin
+              .from("invoices")
+              .update({
+                payment_status: "paid",
+                paid_at: new Date().toISOString(),
+              })
+              .eq("id", invoiceId)
+              .eq("user_id", userId);
+            
+            console.log(`Invoice ${invoiceId} marked as paid via Payment Link`);
+          } else {
+            console.error(`Webhook: Invoice ${invoiceId} user mismatch or not found`);
+          }
+        } else if (userId && session.subscription) {
           await supabaseAdmin
             .from("profiles")
             .update({

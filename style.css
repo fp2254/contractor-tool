@@ -1034,6 +1034,155 @@ body {
   cursor: not-allowed;
 }
 
+/* DETAIL VIEW */
+.detail-view {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.detail-header-left h3 {
+  margin: 0 0 8px 0;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.detail-header-left p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.detail-header-right {
+  text-align: right;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-section p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.detail-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.detail-items-table th {
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+
+.detail-items-table td {
+  padding: 12px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-items-table tr:last-child td {
+  border-bottom: none;
+}
+
+.detail-totals {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid var(--border);
+  text-align: right;
+}
+
+.detail-totals-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 40px;
+  margin: 8px 0;
+}
+
+.detail-totals-row.total {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-totals-label {
+  color: var(--muted);
+  min-width: 100px;
+}
+
+.detail-totals-value {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.payment-status-badge.unpaid {
+  background: rgba(244, 67, 54, 0.15);
+  color: #F44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.payment-status-badge.paid {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.payment-status-badge.pending {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
 /* PAYMENT COLLECTION STATUS */
 .feature-status-card {
   background: var(--tile);

@@ -27,25 +27,61 @@ const DEMO_DATA = {
   invoices: [
     { 
       id: 1, 
-      invoice_number: "INV-1001",
+      number: "INV-1001",
       client_name: "John Smith",
+      client: { name: "John Smith", email: "john@example.com", phone: "(555) 234-5678", address: "456 Oak Ave" },
       date: "2025-11-15",
+      status: "sent",
+      payment_status: "paid",
+      paid_at: "2025-11-16T10:30:00Z",
+      payment_link: "https://pay.stripe.com/demo-link-001",
       subtotal: 850.00,
       tax: 72.25,
       total: 922.25,
-      notes: "Water heater replacement",
-      created_at: "2025-11-15T10:00:00Z"
+      notes: "Water heater replacement - emergency service",
+      created_at: "2025-11-15T10:00:00Z",
+      items: [
+        { description: "New Water Heater Unit", qty: 1, price: 550.00, total: 550.00 },
+        { description: "Installation Labor", qty: 3, price: 100.00, total: 300.00 }
+      ]
     },
     { 
       id: 2, 
-      invoice_number: "INV-1002",
+      number: "INV-1002",
       client_name: "Sarah Johnson",
+      client: { name: "Sarah Johnson", email: "sarah@example.com", phone: "(555) 345-6789", address: "789 Pine St" },
       date: "2025-11-18",
+      status: "draft",
+      payment_status: "unpaid",
+      payment_link: "https://pay.stripe.com/demo-link-002",
       subtotal: 450.00,
       tax: 38.25,
       total: 488.25,
       notes: "Kitchen sink repair",
-      created_at: "2025-11-18T14:30:00Z"
+      created_at: "2025-11-18T14:30:00Z",
+      items: [
+        { description: "Kitchen Faucet Replacement", qty: 1, price: 250.00, total: 250.00 },
+        { description: "Under-Sink Pipe Repair", qty: 1, price: 200.00, total: 200.00 }
+      ]
+    },
+    { 
+      id: 3, 
+      number: "INV-1003",
+      client_name: "Mike Davis",
+      client: { name: "Mike Davis", email: "mike@example.com", phone: "(555) 456-7890", address: "321 Elm Dr" },
+      date: "2025-11-20",
+      status: "sent",
+      payment_status: "pending",
+      payment_link: null,
+      subtotal: 325.00,
+      tax: 27.63,
+      total: 352.63,
+      notes: "Drain cleaning service",
+      created_at: "2025-11-20T09:00:00Z",
+      items: [
+        { description: "Main Line Drain Cleaning", qty: 1, price: 275.00, total: 275.00 },
+        { description: "Camera Inspection", qty: 1, price: 50.00, total: 50.00 }
+      ]
     }
   ],
   quotes: [
@@ -53,12 +89,19 @@ const DEMO_DATA = {
       id: 1,
       quote_number: "QUO-2001",
       client_name: "Mike Davis",
-      date: "2025-11-20",
+      client: { name: "Mike Davis", email: "mike@example.com", phone: "(555) 456-7890", address: "321 Elm Dr" },
+      quote_date: "2025-11-20",
+      status: "sent",
       subtotal: 2400.00,
       tax: 204.00,
       total: 2604.00,
       notes: "Bathroom renovation estimate",
-      created_at: "2025-11-20T09:00:00Z"
+      created_at: "2025-11-20T09:00:00Z",
+      items: [
+        { description: "New Vanity & Fixtures", quantity: 1, unit_price: 1200.00, total: 1200.00 },
+        { description: "Tile Installation", quantity: 50, unit_price: 15.00, total: 750.00 },
+        { description: "Labor (3 days)", quantity: 3, unit_price: 150.00, total: 450.00 }
+      ]
     }
   ],
   referral: {
@@ -236,6 +279,48 @@ async function loadDemoData() {
   renderDemoQuotes();
   renderDemoReferrals();
   renderDemoSettings();
+  renderDemoPaymentStats();
+  renderDemoPaymentScreen();
+}
+
+function renderDemoPaymentStats() {
+  const outstanding = 1708.88;
+  const paidMonth = 922.25;  
+  const pending = 352.63;
+  
+  const dashOutstanding = document.getElementById('dashboard-outstanding');
+  const dashPaidMonth = document.getElementById('dashboard-paid-month');
+  const dashPending = document.getElementById('dashboard-pending');
+  
+  if (dashOutstanding) dashOutstanding.textContent = `$${outstanding.toFixed(2)}`;
+  if (dashPaidMonth) dashPaidMonth.textContent = `$${paidMonth.toFixed(2)}`;
+  if (dashPending) dashPending.textContent = `$${pending.toFixed(2)}`;
+  
+  const outstanding2 = document.getElementById('payment-outstanding');
+  const paidMonth2 = document.getElementById('payment-paid-month');
+  const pending2 = document.getElementById('payment-pending');
+  
+  if (outstanding2) outstanding2.textContent = `$${outstanding.toFixed(2)}`;
+  if (paidMonth2) paidMonth2.textContent = `$${paidMonth.toFixed(2)}`;
+  if (pending2) pending2.textContent = `$${pending.toFixed(2)}`;
+}
+
+function renderDemoPaymentScreen() {
+  const statusEl = document.getElementById('payment-connection-status');
+  const messageEl = document.getElementById('payment-status-message');
+  
+  if (statusEl) {
+    statusEl.innerHTML = `
+      <div class="status-badge status-active">
+        <i class="fa-solid fa-check-circle"></i>
+        <span>Active</span>
+      </div>
+    `;
+  }
+  
+  if (messageEl) {
+    messageEl.textContent = "Payment collection is enabled. You can generate payment links for your invoices.";
+  }
 }
 
 function renderDemoClients() {
@@ -259,30 +344,229 @@ function renderDemoInvoices() {
   const invoicesList = document.getElementById("invoices-list");
   if (!invoicesList) return;
   
-  invoicesList.innerHTML = DEMO_DATA.invoices.map(inv => `
-    <div class="list-item">
-      <div>
-        <strong>${inv.invoice_number}</strong> · ${inv.client_name}
-        <div class="item-meta">${inv.date} · Total: $${inv.total.toFixed(2)}</div>
-        ${inv.notes ? `<div class="item-meta">${inv.notes}</div>` : ''}
+  invoicesList.innerHTML = '';
+  
+  DEMO_DATA.invoices.forEach(inv => {
+    const item = document.createElement("div");
+    item.className = "list-item clickable";
+    item.style.cursor = "pointer";
+    item.innerHTML = `
+      <div class="list-item-header">
+        <strong>Invoice #${inv.number}</strong>
+        <span>$${inv.total.toFixed(2)}</span>
       </div>
-    </div>
-  `).join('');
+      <div class="list-item-sub">${inv.client_name}</div>
+      <div class="list-item-sub">
+        ${inv.date} • ${inv.status} • 
+        <span class="payment-status-badge ${inv.payment_status}">
+          ${inv.payment_status.charAt(0).toUpperCase() + inv.payment_status.slice(1)}
+        </span>
+      </div>
+    `;
+    item.onclick = () => viewDemoInvoiceDetail(inv);
+    invoicesList.appendChild(item);
+  });
 }
 
 function renderDemoQuotes() {
   const quotesList = document.getElementById("quotes-list");
   if (!quotesList) return;
   
-  quotesList.innerHTML = DEMO_DATA.quotes.map(quote => `
-    <div class="list-item">
-      <div>
-        <strong>${quote.quote_number}</strong> · ${quote.client_name}
-        <div class="item-meta">${quote.date} · Total: $${quote.total.toFixed(2)}</div>
-        ${quote.notes ? `<div class="item-meta">${quote.notes}</div>` : ''}
+  quotesList.innerHTML = '';
+  
+  DEMO_DATA.quotes.forEach(quote => {
+    const item = document.createElement("div");
+    item.className = "list-item clickable";
+    item.style.cursor = "pointer";
+    item.innerHTML = `
+      <div class="list-item-header">
+        <strong>Quote #${quote.quote_number}</strong>
+        <span>$${quote.total.toFixed(2)}</span>
+      </div>
+      <div class="list-item-sub">${quote.client_name} • ${quote.quote_date}</div>
+      <div class="list-item-sub">${quote.status}</div>
+    `;
+    item.onclick = () => viewDemoQuoteDetail(quote);
+    quotesList.appendChild(item);
+  });
+}
+
+function viewDemoInvoiceDetail(invoice) {
+  const titleEl = document.getElementById("invoice-detail-title");
+  const contentEl = document.getElementById("invoice-detail-content");
+  
+  titleEl.textContent = `Invoice #${invoice.number}`;
+  
+  const paymentStatus = invoice.payment_status || 'unpaid';
+  const paymentBadge = `<span class="payment-status-badge ${paymentStatus}">
+    <i class="fa-solid ${paymentStatus === 'paid' ? 'fa-check-circle' : paymentStatus === 'pending' ? 'fa-clock' : 'fa-circle-xmark'}"></i>
+    ${paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+  </span>`;
+  
+  contentEl.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-header-left">
+        <h3>Invoice #${invoice.number}</h3>
+        <p><strong>Date:</strong> ${invoice.date}</p>
+        <p><strong>Status:</strong> ${invoice.status}</p>
+        <p><strong>Payment:</strong> ${paymentBadge}</p>
+      </div>
+      <div class="detail-header-right">
+        <p><strong>Client:</strong></p>
+        <p>${invoice.client_name}</p>
+        ${invoice.client ? `
+          <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">
+            ${invoice.client.email || ''}<br>
+            ${invoice.client.phone || ''}<br>
+            ${invoice.client.address || ''}
+          </p>
+        ` : ''}
       </div>
     </div>
-  `).join('');
+    
+    ${invoice.notes ? `
+      <div class="detail-section">
+        <h4>Notes</h4>
+        <p>${invoice.notes}</p>
+      </div>
+    ` : ''}
+    
+    <div class="detail-section">
+      <h4>Line Items</h4>
+      <table class="detail-items-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align: center;">Quantity</th>
+            <th style="text-align: right;">Unit Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(invoice.items || []).map(item => `
+            <tr>
+              <td>${item.description || ''}</td>
+              <td style="text-align: center;">${item.qty || 1}</td>
+              <td style="text-align: right;">${formatCurrency(item.price || 0)}</td>
+              <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <div class="detail-totals">
+        <div class="detail-totals-row">
+          <span class="detail-totals-label">Subtotal:</span>
+          <span class="detail-totals-value">${formatCurrency(invoice.subtotal || 0)}</span>
+        </div>
+        ${invoice.tax ? `
+          <div class="detail-totals-row">
+            <span class="detail-totals-label">Tax:</span>
+            <span class="detail-totals-value">${formatCurrency(invoice.tax || 0)}</span>
+          </div>
+        ` : ''}
+        <div class="detail-totals-row total">
+          <span class="detail-totals-label">Total:</span>
+          <span class="detail-totals-value">${formatCurrency(invoice.total || 0)}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="detail-actions">
+      <button class="btn-sm" disabled style="opacity: 0.6;">
+        <i class="fa-solid fa-link"></i> Payment Link (Demo)
+      </button>
+      <button class="btn-sm" onclick="showScreen('invoices')">
+        <i class="fa-solid fa-arrow-left"></i> Back to List
+      </button>
+    </div>
+  `;
+  
+  showScreen('invoice-detail');
+}
+
+function viewDemoQuoteDetail(quote) {
+  const titleEl = document.getElementById("quote-detail-title");
+  const contentEl = document.getElementById("quote-detail-content");
+  
+  titleEl.textContent = `Quote #${quote.quote_number}`;
+  
+  contentEl.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-header-left">
+        <h3>Quote #${quote.quote_number}</h3>
+        <p><strong>Date:</strong> ${quote.quote_date}</p>
+        <p><strong>Status:</strong> ${quote.status}</p>
+      </div>
+      <div class="detail-header-right">
+        <p><strong>Client:</strong></p>
+        <p>${quote.client_name}</p>
+        ${quote.client ? `
+          <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">
+            ${quote.client.email || ''}<br>
+            ${quote.client.phone || ''}<br>
+            ${quote.client.address || ''}
+          </p>
+        ` : ''}
+      </div>
+    </div>
+    
+    ${quote.notes ? `
+      <div class="detail-section">
+        <h4>Notes</h4>
+        <p>${quote.notes}</p>
+      </div>
+    ` : ''}
+    
+    <div class="detail-section">
+      <h4>Line Items</h4>
+      <table class="detail-items-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align: center;">Quantity</th>
+            <th style="text-align: right;">Unit Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(quote.items || []).map(item => `
+            <tr>
+              <td>${item.description || ''}</td>
+              <td style="text-align: center;">${item.quantity || 1}</td>
+              <td style="text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
+              <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <div class="detail-totals">
+        <div class="detail-totals-row">
+          <span class="detail-totals-label">Subtotal:</span>
+          <span class="detail-totals-value">${formatCurrency(quote.subtotal || 0)}</span>
+        </div>
+        ${quote.tax ? `
+          <div class="detail-totals-row">
+            <span class="detail-totals-label">Tax:</span>
+            <span class="detail-totals-value">${formatCurrency(quote.tax || 0)}</span>
+          </div>
+        ` : ''}
+        <div class="detail-totals-row total">
+          <span class="detail-totals-label">Total:</span>
+          <span class="detail-totals-value">${formatCurrency(quote.total || 0)}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="detail-actions">
+      <button class="btn-sm" onclick="showScreen('quotes')">
+        <i class="fa-solid fa-arrow-left"></i> Back to List
+      </button>
+    </div>
+  `;
+  
+  showScreen('quote-detail');
 }
 
 function renderDemoReferrals() {
@@ -419,7 +703,12 @@ function wireDashboardUI() {
   document.querySelectorAll(".tile").forEach((tile) => {
     tile.addEventListener("click", () => {
       const screen = tile.getAttribute("data-screen");
-      if (screen) showScreen(screen);
+      if (screen) {
+        showScreen(screen);
+        if (screen === "payments") {
+          loadPaymentScreenData();
+        }
+      }
     });
   });
 
@@ -450,6 +739,7 @@ async function loadInitialData() {
     loadQuotes(),
     loadSettings(),
     loadReferralSummary(),
+    loadPaymentStats(),
   ]);
   
   // Check for checkout success/cancel
@@ -829,7 +1119,8 @@ async function loadInvoices() {
 
   (data || []).forEach((inv) => {
     const item = document.createElement("div");
-    item.className = "list-item";
+    item.className = "list-item clickable";
+    item.style.cursor = "pointer";
     item.innerHTML = `
       <div class="list-item-header">
         <strong>Invoice #${inv.number || inv.id}</strong>
@@ -841,12 +1132,7 @@ async function loadInvoices() {
       </div>
     `;
     
-    const downloadBtn = document.createElement("button");
-    downloadBtn.className = "btn-sm";
-    downloadBtn.textContent = "Download";
-    downloadBtn.style.marginTop = "8px";
-    downloadBtn.onclick = () => downloadInvoice(inv);
-    item.appendChild(downloadBtn);
+    item.onclick = () => viewInvoiceDetail(inv.id);
     
     list.appendChild(item);
   });
@@ -864,7 +1150,8 @@ async function loadQuotes() {
 
     (data || []).forEach((quote) => {
       const item = document.createElement("div");
-      item.className = "list-item";
+      item.className = "list-item clickable";
+      item.style.cursor = "pointer";
       item.innerHTML = `
         <div class="list-item-header">
           <strong>Quote #${quote.quote_number || quote.id.slice(0, 8)}</strong>
@@ -876,17 +1163,344 @@ async function loadQuotes() {
         </div>
       `;
       
-      const downloadBtn = document.createElement("button");
-      downloadBtn.className = "btn-sm";
-      downloadBtn.textContent = "Download";
-      downloadBtn.style.marginTop = "8px";
-      downloadBtn.onclick = () => downloadQuote(quote);
-      item.appendChild(downloadBtn);
+      item.onclick = () => viewQuoteDetail(quote.id);
       
       list.appendChild(item);
     });
   } catch (error) {
     console.error("Error loading quotes:", error);
+  }
+}
+
+// INVOICE & QUOTE DETAIL VIEWS
+
+async function viewInvoiceDetail(invoiceId) {
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}`);
+    const invoice = await res.json();
+    
+    const titleEl = document.getElementById("invoice-detail-title");
+    const contentEl = document.getElementById("invoice-detail-content");
+    
+    titleEl.textContent = `Invoice #${invoice.number || invoice.id}`;
+    
+    const paymentStatus = invoice.payment_status || 'unpaid';
+    const paymentBadge = `<span class="payment-status-badge ${paymentStatus}">
+      <i class="fa-solid ${paymentStatus === 'paid' ? 'fa-check-circle' : paymentStatus === 'pending' ? 'fa-clock' : 'fa-circle-xmark'}"></i>
+      ${paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+    </span>`;
+    
+    contentEl.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h3>Invoice #${invoice.number || invoice.id}</h3>
+          <p><strong>Date:</strong> ${invoice.date || new Date().toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${invoice.status || 'draft'}</p>
+          <p><strong>Payment:</strong> ${paymentBadge}</p>
+        </div>
+        <div class="detail-header-right">
+          <p><strong>Client:</strong></p>
+          <p>${invoice.client_name || (invoice.client ? invoice.client.name : 'N/A')}</p>
+          ${invoice.client ? `
+            <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">
+              ${invoice.client.email || ''}<br>
+              ${invoice.client.phone || ''}<br>
+              ${invoice.client.address || ''}
+            </p>
+          ` : ''}
+        </div>
+      </div>
+      
+      ${invoice.notes ? `
+        <div class="detail-section">
+          <h4>Notes</h4>
+          <p>${invoice.notes}</p>
+        </div>
+      ` : ''}
+      
+      <div class="detail-section">
+        <h4>Line Items</h4>
+        <table class="detail-items-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th style="text-align: center;">Quantity</th>
+              <th style="text-align: right;">Unit Price</th>
+              <th style="text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(invoice.items || []).map(item => `
+              <tr>
+                <td>${item.description || ''}</td>
+                <td style="text-align: center;">${item.qty || 1}</td>
+                <td style="text-align: right;">${formatCurrency(item.price || 0)}</td>
+                <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="detail-totals">
+          <div class="detail-totals-row">
+            <span class="detail-totals-label">Subtotal:</span>
+            <span class="detail-totals-value">${formatCurrency(invoice.subtotal || 0)}</span>
+          </div>
+          ${invoice.tax ? `
+            <div class="detail-totals-row">
+              <span class="detail-totals-label">Tax:</span>
+              <span class="detail-totals-value">${formatCurrency(invoice.tax || 0)}</span>
+            </div>
+          ` : ''}
+          <div class="detail-totals-row total">
+            <span class="detail-totals-label">Total:</span>
+            <span class="detail-totals-value">${formatCurrency(invoice.total || 0)}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-actions">
+        <select id="invoice-payment-status-select" class="btn-sm" style="cursor: pointer;" onchange="updateInvoicePaymentStatus('${invoice.id}', this.value)">
+          <option value="">Change Status...</option>
+          <option value="unpaid" ${paymentStatus === 'unpaid' ? 'disabled' : ''}>Mark Unpaid</option>
+          <option value="pending" ${paymentStatus === 'pending' ? 'disabled' : ''}>Mark Pending</option>
+          <option value="paid" ${paymentStatus === 'paid' ? 'disabled' : ''}>Mark Paid</option>
+        </select>
+        ${invoice.payment_link ? `
+          <button class="btn-sm" onclick="copyToClipboard('${invoice.payment_link}', 'Payment link copied!')">
+            <i class="fa-solid fa-copy"></i> Copy Payment Link
+          </button>
+        ` : `
+          <button class="btn-sm" onclick="generatePaymentLink('${invoice.id}')">
+            <i class="fa-solid fa-link"></i> Generate Payment Link
+          </button>
+        `}
+        <button class="btn-sm" onclick="downloadInvoice({id: '${invoice.id}'})">
+          <i class="fa-solid fa-download"></i> Download
+        </button>
+        <button class="btn-sm" onclick="showScreen('invoices')">
+          <i class="fa-solid fa-arrow-left"></i> Back to List
+        </button>
+      </div>
+    `;
+    
+    showScreen('invoice-detail');
+  } catch (error) {
+    console.error("Error loading invoice details:", error);
+    showToast("Failed to load invoice details");
+  }
+}
+
+async function viewQuoteDetail(quoteId) {
+  try {
+    const res = await apiFetch(`/api/quotes/${quoteId}`);
+    const quote = await res.json();
+    
+    const titleEl = document.getElementById("quote-detail-title");
+    const contentEl = document.getElementById("quote-detail-content");
+    
+    titleEl.textContent = `Quote #${quote.quote_number || quote.id.slice(0, 8)}`;
+    
+    contentEl.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h3>Quote #${quote.quote_number || quote.id.slice(0, 8)}</h3>
+          <p><strong>Date:</strong> ${quote.quote_date || new Date().toLocaleDateString()}</p>
+          <p><strong>Status:</strong> ${quote.status || 'draft'}</p>
+          ${quote.due_date ? `<p><strong>Valid Until:</strong> ${quote.due_date}</p>` : ''}
+        </div>
+        <div class="detail-header-right">
+          <p><strong>Client:</strong></p>
+          <p>${quote.client_name || (quote.client ? quote.client.name : 'N/A')}</p>
+          ${quote.client ? `
+            <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">
+              ${quote.client.email || ''}<br>
+              ${quote.client.phone || ''}<br>
+              ${quote.client.address || ''}
+            </p>
+          ` : ''}
+        </div>
+      </div>
+      
+      ${quote.notes ? `
+        <div class="detail-section">
+          <h4>Notes</h4>
+          <p>${quote.notes}</p>
+        </div>
+      ` : ''}
+      
+      <div class="detail-section">
+        <h4>Line Items</h4>
+        <table class="detail-items-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th style="text-align: center;">Quantity</th>
+              <th style="text-align: right;">Unit Price</th>
+              <th style="text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(quote.items || []).map(item => `
+              <tr>
+                <td>${item.description || ''}</td>
+                <td style="text-align: center;">${item.quantity || 1}</td>
+                <td style="text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
+                <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="detail-totals">
+          <div class="detail-totals-row">
+            <span class="detail-totals-label">Subtotal:</span>
+            <span class="detail-totals-value">${formatCurrency(quote.subtotal || 0)}</span>
+          </div>
+          ${quote.tax ? `
+            <div class="detail-totals-row">
+              <span class="detail-totals-label">Tax:</span>
+              <span class="detail-totals-value">${formatCurrency(quote.tax || 0)}</span>
+            </div>
+          ` : ''}
+          <div class="detail-totals-row total">
+            <span class="detail-totals-label">Total:</span>
+            <span class="detail-totals-value">${formatCurrency(quote.total || 0)}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-actions">
+        <button class="btn-sm" onclick="downloadQuote({id: '${quote.id}'})">
+          <i class="fa-solid fa-download"></i> Download PDF
+        </button>
+        <button class="btn-sm" onclick="showScreen('quotes')">
+          <i class="fa-solid fa-arrow-left"></i> Back to List
+        </button>
+      </div>
+    `;
+    
+    showScreen('quote-detail');
+  } catch (error) {
+    console.error("Error loading quote details:", error);
+    showToast("Failed to load quote details");
+  }
+}
+
+// PAYMENT MANAGEMENT FUNCTIONS
+
+async function updateInvoicePaymentStatus(invoiceId, status) {
+  if (!status) return;
+  
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}/payment-status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_status: status }),
+    });
+    
+    if (res.ok) {
+      showToast(`Invoice marked as ${status}`);
+      viewInvoiceDetail(invoiceId);
+    } else {
+      const error = await res.json();
+      showToast(error.error || "Failed to update status");
+    }
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    showToast("Failed to update payment status");
+  }
+}
+
+async function generatePaymentLink(invoiceId) {
+  try {
+    showToast("Generating payment link...");
+    
+    const res = await apiFetch(`/api/invoices/${invoiceId}/payment-link`, {
+      method: 'POST',
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      showToast("Payment link created!");
+      viewInvoiceDetail(invoiceId);
+    } else {
+      const error = await res.json();
+      showToast(error.error || "Failed to generate payment link");
+    }
+  } catch (error) {
+    console.error("Error generating payment link:", error);
+    showToast("Failed to generate payment link");
+  }
+}
+
+function copyToClipboard(text, message = "Copied to clipboard!") {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(message);
+  }).catch(err => {
+    console.error("Failed to copy:", err);
+    showToast("Failed to copy to clipboard");
+  });
+}
+
+async function loadPaymentStats() {
+  if (tourMode) return;
+  
+  try {
+    const res = await apiFetch('/api/payments/stats');
+    if (res.ok) {
+      const stats = await res.json();
+      
+      const outstandingEl = document.getElementById('payment-outstanding');
+      const paidMonthEl = document.getElementById('payment-paid-month');
+      const pendingEl = document.getElementById('payment-pending');
+      
+      const dashOutstanding = document.getElementById('dashboard-outstanding');
+      const dashPaidMonth = document.getElementById('dashboard-paid-month');
+      const dashPending = document.getElementById('dashboard-pending');
+      
+      if (outstandingEl) outstandingEl.textContent = `$${stats.outstanding}`;
+      if (paidMonthEl) paidMonthEl.textContent = `$${stats.paid_month}`;
+      if (pendingEl) pendingEl.textContent = `$${stats.pending}`;
+      
+      if (dashOutstanding) dashOutstanding.textContent = `$${stats.outstanding}`;
+      if (dashPaidMonth) dashPaidMonth.textContent = `$${stats.paid_month}`;
+      if (dashPending) dashPending.textContent = `$${stats.pending}`;
+    }
+  } catch (error) {
+    console.error("Error loading payment stats:", error);
+  }
+}
+
+async function loadPaymentScreenData() {
+  try {
+    const profileRes = await apiFetch('/api/profile');
+    const profile = await profileRes.json();
+    
+    const statusEl = document.getElementById('payment-connection-status');
+    const messageEl = document.getElementById('payment-status-message');
+    
+    if (profile.stripe_connect_enabled) {
+      statusEl.innerHTML = `
+        <div class="status-badge status-active">
+          <i class="fa-solid fa-check-circle"></i>
+          <span>Active</span>
+        </div>
+      `;
+      messageEl.textContent = "Payment collection is enabled. You can generate payment links for your invoices.";
+    } else {
+      statusEl.innerHTML = `
+        <div class="status-badge" style="background: rgba(158, 158, 158, 0.15); color: #9E9E9E; border: 1px solid rgba(158, 158, 158, 0.3);">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <span>Not Enabled</span>
+        </div>
+      `;
+      messageEl.textContent = "Payment collection is not enabled on your account. This feature is included with Lifetime plans or available as a $4/month add-on for Monthly/Yearly plans.";
+    }
+    
+    await loadPaymentStats();
+  } catch (error) {
+    console.error("Error loading payment screen data:", error);
   }
 }
 

@@ -92,6 +92,24 @@
               </div>
             </button>
 
+            <!-- PAYMENT STATS OVERVIEW -->
+            <div class="tile tile-full" id="dashboard-payment-stats" style="pointer-events: none; background: linear-gradient(135deg, var(--tile) 0%, var(--tile) 100%); border: 2px solid var(--border);">
+              <div style="display: flex; justify-content: space-around; align-items: center; width: 100%; gap: 20px;">
+                <div style="text-align: center;">
+                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Outstanding</div>
+                  <div id="dashboard-outstanding" style="color: #F44336; font-size: 24px; font-weight: 600;">$0.00</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Paid (This Month)</div>
+                  <div id="dashboard-paid-month" style="color: #4CAF50; font-size: 24px; font-weight: 600;">$0.00</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Pending</div>
+                  <div id="dashboard-pending" style="color: #FF9800; font-size: 24px; font-weight: 600;">$0.00</div>
+                </div>
+              </div>
+            </div>
+
             <!-- ROW 1 -->
             <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
@@ -123,6 +141,14 @@
               <div class="tile-text">
                 <h3>Invoices</h3>
                 <p>View and manage past invoices.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="payments">
+              <div class="tile-icon"><i class="fa-solid fa-credit-card"></i></div>
+              <div class="tile-text">
+                <h3>Payments</h3>
+                <p>Accept payments & track status.</p>
               </div>
             </button>
 
@@ -260,6 +286,15 @@
           <div id="invoices-list" class="list"></div>
         </section>
 
+        <!-- INVOICE DETAIL VIEW -->
+        <section id="screen-invoice-detail" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="invoices"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 id="invoice-detail-title">Invoice Details</h2>
+          </div>
+          <div id="invoice-detail-content" class="detail-view"></div>
+        </section>
+
         <!-- QUOTES (formerly estimates) -->
         <section id="screen-quotes" class="screen">
           <div class="screen-header">
@@ -268,6 +303,15 @@
             <button class="btn-primary" id="btn-new-quote">+ New Quote</button>
           </div>
           <div id="quotes-list" class="list"></div>
+        </section>
+
+        <!-- QUOTE DETAIL VIEW -->
+        <section id="screen-quote-detail" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 id="quote-detail-title">Quote Details</h2>
+          </div>
+          <div id="quote-detail-content" class="detail-view"></div>
         </section>
 
         <!-- NEW QUOTE -->
@@ -681,6 +725,63 @@
               </div>
             </div>
             <div id="referral-list" class="list"></div>
+          </div>
+        </section>
+
+        <!-- PAYMENTS -->
+        <section id="screen-payments" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Payment Collection</h2>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-credit-card"></i>
+              <h3>Stripe Connect Status</h3>
+            </div>
+            <div class="feature-status-body">
+              <div id="payment-connection-status"></div>
+              <p id="payment-status-message"></p>
+            </div>
+          </div>
+
+          <div class="feature-status-card" id="payment-stats-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-chart-line"></i>
+              <h3>Payment Statistics</h3>
+            </div>
+            <div class="referral-stats">
+              <div>
+                <span>Outstanding</span>
+                <strong id="payment-outstanding">$0.00</strong>
+              </div>
+              <div>
+                <span>Paid (This Month)</span>
+                <strong id="payment-paid-month">$0.00</strong>
+              </div>
+              <div>
+                <span>Pending</span>
+                <strong id="payment-pending">$0.00</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-circle-info"></i>
+              <h3>How It Works</h3>
+            </div>
+            <div class="detail-section">
+              <p style="margin-bottom: 12px;">With payment collection enabled, you can:</p>
+              <ul style="color: var(--muted); line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Generate payment links for any invoice</li>
+                <li>Send links to clients via text or email</li>
+                <li>Clients pay securely with Stripe</li>
+                <li>Invoices automatically marked as "Paid"</li>
+                <li>Manually mark invoices paid for cash/check payments</li>
+              </ul>
+            </div>
           </div>
         </section>
       </main>
