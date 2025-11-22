@@ -1,0 +1,17 @@
+{
+  "name": "tradebase",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "stripe": "^16.0.0"
+  }
+}
