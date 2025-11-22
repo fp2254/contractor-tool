@@ -5,12 +5,12 @@
   <title>TradeBase</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Icons (optional, for nicer tile icons) -->
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
   <div id="app-root">
-    <!-- AUTH WRAPPER -->
+    <!-- AUTH -->
     <div id="auth-container">
       <div class="auth-card">
         <h1 class="app-title">TradeBase</h1>
@@ -21,7 +21,7 @@
           <button id="btn-show-signup" class="auth-tab">Sign Up</button>
         </div>
 
-        <!-- LOGIN FORM -->
+        <!-- LOGIN -->
         <form id="login-form" class="auth-form">
           <label>Email</label>
           <input type="email" id="login-email" required />
@@ -32,7 +32,7 @@
           <a id="forgot-password-link" href="#" class="small-link">Forgot password?</a>
         </form>
 
-        <!-- SIGNUP FORM -->
+        <!-- SIGNUP -->
         <form id="signup-form" class="auth-form hidden">
           <label>Email</label>
           <input type="email" id="signup-email" required />
@@ -44,12 +44,12 @@
       </div>
     </div>
 
-    <!-- MAIN APP -->
+    <!-- APP -->
     <div id="app-container" class="hidden">
       <header class="app-header">
         <div>
           <h1 class="app-title">TradeBase</h1>
-          <p class="app-subtitle">Invoices, photos, referrals – all in one place.</p>
+          <p class="app-subtitle">Invoices, estimates, photos & referrals in one place.</p>
         </div>
         <div class="header-actions">
           <button id="theme-toggle" class="icon-btn" title="Toggle theme">
@@ -59,9 +59,8 @@
         </div>
       </header>
 
-      <!-- SCREEN CONTAINER -->
       <main id="screen-container">
-        <!-- DASHBOARD / TILE GRID -->
+        <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
           <div class="tile-grid">
             <!-- FULL-WIDTH NEW INVOICE -->
@@ -73,7 +72,7 @@
               </div>
             </button>
 
-            <!-- ROW 1: Estimates, Clients, Photos -->
+            <!-- ROW 1 -->
             <button class="tile" data-screen="estimates">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
@@ -86,7 +85,7 @@
               <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
               <div class="tile-text">
                 <h3>Clients</h3>
-                <p>Manage client info & history.</p>
+                <p>Save clients once, reuse forever.</p>
               </div>
             </button>
 
@@ -98,7 +97,7 @@
               </div>
             </button>
 
-            <!-- ROW 2: Invoices, Calculator, Settings -->
+            <!-- ROW 2 -->
             <button class="tile" data-screen="invoices">
               <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
               <div class="tile-text">
@@ -127,19 +126,20 @@
             <button class="tile tile-full tile-referrals" data-screen="referrals">
               <div class="tile-icon"><i class="fa-solid fa-badge-dollar"></i></div>
               <div class="tile-text">
-                <h2>Referrals – Get 20% for Life</h2>
+                <h2>Referrals – 20% For Life</h2>
                 <p>Share your link. Get paid every month your referrals stay.</p>
               </div>
             </button>
           </div>
         </section>
 
-        <!-- NEW INVOICE SCREEN -->
+        <!-- NEW INVOICE -->
         <section id="screen-new-invoice" class="screen">
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
             <h2>New Invoice</h2>
           </div>
+
           <form id="invoice-form" class="form">
             <div class="form-row">
               <label>Client</label>
@@ -157,7 +157,6 @@
               <textarea id="invoice-notes" rows="3" placeholder="Optional notes for the client"></textarea>
             </div>
 
-            <!-- LINE ITEMS -->
             <h3>Line Items</h3>
             <div id="line-items"></div>
             <button type="button" id="btn-add-line-item" class="btn-outline-sm">
@@ -210,7 +209,7 @@
               <div id="photo-preview" class="photo-preview"></div>
             </div>
 
-            <!-- TOTALS DISPLAY -->
+            <!-- TOTALS -->
             <div class="totals-box">
               <div>
                 <span>Subtotal:</span>
@@ -231,7 +230,7 @@
           </form>
         </section>
 
-        <!-- INVOICES LIST -->
+        <!-- INVOICES -->
         <section id="screen-invoices" class="screen">
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
@@ -370,7 +369,7 @@
         <section id="screen-referrals" class="screen">
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Referrals – Get 20% for Life</h2>
+            <h2>Referrals – 20% For Life</h2>
           </div>
           <div class="referral-card">
             <p>Share your link. Earn 20% of every monthly payment for everyone you bring in, for as long as they stay subscribed.</p>
@@ -402,7 +401,7 @@
     </div>
   </div>
 
-  <!-- Supabase & Stripe SDKs -->
+  <!-- SDKs -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://js.stripe.com/v3/"></script>
   <script src="config.js"></script>
