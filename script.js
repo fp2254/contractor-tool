@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireReferralsUI();
   wireSubscriptionUI();
   wireQuotesUI();
+  wireInventoryUI();
   wireTourMode();
   checkTourMode();
   checkSession();
@@ -2156,5 +2157,205 @@ async function downloadQuote(quote) {
   } catch (err) {
     console.error("Download error:", err);
     showToast("Failed to download quote");
+  }
+}
+
+// INVENTORY MANAGEMENT
+
+function wireInventoryUI() {
+  const btnNewInventory = document.getElementById("btn-new-inventory");
+  if (btnNewInventory) {
+    btnNewInventory.addEventListener("click", () => {
+      document.getElementById("inventory-form-title").textContent = "Add Inventory Item";
+      document.getElementById("inventory-item-id").value = "";
+      document.getElementById("inventory-form").reset();
+      document.getElementById("btn-delete-inventory").style.display = "none";
+      showScreen("inventory-form");
+    });
+  }
+
+  const inventoryForm = document.getElementById("inventory-form");
+  if (inventoryForm) {
+    inventoryForm.addEventListener("submit", handleInventorySubmit);
+  }
+
+  const btnDeleteInventory = document.getElementById("btn-delete-inventory");
+  if (btnDeleteInventory) {
+    btnDeleteInventory.addEventListener("click", handleInventoryDelete);
+  }
+
+  const tileInventory = document.querySelector('[data-screen="inventory"]');
+  if (tileInventory) {
+    tileInventory.addEventListener("click", loadInventory);
+  }
+}
+
+async function loadInventory() {
+  try {
+    const res = await apiFetch("/api/inventory");
+    if (!res.ok) {
+      console.error("Error loading inventory:", await res.text());
+      return;
+    }
+
+    const items = await res.json();
+    renderInventoryList(items);
+  } catch (err) {
+    console.error("Error loading inventory:", err);
+  }
+}
+
+function renderInventoryList(items) {
+  const listContainer = document.getElementById("inventory-list");
+  const emptyState = document.getElementById("inventory-empty-state");
+  const totalValueEl = document.getElementById("inventory-total-value");
+  const itemCountEl = document.getElementById("inventory-item-count");
+
+  if (!items || items.length === 0) {
+    listContainer.innerHTML = "";
+    emptyState.style.display = "block";
+    totalValueEl.textContent = "$0.00";
+    itemCountEl.textContent = "0";
+    return;
+  }
+
+  emptyState.style.display = "none";
+
+  let totalValue = 0;
+  listContainer.innerHTML = "";
+
+  items.forEach((item) => {
+    const quantity = parseFloat(item.quantity) || 0;
+    const unitPrice = parseFloat(item.unit_price) || 0;
+    const itemValue = quantity * unitPrice;
+    totalValue += itemValue;
+
+    const threshold = parseFloat(item.low_stock_threshold) || 0;
+    const isLowStock = threshold > 0 && quantity <= threshold;
+
+    const card = document.createElement("div");
+    card.className = "list-item";
+    card.style.cursor = "pointer";
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <strong style="font-size: 16px;">${item.name || "Unnamed Item"}</strong>
+            ${isLowStock ? '<span class="badge badge-danger" style="font-size: 11px;">⚠️ Low Stock</span>' : '<span class="badge badge-success" style="font-size: 11px;">✓ In Stock</span>'}
+          </div>
+          ${item.description ? `<p style="color: var(--muted); margin: 4px 0; font-size: 14px;">${item.description}</p>` : ""}
+          <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 14px; color: var(--muted);">
+            ${item.category ? `<span><i class="fa-solid fa-tag"></i> ${item.category}</span>` : ""}
+            <span><i class="fa-solid fa-box"></i> ${quantity} ${item.unit_type || "each"}</span>
+            <span><i class="fa-solid fa-dollar-sign"></i> ${formatCurrency(unitPrice)} / ${item.unit_type || "each"}</span>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 20px; font-weight: bold; color: var(--primary);">${formatCurrency(itemValue)}</div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Total Value</div>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener("click", () => editInventoryItem(item));
+    listContainer.appendChild(card);
+  });
+
+  totalValueEl.textContent = formatCurrency(totalValue);
+  itemCountEl.textContent = items.length;
+}
+
+function editInventoryItem(item) {
+  document.getElementById("inventory-form-title").textContent = "Edit Inventory Item";
+  document.getElementById("inventory-item-id").value = item.id;
+  document.getElementById("inventory-name").value = item.name || "";
+  document.getElementById("inventory-description").value = item.description || "";
+  document.getElementById("inventory-quantity").value = item.quantity || 0;
+  document.getElementById("inventory-unit-price").value = item.unit_price || 0;
+  document.getElementById("inventory-category").value = item.category || "";
+  document.getElementById("inventory-unit-type").value = item.unit_type || "each";
+  document.getElementById("inventory-low-stock").value = item.low_stock_threshold || 0;
+  document.getElementById("btn-delete-inventory").style.display = "inline-block";
+  showScreen("inventory-form");
+}
+
+async function handleInventorySubmit(e) {
+  e.preventDefault();
+
+  const itemId = document.getElementById("inventory-item-id").value;
+  const name = document.getElementById("inventory-name").value.trim();
+  const description = document.getElementById("inventory-description").value.trim();
+  const quantity = parseFloat(document.getElementById("inventory-quantity").value) || 0;
+  const unit_price = parseFloat(document.getElementById("inventory-unit-price").value) || 0;
+  const category = document.getElementById("inventory-category").value;
+  const unit_type = document.getElementById("inventory-unit-type").value;
+  const low_stock_threshold = parseFloat(document.getElementById("inventory-low-stock").value) || 0;
+
+  if (!name) {
+    showToast("Please enter an item name");
+    return;
+  }
+
+  const payload = {
+    name,
+    description,
+    quantity,
+    unit_price,
+    category,
+    unit_type,
+    low_stock_threshold,
+  };
+
+  try {
+    let res;
+    if (itemId) {
+      res = await apiFetch(`/api/inventory/${itemId}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await apiFetch("/api/inventory", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+
+    if (!res.ok) {
+      const errText = await res.text();
+      showToast(`Error: ${errText}`);
+      return;
+    }
+
+    showToast(itemId ? "Item updated!" : "Item added!");
+    showScreen("inventory");
+    loadInventory();
+  } catch (err) {
+    console.error("Error saving inventory item:", err);
+    showToast("Failed to save item");
+  }
+}
+
+async function handleInventoryDelete() {
+  const itemId = document.getElementById("inventory-item-id").value;
+  if (!itemId) return;
+
+  if (!confirm("Delete this inventory item?")) return;
+
+  try {
+    const res = await apiFetch(`/api/inventory/${itemId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      showToast("Failed to delete item");
+      return;
+    }
+
+    showToast("Item deleted!");
+    showScreen("inventory");
+    loadInventory();
+  } catch (err) {
+    console.error("Error deleting inventory item:", err);
+    showToast("Failed to delete item");
   }
 }

@@ -104,3 +104,46 @@ CREATE POLICY IF NOT EXISTS "Users can delete their own quote items"
   USING (EXISTS (
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
   ));
+
+-- Add Stripe Connect field to profiles
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS stripe_connect_enabled BOOLEAN DEFAULT FALSE;
+
+-- Create inventory_items table
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  quantity NUMERIC(10,2) DEFAULT 0,
+  unit_price NUMERIC(10,2) DEFAULT 0,
+  category TEXT,
+  unit_type TEXT DEFAULT 'each',
+  low_stock_threshold NUMERIC(10,2) DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create index for faster inventory queries
+CREATE INDEX IF NOT EXISTS idx_inventory_user_id ON inventory_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
+
+-- Enable Row Level Security for inventory_items
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for inventory_items
+CREATE POLICY IF NOT EXISTS "Users can view their own inventory items"
+  ON inventory_items FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can insert their own inventory items"
+  ON inventory_items FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can update their own inventory items"
+  ON inventory_items FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can delete their own inventory items"
+  ON inventory_items FOR DELETE
+  USING (auth.uid() = user_id);

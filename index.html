@@ -152,6 +152,14 @@
               </div>
             </button>
 
+            <button class="tile" data-screen="inventory">
+              <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div class="tile-text">
+                <h3>Inventory</h3>
+                <p>Track supplies, materials & stock.</p>
+              </div>
+            </button>
+
             <button class="tile" data-screen="calculator">
               <div class="tile-icon"><i class="fa-solid fa-calculator"></i></div>
               <div class="tile-text">
@@ -783,6 +791,111 @@
               </ul>
             </div>
           </div>
+        </section>
+
+        <!-- INVENTORY -->
+        <section id="screen-inventory" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Inventory Management</h2>
+          </div>
+
+          <div class="screen-actions">
+            <button id="btn-new-inventory" class="btn-primary"><i class="fa-solid fa-plus"></i> Add Item</button>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-dollar-sign"></i>
+              <h3>Total Inventory Value</h3>
+            </div>
+            <div style="text-align: center; padding: 20px 0;">
+              <strong id="inventory-total-value" style="font-size: 32px; color: var(--primary);">$0.00</strong>
+              <p style="color: var(--muted); margin-top: 8px;"><span id="inventory-item-count">0</span> items in stock</p>
+            </div>
+          </div>
+
+          <div id="inventory-list" class="list"></div>
+
+          <div id="inventory-empty-state" class="empty-state" style="display: none;">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <p>No inventory items yet</p>
+            <button class="btn-primary" onclick="document.getElementById('btn-new-inventory').click()">
+              <i class="fa-solid fa-plus"></i> Add Your First Item
+            </button>
+          </div>
+        </section>
+
+        <!-- NEW/EDIT INVENTORY ITEM -->
+        <section id="screen-inventory-form" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="inventory"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 id="inventory-form-title">Add Inventory Item</h2>
+          </div>
+
+          <form id="inventory-form" class="form">
+            <input type="hidden" id="inventory-item-id" />
+
+            <div class="form-row">
+              <label>Item Name *</label>
+              <input type="text" id="inventory-name" placeholder="e.g., 2x4 Lumber, Wire Nuts, PVC Pipe" required />
+            </div>
+
+            <div class="form-row">
+              <label>Description</label>
+              <textarea id="inventory-description" placeholder="Additional details about this item..." rows="2"></textarea>
+            </div>
+
+            <div class="form-row">
+              <label>Category</label>
+              <select id="inventory-category">
+                <option value="">Select category...</option>
+                <option value="Materials">Materials</option>
+                <option value="Tools">Tools</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Hardware">Hardware</option>
+                <option value="Paint">Paint & Supplies</option>
+                <option value="Safety">Safety Equipment</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>Quantity</label>
+              <input type="number" id="inventory-quantity" step="0.01" min="0" value="0" />
+            </div>
+
+            <div class="form-row">
+              <label>Unit Type</label>
+              <select id="inventory-unit-type">
+                <option value="each">Each</option>
+                <option value="box">Box</option>
+                <option value="sqft">Sq Ft</option>
+                <option value="linft">Linear Ft</option>
+                <option value="gallon">Gallon</option>
+                <option value="lb">Pound (lb)</option>
+                <option value="roll">Roll</option>
+                <option value="sheet">Sheet</option>
+                <option value="bundle">Bundle</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>Unit Price ($)</label>
+              <input type="number" id="inventory-unit-price" step="0.01" min="0" value="0" />
+            </div>
+
+            <div class="form-row">
+              <label>Low Stock Threshold</label>
+              <input type="number" id="inventory-low-stock" step="0.01" min="0" value="0" placeholder="Alert when quantity is at or below this number" />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">Save Item</button>
+              <button type="button" id="btn-delete-inventory" class="btn-danger" style="display: none;">Delete</button>
+            </div>
+          </form>
         </section>
       </main>
     </div>

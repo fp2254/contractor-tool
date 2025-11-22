@@ -575,6 +575,136 @@ app.get("/api/payments/stats", requireSubscription, async (req, res) => {
   }
 });
 
+// INVENTORY ENDPOINTS
+
+// Get all inventory items
+app.get("/api/inventory", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.json([]);
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("inventory_items")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+  } catch (error) {
+    console.error("Error fetching inventory:", error);
+    res.status(500).json({ error: "Failed to fetch inventory" });
+  }
+});
+
+// Create new inventory item
+app.post("/api/inventory", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { name, description, quantity, unit_price, category, unit_type, low_stock_threshold } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: "Name is required" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("inventory_items")
+      .insert({
+        user_id: userId,
+        name,
+        description: description || null,
+        quantity: quantity || 0,
+        unit_price: unit_price || 0,
+        category: category || null,
+        unit_type: unit_type || 'each',
+        low_stock_threshold: low_stock_threshold || 0,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error creating inventory item:", error);
+    res.status(500).json({ error: "Failed to create inventory item" });
+  }
+});
+
+// Update inventory item
+app.patch("/api/inventory/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const itemId = req.params.id;
+
+  try {
+    const { name, description, quantity, unit_price, category, unit_type, low_stock_threshold } = req.body;
+
+    const updateData = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (quantity !== undefined) updateData.quantity = quantity;
+    if (unit_price !== undefined) updateData.unit_price = unit_price;
+    if (category !== undefined) updateData.category = category;
+    if (unit_type !== undefined) updateData.unit_type = unit_type;
+    if (low_stock_threshold !== undefined) updateData.low_stock_threshold = low_stock_threshold;
+
+    const { data, error } = await supabaseAdmin
+      .from("inventory_items")
+      .update(updateData)
+      .eq("id", itemId)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: "Inventory item not found" });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error updating inventory item:", error);
+    res.status(500).json({ error: "Failed to update inventory item" });
+  }
+});
+
+// Delete inventory item
+app.delete("/api/inventory/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const itemId = req.params.id;
+
+  try {
+    const { error } = await supabaseAdmin
+      .from("inventory_items")
+      .delete()
+      .eq("id", itemId)
+      .eq("user_id", userId);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting inventory item:", error);
+    res.status(500).json({ error: "Failed to delete inventory item" });
+  }
+});
+
 // QUOTES (formerly estimates)
 
 app.get("/api/quotes", requireSubscription, async (req, res) => {
