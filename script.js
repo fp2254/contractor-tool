@@ -2334,6 +2334,7 @@ function renderInventoryList(items) {
     totalValueEl.textContent = "$0.00";
     itemCountEl.textContent = "0";
     updateCategoryDatalist([]);
+    updateCategoryDisplay([]);
     return;
   }
 
@@ -2343,6 +2344,7 @@ function renderInventoryList(items) {
   listContainer.innerHTML = "";
   
   updateCategoryDatalist(items);
+  updateCategoryDisplay(items);
 
   items.forEach((item) => {
     const quantity = parseFloat(item.quantity) || 0;
@@ -2496,5 +2498,35 @@ function updateCategoryDatalist(items) {
     const option = document.createElement("option");
     option.value = category;
     datalist.appendChild(option);
+  });
+}
+
+function updateCategoryDisplay(items) {
+  const categoriesCard = document.getElementById("inventory-categories-card");
+  const categoriesList = document.getElementById("inventory-categories-list");
+  
+  if (!categoriesCard || !categoriesList) return;
+
+  const categories = new Set();
+  items.forEach(item => {
+    if (item.category && item.category.trim()) {
+      categories.add(item.category.trim());
+    }
+  });
+
+  if (categories.size === 0) {
+    categoriesCard.style.display = "none";
+    return;
+  }
+
+  categoriesCard.style.display = "block";
+  categoriesList.innerHTML = "";
+
+  Array.from(categories).sort().forEach(category => {
+    const badge = document.createElement("span");
+    badge.className = "badge";
+    badge.style.cssText = "background: var(--primary); color: white; font-size: 13px; padding: 6px 12px; border-radius: 16px;";
+    badge.innerHTML = `<i class="fa-solid fa-tag"></i> ${category}`;
+    categoriesList.appendChild(badge);
   });
 }
