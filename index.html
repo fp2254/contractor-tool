@@ -1,16 +1,411 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trade Base – $149 Lifetime</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://js.stripe.com/v3/"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@canvasjs/pdfjs-dist@2.0.0/build/pdf.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>TradeBase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Icons (optional, for nicer tile icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-  <div id="root"></div>
+  <div id="app-root">
+    <!-- AUTH WRAPPER -->
+    <div id="auth-container">
+      <div class="auth-card">
+        <h1 class="app-title">TradeBase</h1>
+        <p class="app-subtitle">Simple. Powerful. Built for trades.</p>
+
+        <div class="auth-toggle">
+          <button id="btn-show-login" class="auth-tab active">Log In</button>
+          <button id="btn-show-signup" class="auth-tab">Sign Up</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="login-form" class="auth-form">
+          <label>Email</label>
+          <input type="email" id="login-email" required />
+          <label>Password</label>
+          <input type="password" id="login-password" required />
+          <button type="submit" class="btn-primary">Log In</button>
+          <p id="login-error" class="error-text"></p>
+          <a id="forgot-password-link" href="#" class="small-link">Forgot password?</a>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form id="signup-form" class="auth-form hidden">
+          <label>Email</label>
+          <input type="email" id="signup-email" required />
+          <label>Password</label>
+          <input type="password" id="signup-password" required />
+          <button type="submit" class="btn-primary">Create Account</button>
+          <p id="signup-error" class="error-text"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app-container" class="hidden">
+      <header class="app-header">
+        <div>
+          <h1 class="app-title">TradeBase</h1>
+          <p class="app-subtitle">Invoices, photos, referrals – all in one place.</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <button id="btn-logout" class="btn-outline">Log Out</button>
+        </div>
+      </header>
+
+      <!-- SCREEN CONTAINER -->
+      <main id="screen-container">
+        <!-- DASHBOARD / TILE GRID -->
+        <section id="screen-dashboard" class="screen active">
+          <div class="tile-grid">
+            <!-- FULL-WIDTH NEW INVOICE -->
+            <button class="tile tile-full" data-screen="new-invoice">
+              <div class="tile-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <div class="tile-text">
+                <h2>New Invoice</h2>
+                <p>Create a new invoice with photos & cost helper.</p>
+              </div>
+            </button>
+
+            <!-- ROW 1: Estimates, Clients, Photos -->
+            <button class="tile" data-screen="estimates">
+              <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+              <div class="tile-text">
+                <h3>Estimates</h3>
+                <p>Draft and track job estimates.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="clients">
+              <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
+              <div class="tile-text">
+                <h3>Clients</h3>
+                <p>Manage client info & history.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="photos">
+              <div class="tile-icon"><i class="fa-solid fa-camera"></i></div>
+              <div class="tile-text">
+                <h3>Photos</h3>
+                <p>Browse job photos by invoice.</p>
+              </div>
+            </button>
+
+            <!-- ROW 2: Invoices, Calculator, Settings -->
+            <button class="tile" data-screen="invoices">
+              <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
+              <div class="tile-text">
+                <h3>Invoices</h3>
+                <p>View and manage past invoices.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="calculator">
+              <div class="tile-icon"><i class="fa-solid fa-calculator"></i></div>
+              <div class="tile-text">
+                <h3>Cost Calculator</h3>
+                <p>Materials, hours, markup – done.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="settings">
+              <div class="tile-icon"><i class="fa-solid fa-gear"></i></div>
+              <div class="tile-text">
+                <h3>Settings</h3>
+                <p>Logo, business info, defaults.</p>
+              </div>
+            </button>
+
+            <!-- FULL-WIDTH REFERRALS -->
+            <button class="tile tile-full tile-referrals" data-screen="referrals">
+              <div class="tile-icon"><i class="fa-solid fa-badge-dollar"></i></div>
+              <div class="tile-text">
+                <h2>Referrals – Get 20% for Life</h2>
+                <p>Share your link. Get paid every month your referrals stay.</p>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <!-- NEW INVOICE SCREEN -->
+        <section id="screen-new-invoice" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>New Invoice</h2>
+          </div>
+          <form id="invoice-form" class="form">
+            <div class="form-row">
+              <label>Client</label>
+              <select id="invoice-client"></select>
+              <button type="button" id="btn-add-client-inline" class="btn-sm">Add client</button>
+            </div>
+
+            <div class="form-row">
+              <label>Invoice Date</label>
+              <input type="date" id="invoice-date" />
+            </div>
+
+            <div class="form-row">
+              <label>Invoice Notes</label>
+              <textarea id="invoice-notes" rows="3" placeholder="Optional notes for the client"></textarea>
+            </div>
+
+            <!-- LINE ITEMS -->
+            <h3>Line Items</h3>
+            <div id="line-items"></div>
+            <button type="button" id="btn-add-line-item" class="btn-outline-sm">
+              + Add Line Item
+            </button>
+
+            <!-- COST & MARKUP HELPER -->
+            <div class="helper-card">
+              <h3>Cost & Markup Helper (optional)</h3>
+              <div class="form-row-inline">
+                <div>
+                  <label>Materials Cost</label>
+                  <input type="number" id="helper-materials" min="0" step="0.01" />
+                </div>
+                <div>
+                  <label>Labor Hours</label>
+                  <input type="number" id="helper-hours" min="0" step="0.1" />
+                </div>
+              </div>
+              <div class="form-row-inline">
+                <div>
+                  <label>Hourly Rate</label>
+                  <input type="number" id="helper-rate" min="0" step="0.01" />
+                </div>
+                <div>
+                  <label>Markup %</label>
+                  <input type="number" id="helper-markup" min="0" step="1" />
+                </div>
+                <div>
+                  <label>Tax %</label>
+                  <input type="number" id="helper-tax" min="0" step="0.1" />
+                </div>
+              </div>
+              <button type="button" id="btn-helper-calc" class="btn-outline-sm">
+                Calculate Price
+              </button>
+              <div id="helper-results" class="helper-results hidden">
+                <p>Recommended total: <span id="helper-total"></span></p>
+                <p>Profit: <span id="helper-profit"></span> (<span id="helper-margin"></span>% margin)</p>
+                <button type="button" id="btn-helper-apply" class="btn-sm">
+                  Use this as invoice total
+                </button>
+              </div>
+            </div>
+
+            <!-- PHOTOS -->
+            <div class="form-row">
+              <label>Attach Photos</label>
+              <input type="file" id="invoice-photos" accept="image/*" multiple />
+              <div id="photo-preview" class="photo-preview"></div>
+            </div>
+
+            <!-- TOTALS DISPLAY -->
+            <div class="totals-box">
+              <div>
+                <span>Subtotal:</span>
+                <span id="display-subtotal">$0.00</span>
+              </div>
+              <div>
+                <span>Tax:</span>
+                <span id="display-tax">$0.00</span>
+              </div>
+              <div class="totals-main">
+                <span>Total:</span>
+                <span id="display-total">$0.00</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Invoice</button>
+            <p id="invoice-error" class="error-text"></p>
+          </form>
+        </section>
+
+        <!-- INVOICES LIST -->
+        <section id="screen-invoices" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Invoices</h2>
+          </div>
+          <div id="invoices-list" class="list"></div>
+        </section>
+
+        <!-- ESTIMATES -->
+        <section id="screen-estimates" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Estimates</h2>
+          </div>
+          <div id="estimates-list" class="list"></div>
+        </section>
+
+        <!-- CLIENTS -->
+        <section id="screen-clients" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Clients</h2>
+          </div>
+          <form id="client-form" class="form-inline">
+            <input type="text" id="client-name" placeholder="Client name" required />
+            <input type="text" id="client-phone" placeholder="Phone" />
+            <input type="email" id="client-email" placeholder="Email" />
+            <input type="text" id="client-address" placeholder="Address" />
+            <button type="submit" class="btn-sm">Add Client</button>
+          </form>
+          <div id="clients-list" class="list"></div>
+        </section>
+
+        <!-- PHOTOS -->
+        <section id="screen-photos" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Photos</h2>
+          </div>
+          <div id="photos-list" class="photo-list"></div>
+        </section>
+
+        <!-- CALCULATOR -->
+        <section id="screen-calculator" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Cost Calculator</h2>
+          </div>
+          <div class="helper-card">
+            <div class="form-row-inline">
+              <div>
+                <label>Materials Cost</label>
+                <input type="number" id="calc-materials" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>Labor Hours</label>
+                <input type="number" id="calc-hours" min="0" step="0.1" />
+              </div>
+            </div>
+            <div class="form-row-inline">
+              <div>
+                <label>Hourly Rate</label>
+                <input type="number" id="calc-rate" min="0" step="0.01" />
+              </div>
+              <div>
+                <label>Markup %</label>
+                <input type="number" id="calc-markup" min="0" step="1" />
+              </div>
+              <div>
+                <label>Tax %</label>
+                <input type="number" id="calc-tax" min="0" step="0.1" />
+              </div>
+            </div>
+            <button type="button" id="btn-calc-run" class="btn-primary">Calculate</button>
+            <div id="calc-results" class="helper-results hidden">
+              <p>Recommended total: <span id="calc-total"></span></p>
+              <p>Profit: <span id="calc-profit"></span> (<span id="calc-margin"></span>% margin)</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="screen-settings" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Settings & Business Info</h2>
+          </div>
+          <form id="settings-form" class="form">
+            <div class="form-row">
+              <label>Business Name</label>
+              <input type="text" id="business-name" />
+            </div>
+            <div class="form-row">
+              <label>Phone</label>
+              <input type="text" id="business-phone" />
+            </div>
+            <div class="form-row">
+              <label>Email</label>
+              <input type="email" id="business-email" />
+            </div>
+            <div class="form-row">
+              <label>Address</label>
+              <input type="text" id="business-address" />
+            </div>
+            <div class="form-row">
+              <label>Website</label>
+              <input type="text" id="business-website" />
+            </div>
+
+            <div class="form-row">
+              <label>Default Tax %</label>
+              <input type="number" id="business-tax" min="0" step="0.1" />
+            </div>
+            <div class="form-row">
+              <label>Default Markup %</label>
+              <input type="number" id="business-markup" min="0" step="1" />
+            </div>
+
+            <div class="form-row">
+              <label>Invoice Footer Text</label>
+              <textarea id="business-footer" rows="2"></textarea>
+            </div>
+
+            <div class="form-row">
+              <label>Upload Logo</label>
+              <input type="file" id="business-logo" accept="image/*" />
+              <div id="business-logo-preview" class="logo-preview"></div>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Settings</button>
+            <p id="settings-message" class="success-text"></p>
+          </form>
+        </section>
+
+        <!-- REFERRALS -->
+        <section id="screen-referrals" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Referrals – Get 20% for Life</h2>
+          </div>
+          <div class="referral-card">
+            <p>Share your link. Earn 20% of every monthly payment for everyone you bring in, for as long as they stay subscribed.</p>
+            <div class="form-row">
+              <label>Your referral link</label>
+              <div class="ref-link-row">
+                <input type="text" id="referral-link" readonly />
+                <button type="button" id="btn-copy-referral" class="btn-sm">Copy</button>
+              </div>
+            </div>
+            <div class="referral-stats">
+              <div>
+                <span>Active referrals</span>
+                <strong id="referral-count">0</strong>
+              </div>
+              <div>
+                <span>This month</span>
+                <strong id="referral-month">$0.00</strong>
+              </div>
+              <div>
+                <span>Lifetime earned</span>
+                <strong id="referral-lifetime">$0.00</strong>
+              </div>
+            </div>
+            <div id="referral-list" class="list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Supabase & Stripe SDKs -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
