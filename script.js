@@ -44,11 +44,19 @@ async function apiFetch(path, options = {}) {
     headers["Authorization"] = `Bearer ${session.access_token}`;
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
     ...options,
     headers,
   });
+
+  // Handle subscription required error
+  if (response.status === 402) {
+    showScreen("subscription");
+    throw new Error("Subscription required");
+  }
+
+  return response;
 }
 
 // AUTH UI
@@ -131,6 +139,8 @@ async function onLoggedIn() {
   document.getElementById("auth-container").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
   await loadInitialData();
+  await updateTrialBanner();
+  wireSubscriptionUI();
 }
 
 // DASHBOARD / NAV
@@ -167,10 +177,20 @@ async function loadInitialData() {
   await Promise.all([
     loadClients(),
     loadInvoices(),
-    loadEstimates(),
+    loadQuotes(),
     loadSettings(),
     loadReferralSummary(),
   ]);
+  
+  // Check for checkout success/cancel
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("checkout") === "success") {
+    showToast("Subscription activated! Welcome to TradeBase.");
+    window.history.replaceState({}, '', '/');
+  } else if (params.get("checkout") === "cancel") {
+    showToast("Checkout canceled. You can subscribe anytime!");
+    window.history.replaceState({}, '', '/');
+  }
 }
 
 // INVOICE UI
@@ -324,13 +344,13 @@ async function handleInvoiceSubmit(e) {
   const errorEl = document.getElementById("invoice-error");
   errorEl.textContent = "";
 
-  const clientId = document.getElementById("invoice-client").value;
+  const clientName = document.getElementById("invoice-client-name").value.trim();
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
   const items = getLineItemsFromUI();
 
-  if (!clientId) {
-    errorEl.textContent = "Select a client.";
+  if (!clientName) {
+    errorEl.textContent = "Enter a client name.";
     return;
   }
   if (!items.length) {
@@ -349,7 +369,8 @@ async function handleInvoiceSubmit(e) {
     const res = await apiFetch("/api/invoices", {
       method: "POST",
       body: JSON.stringify({
-        client_id: clientId,
+        client_id: null,
+        client_name: clientName,
         date,
         notes,
         subtotal,
@@ -485,9 +506,12 @@ async function loadClients() {
   const res = await apiFetch("/api/clients");
   const data = await res.json();
   const list = document.getElementById("clients-list");
-  const select = document.getElementById("invoice-client");
+  const invoiceDatalist = document.getElementById("client-datalist");
+  const quoteDatalist = document.getElementById("quote-client-datalist");
+  
   list.innerHTML = "";
-  select.innerHTML = `<option value="">Select client</option>`;
+  if (invoiceDatalist) invoiceDatalist.innerHTML = "";
+  if (quoteDatalist) quoteDatalist.innerHTML = "";
 
   (data || []).forEach((c) => {
     const item = document.createElement("div");
@@ -501,6 +525,18 @@ async function loadClients() {
       <div class="list-item-sub">${c.address || ""}</div>
     `;
     list.appendChild(item);
+    
+    // Add to datalists for invoice and quote forms
+    if (invoiceDatalist) {
+      const option = document.createElement("option");
+      option.value = c.name;
+      invoiceDatalist.appendChild(option);
+    }
+    if (quoteDatalist) {
+      const option = document.createElement("option");
+      option.value = c.name;
+      quoteDatalist.appendChild(option);
+    }
 
     const opt = document.createElement("option");
     opt.value = c.id;
@@ -542,28 +578,32 @@ async function loadInvoices() {
   });
 }
 
-async function loadEstimates() {
-  const res = await apiFetch("/api/estimates");
-  if (!res.ok) return;
-  const data = await res.json();
-  const list = document.getElementById("estimates-list");
-  list.innerHTML = "";
+async function loadQuotes() {
+  try {
+    const res = await apiFetch("/api/quotes");
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = document.getElementById("quotes-list");
+    list.innerHTML = "";
 
-  (data || []).forEach((est) => {
-    const item = document.createElement("div");
-    item.className = "list-item";
-    item.innerHTML = `
-      <div class="list-item-header">
-        <strong>Estimate #${est.number || est.id}</strong>
-        <span>${formatCurrency(est.total || 0)}</span>
-      </div>
-      <div class="list-item-sub">${est.client_name || ""}</div>
-      <div class="list-item-sub">
-        ${est.date || ""} • ${est.status || "draft"}
-      </div>
-    `;
-    list.appendChild(item);
-  });
+    (data || []).forEach((quote) => {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      item.innerHTML = `
+        <div class="list-item-header">
+          <strong>Quote #${quote.quote_number || quote.id.slice(0, 8)}</strong>
+          <span>${formatCurrency(quote.total || 0)}</span>
+        </div>
+        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
+        <div class="list-item-sub">
+          ${quote.status || "draft"}
+        </div>
+      `;
+      list.appendChild(item);
+    });
+  } catch (error) {
+    console.error("Error loading quotes:", error);
+  }
 }
 
 // SETTINGS & LOGO
@@ -890,5 +930,63 @@ async function downloadInvoice(invoice) {
   } catch (err) {
     console.error("Download error:", err);
     showToast("Failed to download invoice");
+  }
+}
+
+// SUBSCRIPTION & TRIAL BANNER
+
+async function updateTrialBanner() {
+  try {
+    const res = await apiFetch("/api/profile");
+    if (!res.ok) return;
+    const profile = await res.json();
+    if (!profile) return;
+
+    const banner = document.getElementById("trial-banner");
+    const bannerText = document.getElementById("trial-banner-text");
+
+    if (profile.subscription_status === "active") {
+      banner.classList.add("hidden");
+      return;
+    }
+
+    if (profile.trial_ends_at) {
+      const trialEnd = new Date(profile.trial_ends_at);
+      const now = new Date();
+      const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+
+      if (daysLeft > 0) {
+        banner.classList.remove("hidden");
+        bannerText.textContent = `Free trial: ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`;
+      } else {
+        banner.classList.add("hidden");
+      }
+    }
+  } catch (error) {
+    console.error("Error updating trial banner:", error);
+  }
+}
+
+function wireSubscriptionUI() {
+  const subscribeButtons = document.querySelectorAll(".btn-subscribe");
+  subscribeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const plan = btn.getAttribute("data-plan");
+      startCheckout(plan);
+    });
+  });
+
+  const subscribeNowBtn = document.getElementById("btn-subscribe-now");
+  if (subscribeNowBtn) {
+    subscribeNowBtn.addEventListener("click", () => {
+      showScreen("subscription");
+    });
+  }
+  
+  const newQuoteBtn = document.getElementById("btn-new-quote");
+  if (newQuoteBtn) {
+    newQuoteBtn.addEventListener("click", () => {
+      showScreen("new-quote");
+    });
   }
 }

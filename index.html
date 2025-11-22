@@ -46,10 +46,18 @@
 
     <!-- APP -->
     <div id="app-container" class="hidden">
+      <div id="trial-banner" class="trial-banner hidden">
+        <div class="trial-banner-content">
+          <i class="fa-solid fa-clock"></i>
+          <span id="trial-banner-text">Free trial: X days remaining</span>
+          <button id="btn-subscribe-now" class="btn-sm">Subscribe Now</button>
+        </div>
+      </div>
+      
       <header class="app-header">
         <div>
           <h1 class="app-title">TradeBase</h1>
-          <p class="app-subtitle">Invoices, estimates, photos & referrals in one place.</p>
+          <p class="app-subtitle">Invoices, quotes, photos & referrals in one place.</p>
         </div>
         <div class="header-actions">
           <button id="theme-toggle" class="icon-btn" title="Toggle theme">
@@ -73,11 +81,11 @@
             </button>
 
             <!-- ROW 1 -->
-            <button class="tile" data-screen="estimates">
+            <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
-                <h3>Estimates</h3>
-                <p>Draft and track job estimates.</p>
+                <h3>Quotes</h3>
+                <p>Draft and track job quotes.</p>
               </div>
             </button>
 
@@ -143,8 +151,9 @@
           <form id="invoice-form" class="form">
             <div class="form-row">
               <label>Client</label>
-              <select id="invoice-client"></select>
-              <button type="button" id="btn-add-client-inline" class="btn-sm">Add client</button>
+              <input type="text" id="invoice-client-name" placeholder="Type client name or select saved client" list="client-datalist" />
+              <datalist id="client-datalist"></datalist>
+              <button type="button" id="btn-add-client-inline" class="btn-sm">Save as new client</button>
             </div>
 
             <div class="form-row">
@@ -239,13 +248,88 @@
           <div id="invoices-list" class="list"></div>
         </section>
 
-        <!-- ESTIMATES -->
-        <section id="screen-estimates" class="screen">
+        <!-- QUOTES (formerly estimates) -->
+        <section id="screen-quotes" class="screen">
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Estimates</h2>
+            <h2>Quotes</h2>
+            <button class="btn-primary" id="btn-new-quote">+ New Quote</button>
           </div>
-          <div id="estimates-list" class="list"></div>
+          <div id="quotes-list" class="list"></div>
+        </section>
+
+        <!-- NEW QUOTE -->
+        <section id="screen-new-quote" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>New Quote</h2>
+          </div>
+
+          <form id="quote-form" class="form">
+            <div class="form-row">
+              <label>Client</label>
+              <input type="text" id="quote-client-name" placeholder="Type client name or select saved client" list="quote-client-datalist" />
+              <datalist id="quote-client-datalist"></datalist>
+            </div>
+
+            <div class="form-row">
+              <label>Quote Date</label>
+              <input type="date" id="quote-date" />
+            </div>
+
+            <div class="form-row">
+              <label>Quote Notes</label>
+              <textarea id="quote-notes" rows="3" placeholder="Optional notes for the client"></textarea>
+            </div>
+
+            <h3>Line Items</h3>
+            <div id="quote-line-items"></div>
+            <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm">
+              + Add Line Item
+            </button>
+
+            <div class="totals-box">
+              <div>
+                <span>Subtotal:</span>
+                <span id="quote-display-subtotal">$0.00</span>
+              </div>
+              <div>
+                <span>Tax:</span>
+                <span id="quote-display-tax">$0.00</span>
+              </div>
+              <div class="totals-main">
+                <span>Total:</span>
+                <span id="quote-display-total">$0.00</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Quote</button>
+            <p id="quote-error" class="error-text"></p>
+          </form>
+        </section>
+
+        <!-- SUBSCRIPTION / PRICING -->
+        <section id="screen-subscription" class="screen">
+          <div class="screen-header">
+            <h2>Choose Your Plan</h2>
+          </div>
+          <div class="pricing-grid">
+            <div class="pricing-card pricing-card-featured">
+              <h3>Monthly</h3>
+              <div class="price">$9.99<span>/month</span></div>
+              <p class="trial-notice">7-day free trial included!</p>
+              <ul class="features-list">
+                <li><i class="fa-solid fa-check"></i> Unlimited invoices</li>
+                <li><i class="fa-solid fa-check"></i> Unlimited quotes</li>
+                <li><i class="fa-solid fa-check"></i> Client management</li>
+                <li><i class="fa-solid fa-check"></i> Photo attachments</li>
+                <li><i class="fa-solid fa-check"></i> Business logo & branding</li>
+                <li><i class="fa-solid fa-check"></i> Cost calculator</li>
+                <li><i class="fa-solid fa-check"></i> Invoice download (PNG)</li>
+              </ul>
+              <button class="btn-primary btn-subscribe" data-plan="monthly">Start Free Trial</button>
+            </div>
+          </div>
         </section>
 
         <!-- CLIENTS -->

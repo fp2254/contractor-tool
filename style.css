@@ -606,3 +606,174 @@ body {
     margin-top: 60px;
   }
 }
+
+/* TRIAL BANNER */
+
+.trial-banner {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: var(--text-inverse);
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.trial-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.trial-banner i {
+  font-size: 18px;
+}
+
+.trial-banner-content span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.trial-banner .btn-sm {
+  background: var(--bg-alt);
+  color: var(--text);
+  border: none;
+}
+
+/* PRICING PAGE */
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.pricing-card {
+  background: var(--tile);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px var(--shadow);
+}
+
+.pricing-card-featured {
+  border-color: var(--accent);
+  box-shadow: 0 8px 30px var(--shadow-light);
+}
+
+.pricing-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.pricing-card .price {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.pricing-card .price span {
+  font-size: 16px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.trial-notice {
+  color: var(--success);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 24px 0;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px 0;
+  text-align: left;
+}
+
+.features-list li {
+  padding: 10px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.features-list i {
+  color: var(--success);
+  font-size: 16px;
+}
+
+.btn-subscribe {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* FIX TEXT BOX OVERFLOW */
+
+.form-row input[type="text"],
+.form-row input[type="email"],
+.form-row input[type="date"],
+.form-row input[type="number"],
+.form-row textarea,
+.form-row select {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.line-item input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-row-inline > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-row-inline > div input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* SUBSCRIPTION STATUS BADGE */
+
+.subscription-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.subscription-badge.trial {
+  background: var(--accent);
+  color: var(--text-inverse);
+}
+
+.subscription-badge.active {
+  background: var(--success);
+  color: var(--text-inverse);
+}
+
+.subscription-badge.expired {
+  background: var(--danger);
+  color: var(--text-inverse);
+}

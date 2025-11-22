@@ -76,12 +76,57 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// SMALL HELPER
+// SMALL HELPERS
 function makeReferralCode(userId) {
   if (userId) {
     return userId.replace(/-/g, "").slice(0, 10);
   }
   return Math.random().toString(36).slice(2, 10);
+}
+
+// CHECK SUBSCRIPTION STATUS
+async function hasActiveSubscription(userId) {
+  if (!userId) return false;
+  
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("subscription_status, trial_ends_at, subscription_ends_at")
+    .eq("id", userId)
+    .single();
+  
+  if (!profile) return false;
+  
+  // Check trial
+  if (profile.trial_ends_at) {
+    const trialEnd = new Date(profile.trial_ends_at);
+    if (trialEnd > new Date()) {
+      return true;
+    }
+  }
+  
+  // Check active subscription
+  if (profile.subscription_status === "active") {
+    if (!profile.subscription_ends_at) return true;
+    const subEnd = new Date(profile.subscription_ends_at);
+    if (subEnd > new Date()) return true;
+  }
+  
+  return false;
+}
+
+// SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
+async function requireSubscription(req, res, next) {
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated", needsAuth: true });
+  }
+  
+  const hasAccess = await hasActiveSubscription(userId);
+  if (!hasAccess) {
+    return res.status(402).json({ error: "Subscription required", needsSubscription: true });
+  }
+  
+  next();
 }
 
 // PROFILE ROUTES
@@ -108,6 +153,20 @@ app.post("/api/profile", async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const payload = { ...req.body, id: userId };
+  
+  // Set trial on first profile creation
+  const { data: existing } = await supabaseAdmin
+    .from("profiles")
+    .select("id, trial_ends_at")
+    .eq("id", userId)
+    .single();
+  
+  if (!existing || !existing.trial_ends_at) {
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 7);
+    payload.trial_ends_at = trialEnd.toISOString();
+    payload.subscription_status = "trial";
+  }
 
   const { data, error } = await supabaseAdmin
     .from("profiles")
@@ -146,7 +205,7 @@ app.post("/api/profile/logo", upload.single("logo"), async (req, res) => {
 
 // CLIENTS
 
-app.get("/api/clients", async (req, res) => {
+app.get("/api/clients", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
@@ -160,7 +219,7 @@ app.get("/api/clients", async (req, res) => {
   res.json(data);
 });
 
-app.post("/api/clients", async (req, res) => {
+app.post("/api/clients", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
@@ -178,7 +237,7 @@ app.post("/api/clients", async (req, res) => {
 
 // INVOICES
 
-app.get("/api/invoices", async (req, res) => {
+app.get("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
@@ -192,17 +251,18 @@ app.get("/api/invoices", async (req, res) => {
   res.json(data);
 });
 
-app.post("/api/invoices", async (req, res) => {
+app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, date, notes, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .insert({
       user_id: userId,
       client_id,
+      client_name,
       date,
       notes,
       subtotal,
@@ -234,7 +294,7 @@ app.post("/api/invoices", async (req, res) => {
   res.json({ id: inv.id });
 });
 
-app.get("/api/invoices/:id", async (req, res) => {
+app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
@@ -328,20 +388,112 @@ app.post(
   }
 );
 
-// ESTIMATES (simple v1)
+// QUOTES (formerly estimates)
 
-app.get("/api/estimates", async (req, res) => {
+app.get("/api/quotes", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
   const { data, error } = await supabaseAdmin
-    .from("estimates")
+    .from("quotes")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+app.post("/api/quotes", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { client_id, client_name, date, notes, subtotal, tax, total, items } = req.body;
+
+  const { data: quote, error: errQuote } = await supabaseAdmin
+    .from("quotes")
+    .insert({
+      user_id: userId,
+      client_id,
+      client_name,
+      quote_date: date,
+      subtotal,
+      tax,
+      total,
+      notes,
+      status: "draft",
+    })
+    .select()
+    .single();
+
+  if (errQuote) return res.status(500).json({ error: errQuote.message });
+
+  if (items && items.length) {
+    const itemRows = items.map((it) => ({
+      quote_id: quote.id,
+      description: it.description,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+      total: it.total,
+    }));
+
+    const { error: errItems } = await supabaseAdmin
+      .from("quote_items")
+      .insert(itemRows);
+
+    if (errItems) return res.status(500).json({ error: errItems.message });
+  }
+
+  res.json({ id: quote.id });
+});
+
+app.get("/api/quotes/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const quoteId = req.params.id;
+
+  const { data: quote, error: errQuote } = await supabaseAdmin
+    .from("quotes")
+    .select("*")
+    .eq("id", quoteId)
+    .single();
+
+  if (errQuote) {
+    if (errQuote.code === "PGRST116") {
+      return res.status(404).json({ error: "Quote not found" });
+    }
+    return res.status(500).json({ error: errQuote.message });
+  }
+
+  if (!quote || quote.user_id !== userId) {
+    return res.status(404).json({ error: "Quote not found" });
+  }
+
+  const { data: items, error: errItems } = await supabaseAdmin
+    .from("quote_items")
+    .select("*")
+    .eq("quote_id", quoteId)
+    .order("created_at", { ascending: true });
+
+  if (errItems) return res.status(500).json({ error: errItems.message });
+
+  let client = null;
+  if (quote.client_id) {
+    const { data: clientData } = await supabaseAdmin
+      .from("clients")
+      .select("*")
+      .eq("id", quote.client_id)
+      .eq("user_id", userId)
+      .single();
+    client = clientData;
+  }
+
+  res.json({
+    ...quote,
+    items: items || [],
+    client,
+  });
 });
 
 // REFERRALS SUMMARY
@@ -430,22 +582,148 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     const mode =
       plan === "monthly" || plan === "yearly" ? "subscription" : "payment";
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       mode,
       line_items: lineItems,
-      success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/billing`,
+      success_url: `${process.env.FRONTEND_URL}?checkout=success`,
+      cancel_url: `${process.env.FRONTEND_URL}?checkout=cancel`,
+      client_reference_id: userId,
       metadata: {
         user_id: userId,
         plan,
         addons: addons.join(","),
       },
-    });
+    };
+
+    // Add 7-day trial for monthly plan
+    if (plan === "monthly") {
+      sessionConfig.subscription_data = {
+        trial_period_days: 7,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     res.json({ sessionId: session.id });
   } catch (err) {
     console.error("Stripe checkout error:", err);
     res.status(500).json({ error: "Stripe checkout failed" });
+  }
+});
+
+// STRIPE WEBHOOK
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.warn("No STRIPE_WEBHOOK_SECRET configured");
+    return res.status(400).send("Webhook secret not configured");
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        const userId = session.client_reference_id || session.metadata?.user_id;
+        
+        if (userId && session.subscription) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              subscription_status: "active",
+              subscription_plan: session.metadata?.plan || "monthly",
+              stripe_customer_id: session.customer,
+              stripe_subscription_id: session.subscription,
+            })
+            .eq("id", userId);
+        }
+        break;
+      }
+
+      case "customer.subscription.updated":
+      case "customer.subscription.created": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          const status = subscription.status === "active" || subscription.status === "trialing" 
+            ? "active" 
+            : subscription.status;
+
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              subscription_status: status,
+              stripe_subscription_id: subscription.id,
+            })
+            .eq("id", profile.id);
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer;
+
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              subscription_status: "canceled",
+              subscription_ends_at: new Date().toISOString(),
+            })
+            .eq("id", profile.id);
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (profile) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              subscription_status: "past_due",
+            })
+            .eq("id", profile.id);
+        }
+        break;
+      }
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error("Webhook handler error:", error);
+    res.status(500).send("Webhook handler failed");
   }
 });
 
