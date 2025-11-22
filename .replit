@@ -4,3 +4,10 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_URL = "https://uafgyteczukkgmxfbeil.supabase.co"
+FRONTEND_URL = "https://1fda3655-6328-4da8-b0bb-f4d6953dbf13-00-23p8hfagt4ral.janeway.replit.dev"
+PORT = "5000"

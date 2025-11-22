@@ -10,12 +10,18 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // STATIC FRONTEND (serves index.html, script.js, etc.)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -377,6 +383,6 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
 
 // START
 
-app.listen(port, () => {
-  console.log(`TradeBase server running on port ${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`TradeBase server running on http://0.0.0.0:${port}`);
 });
