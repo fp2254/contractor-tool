@@ -983,7 +983,14 @@ function wireSubscriptionUI() {
   subscribeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const plan = btn.getAttribute("data-plan");
-      startCheckout(plan);
+      const addons = [];
+      
+      const stripeConnectCheckbox = document.getElementById("addon-stripe-connect");
+      if (stripeConnectCheckbox && stripeConnectCheckbox.checked) {
+        addons.push("connect_stripe");
+      }
+      
+      startCheckout(plan, addons);
     });
   });
 
@@ -999,6 +1006,32 @@ function wireSubscriptionUI() {
     newQuoteBtn.addEventListener("click", () => {
       showScreen("new-quote");
     });
+  }
+  
+  updateLifetimeEarlyCount();
+}
+
+async function updateLifetimeEarlyCount() {
+  try {
+    const res = await apiFetch("/api/profile/lifetime-count");
+    if (res.ok) {
+      const data = await res.json();
+      const remaining = Math.max(0, 500 - (data.count || 0));
+      const el = document.getElementById("lifetime-early-remaining");
+      if (el) {
+        el.textContent = remaining;
+        
+        const earlyBirdBtn = document.querySelector('[data-plan="lifetime_early"]');
+        if (remaining <= 0 && earlyBirdBtn) {
+          earlyBirdBtn.disabled = true;
+          earlyBirdBtn.textContent = "Sold Out";
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching lifetime count:", error);
+    const el = document.getElementById("lifetime-early-remaining");
+    if (el) el.textContent = "500";
   }
 }
 

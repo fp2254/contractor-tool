@@ -645,11 +645,17 @@ body {
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+@media (max-width: 900px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pricing-card {
@@ -659,6 +665,7 @@ body {
   padding: 32px 24px;
   text-align: center;
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .pricing-card:hover {
@@ -721,6 +728,103 @@ body {
   padding: 14px;
   font-size: 16px;
   font-weight: 600;
+}
+
+.badge-popular,
+.badge-limited {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.badge-popular {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.badge-limited {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+
+.addon-section {
+  max-width: 800px;
+  margin: 40px auto 20px;
+  padding: 0 20px;
+}
+
+.addon-section h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.addon-card {
+  background: var(--tile);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.addon-card:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--bg-alt);
+}
+
+.addon-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.addon-checkbox input[type="checkbox"] {
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.addon-details {
+  flex: 1;
+}
+
+.addon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.addon-header strong {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.addon-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.addon-description {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  text-align: left;
 }
 
 /* FIX TEXT BOX OVERFLOW */

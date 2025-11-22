@@ -203,6 +203,26 @@ app.post("/api/profile/logo", upload.single("logo"), async (req, res) => {
   res.json({ logo_url: publicUrl });
 });
 
+// GET LIFETIME EARLY BIRD COUNT
+app.get("/api/profile/lifetime-count", async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact" })
+      .eq("subscription_plan", "lifetime_early");
+
+    if (error) {
+      console.error("Error counting lifetime early:", error);
+      return res.json({ count: 0 });
+    }
+
+    res.json({ count: data?.length || 0 });
+  } catch (err) {
+    console.error("Error in lifetime count:", err);
+    res.json({ count: 0 });
+  }
+});
+
 // CLIENTS
 
 app.get("/api/clients", requireSubscription, async (req, res) => {

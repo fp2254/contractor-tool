@@ -314,7 +314,8 @@
             <h2>Choose Your Plan</h2>
           </div>
           <div class="pricing-grid">
-            <div class="pricing-card pricing-card-featured">
+            <!-- Monthly Plan -->
+            <div class="pricing-card">
               <h3>Monthly</h3>
               <div class="price">$9.99<span>/month</span></div>
               <p class="trial-notice">7-day free trial included!</p>
@@ -328,6 +329,71 @@
                 <li><i class="fa-solid fa-check"></i> Invoice download (PNG)</li>
               </ul>
               <button class="btn-primary btn-subscribe" data-plan="monthly">Start Free Trial</button>
+            </div>
+
+            <!-- Yearly Plan -->
+            <div class="pricing-card pricing-card-featured">
+              <div class="badge-popular">BEST VALUE</div>
+              <h3>Yearly</h3>
+              <div class="price">$99<span>/year</span></div>
+              <p class="trial-notice">Save $20/year · 2 months free!</p>
+              <ul class="features-list">
+                <li><i class="fa-solid fa-check"></i> Unlimited invoices</li>
+                <li><i class="fa-solid fa-check"></i> Unlimited quotes</li>
+                <li><i class="fa-solid fa-check"></i> Client management</li>
+                <li><i class="fa-solid fa-check"></i> Photo attachments</li>
+                <li><i class="fa-solid fa-check"></i> Business logo & branding</li>
+                <li><i class="fa-solid fa-check"></i> Cost calculator</li>
+                <li><i class="fa-solid fa-check"></i> Invoice download (PNG)</li>
+              </ul>
+              <button class="btn-primary btn-subscribe" data-plan="yearly">Subscribe Now</button>
+            </div>
+
+            <!-- Lifetime Early Bird -->
+            <div class="pricing-card">
+              <div class="badge-limited">LIMITED OFFER</div>
+              <h3>Lifetime Early Bird</h3>
+              <div class="price">$149<span>one-time</span></div>
+              <p class="trial-notice">First 500 only · <span id="lifetime-early-remaining">Loading...</span> spots left</p>
+              <ul class="features-list">
+                <li><i class="fa-solid fa-check"></i> All features forever</li>
+                <li><i class="fa-solid fa-check"></i> No monthly fees</li>
+                <li><i class="fa-solid fa-check"></i> Priority support</li>
+                <li><i class="fa-solid fa-check"></i> Lifetime updates</li>
+                <li><i class="fa-solid fa-check"></i> Early access to new features</li>
+              </ul>
+              <button class="btn-primary btn-subscribe" data-plan="lifetime_early">Get Lifetime Access</button>
+            </div>
+
+            <!-- Lifetime Regular -->
+            <div class="pricing-card">
+              <h3>Lifetime Regular</h3>
+              <div class="price">$199<span>one-time</span></div>
+              <p class="trial-notice">After early bird spots filled</p>
+              <ul class="features-list">
+                <li><i class="fa-solid fa-check"></i> All features forever</li>
+                <li><i class="fa-solid fa-check"></i> No monthly fees</li>
+                <li><i class="fa-solid fa-check"></i> Priority support</li>
+                <li><i class="fa-solid fa-check"></i> Lifetime updates</li>
+              </ul>
+              <button class="btn-primary btn-subscribe" data-plan="lifetime_regular">Get Lifetime Access</button>
+            </div>
+          </div>
+
+          <!-- Stripe Connect Add-on -->
+          <div class="addon-section">
+            <h3>Add Payment Collection</h3>
+            <div class="addon-card">
+              <label class="addon-checkbox">
+                <input type="checkbox" id="addon-stripe-connect" value="connect_stripe">
+                <div class="addon-details">
+                  <div class="addon-header">
+                    <strong>Stripe Connect Integration</strong>
+                    <span class="addon-price">+$4/month</span>
+                  </div>
+                  <p class="addon-description">Connect your Stripe account to collect payments directly from invoices sent to your clients</p>
+                </div>
+              </label>
             </div>
           </div>
         </section>
