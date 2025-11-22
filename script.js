@@ -110,7 +110,119 @@ const DEMO_DATA = {
     monthly_earnings_cents: 1598,
     lifetime_earnings_cents: 4794,
     referrals: []
-  }
+  },
+  inventory: [
+    {
+      id: 1,
+      name: "PVC Pipe 2\"",
+      description: "Standard 2-inch PVC pipe for plumbing",
+      quantity: 45,
+      unit_price: 3.50,
+      category: "Plumbing Supplies",
+      unit_type: "linft",
+      low_stock_threshold: 50,
+      created_at: "2025-11-01T10:00:00Z"
+    },
+    {
+      id: 2,
+      name: "Copper Fittings Assorted",
+      description: "1/2\" and 3/4\" elbows, tees, couplings",
+      quantity: 8,
+      unit_price: 12.00,
+      category: "Plumbing Supplies",
+      unit_type: "box",
+      low_stock_threshold: 10,
+      created_at: "2025-11-02T10:00:00Z"
+    },
+    {
+      id: 3,
+      name: "Water Heater 50gal",
+      description: "Standard 50-gallon residential water heater",
+      quantity: 2,
+      unit_price: 550.00,
+      category: "Major Appliances",
+      unit_type: "each",
+      low_stock_threshold: 3,
+      created_at: "2025-11-03T10:00:00Z"
+    },
+    {
+      id: 4,
+      name: "Teflon Tape",
+      description: "Thread seal tape for pipe fittings",
+      quantity: 24,
+      unit_price: 0.75,
+      category: "Small Parts",
+      unit_type: "roll",
+      low_stock_threshold: 15,
+      created_at: "2025-11-04T10:00:00Z"
+    },
+    {
+      id: 5,
+      name: "Drain Cleaner Pro",
+      description: "Heavy-duty enzymatic drain cleaner",
+      quantity: 6,
+      unit_price: 18.50,
+      category: "Chemicals",
+      unit_type: "gallon",
+      low_stock_threshold: 12,
+      created_at: "2025-11-05T10:00:00Z"
+    },
+    {
+      id: 6,
+      name: "Sink Strainer Baskets",
+      description: "Stainless steel kitchen sink strainers",
+      quantity: 15,
+      unit_price: 8.25,
+      category: "Kitchen Parts",
+      unit_type: "each",
+      low_stock_threshold: 5,
+      created_at: "2025-11-06T10:00:00Z"
+    },
+    {
+      id: 7,
+      name: "Flexible Supply Lines",
+      description: "Braided stainless steel water supply lines",
+      quantity: 32,
+      unit_price: 6.00,
+      category: "Plumbing Supplies",
+      unit_type: "each",
+      low_stock_threshold: 20,
+      created_at: "2025-11-07T10:00:00Z"
+    },
+    {
+      id: 8,
+      name: "Solder Wire 95/5",
+      description: "Lead-free solder for copper fittings",
+      quantity: 3,
+      unit_price: 22.00,
+      category: "Tools & Materials",
+      unit_type: "lb",
+      low_stock_threshold: 5,
+      created_at: "2025-11-08T10:00:00Z"
+    },
+    {
+      id: 9,
+      name: "Toilet Wax Rings",
+      description: "Standard toilet wax ring seals with bolts",
+      quantity: 18,
+      unit_price: 3.25,
+      category: "Bathroom Parts",
+      unit_type: "each",
+      low_stock_threshold: 10,
+      created_at: "2025-11-09T10:00:00Z"
+    },
+    {
+      id: 10,
+      name: "Pipe Insulation Foam",
+      description: "3/4\" foam pipe insulation tubes",
+      quantity: 28,
+      unit_price: 2.50,
+      category: "Insulation",
+      unit_type: "linft",
+      low_stock_threshold: 25,
+      created_at: "2025-11-10T10:00:00Z"
+    }
+  ]
 };
 
 // BASIC REF PARSING (store ?ref= in localStorage for future)
@@ -2191,6 +2303,11 @@ function wireInventoryUI() {
 }
 
 async function loadInventory() {
+  if (tourMode) {
+    renderInventoryList(DEMO_DATA.inventory);
+    return;
+  }
+  
   try {
     const res = await apiFetch("/api/inventory");
     if (!res.ok) {
@@ -2216,6 +2333,7 @@ function renderInventoryList(items) {
     emptyState.style.display = "block";
     totalValueEl.textContent = "$0.00";
     itemCountEl.textContent = "0";
+    updateCategoryDatalist([]);
     return;
   }
 
@@ -2223,6 +2341,8 @@ function renderInventoryList(items) {
 
   let totalValue = 0;
   listContainer.innerHTML = "";
+  
+  updateCategoryDatalist(items);
 
   items.forEach((item) => {
     const quantity = parseFloat(item.quantity) || 0;
@@ -2241,18 +2361,18 @@ function renderInventoryList(items) {
         <div style="flex: 1;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <strong style="font-size: 16px;">${item.name || "Unnamed Item"}</strong>
-            ${isLowStock ? '<span class="badge badge-danger" style="font-size: 11px;">⚠️ Low Stock</span>' : '<span class="badge badge-success" style="font-size: 11px;">✓ In Stock</span>'}
+            ${item.category ? `<span class="badge" style="background: var(--primary); color: white; font-size: 11px; padding: 2px 8px; border-radius: 12px;"><i class="fa-solid fa-tag"></i> ${item.category}</span>` : ""}
           </div>
           ${item.description ? `<p style="color: var(--muted); margin: 4px 0; font-size: 14px;">${item.description}</p>` : ""}
-          <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 14px; color: var(--muted);">
-            ${item.category ? `<span><i class="fa-solid fa-tag"></i> ${item.category}</span>` : ""}
-            <span><i class="fa-solid fa-box"></i> ${quantity} ${item.unit_type || "each"}</span>
+          <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: var(--muted);">
             <span><i class="fa-solid fa-dollar-sign"></i> ${formatCurrency(unitPrice)} / ${item.unit_type || "each"}</span>
+            ${itemValue > 0 ? `<span>Value: ${formatCurrency(itemValue)}</span>` : ""}
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="font-size: 20px; font-weight: bold; color: var(--primary);">${formatCurrency(itemValue)}</div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Total Value</div>
+          <div style="font-size: 24px; font-weight: bold; color: var(--primary);">${quantity}</div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">${item.unit_type || "each"}</div>
+          ${isLowStock ? '<div style="margin-top: 6px;"><span class="badge badge-danger" style="font-size: 11px;">⚠️ Low Stock</span></div>' : '<div style="margin-top: 6px;"><span class="badge badge-success" style="font-size: 11px;">✓ In Stock</span></div>'}
         </div>
       </div>
     `;
@@ -2358,4 +2478,23 @@ async function handleInventoryDelete() {
     console.error("Error deleting inventory item:", err);
     showToast("Failed to delete item");
   }
+}
+
+function updateCategoryDatalist(items) {
+  const datalist = document.getElementById("inventory-category-datalist");
+  if (!datalist) return;
+
+  const categories = new Set();
+  items.forEach(item => {
+    if (item.category && item.category.trim()) {
+      categories.add(item.category.trim());
+    }
+  });
+
+  datalist.innerHTML = "";
+  Array.from(categories).sort().forEach(category => {
+    const option = document.createElement("option");
+    option.value = category;
+    datalist.appendChild(option);
+  });
 }

@@ -848,17 +848,8 @@
 
             <div class="form-row">
               <label>Category</label>
-              <select id="inventory-category">
-                <option value="">Select category...</option>
-                <option value="Materials">Materials</option>
-                <option value="Tools">Tools</option>
-                <option value="Electrical">Electrical</option>
-                <option value="Plumbing">Plumbing</option>
-                <option value="Hardware">Hardware</option>
-                <option value="Paint">Paint & Supplies</option>
-                <option value="Safety">Safety Equipment</option>
-                <option value="Other">Other</option>
-              </select>
+              <input type="text" id="inventory-category" placeholder="Type a category or choose from your existing ones" list="inventory-category-datalist" />
+              <datalist id="inventory-category-datalist"></datalist>
             </div>
 
             <div class="form-row">
