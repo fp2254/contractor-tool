@@ -71,13 +71,24 @@ Storage buckets:
 - `invoice-photos` - Job photo attachments
 
 ## Recent Changes
-- **2025-11-22 (Latest)**: Subscription paywall, Quotes, and UX improvements
+- **2025-11-22 (Latest)**: Multi-tier subscription pricing with lifetime options and Stripe Connect add-on
+  - **Multi-Tier Pricing**: Added 4 subscription options displayed on pricing page
+    - Monthly: $9.99/mo with 7-day free trial
+    - Yearly: $99/yr (save 17%)
+    - Lifetime Early Bird: $149 one-time (limited to first 500 users)
+    - Lifetime Regular: $199 one-time (after 500 early bird sales)
+  - **Lifetime Early Bird Counter**: API endpoint tracks purchases and auto-switches to regular pricing after 500 sales
+  - **Stripe Connect Add-on**: Optional $4/mo payment collection feature (available for Monthly/Yearly plans only)
+  - Responsive pricing grid with badges (BEST VALUE, LIMITED OFFER)
+  - Server-side validation blocks Stripe Connect add-on for lifetime plans (subscription vs payment mode)
+  - Clear UI messaging: "Available for Monthly and Yearly plans only" for add-on section
+  - 
+  - **Previous**: Subscription paywall, Quotes, and UX improvements
   - **Subscription System**: Added 7-day free trial that auto-converts to $9.99/month subscription
   - Trial countdown banner shows days remaining in dashboard
   - Subscription middleware protects invoices, clients, and quotes routes (returns 402 for expired access)
   - Stripe checkout integration with trial_period_days parameter
   - Stripe webhook endpoint (`/api/stripe/webhook`) handles subscription events
-  - Pricing/subscription page UI with plan selection and trial information
   - 
   - **Quotes (renamed from Estimates)**: Full functionality matching invoices
   - Create quotes with line items, client info, date, and notes
