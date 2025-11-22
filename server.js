@@ -215,6 +215,55 @@ app.post("/api/invoices", async (req, res) => {
   res.json({ id: inv.id });
 });
 
+app.get("/api/invoices/:id", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const invoiceId = req.params.id;
+
+  const { data: invoice, error: errInv } = await supabaseAdmin
+    .from("invoices")
+    .select("*")
+    .eq("id", invoiceId)
+    .eq("user_id", userId)
+    .single();
+
+  if (errInv) {
+    if (errInv.code === "PGRST116") {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    return res.status(500).json({ error: errInv.message });
+  }
+
+  if (!invoice || invoice.user_id !== userId) {
+    return res.status(404).json({ error: "Invoice not found" });
+  }
+
+  const { data: items, error: errItems } = await supabaseAdmin
+    .from("invoice_items")
+    .select("*")
+    .eq("invoice_id", invoiceId);
+
+  if (errItems) return res.status(500).json({ error: errItems.message });
+
+  let client = null;
+  if (invoice.client_id) {
+    const { data: clientData, error: errClient } = await supabaseAdmin
+      .from("clients")
+      .select("*")
+      .eq("id", invoice.client_id)
+      .eq("user_id", userId)
+      .single();
+
+    if (errClient && errClient.code !== "PGRST116") {
+      return res.status(500).json({ error: errClient.message });
+    }
+    client = clientData;
+  }
+
+  res.json({ ...invoice, items: items || [], client: client || null });
+});
+
 // INVOICE PHOTOS
 
 app.post(

@@ -529,6 +529,14 @@ async function loadInvoices() {
         ${inv.date || ""} • ${inv.status || "draft"}
       </div>
     `;
+    
+    const downloadBtn = document.createElement("button");
+    downloadBtn.className = "btn-sm";
+    downloadBtn.textContent = "Download";
+    downloadBtn.style.marginTop = "8px";
+    downloadBtn.onclick = () => downloadInvoice(inv);
+    item.appendChild(downloadBtn);
+    
     list.appendChild(item);
   });
 }
@@ -777,5 +785,109 @@ function updateThemeIcon(theme) {
     } else {
       icon.className = "fa-solid fa-moon";
     }
+  }
+}
+
+// INVOICE DOWNLOAD
+
+async function downloadInvoice(invoice) {
+  try {
+    if (typeof html2canvas === 'undefined') {
+      showToast("Download feature loading, please try again in a moment");
+      return;
+    }
+    
+    showToast("Generating invoice...");
+    
+    const [invoiceRes, profileRes] = await Promise.all([
+      apiFetch(`/api/invoices/${invoice.id}`),
+      apiFetch("/api/profile")
+    ]);
+    
+    const invoiceData = await invoiceRes.json();
+    const profile = await profileRes.json();
+    
+    const template = document.getElementById("invoice-template");
+    const logo = document.getElementById("invoice-logo");
+    const businessInfo = document.getElementById("invoice-business-info");
+    const clientInfo = document.getElementById("invoice-client-info");
+    const details = document.getElementById("invoice-details");
+    const itemsBody = document.getElementById("invoice-items-body");
+    const totals = document.getElementById("invoice-totals");
+    const footer = document.getElementById("invoice-footer");
+    
+    if (profile && profile.logo_url) {
+      logo.src = profile.logo_url;
+      logo.style.display = "block";
+    } else {
+      logo.style.display = "none";
+    }
+    
+    businessInfo.innerHTML = (profile && profile.business_name) ? `
+      <strong>${profile.business_name || ""}</strong><br>
+      ${profile.phone || ""}<br>
+      ${profile.email || ""}<br>
+      ${profile.address || ""}
+    ` : "";
+    
+    clientInfo.innerHTML = invoiceData.client ? `
+      <strong>Bill To:</strong><br>
+      ${invoiceData.client.name}<br>
+      ${invoiceData.client.phone || ""}<br>
+      ${invoiceData.client.email || ""}<br>
+      ${invoiceData.client.address || ""}
+    ` : "";
+    
+    details.innerHTML = `
+      <strong>Invoice #:</strong> ${invoiceData.number || invoiceData.id}<br>
+      <strong>Date:</strong> ${invoiceData.date || new Date().toLocaleDateString()}<br>
+      <strong>Status:</strong> ${invoiceData.status || "draft"}<br>
+      ${invoiceData.notes ? `<br><strong>Notes:</strong> ${invoiceData.notes}` : ""}
+    `;
+    
+    itemsBody.innerHTML = "";
+    (invoiceData.items || []).forEach((item) => {
+      const row = document.createElement("tr");
+      row.style.borderBottom = "1px solid #ddd";
+      row.innerHTML = `
+        <td style="padding: 10px; color: #000 !important;">${item.description}</td>
+        <td style="padding: 10px; text-align: center; color: #000 !important;">${item.qty}</td>
+        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.unit_price)}</td>
+        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.line_total)}</td>
+      `;
+      itemsBody.appendChild(row);
+    });
+    
+    totals.innerHTML = `
+      <div style="margin-bottom: 5px;"><strong>Subtotal:</strong> ${formatCurrency(invoiceData.subtotal || 0)}</div>
+      <div style="margin-bottom: 5px;"><strong>Tax:</strong> ${formatCurrency(invoiceData.tax || 0)}</div>
+      <div style="font-size: 16px; margin-top: 10px;"><strong>Total:</strong> ${formatCurrency(invoiceData.total || 0)}</div>
+    `;
+    
+    footer.innerHTML = (profile && profile.invoice_footer) ? profile.invoice_footer : "";
+    
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    template.style.left = "-9999px";
+    
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invoiceData.number || invoiceData.id}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Invoice downloaded!");
+    });
+    
+  } catch (err) {
+    console.error("Download error:", err);
+    showToast("Failed to download invoice");
   }
 }
