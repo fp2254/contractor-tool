@@ -673,11 +673,18 @@ function viewDemoQuoteDetail(quote) {
     </div>
     
     <div class="detail-actions">
+      <button class="btn-sm" id="share-demo-quote-btn">
+        <i class="fa-solid fa-share-nodes"></i> Send Quote
+      </button>
       <button class="btn-sm" onclick="showScreen('quotes')">
         <i class="fa-solid fa-arrow-left"></i> Back to List
       </button>
     </div>
   `;
+  
+  setTimeout(() => {
+    document.getElementById('share-demo-quote-btn')?.addEventListener('click', () => shareQuote(quote));
+  }, 0);
   
   showScreen('quote-detail');
 }
@@ -1484,6 +1491,9 @@ async function viewQuoteDetail(quoteId) {
       </div>
       
       <div class="detail-actions">
+        <button class="btn-sm" id="share-quote-btn-${quote.id}">
+          <i class="fa-solid fa-share-nodes"></i> Send Quote
+        </button>
         <button class="btn-sm" onclick="downloadQuote({id: '${quote.id}'})">
           <i class="fa-solid fa-download"></i> Download PDF
         </button>
@@ -1492,6 +1502,8 @@ async function viewQuoteDetail(quoteId) {
         </button>
       </div>
     `;
+    
+    document.getElementById(`share-quote-btn-${quote.id}`)?.addEventListener('click', () => shareQuote(quote));
     
     showScreen('quote-detail');
   } catch (error) {
@@ -2269,6 +2281,53 @@ async function downloadQuote(quote) {
   } catch (err) {
     console.error("Download error:", err);
     showToast("Failed to download quote");
+  }
+}
+
+async function shareQuote(quote) {
+  try {
+    const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'N/A');
+    const clientName = quote.client_name || (quote.client ? quote.client.name : 'N/A');
+    const quoteDate = quote.quote_date || new Date().toLocaleDateString();
+    const total = formatCurrency(quote.total || 0);
+    
+    const itemsList = (quote.items || []).map(item => 
+      `• ${item.description} - Qty: ${item.quantity} - ${formatCurrency(item.total || 0)}`
+    ).join('\n');
+    
+    const shareText = `📋 Quote #${quoteNumber}
+
+Client: ${clientName}
+Date: ${quoteDate}
+${quote.notes ? `Notes: ${quote.notes}\n` : ''}
+Items:
+${itemsList}
+
+Total: ${total}
+
+Generated with TradeBase`;
+    
+    if (navigator.share) {
+      await navigator.share({
+        title: `Quote #${quoteNumber}`,
+        text: shareText
+      });
+      showToast("Quote shared!");
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      showToast("Quote copied to clipboard!");
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error("Share error:", err);
+      try {
+        const fallbackText = `Quote #${quote.quote_number || 'N/A'} for ${quote.client_name || 'N/A'} - Total: ${formatCurrency(quote.total || 0)}`;
+        await navigator.clipboard.writeText(fallbackText);
+        showToast("Quote summary copied to clipboard!");
+      } catch (clipErr) {
+        showToast("Failed to share quote");
+      }
+    }
   }
 }
 
