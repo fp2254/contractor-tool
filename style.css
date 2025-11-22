@@ -4,11 +4,32 @@
   --tile: #181825;
   --tile-hover: #232338;
   --text: #f5f5f5;
+  --text-inverse: #ffffff;
   --muted: #a1a1b5;
   --accent: #4f8cff;
+  --accent-dark: #7c5cff;
   --danger: #ff4f6a;
   --success: #3dd68c;
   --border: #2b2b3a;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --shadow-light: rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="light"] {
+  --bg: #f8f9fa;
+  --bg-alt: #ffffff;
+  --tile: #ffffff;
+  --tile-hover: #f0f1f3;
+  --text: #1a1a1a;
+  --text-inverse: #ffffff;
+  --muted: #6b7280;
+  --accent: #3b82f6;
+  --accent-dark: #6366f1;
+  --danger: #dc2626;
+  --success: #059669;
+  --border: #e5e7eb;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-light: rgba(0, 0, 0, 0.05);
 }
 
 *,
@@ -50,7 +71,7 @@ body {
   border-radius: 18px;
   padding: 24px 20px 28px;
   border: 1px solid var(--border);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 18px 40px var(--shadow);
 }
 
 .app-title {
@@ -67,7 +88,7 @@ body {
 
 .auth-toggle {
   display: flex;
-  background: #090912;
+  background: var(--bg);
   padding: 3px;
   border-radius: 999px;
   margin-bottom: 16px;
@@ -101,7 +122,7 @@ body {
   padding: 9px 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #05050a;
+  background: var(--bg);
   color: var(--text);
   font-size: 14px;
   margin-bottom: 10px;
@@ -112,8 +133,8 @@ body {
   padding: 10px 0;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, #4f8cff, #7c5cff);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: var(--text-inverse);
   font-size: 14px;
   font-weight: 600;
   margin-top: 4px;
@@ -140,7 +161,7 @@ body {
   border-radius: 999px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
   padding: 6px 14px;
   font-size: 12px;
   cursor: pointer;
@@ -174,10 +195,11 @@ body {
   align-items: center;
   padding: 14px 14px 8px;
   border-bottom: 1px solid var(--border);
-  background: rgba(5, 5, 12, 0.98);
+  background: var(--bg-alt);
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(10px);
 }
 
 .header-actions {
@@ -228,7 +250,7 @@ body {
 .btn-back {
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: #05050a;
+  background: var(--bg);
   color: var(--muted);
   font-size: 12px;
   padding: 4px 10px;
@@ -263,7 +285,8 @@ body {
 }
 
 .tile-referrals {
-  background: linear-gradient(135deg, #1e253b, #272042);
+  background: var(--tile);
+  border: 2px solid var(--accent);
 }
 
 .tile:hover {
@@ -316,7 +339,7 @@ body {
   padding: 8px 9px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #05050a;
+  background: var(--bg);
   color: var(--text);
   font-size: 13px;
 }
@@ -347,7 +370,7 @@ body {
   margin-top: 12px;
   padding: 10px;
   border-radius: 12px;
-  background: #0c0c16;
+  background: var(--bg);
   border: 1px dashed var(--border);
 }
 
@@ -367,7 +390,7 @@ body {
   border-radius: 10px;
   border: 1px solid var(--border);
   padding: 8px;
-  background: #05050d;
+  background: var(--bg);
   margin-bottom: 8px;
 }
 
@@ -386,7 +409,7 @@ body {
 .btn-remove-line {
   border-radius: 999px;
   border: none;
-  background: #201016;
+  background: var(--tile);
   color: var(--danger);
   width: 24px;
   height: 24px;
@@ -399,7 +422,7 @@ body {
   border-radius: 10px;
   border: 1px solid var(--border);
   padding: 8px 10px;
-  background: #05050d;
+  background: var(--bg);
   font-size: 13px;
   margin: 10px 0;
 }
@@ -499,7 +522,7 @@ body {
   padding: 7px 8px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #05050a;
+  background: var(--bg);
   color: var(--text);
   font-size: 12px;
 }
@@ -526,13 +549,13 @@ body {
   bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background: #101018;
+  background: var(--bg-alt);
   border-radius: 999px;
   padding: 8px 14px;
   border: 1px solid var(--border);
   font-size: 12px;
   color: var(--text);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 10px 30px var(--shadow-light);
   z-index: 999;
 }
 

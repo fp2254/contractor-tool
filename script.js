@@ -16,6 +16,7 @@ let toastTimeout = null;
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
+  loadTheme();
   wireAuthUI();
   wireDashboardUI();
   wireInvoiceUI();
@@ -148,9 +149,7 @@ function wireDashboardUI() {
     });
   });
 
-  document.getElementById("theme-toggle").addEventListener("click", () => {
-    showToast("Dark mode only in v1.");
-  });
+  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 }
 
 function showScreen(screenId) {
@@ -737,4 +736,46 @@ function showToast(message) {
   toastTimeout = setTimeout(() => {
     t.remove();
   }, 2600);
+}
+
+// THEME TOGGLE
+
+function loadTheme() {
+  const savedTheme = localStorage.getItem("tb_theme") || "dark";
+  const root = document.documentElement;
+  
+  if (savedTheme === "light") {
+    root.setAttribute("data-theme", "light");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+  
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const currentTheme = root.getAttribute("data-theme");
+  const newTheme = currentTheme === "light" ? "dark" : "light";
+  
+  if (newTheme === "light") {
+    root.setAttribute("data-theme", "light");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+  
+  localStorage.setItem("tb_theme", newTheme);
+  updateThemeIcon(newTheme);
+  showToast(`Switched to ${newTheme} mode`);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.querySelector("#theme-toggle i");
+  if (icon) {
+    if (theme === "light") {
+      icon.className = "fa-solid fa-sun";
+    } else {
+      icon.className = "fa-solid fa-moon";
+    }
+  }
 }
