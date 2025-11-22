@@ -985,8 +985,10 @@ function wireSubscriptionUI() {
       const plan = btn.getAttribute("data-plan");
       const addons = [];
       
+      const isLifetimePlan = plan === "lifetime_early" || plan === "lifetime_regular";
+      
       const stripeConnectCheckbox = document.getElementById("addon-stripe-connect");
-      if (stripeConnectCheckbox && stripeConnectCheckbox.checked) {
+      if (!isLifetimePlan && stripeConnectCheckbox && stripeConnectCheckbox.checked) {
         addons.push("connect_stripe");
       }
       

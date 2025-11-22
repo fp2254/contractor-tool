@@ -206,9 +206,9 @@ app.post("/api/profile/logo", upload.single("logo"), async (req, res) => {
 // GET LIFETIME EARLY BIRD COUNT
 app.get("/api/profile/lifetime-count", async (req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
+    const { count, error } = await supabaseAdmin
       .from("profiles")
-      .select("id", { count: "exact" })
+      .select("*", { count: "exact", head: true })
       .eq("subscription_plan", "lifetime_early");
 
     if (error) {
@@ -216,7 +216,7 @@ app.get("/api/profile/lifetime-count", async (req, res) => {
       return res.json({ count: 0 });
     }
 
-    res.json({ count: data?.length || 0 });
+    res.json({ count: count || 0 });
   } catch (err) {
     console.error("Error in lifetime count:", err);
     res.json({ count: 0 });
@@ -589,13 +589,30 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-    const { plan, addons = [] } = req.body;
+    let { plan, addons = [] } = req.body;
+    
+    if (plan === "lifetime_early") {
+      const { count } = await supabaseAdmin
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("subscription_plan", "lifetime_early");
+      
+      if (count >= 500) {
+        plan = "lifetime_regular";
+      }
+    }
+    
     const mainPrice = PLAN_PRICE_IDS[plan];
     if (!mainPrice) return res.status(400).json({ error: "Invalid plan" });
 
     const lineItems = [{ price: mainPrice, quantity: 1 }];
-
+    
+    const isLifetime = plan === "lifetime_early" || plan === "lifetime_regular";
+    
     for (const code of addons) {
+      if (isLifetime && code === "connect_stripe") {
+        continue;
+      }
       const addonPrice = ADDON_PRICE_IDS[code];
       if (addonPrice) lineItems.push({ price: addonPrice, quantity: 1 });
     }
