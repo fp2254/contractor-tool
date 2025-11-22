@@ -1021,6 +1021,130 @@ body {
   cursor: not-allowed;
 }
 
+/* INVOICE PREVIEW */
+.invoice-preview {
+  margin-top: 40px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.invoice-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.invoice-preview-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.preview-badge {
+  font-size: 11px;
+  padding: 4px 12px;
+  background: var(--accent);
+  color: white;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.invoice-preview-card {
+  background: var(--tile);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  font-size: 14px;
+}
+
+.invoice-preview-business {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-preview-business strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.invoice-preview-business div {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.invoice-preview-details {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invoice-preview-row span:first-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.invoice-preview-row strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.invoice-preview-items {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-preview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  gap: 16px;
+}
+
+.invoice-preview-item span:first-child {
+  flex: 1;
+  color: var(--text);
+}
+
+.invoice-preview-item span:last-child {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.invoice-preview-totals {
+  display: grid;
+  gap: 8px;
+}
+
+.invoice-preview-total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid var(--border);
+  font-size: 16px;
+}
+
+.invoice-preview-total strong {
+  color: var(--accent);
+  font-size: 18px;
+}
+
 @media (max-width: 600px) {
   .referral-promo {
     flex-direction: column;
@@ -1034,5 +1158,15 @@ body {
   
   .referral-content h3 {
     font-size: 20px;
+  }
+  
+  .invoice-preview-card {
+    padding: 20px;
+  }
+  
+  .invoice-preview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
