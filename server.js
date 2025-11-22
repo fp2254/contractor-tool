@@ -4,28 +4,35 @@ import Stripe from "stripe";
 import multer from "multer";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// STATIC FRONTEND (serves index.html, script.js, etc.)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(__dirname));
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// For file uploads (photos, logo)
+// FILE UPLOADS
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Supabase admin client (SERVICE ROLE key – keep in .env only)
+// SUPABASE ADMIN CLIENT
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Stripe
+// STRIPE
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Plan price IDs (must match config.js)
+// PLAN PRICE IDS (MUST MATCH FRONTEND)
 const PLAN_PRICE_IDS = {
   lifetime_early: "price_1SVkdpBQnHmahVblGACoBqoJ",
   lifetime_regular: "price_1SVkdpBQnHmahVblGACoBqoJ",
@@ -37,25 +44,23 @@ const ADDON_PRICE_IDS = {
   connect_stripe: "price_1SVkebBQnHmahVblU6qXXG4Q",
 };
 
-// --------------------------
-// AUTH MIDDLEWARE (very simple demo – in prod, verify Supabase JWT)
-// --------------------------
-// For now, read user from a header or skip; real version should validate JWT.
-app.use(async (req, res, next) => {
-  // TODO: validate Supabase JWT from Authorization header or cookie.
-  // For now, just stub:
-  const userId = req.headers["x-demo-user-id"];
-  if (!userId) {
-    // For locked-down backend, enforce login:
-    // return res.status(401).json({ error: "Not authenticated" });
-  }
+// AUTH "MIDDLEWARE": TRUST X-USER-ID HEADER FROM FRONTEND
+app.use((req, res, next) => {
+  const userId = req.header("X-User-Id") || req.header("x-user-id");
   req.userId = userId || null;
   next();
 });
 
-// --------------------------
+// SMALL HELPER
+function makeReferralCode(userId) {
+  if (userId) {
+    return userId.replace(/-/g, "").slice(0, 10);
+  }
+  return Math.random().toString(36).slice(2, 10);
+}
+
 // PROFILE ROUTES
-// --------------------------
+
 app.get("/api/profile", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json(null);
@@ -66,8 +71,11 @@ app.get("/api/profile", async (req, res) => {
     .eq("id", userId)
     .single();
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  if (error && error.code !== "PGRST116") {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data || null);
 });
 
 app.post("/api/profile", async (req, res) => {
@@ -86,38 +94,33 @@ app.post("/api/profile", async (req, res) => {
   res.json(data);
 });
 
-// Upload logo to storage "logos" bucket
-app.post(
-  "/api/profile/logo",
-  upload.single("logo"),
-  async (req, res) => {
-    const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
-    if (!req.file) return res.status(400).json({ error: "No file" });
+// UPLOAD LOGO
+app.post("/api/profile/logo", upload.single("logo"), async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  if (!req.file) return res.status(400).json({ error: "No file" });
 
-    const ext = req.file.originalname.split(".").pop();
-    const path = `${userId}/logo.${ext || "png"}`;
+  const ext = req.file.originalname.split(".").pop();
+  const pathKey = `${userId}/logo.${ext || "png"}`;
 
-    const { data, error } = await supabaseAdmin.storage
-      .from("logos")
-      .upload(path, req.file.buffer, {
-        upsert: true,
-        contentType: req.file.mimetype,
-      });
+  const { error: uploadErr } = await supabaseAdmin.storage
+    .from("logos")
+    .upload(pathKey, req.file.buffer, {
+      upsert: true,
+      contentType: req.file.mimetype,
+    });
 
-    if (error) return res.status(500).json({ error: error.message });
+  if (uploadErr) return res.status(500).json({ error: uploadErr.message });
 
-    const {
-      data: { publicUrl },
-    } = supabaseAdmin.storage.from("logos").getPublicUrl(path);
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from("logos").getPublicUrl(pathKey);
 
-    res.json({ logo_url: publicUrl });
-  }
-);
+  res.json({ logo_url: publicUrl });
+});
 
-// --------------------------
 // CLIENTS
-// --------------------------
+
 app.get("/api/clients", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
@@ -137,6 +140,7 @@ app.post("/api/clients", async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const payload = { ...req.body, user_id: userId };
+
   const { data, error } = await supabaseAdmin
     .from("clients")
     .insert(payload)
@@ -147,15 +151,14 @@ app.post("/api/clients", async (req, res) => {
   res.json(data);
 });
 
-// --------------------------
 // INVOICES
-// --------------------------
+
 app.get("/api/invoices", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
   const { data, error } = await supabaseAdmin
-    .from("invoices_view") // optional view joining clients
+    .from("invoices")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -170,7 +173,6 @@ app.post("/api/invoices", async (req, res) => {
 
   const { client_id, date, notes, subtotal, tax, total, items } = req.body;
 
-  // Insert invoice
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .insert({
@@ -188,7 +190,6 @@ app.post("/api/invoices", async (req, res) => {
 
   if (errInv) return res.status(500).json({ error: errInv.message });
 
-  // Insert items
   if (Array.isArray(items) && items.length) {
     const itemsPayload = items.map((i) => ({
       invoice_id: inv.id,
@@ -197,6 +198,7 @@ app.post("/api/invoices", async (req, res) => {
       unit_price: i.unit_price,
       line_total: i.line_total,
     }));
+
     const { error: errItems } = await supabaseAdmin
       .from("invoice_items")
       .insert(itemsPayload);
@@ -207,7 +209,8 @@ app.post("/api/invoices", async (req, res) => {
   res.json({ id: inv.id });
 });
 
-// Photos upload
+// INVOICE PHOTOS
+
 app.post(
   "/api/invoices/:id/photos",
   upload.array("photos"),
@@ -220,12 +223,13 @@ app.post(
     if (!files.length) return res.json({ ok: true });
 
     for (const file of files) {
-      const ext = file.originalname.split(".").pop();
-      const path = `${userId}/${invoiceId}/${Date.now()}-${file.originalname}`;
+      const pathKey = `${userId}/${invoiceId}/${Date.now()}-${
+        file.originalname
+      }`;
 
       const { error: uploadErr } = await supabaseAdmin.storage
         .from("invoice-photos")
-        .upload(path, file.buffer, {
+        .upload(pathKey, file.buffer, {
           upsert: false,
           contentType: file.mimetype,
         });
@@ -237,7 +241,7 @@ app.post(
 
       const {
         data: { publicUrl },
-      } = supabaseAdmin.storage.from("invoice-photos").getPublicUrl(path);
+      } = supabaseAdmin.storage.from("invoice-photos").getPublicUrl(pathKey);
 
       await supabaseAdmin.from("invoice_attachments").insert({
         invoice_id: invoiceId,
@@ -250,9 +254,8 @@ app.post(
   }
 );
 
-// --------------------------
-// ESTIMATES (simple stub, same pattern as invoices)
-// --------------------------
+// ESTIMATES (simple v1)
+
 app.get("/api/estimates", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
@@ -267,23 +270,46 @@ app.get("/api/estimates", async (req, res) => {
   res.json(data);
 });
 
-// --------------------------
 // REFERRALS SUMMARY
-// --------------------------
+
 app.get("/api/referrals/summary", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json({});
 
-  // Get profile for referral_code
-  const { data: profile, error: errProf } = await supabaseAdmin
+  let { data: profile, error: errProf } = await supabaseAdmin
     .from("profiles")
-    .select("referral_code")
+    .select("id, referral_code")
     .eq("id", userId)
     .single();
 
-  if (errProf) return res.status(500).json({ error: errProf.message });
+  if (errProf && errProf.code !== "PGRST116") {
+    return res.status(500).json({ error: errProf.message });
+  }
 
-  // Basic aggregates – you can adjust with SQL views later
+  if (!profile) {
+    // create bare profile
+    const refCode = makeReferralCode(userId);
+    const { data: newProf, error: errNew } = await supabaseAdmin
+      .from("profiles")
+      .upsert({ id: userId, referral_code: refCode })
+      .select("id, referral_code")
+      .single();
+
+    if (errNew) return res.status(500).json({ error: errNew.message });
+    profile = newProf;
+  } else if (!profile.referral_code) {
+    const refCode = makeReferralCode(userId);
+    const { data: upd, error: errUpd } = await supabaseAdmin
+      .from("profiles")
+      .update({ referral_code: refCode })
+      .eq("id", userId)
+      .select("id, referral_code")
+      .single();
+
+    if (errUpd) return res.status(500).json({ error: errUpd.message });
+    profile = upd;
+  }
+
   const { data: earnings, error: errEarn } = await supabaseAdmin
     .from("referral_earnings")
     .select("*")
@@ -293,27 +319,24 @@ app.get("/api/referrals/summary", async (req, res) => {
 
   let monthly = 0;
   let lifetime = 0;
-
   const currentPeriod = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-  earnings.forEach((e) => {
+  (earnings || []).forEach((e) => {
     lifetime += e.amount_cents || 0;
     if (e.period === currentPeriod) monthly += e.amount_cents || 0;
   });
 
-  // Optionally join with referred users table
   res.json({
-    referral_code: profile?.referral_code,
-    active_referrals: 0, // you can compute from subscriptions
+    referral_code: profile.referral_code,
+    active_referrals: 0,
     monthly_earnings_cents: monthly,
     lifetime_earnings_cents: lifetime,
     referrals: [],
   });
 });
 
-// --------------------------
 // STRIPE CHECKOUT
-// --------------------------
+
 app.post("/api/stripe/create-checkout-session", async (req, res) => {
   try {
     const userId = req.userId;
@@ -352,23 +375,8 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
   }
 });
 
-// --------------------------
-// STRIPE WEBHOOK (SKELETON)
-// --------------------------
-// In a real deployment, you need a separate raw-body route for Stripe webhook.
-// Leaving as TODO so we don't break Replit/dev.
-app.post("/webhooks/stripe", express.raw({ type: "application/json" }), (req, res) => {
-  // TODO: verify signature with process.env.STRIPE_WEBHOOK_SECRET
-  // On invoice.payment_succeeded:
-  //  - Look up user_id from subscription / customer
-  //  - Look up user profile.referred_by
-  //  - If present: insert into referral_earnings with 20% of amount_paid
-  res.json({ received: true });
-});
-
-// --------------------------
 // START
-// --------------------------
+
 app.listen(port, () => {
   console.log(`TradeBase server running on port ${port}`);
 });
