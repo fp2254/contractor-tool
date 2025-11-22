@@ -180,16 +180,17 @@ function exitTourMode() {
   
   document.getElementById("tour-banner").classList.add("hidden");
   document.getElementById("screen-container").classList.remove("tour-mode");
-  document.getElementById("btn-logout").classList.remove("hidden");
   
   sb.auth.getSession().then(({ data: { session } }) => {
     if (session?.user) {
+      document.getElementById("btn-logout").classList.remove("hidden");
       showScreen("dashboard");
       loadInitialData();
     } else {
-      document.getElementById("app-container").classList.add("hidden");
-      document.getElementById("auth-container").classList.remove("hidden");
+      document.getElementById("app-container").classList.remove("hidden");
+      document.getElementById("auth-container").classList.add("hidden");
       showScreen("subscription");
+      updateLifetimeEarlyCount();
     }
   });
 }
