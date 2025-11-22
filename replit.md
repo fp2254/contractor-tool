@@ -16,16 +16,18 @@ TradeBase is a comprehensive invoicing and billing application designed specific
 - **File Storage**: Supabase Storage
 
 ## Key Features
-1. **Subscription Paywall** - 7-day free trial that auto-converts to $9.99/month via Stripe
+1. **Multi-Tier Subscription Paywall** - Monthly, Yearly, and Lifetime pricing options with 7-day free trial
 2. **Invoice Management** - Create, track, and manage invoices with line items
 3. **Quote Management** - Draft, track, download, and send professional quotes (formerly Estimates)
 4. **Client Database** - Save client information with flexible manual entry or selection
 5. **Photo Attachments** - Attach job photos to invoices
 6. **Cost Calculator** - Materials, labor hours, markup, and tax calculator
 7. **Business Settings** - Logo upload, business info, default tax/markup rates
-8. **Referral Program** - 20% commission on referred users
+8. **Referral Program** - 20% commission on referred users with promotional section on pricing page
 9. **Light/Dark Mode** - Theme toggle with localStorage persistence
 10. **Document Download** - Export invoices and quotes as PNG images with company logo
+11. **Interactive Tour** - "Take a Tour" feature with demo data for previewing app before subscribing
+12. **Stripe Connect Add-on** - Optional payment collection integration ($4/mo for Monthly/Yearly plans)
 
 ## Project Structure
 ```
@@ -71,7 +73,16 @@ Storage buckets:
 - `invoice-photos` - Job photo attachments
 
 ## Recent Changes
-- **2025-11-22 (Latest)**: Multi-tier subscription pricing with lifetime options and Stripe Connect add-on
+- **2025-11-22 (Latest)**: Interactive tour mode and referral promotion section
+  - **Interactive Tour**: Added "Take a Tour" button on pricing page that lets users preview the app with sample data
+  - Tour mode shows demo invoices, quotes, clients, settings, and referral data
+  - All forms disabled during tour to prevent data entry
+  - Exit tour banner allows users to return to pricing page or continue as logged-in user
+  - Tour mode isolated from normal authentication flow - doesn't interfere with real user sessions
+  - **Referral Promotion**: Professional gradient banner on pricing page highlighting 20% commission program
+  - Eye-catching design with icon, clear messaging, and call-to-action
+  
+- **2025-11-22**: Multi-tier subscription pricing with lifetime options and Stripe Connect add-on
   - **Multi-Tier Pricing**: Added 4 subscription options displayed on pricing page
     - Monthly: $9.99/mo with 7-day free trial
     - Yearly: $99/yr (save 17%)
