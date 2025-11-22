@@ -5,6 +5,69 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let pendingPhotos = [];
 let toastTimeout = null;
+let tourMode = false;
+
+// DEMO DATA FOR TOUR MODE
+const DEMO_DATA = {
+  profile: {
+    business_name: "ABC Plumbing & Heating",
+    address: "123 Main Street, Denver, CO 80202",
+    phone: "(555) 123-4567",
+    email: "contact@abcplumbing.com",
+    tax_rate: 8.5,
+    markup_rate: 25,
+    logo_url: null
+  },
+  clients: [
+    { id: 1, name: "John Smith", email: "john@example.com", phone: "(555) 234-5678", address: "456 Oak Ave" },
+    { id: 2, name: "Sarah Johnson", email: "sarah@example.com", phone: "(555) 345-6789", address: "789 Pine St" },
+    { id: 3, name: "Mike Davis", email: "mike@example.com", phone: "(555) 456-7890", address: "321 Elm Dr" }
+  ],
+  invoices: [
+    { 
+      id: 1, 
+      invoice_number: "INV-1001",
+      client_name: "John Smith",
+      date: "2025-11-15",
+      subtotal: 850.00,
+      tax: 72.25,
+      total: 922.25,
+      notes: "Water heater replacement",
+      created_at: "2025-11-15T10:00:00Z"
+    },
+    { 
+      id: 2, 
+      invoice_number: "INV-1002",
+      client_name: "Sarah Johnson",
+      date: "2025-11-18",
+      subtotal: 450.00,
+      tax: 38.25,
+      total: 488.25,
+      notes: "Kitchen sink repair",
+      created_at: "2025-11-18T14:30:00Z"
+    }
+  ],
+  quotes: [
+    {
+      id: 1,
+      quote_number: "QUO-2001",
+      client_name: "Mike Davis",
+      date: "2025-11-20",
+      subtotal: 2400.00,
+      tax: 204.00,
+      total: 2604.00,
+      notes: "Bathroom renovation estimate",
+      created_at: "2025-11-20T09:00:00Z"
+    }
+  ],
+  referral: {
+    referral_code: "DEMO123",
+    active_referrals: 3,
+    monthly_earnings_cents: 1598,
+    lifetime_earnings_cents: 4794,
+    referrals: []
+  }
+};
 
 // BASIC REF PARSING (store ?ref= in localStorage for future)
 (function storeRefFromUrl() {
@@ -25,6 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
   wireReferralsUI();
   wireSubscriptionUI();
   wireQuotesUI();
+  wireTourMode();
+  checkTourMode();
   checkSession();
   updateTrialBanner();
 });
@@ -60,6 +125,180 @@ async function apiFetch(path, options = {}) {
   }
 
   return response;
+}
+
+// TOUR MODE
+
+function wireTourMode() {
+  const takeTourBtn = document.getElementById("btn-take-tour");
+  const exitTourBtn = document.getElementById("btn-exit-tour");
+  
+  if (takeTourBtn) {
+    takeTourBtn.addEventListener("click", enterTourMode);
+  }
+  
+  if (exitTourBtn) {
+    exitTourBtn.addEventListener("click", exitTourMode);
+  }
+}
+
+function checkTourMode() {
+  const tourFlag = sessionStorage.getItem("tb_tour_mode");
+  if (tourFlag === "true") {
+    tourMode = true;
+    document.getElementById("auth-container").classList.add("hidden");
+    document.getElementById("app-container").classList.remove("hidden");
+    document.getElementById("tour-banner").classList.remove("hidden");
+    document.getElementById("trial-banner").classList.add("hidden");
+    document.getElementById("screen-container").classList.add("tour-mode");
+    loadDemoData();
+    showScreen("dashboard");
+  }
+}
+
+function enterTourMode() {
+  tourMode = true;
+  sessionStorage.setItem("tb_tour_mode", "true");
+  
+  document.getElementById("auth-container").classList.add("hidden");
+  document.getElementById("app-container").classList.remove("hidden");
+  document.getElementById("tour-banner").classList.remove("hidden");
+  document.getElementById("trial-banner").classList.add("hidden");
+  document.getElementById("screen-container").classList.add("tour-mode");
+  
+  loadDemoData();
+  showScreen("dashboard");
+}
+
+function exitTourMode() {
+  tourMode = false;
+  sessionStorage.removeItem("tb_tour_mode");
+  
+  clearDemoData();
+  
+  document.getElementById("tour-banner").classList.add("hidden");
+  document.getElementById("screen-container").classList.remove("tour-mode");
+  
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      showScreen("dashboard");
+      loadInitialData();
+    } else {
+      document.getElementById("app-container").classList.add("hidden");
+      document.getElementById("auth-container").classList.remove("hidden");
+      showScreen("subscription");
+    }
+  });
+}
+
+function clearDemoData() {
+  const clientsList = document.getElementById("clients-list");
+  const invoicesList = document.getElementById("invoices-list");
+  const quotesList = document.getElementById("quotes-list");
+  
+  if (clientsList) clientsList.innerHTML = '';
+  if (invoicesList) invoicesList.innerHTML = '';
+  if (quotesList) quotesList.innerHTML = '';
+  
+  const fields = [
+    "settings-business-name", "settings-address", "settings-phone",
+    "settings-email", "settings-tax", "settings-markup",
+    "referral-code", "active-referrals", "monthly-earnings", "lifetime-earnings"
+  ];
+  
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.tagName === 'INPUT') {
+        el.value = '';
+      } else {
+        el.textContent = '';
+      }
+    }
+  });
+}
+
+async function loadDemoData() {
+  renderDemoClients();
+  renderDemoInvoices();
+  renderDemoQuotes();
+  renderDemoReferrals();
+  renderDemoSettings();
+}
+
+function renderDemoClients() {
+  const clientsList = document.getElementById("clients-list");
+  if (!clientsList) return;
+  
+  clientsList.innerHTML = DEMO_DATA.clients.map(client => `
+    <div class="list-item">
+      <div>
+        <strong>${client.name}</strong>
+        <div class="item-meta">
+          ${client.phone ? client.phone + ' · ' : ''}${client.email || ''}
+        </div>
+        ${client.address ? `<div class="item-meta">${client.address}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDemoInvoices() {
+  const invoicesList = document.getElementById("invoices-list");
+  if (!invoicesList) return;
+  
+  invoicesList.innerHTML = DEMO_DATA.invoices.map(inv => `
+    <div class="list-item">
+      <div>
+        <strong>${inv.invoice_number}</strong> · ${inv.client_name}
+        <div class="item-meta">${inv.date} · Total: $${inv.total.toFixed(2)}</div>
+        ${inv.notes ? `<div class="item-meta">${inv.notes}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDemoQuotes() {
+  const quotesList = document.getElementById("quotes-list");
+  if (!quotesList) return;
+  
+  quotesList.innerHTML = DEMO_DATA.quotes.map(quote => `
+    <div class="list-item">
+      <div>
+        <strong>${quote.quote_number}</strong> · ${quote.client_name}
+        <div class="item-meta">${quote.date} · Total: $${quote.total.toFixed(2)}</div>
+        ${quote.notes ? `<div class="item-meta">${quote.notes}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderDemoReferrals() {
+  const referralCode = document.getElementById("referral-code");
+  const activeReferrals = document.getElementById("active-referrals");
+  const monthlyEarnings = document.getElementById("monthly-earnings");
+  const lifetimeEarnings = document.getElementById("lifetime-earnings");
+  
+  if (referralCode) referralCode.textContent = DEMO_DATA.referral.referral_code;
+  if (activeReferrals) activeReferrals.textContent = DEMO_DATA.referral.active_referrals;
+  if (monthlyEarnings) monthlyEarnings.textContent = `$${(DEMO_DATA.referral.monthly_earnings_cents / 100).toFixed(2)}`;
+  if (lifetimeEarnings) lifetimeEarnings.textContent = `$${(DEMO_DATA.referral.lifetime_earnings_cents / 100).toFixed(2)}`;
+}
+
+function renderDemoSettings() {
+  const fields = {
+    "settings-business-name": DEMO_DATA.profile.business_name,
+    "settings-address": DEMO_DATA.profile.address,
+    "settings-phone": DEMO_DATA.profile.phone,
+    "settings-email": DEMO_DATA.profile.email,
+    "settings-tax": DEMO_DATA.profile.tax_rate,
+    "settings-markup": DEMO_DATA.profile.markup_rate
+  };
+  
+  Object.entries(fields).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el && value) el.value = value;
+  });
 }
 
 // AUTH UI
@@ -506,6 +745,8 @@ async function handleAddClient(e) {
 }
 
 async function loadClients() {
+  if (tourMode) return;
+  
   const res = await apiFetch("/api/clients");
   const data = await res.json();
   const list = document.getElementById("clients-list");
@@ -551,6 +792,8 @@ async function loadClients() {
 // INVOICES & ESTIMATES LISTS
 
 async function loadInvoices() {
+  if (tourMode) return;
+  
   const res = await apiFetch("/api/invoices");
   const data = await res.json();
   const list = document.getElementById("invoices-list");
@@ -582,6 +825,8 @@ async function loadInvoices() {
 }
 
 async function loadQuotes() {
+  if (tourMode) return;
+  
   try {
     const res = await apiFetch("/api/quotes");
     if (!res.ok) return;
@@ -635,6 +880,8 @@ function handleLogoSelect(e) {
 }
 
 async function loadSettings() {
+  if (tourMode) return;
+  
   const res = await apiFetch("/api/profile");
   if (!res.ok) return;
   const profile = await res.json();
@@ -713,6 +960,8 @@ function wireReferralsUI() {
 }
 
 async function loadReferralSummary() {
+  if (tourMode) return;
+  
   const res = await apiFetch("/api/referrals/summary");
   if (!res.ok) return;
   const data = await res.json();
