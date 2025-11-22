@@ -1,14 +1,20 @@
-// --------------------------
 // SUPABASE CLIENT
-// --------------------------
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // GLOBAL STATE
 let currentUser = null;
-let pendingPhotos = []; // File objects before upload
-let currentInvoiceItems = [];
+let pendingPhotos = [];
+let toastTimeout = null;
 
-// INIT
+// BASIC REF PARSING (store ?ref= in localStorage for future)
+(function storeRefFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get("ref");
+  if (ref) {
+    localStorage.setItem("tb_referrer_code", ref);
+  }
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
   wireAuthUI();
   wireDashboardUI();
@@ -19,9 +25,32 @@ document.addEventListener("DOMContentLoaded", () => {
   checkSession();
 });
 
-// --------------------------
+// API FETCH HELPER (sends user id header)
+async function apiFetch(path, options = {}) {
+  if (!currentUser) {
+    const { data } = await sb.auth.getUser();
+    if (data && data.user) currentUser = data.user;
+  }
+
+  const headers = options.headers ? { ...options.headers } : {};
+
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+  }
+
+  if (currentUser?.id) {
+    headers["X-User-Id"] = currentUser.id;
+  }
+
+  return fetch(`${API_BASE_URL}${path}`, {
+    credentials: "include",
+    ...options,
+    headers,
+  });
+}
+
 // AUTH UI
-// --------------------------
+
 function wireAuthUI() {
   const loginTab = document.getElementById("btn-show-login");
   const signupTab = document.getElementById("btn-show-signup");
@@ -76,6 +105,7 @@ async function handleLogin(e) {
     errorEl.textContent = error.message;
     return;
   }
+
   currentUser = data.user;
   await onLoggedIn();
 }
@@ -101,9 +131,8 @@ async function onLoggedIn() {
   await loadInitialData();
 }
 
-// --------------------------
 // DASHBOARD / NAV
-// --------------------------
+
 function wireDashboardUI() {
   document.querySelectorAll(".tile").forEach((tile) => {
     tile.addEventListener("click", () => {
@@ -119,25 +148,21 @@ function wireDashboardUI() {
     });
   });
 
-  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    showToast("Dark mode only in v1.");
+  });
 }
 
 function showScreen(screenId) {
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  const screenEl = document.getElementById(`screen-${screenId}`);
-  if (screenEl) {
-    screenEl.classList.add("active");
-  }
+  document.querySelectorAll(".screen").forEach((s) =>
+    s.classList.remove("active")
+  );
+  const el = document.getElementById(`screen-${screenId}`);
+  if (el) el.classList.add("active");
 }
 
-function toggleTheme() {
-  // Simple placeholder – you can expand to real light vs dark later
-  showToast("Theme toggle placeholder (dark only for now).");
-}
+// INITIAL LOAD
 
-// --------------------------
-// INITIAL DATA LOAD
-// --------------------------
 async function loadInitialData() {
   await Promise.all([
     loadClients(),
@@ -148,13 +173,12 @@ async function loadInitialData() {
   ]);
 }
 
-// --------------------------
-// INVOICE UI + HELPER
-// --------------------------
+// INVOICE UI
+
 function wireInvoiceUI() {
   document
     .getElementById("btn-add-line-item")
-    .addEventListener("click", addLineItemRow);
+    .addEventListener("click", () => addLineItemRow());
 
   document
     .getElementById("invoice-form")
@@ -174,11 +198,9 @@ function wireInvoiceUI() {
 
   document
     .getElementById("btn-add-client-inline")
-    .addEventListener("click", () => {
-      showScreen("clients");
-    });
+    .addEventListener("click", () => showScreen("clients"));
 
-  addLineItemRow(); // start with one row
+  addLineItemRow();
 }
 
 function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
@@ -195,7 +217,6 @@ function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
 
   row.querySelector(".li-qty").addEventListener("input", updateInvoiceTotals);
   row.querySelector(".li-price").addEventListener("input", updateInvoiceTotals);
-  row.querySelector(".li-desc").addEventListener("input", () => {});
 
   row.querySelector(".btn-remove-line").addEventListener("click", () => {
     row.remove();
@@ -232,7 +253,6 @@ function updateInvoiceTotals() {
 
   const taxPercent =
     parseFloat(document.getElementById("helper-tax").value) || 0;
-
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
 
@@ -262,24 +282,19 @@ function runHelperCalc() {
   const margin = total > 0 ? (profit / total) * 100 : 0;
 
   document.getElementById("helper-total").textContent = formatCurrency(total);
-  document.getElementById("helper-profit").textContent = formatCurrency(profit);
+  document.getElementById("helper-profit").textContent =
+    formatCurrency(profit);
   document.getElementById("helper-margin").textContent = margin.toFixed(1);
 
-  document
-    .getElementById("helper-results")
-    .classList.remove("hidden");
-
-  // store last helper total in dataset
-  document
-    .getElementById("helper-results")
-    .setAttribute("data-total", total.toString());
+  const results = document.getElementById("helper-results");
+  results.classList.remove("hidden");
+  results.setAttribute("data-total", total.toString());
 }
 
 function applyHelperTotal() {
   const results = document.getElementById("helper-results");
   const total = parseFloat(results.getAttribute("data-total") || "0");
   if (!total) return;
-  // simple: put a single line item = "Job total"
   const container = document.getElementById("line-items");
   container.innerHTML = "";
   addLineItemRow({ description: "Job total", qty: 1, price: total });
@@ -331,10 +346,8 @@ async function handleInvoiceSubmit(e) {
   const total = subtotal + tax;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/invoices`, {
+    const res = await apiFetch("/api/invoices", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         client_id: clientId,
         date,
@@ -352,7 +365,7 @@ async function handleInvoiceSubmit(e) {
     }
 
     const invoiceId = data.id;
-    // Upload photos
+
     if (pendingPhotos.length) {
       await uploadInvoicePhotos(invoiceId, pendingPhotos);
       pendingPhotos = [];
@@ -369,25 +382,22 @@ async function handleInvoiceSubmit(e) {
   }
 }
 
-// Upload photos to backend (which will use Supabase Storage)
 async function uploadInvoicePhotos(invoiceId, files) {
   const formData = new FormData();
-  formData.append("invoiceId", invoiceId);
   files.forEach((f) => formData.append("photos", f));
 
-  const res = await fetch(`${API_BASE_URL}/api/invoices/${invoiceId}/photos`, {
+  const res = await apiFetch(`/api/invoices/${invoiceId}/photos`, {
     method: "POST",
-    credentials: "include",
     body: formData,
   });
+
   if (!res.ok) {
     console.error("Photo upload failed");
   }
 }
 
-// --------------------------
 // CALCULATOR SCREEN
-// --------------------------
+
 function wireCalculatorUI() {
   document
     .getElementById("btn-calc-run")
@@ -411,12 +421,10 @@ function wireCalculatorUI() {
         tax: taxPercent,
       });
 
-      document.getElementById("calc-total").textContent = formatCurrency(
-        result.total
-      );
-      document.getElementById("calc-profit").textContent = formatCurrency(
-        result.profit
-      );
+      document.getElementById("calc-total").textContent =
+        formatCurrency(result.total);
+      document.getElementById("calc-profit").textContent =
+        formatCurrency(result.profit);
       document.getElementById("calc-margin").textContent =
         result.margin.toFixed(1);
 
@@ -436,9 +444,8 @@ function calculateSuggestedPrice({ materials, hours, rate, markup, tax }) {
   return { total, profit, margin };
 }
 
-// --------------------------
-// CLIENTS
-// --------------------------
+// CLIENTS & SETTINGS
+
 function wireSettingsUI() {
   document
     .getElementById("client-form")
@@ -465,10 +472,8 @@ async function handleAddClient(e) {
   const address = document.getElementById("client-address").value.trim();
   if (!name) return;
 
-  await fetch(`${API_BASE_URL}/api/clients`, {
+  await apiFetch("/api/clients", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ name, phone, email, address }),
   });
 
@@ -477,9 +482,7 @@ async function handleAddClient(e) {
 }
 
 async function loadClients() {
-  const res = await fetch(`${API_BASE_URL}/api/clients`, {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/clients");
   const data = await res.json();
   const list = document.getElementById("clients-list");
   const select = document.getElementById("invoice-client");
@@ -506,13 +509,10 @@ async function loadClients() {
   });
 }
 
-// --------------------------
-// INVOICES & ESTIMATES
-// --------------------------
+// INVOICES & ESTIMATES LISTS
+
 async function loadInvoices() {
-  const res = await fetch(`${API_BASE_URL}/api/invoices`, {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/invoices");
   const data = await res.json();
   const list = document.getElementById("invoices-list");
   list.innerHTML = "";
@@ -535,9 +535,7 @@ async function loadInvoices() {
 }
 
 async function loadEstimates() {
-  const res = await fetch(`${API_BASE_URL}/api/estimates`, {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/estimates");
   if (!res.ok) return;
   const data = await res.json();
   const list = document.getElementById("estimates-list");
@@ -560,9 +558,8 @@ async function loadEstimates() {
   });
 }
 
-// --------------------------
 // SETTINGS & LOGO
-// --------------------------
+
 let selectedLogoFile = null;
 
 function handleLogoSelect(e) {
@@ -579,9 +576,7 @@ function handleLogoSelect(e) {
 }
 
 async function loadSettings() {
-  const res = await fetch(`${API_BASE_URL}/api/profile`, {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/profile");
   if (!res.ok) return;
   const profile = await res.json();
   if (!profile) return;
@@ -626,14 +621,12 @@ async function handleSaveSettings(e) {
     invoice_footer: document.getElementById("business-footer").value,
   };
 
-  // Logo upload if selected
   if (selectedLogoFile) {
     const formData = new FormData();
     formData.append("logo", selectedLogoFile);
 
-    const resLogo = await fetch(`${API_BASE_URL}/api/profile/logo`, {
+    const resLogo = await apiFetch("/api/profile/logo", {
       method: "POST",
-      credentials: "include",
       body: formData,
     });
     const logoData = await resLogo.json();
@@ -642,10 +635,8 @@ async function handleSaveSettings(e) {
     }
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+  const res = await apiFetch("/api/profile", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify(payload),
   });
 
@@ -656,17 +647,14 @@ async function handleSaveSettings(e) {
   msg.textContent = "Settings saved.";
 }
 
-// --------------------------
-// REFERRALS FRONTEND
-// --------------------------
+// REFERRALS
+
 function wireReferralsUI() {
-  // Already wired copy button in wireSettingsUI
+  // Copy button wired in wireSettingsUI
 }
 
 async function loadReferralSummary() {
-  const res = await fetch(`${API_BASE_URL}/api/referrals/summary`, {
-    credentials: "include",
-  });
+  const res = await apiFetch("/api/referrals/summary");
   if (!res.ok) return;
   const data = await res.json();
 
@@ -709,14 +697,11 @@ function copyReferralLink() {
   showToast("Referral link copied.");
 }
 
-// --------------------------
-// STRIPE CHECKOUT HELPER
-// --------------------------
+// STRIPE CHECKOUT
+
 async function startCheckout(planCode, addonCodes = []) {
-  const res = await fetch(`${API_BASE_URL}/api/stripe/create-checkout-session`, {
+  const res = await apiFetch("/api/stripe/create-checkout-session", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ plan: planCode, addons: addonCodes }),
   });
   const data = await res.json();
@@ -730,15 +715,13 @@ async function startCheckout(planCode, addonCodes = []) {
   await stripe.redirectToCheckout({ sessionId: data.sessionId });
 }
 
-// --------------------------
 // UTILS
-// --------------------------
+
 function formatCurrency(amount) {
   const n = Number(amount) || 0;
   return `$${n.toFixed(2)}`;
 }
 
-let toastTimeout = null;
 function showToast(message) {
   if (!message) return;
   if (toastTimeout) clearTimeout(toastTimeout);
