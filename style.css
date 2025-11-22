@@ -175,6 +175,24 @@ body {
   text-decoration: none;
 }
 
+.small-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.auth-footer .small-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
 .error-text {
   color: var(--danger);
   font-size: 12px;

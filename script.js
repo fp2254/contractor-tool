@@ -181,17 +181,21 @@ function exitTourMode() {
   document.getElementById("tour-banner").classList.add("hidden");
   document.getElementById("screen-container").classList.remove("tour-mode");
   
+  // Immediately show pricing page
+  document.getElementById("app-container").classList.remove("hidden");
+  document.getElementById("auth-container").classList.add("hidden");
+  showScreen("subscription");
+  updateLifetimeEarlyCount();
+  
+  // Then check if user is logged in and switch to dashboard if so
   sb.auth.getSession().then(({ data: { session } }) => {
     if (session?.user) {
       document.getElementById("btn-logout").classList.remove("hidden");
       showScreen("dashboard");
       loadInitialData();
-    } else {
-      document.getElementById("app-container").classList.remove("hidden");
-      document.getElementById("auth-container").classList.add("hidden");
-      showScreen("subscription");
-      updateLifetimeEarlyCount();
     }
+  }).catch(() => {
+    // On error, stay on pricing page (already shown above)
   });
 }
 
@@ -331,6 +335,17 @@ function wireAuthUI() {
   signupForm.addEventListener("submit", handleSignup);
 
   document.getElementById("btn-logout").addEventListener("click", handleLogout);
+  
+  const viewPricingLink = document.getElementById("view-pricing-link");
+  if (viewPricingLink) {
+    viewPricingLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.getElementById("auth-container").classList.add("hidden");
+      document.getElementById("app-container").classList.remove("hidden");
+      showScreen("subscription");
+      updateLifetimeEarlyCount();
+    });
+  }
 }
 
 async function handleSignup(e) {
