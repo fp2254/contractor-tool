@@ -65,7 +65,8 @@ Storage buckets:
 - `invoice-photos` - Job photo attachments
 
 ## Recent Changes
-- **2025-11-22 (Latest)**: Feature enhancements and UI improvements
+- **2025-11-22 (Latest)**: Security fix and feature enhancements
+  - **SECURITY**: Fixed authentication to validate Supabase JWT tokens server-side instead of trusting X-User-Id header
   - Added light/dark mode toggle with CSS variables and localStorage persistence
   - Optimized mobile layout with responsive CSS (breakpoint @600px)
   - Implemented invoice download/export as PNG with company logo
@@ -123,9 +124,9 @@ The application is configured for Replit Autoscale deployment, which will:
 - `POST /api/stripe/create-checkout-session` - Create Stripe checkout session
 
 ## Authentication
-The application uses Supabase Authentication with email/password. The frontend uses the Supabase client library to manage auth state, and passes the user ID to the backend via the `X-User-Id` header for API requests.
+The application uses Supabase Authentication with email/password. The frontend uses the Supabase client library to manage auth state, and passes JWT access tokens to the backend via the `Authorization: Bearer` header.
 
-⚠️ **SECURITY NOTE**: The current authentication implementation trusts the `X-User-Id` header without server-side validation of Supabase JWT tokens. This is a known architectural issue that should be addressed before production deployment. Consider implementing proper JWT validation on the server side to prevent user impersonation.
+The server validates these JWT tokens using the Supabase Admin client (`supabaseAdmin.auth.getUser(token)`) to ensure requests are genuinely authenticated before granting access to user data. This prevents user impersonation and unauthorized data access.
 
 ## User Preferences
 None currently documented.
