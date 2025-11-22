@@ -23,7 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
   wireCalculatorUI();
   wireSettingsUI();
   wireReferralsUI();
+  wireSubscriptionUI();
+  wireQuotesUI();
   checkSession();
+  updateTrialBanner();
 });
 
 // API FETCH HELPER (sends JWT token in Authorization header)
@@ -599,6 +602,14 @@ async function loadQuotes() {
           ${quote.status || "draft"}
         </div>
       `;
+      
+      const downloadBtn = document.createElement("button");
+      downloadBtn.className = "btn-sm";
+      downloadBtn.textContent = "Download";
+      downloadBtn.style.marginTop = "8px";
+      downloadBtn.onclick = () => downloadQuote(quote);
+      item.appendChild(downloadBtn);
+      
       list.appendChild(item);
     });
   } catch (error) {
@@ -988,5 +999,232 @@ function wireSubscriptionUI() {
     newQuoteBtn.addEventListener("click", () => {
       showScreen("new-quote");
     });
+  }
+}
+
+// QUOTES FUNCTIONALITY
+
+async function handleQuoteSubmit(e) {
+  e.preventDefault();
+  const errorEl = document.getElementById("quote-error");
+  errorEl.textContent = "";
+
+  const clientName = document.getElementById("quote-client-name").value.trim();
+  const quoteDate = document.getElementById("quote-date").value;
+  const quoteNumber = document.getElementById("quote-number").value.trim();
+  const notes = document.getElementById("quote-notes").value;
+  const items = getQuoteLineItemsFromUI();
+
+  if (!clientName) {
+    errorEl.textContent = "Enter a client name.";
+    return;
+  }
+  if (!items.length) {
+    errorEl.textContent = "Add at least one line item.";
+    return;
+  }
+
+  let subtotal = 0;
+  items.forEach((i) => (subtotal += i.line_total));
+  const taxPercent = parseFloat(document.getElementById("quote-tax").value) || 0;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+
+  try {
+    const res = await apiFetch("/api/quotes", {
+      method: "POST",
+      body: JSON.stringify({
+        client_name: clientName,
+        quote_date: quoteDate,
+        quote_number: quoteNumber,
+        notes,
+        subtotal,
+        tax,
+        total,
+        items,
+        status: "draft"
+      }),
+    });
+
+    if (res.ok) {
+      showToast("Quote created!");
+      document.getElementById("quote-form").reset();
+      clearQuoteLineItems();
+      showScreen("quotes");
+      await loadQuotes();
+    } else {
+      const data = await res.json();
+      errorEl.textContent = data.error || "Failed to create quote.";
+    }
+  } catch (err) {
+    errorEl.textContent = "An error occurred.";
+  }
+}
+
+function getQuoteLineItemsFromUI() {
+  const container = document.getElementById("quote-line-items");
+  const rows = Array.from(container.querySelectorAll(".line-item-row"));
+  return rows.map((row) => {
+    const desc = row.querySelector(".item-desc").value.trim();
+    const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
+    const price = parseFloat(row.querySelector(".item-price").value) || 0;
+    return {
+      description: desc,
+      qty,
+      unit_price: price,
+      line_total: qty * price,
+    };
+  });
+}
+
+function clearQuoteLineItems() {
+  const container = document.getElementById("quote-line-items");
+  container.innerHTML = "";
+  addQuoteLineItemRow();
+}
+
+function addQuoteLineItemRow(data = {}) {
+  const container = document.getElementById("quote-line-items");
+  const row = document.createElement("div");
+  row.className = "line-item-row";
+  row.innerHTML = `
+    <input type="text" placeholder="Description" class="item-desc" value="${data.description || ""}" />
+    <input type="number" placeholder="Qty" class="item-qty" value="${data.qty || 1}" min="0" step="0.01" />
+    <input type="number" placeholder="Price" class="item-price" value="${data.unit_price || 0}" min="0" step="0.01" />
+    <button type="button" class="btn-sm" onclick="this.parentElement.remove(); updateQuoteTotals()">Remove</button>
+  `;
+  container.appendChild(row);
+
+  row.querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("input", updateQuoteTotals);
+  });
+}
+
+function updateQuoteTotals() {
+  const items = getQuoteLineItemsFromUI();
+  let subtotal = 0;
+  items.forEach((i) => (subtotal += i.line_total));
+
+  const taxPercent = parseFloat(document.getElementById("quote-tax").value) || 0;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+
+  document.getElementById("quote-subtotal").textContent = formatCurrency(subtotal);
+  document.getElementById("quote-tax-amount").textContent = formatCurrency(tax);
+  document.getElementById("quote-total").textContent = formatCurrency(total);
+}
+
+function wireQuotesUI() {
+  const quoteForm = document.getElementById("quote-form");
+  if (quoteForm) {
+    quoteForm.addEventListener("submit", handleQuoteSubmit);
+  }
+
+  const addQuoteItemBtn = document.getElementById("btn-add-quote-item");
+  if (addQuoteItemBtn) {
+    addQuoteItemBtn.addEventListener("click", () => addQuoteLineItemRow());
+  }
+
+  const quoteTaxInput = document.getElementById("quote-tax");
+  if (quoteTaxInput) {
+    quoteTaxInput.addEventListener("input", updateQuoteTotals);
+  }
+}
+
+// QUOTE DOWNLOAD
+
+async function downloadQuote(quote) {
+  try {
+    const res = await apiFetch(`/api/quotes/${quote.id}`);
+    if (!res.ok) {
+      showToast("Failed to load quote details");
+      return;
+    }
+    const quoteData = await res.json();
+    
+    const resProfile = await apiFetch("/api/profile");
+    const profile = resProfile.ok ? await resProfile.json() : null;
+    
+    const template = document.getElementById("invoice-download-template");
+    const logo = document.getElementById("invoice-logo");
+    const businessInfo = document.getElementById("invoice-business-info");
+    const clientInfo = document.getElementById("invoice-client-info");
+    const details = document.getElementById("invoice-details");
+    const itemsBody = document.getElementById("invoice-items-body");
+    const totals = document.getElementById("invoice-totals");
+    const footer = document.getElementById("invoice-footer");
+    
+    if (profile && profile.logo_url) {
+      logo.innerHTML = `<img src="${profile.logo_url}" alt="Logo" style="max-width: 150px; max-height: 80px;">`;
+    } else {
+      logo.innerHTML = "";
+    }
+    
+    businessInfo.innerHTML = profile ? `
+      <strong>${profile.business_name || ""}</strong><br>
+      ${profile.phone || ""}<br>
+      ${profile.email || ""}<br>
+      ${profile.address || ""}<br>
+      ${profile.website || ""}
+    ` : "";
+    
+    clientInfo.innerHTML = quoteData.client ? `
+      ${quoteData.client.name}<br>
+      ${quoteData.client.phone || ""}<br>
+      ${quoteData.client.email || ""}<br>
+      ${quoteData.client.address || ""}
+    ` : (quoteData.client_name ? quoteData.client_name : "");
+    
+    details.innerHTML = `
+      <strong>Quote #:</strong> ${quoteData.quote_number || quoteData.id.slice(0, 8)}<br>
+      <strong>Date:</strong> ${quoteData.quote_date || new Date().toLocaleDateString()}<br>
+      <strong>Status:</strong> ${quoteData.status || "draft"}<br>
+      ${quoteData.notes ? `<br><strong>Notes:</strong> ${quoteData.notes}` : ""}
+    `;
+    
+    itemsBody.innerHTML = "";
+    (quoteData.items || []).forEach((item) => {
+      const row = document.createElement("tr");
+      row.style.borderBottom = "1px solid #ddd";
+      row.innerHTML = `
+        <td style="padding: 10px; color: #000 !important;">${item.description}</td>
+        <td style="padding: 10px; text-align: center; color: #000 !important;">${item.quantity}</td>
+        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.unit_price)}</td>
+        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.total)}</td>
+      `;
+      itemsBody.appendChild(row);
+    });
+    
+    totals.innerHTML = `
+      <div style="margin-bottom: 5px;"><strong>Subtotal:</strong> ${formatCurrency(quoteData.subtotal || 0)}</div>
+      <div style="margin-bottom: 5px;"><strong>Tax:</strong> ${formatCurrency(quoteData.tax || 0)}</div>
+      <div style="font-size: 16px; margin-top: 10px;"><strong>Total:</strong> ${formatCurrency(quoteData.total || 0)}</div>
+    `;
+    
+    footer.innerHTML = (profile && profile.invoice_footer) ? profile.invoice_footer : "";
+    
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    template.style.left = "-9999px";
+    
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quote-${quoteData.quote_number || quoteData.id}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote downloaded!");
+    });
+    
+  } catch (err) {
+    console.error("Download error:", err);
+    showToast("Failed to download quote");
   }
 }

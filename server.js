@@ -408,7 +408,7 @@ app.post("/api/quotes", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, quote_date, quote_number, notes, subtotal, tax, total, items } = req.body;
 
   const { data: quote, error: errQuote } = await supabaseAdmin
     .from("quotes")
@@ -416,7 +416,8 @@ app.post("/api/quotes", requireSubscription, async (req, res) => {
       user_id: userId,
       client_id,
       client_name,
-      quote_date: date,
+      quote_date: quote_date || null,
+      quote_number: quote_number || null,
       subtotal,
       tax,
       total,
@@ -432,9 +433,9 @@ app.post("/api/quotes", requireSubscription, async (req, res) => {
     const itemRows = items.map((it) => ({
       quote_id: quote.id,
       description: it.description,
-      quantity: it.quantity,
+      quantity: it.qty || it.quantity,
       unit_price: it.unit_price,
-      total: it.total,
+      total: it.line_total || it.total,
     }));
 
     const { error: errItems } = await supabaseAdmin
