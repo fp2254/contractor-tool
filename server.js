@@ -50,10 +50,29 @@ const ADDON_PRICE_IDS = {
   connect_stripe: "price_1SVkebBQnHmahVblU6qXXG4Q",
 };
 
-// AUTH "MIDDLEWARE": TRUST X-USER-ID HEADER FROM FRONTEND
-app.use((req, res, next) => {
-  const userId = req.header("X-User-Id") || req.header("x-user-id");
-  req.userId = userId || null;
+// AUTH MIDDLEWARE: VALIDATE SUPABASE JWT TOKEN
+app.use(async (req, res, next) => {
+  const authHeader = req.header("Authorization");
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    req.userId = null;
+    return next();
+  }
+
+  const token = authHeader.substring(7);
+  
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    
+    if (error || !data.user) {
+      req.userId = null;
+    } else {
+      req.userId = data.user.id;
+    }
+  } catch (err) {
+    req.userId = null;
+  }
+  
   next();
 });
 

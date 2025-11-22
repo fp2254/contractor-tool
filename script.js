@@ -26,11 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
   checkSession();
 });
 
-// API FETCH HELPER (sends user id header)
+// API FETCH HELPER (sends JWT token in Authorization header)
 async function apiFetch(path, options = {}) {
-  if (!currentUser) {
-    const { data } = await sb.auth.getUser();
-    if (data && data.user) currentUser = data.user;
+  const { data: { session } } = await sb.auth.getSession();
+  
+  if (session && session.user) {
+    currentUser = session.user;
   }
 
   const headers = options.headers ? { ...options.headers } : {};
@@ -39,8 +40,8 @@ async function apiFetch(path, options = {}) {
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   }
 
-  if (currentUser?.id) {
-    headers["X-User-Id"] = currentUser.id;
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
   }
 
   return fetch(`${API_BASE_URL}${path}`, {
