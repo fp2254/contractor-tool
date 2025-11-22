@@ -1060,6 +1060,40 @@ body {
   padding: 24px;
   box-shadow: 0 4px 20px var(--shadow-light);
   font-size: 14px;
+  position: relative;
+}
+
+.invoice-preview-logo {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.logo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.logo-placeholder i {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.logo-placeholder span {
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.2;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .invoice-preview-business {
@@ -1143,6 +1177,24 @@ body {
 .invoice-preview-total strong {
   color: var(--accent);
   font-size: 18px;
+}
+
+.invoice-preview-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.invoice-preview-footer i {
+  font-size: 14px;
 }
 
 @media (max-width: 600px) {
