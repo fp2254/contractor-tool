@@ -16,7 +16,8 @@ const DEMO_DATA = {
     email: "contact@abcplumbing.com",
     tax_rate: 8.5,
     markup_rate: 25,
-    logo_url: null
+    logo_url: null,
+    stripe_connect_enabled: true
   },
   clients: [
     { id: 1, name: "John Smith", email: "john@example.com", phone: "(555) 234-5678", address: "456 Oak Ave" },
@@ -209,8 +210,8 @@ function clearDemoData() {
   if (quotesList) quotesList.innerHTML = '';
   
   const fields = [
-    "settings-business-name", "settings-address", "settings-phone",
-    "settings-email", "settings-tax", "settings-markup",
+    "business-name", "business-address", "business-phone",
+    "business-email", "business-tax", "business-markup",
     "referral-code", "active-referrals", "monthly-earnings", "lifetime-earnings"
   ];
   
@@ -224,6 +225,9 @@ function clearDemoData() {
       }
     }
   });
+  
+  const statusCard = document.getElementById("payment-collection-status");
+  if (statusCard) statusCard.classList.add("hidden");
 }
 
 async function loadDemoData() {
@@ -295,18 +299,23 @@ function renderDemoReferrals() {
 
 function renderDemoSettings() {
   const fields = {
-    "settings-business-name": DEMO_DATA.profile.business_name,
-    "settings-address": DEMO_DATA.profile.address,
-    "settings-phone": DEMO_DATA.profile.phone,
-    "settings-email": DEMO_DATA.profile.email,
-    "settings-tax": DEMO_DATA.profile.tax_rate,
-    "settings-markup": DEMO_DATA.profile.markup_rate
+    "business-name": DEMO_DATA.profile.business_name,
+    "business-address": DEMO_DATA.profile.address,
+    "business-phone": DEMO_DATA.profile.phone,
+    "business-email": DEMO_DATA.profile.email,
+    "business-tax": DEMO_DATA.profile.tax_rate,
+    "business-markup": DEMO_DATA.profile.markup_rate
   };
   
   Object.entries(fields).forEach(([id, value]) => {
     const el = document.getElementById(id);
     if (el && value) el.value = value;
   });
+  
+  if (DEMO_DATA.profile.stripe_connect_enabled) {
+    const statusCard = document.getElementById("payment-collection-status");
+    if (statusCard) statusCard.classList.remove("hidden");
+  }
 }
 
 // AUTH UI

@@ -1034,6 +1034,67 @@ body {
   cursor: not-allowed;
 }
 
+/* PAYMENT COLLECTION STATUS */
+.feature-status-card {
+  background: var(--tile);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.feature-status-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.feature-status-header i {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.feature-status-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.feature-status-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.status-active {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-badge i {
+  font-size: 16px;
+}
+
+.feature-status-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 /* FEATURE PROMO BOX */
 .feature-promo-box {
   margin: 30px auto;
