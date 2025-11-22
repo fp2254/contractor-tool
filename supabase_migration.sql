@@ -50,6 +50,15 @@ CREATE TABLE IF NOT EXISTS quote_items (
 ALTER TABLE invoices
 ADD COLUMN IF NOT EXISTS client_name TEXT;
 
+-- Add payment tracking fields to invoices table
+ALTER TABLE invoices
+ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid',
+ADD COLUMN IF NOT EXISTS payment_link TEXT,
+ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+
+-- Create index for faster payment queries
+CREATE INDEX IF NOT EXISTS idx_invoices_payment_status ON invoices(payment_status);
+
 -- Enable Row Level Security
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
