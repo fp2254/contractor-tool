@@ -788,6 +788,44 @@ body {
   box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
 }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-success {
+  background: var(--success);
+  color: white;
+}
+
+.badge-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.badge-category {
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.badge-category:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.badge-category.active {
+  background: var(--accent-dark);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
 .addon-section {
   max-width: 800px;
   margin: 40px auto 20px;

@@ -2274,6 +2274,9 @@ async function downloadQuote(quote) {
 
 // INVENTORY MANAGEMENT
 
+let inventoryFilterCategory = null;
+let allInventoryItems = [];
+
 function wireInventoryUI() {
   const btnNewInventory = document.getElementById("btn-new-inventory");
   if (btnNewInventory) {
@@ -2282,6 +2285,11 @@ function wireInventoryUI() {
       document.getElementById("inventory-item-id").value = "";
       document.getElementById("inventory-form").reset();
       document.getElementById("btn-delete-inventory").style.display = "none";
+      
+      if (inventoryFilterCategory) {
+        document.getElementById("inventory-category").value = inventoryFilterCategory;
+      }
+      
       showScreen("inventory-form");
     });
   }
@@ -2304,7 +2312,8 @@ function wireInventoryUI() {
 
 async function loadInventory() {
   if (tourMode) {
-    renderInventoryList(DEMO_DATA.inventory);
+    allInventoryItems = DEMO_DATA.inventory;
+    renderInventoryList(allInventoryItems);
     return;
   }
   
@@ -2315,11 +2324,21 @@ async function loadInventory() {
       return;
     }
 
-    const items = await res.json();
-    renderInventoryList(items);
+    allInventoryItems = await res.json();
+    renderInventoryList(allInventoryItems);
   } catch (err) {
     console.error("Error loading inventory:", err);
   }
+}
+
+function filterInventoryByCategory(category) {
+  inventoryFilterCategory = category;
+  renderInventoryList(allInventoryItems);
+}
+
+function clearInventoryFilter() {
+  inventoryFilterCategory = null;
+  renderInventoryList(allInventoryItems);
 }
 
 function renderInventoryList(items) {
@@ -2338,15 +2357,34 @@ function renderInventoryList(items) {
     return;
   }
 
+  let filteredItems = items;
+  if (inventoryFilterCategory) {
+    filteredItems = items.filter(item => item.category === inventoryFilterCategory);
+  }
+
   emptyState.style.display = "none";
 
   let totalValue = 0;
   listContainer.innerHTML = "";
   
+  if (inventoryFilterCategory) {
+    const clearBtn = document.createElement("div");
+    clearBtn.style.cssText = "margin-bottom: 16px; display: flex; align-items: center; gap: 8px;";
+    clearBtn.innerHTML = `
+      <span style="color: var(--muted); font-size: 14px;">
+        <i class="fa-solid fa-filter"></i> Filtered by: <strong>${inventoryFilterCategory}</strong>
+      </span>
+      <button class="btn-secondary" style="padding: 4px 12px; font-size: 13px;" onclick="clearInventoryFilter()">
+        <i class="fa-solid fa-xmark"></i> Clear Filter
+      </button>
+    `;
+    listContainer.appendChild(clearBtn);
+  }
+  
   updateCategoryDatalist(items);
   updateCategoryDisplay(items);
 
-  items.forEach((item) => {
+  filteredItems.forEach((item) => {
     const quantity = parseFloat(item.quantity) || 0;
     const unitPrice = parseFloat(item.unit_price) || 0;
     const itemValue = quantity * unitPrice;
@@ -2363,7 +2401,7 @@ function renderInventoryList(items) {
         <div style="flex: 1;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <strong style="font-size: 16px;">${item.name || "Unnamed Item"}</strong>
-            ${item.category ? `<span class="badge" style="background: var(--primary); color: white; font-size: 11px; padding: 2px 8px; border-radius: 12px;"><i class="fa-solid fa-tag"></i> ${item.category}</span>` : ""}
+            ${item.category ? `<span class="badge badge-category" style="font-size: 11px;"><i class="fa-solid fa-tag"></i> ${item.category}</span>` : ""}
           </div>
           ${item.description ? `<p style="color: var(--muted); margin: 4px 0; font-size: 14px;">${item.description}</p>` : ""}
           <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 13px; color: var(--muted);">
@@ -2384,7 +2422,7 @@ function renderInventoryList(items) {
   });
 
   totalValueEl.textContent = formatCurrency(totalValue);
-  itemCountEl.textContent = items.length;
+  itemCountEl.textContent = filteredItems.length;
 }
 
 function editInventoryItem(item) {
@@ -2524,9 +2562,10 @@ function updateCategoryDisplay(items) {
 
   Array.from(categories).sort().forEach(category => {
     const badge = document.createElement("span");
-    badge.className = "badge";
-    badge.style.cssText = "background: var(--primary); color: white; font-size: 13px; padding: 6px 12px; border-radius: 16px;";
+    badge.className = inventoryFilterCategory === category ? "badge badge-category active" : "badge badge-category";
+    badge.style.cssText = "font-size: 13px; padding: 6px 12px;";
     badge.innerHTML = `<i class="fa-solid fa-tag"></i> ${category}`;
+    badge.addEventListener("click", () => filterInventoryByCategory(category));
     categoriesList.appendChild(badge);
   });
 }
