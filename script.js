@@ -150,6 +150,7 @@ function checkTourMode() {
     document.getElementById("app-container").classList.remove("hidden");
     document.getElementById("tour-banner").classList.remove("hidden");
     document.getElementById("trial-banner").classList.add("hidden");
+    document.getElementById("btn-logout").classList.add("hidden");
     document.getElementById("screen-container").classList.add("tour-mode");
     loadDemoData();
     showScreen("dashboard");
@@ -164,6 +165,7 @@ function enterTourMode() {
   document.getElementById("app-container").classList.remove("hidden");
   document.getElementById("tour-banner").classList.remove("hidden");
   document.getElementById("trial-banner").classList.add("hidden");
+  document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("screen-container").classList.add("tour-mode");
   
   loadDemoData();
@@ -178,6 +180,7 @@ function exitTourMode() {
   
   document.getElementById("tour-banner").classList.add("hidden");
   document.getElementById("screen-container").classList.remove("tour-mode");
+  document.getElementById("btn-logout").classList.remove("hidden");
   
   sb.auth.getSession().then(({ data: { session } }) => {
     if (session?.user) {
