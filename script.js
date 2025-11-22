@@ -1255,9 +1255,13 @@ function wireSubscriptionUI() {
       
       const isLifetimePlan = plan === "lifetime_early" || plan === "lifetime_regular";
       
-      const stripeConnectCheckbox = document.getElementById("addon-stripe-connect");
-      if (!isLifetimePlan && stripeConnectCheckbox && stripeConnectCheckbox.checked) {
+      if (isLifetimePlan) {
         addons.push("connect_stripe");
+      } else {
+        const stripeConnectCheckbox = document.getElementById("addon-stripe-connect");
+        if (stripeConnectCheckbox && stripeConnectCheckbox.checked) {
+          addons.push("connect_stripe");
+        }
       }
       
       startCheckout(plan, addons);

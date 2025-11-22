@@ -616,6 +616,10 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       const addonPrice = ADDON_PRICE_IDS[code];
       if (addonPrice) lineItems.push({ price: addonPrice, quantity: 1 });
     }
+    
+    if (isLifetime && addons.includes("connect_stripe")) {
+      sessionConfig.metadata.stripe_connect_included = "true";
+    }
 
     const mode =
       plan === "monthly" || plan === "yearly" ? "subscription" : "payment";

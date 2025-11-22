@@ -27,7 +27,7 @@ TradeBase is a comprehensive invoicing and billing application designed specific
 9. **Light/Dark Mode** - Theme toggle with localStorage persistence
 10. **Document Download** - Export invoices and quotes as PNG images with company logo
 11. **Interactive Tour** - "Take a Tour" feature with demo data for previewing app before subscribing
-12. **Stripe Connect Add-on** - Optional payment collection integration ($4/mo for Monthly/Yearly plans)
+12. **Payment Collection** - Stripe Connect integration for accepting payments ($4/mo for Monthly/Yearly, included free in Lifetime plans)
 
 ## Project Structure
 ```
@@ -73,7 +73,15 @@ Storage buckets:
 - `invoice-photos` - Job photo attachments
 
 ## Recent Changes
-- **2025-11-22 (Latest)**: Interactive tour mode and referral promotion section
+- **2025-11-22 (Latest)**: Payment collection feature and invoice preview
+  - **Payment Collection Feature**: Added prominent feature box showing Stripe Connect payment collection
+  - Lifetime plans now include payment collection for FREE (no $4/mo charge)
+  - Monthly/Yearly plans can add payment collection for $4/mo
+  - Visual invoice preview on pricing page showing logo placement and footer customization
+  - "Accept Payments Directly" feature box with clear pricing for each tier
+  - Updated pricing cards to highlight payment collection as included benefit for Lifetime plans
+  
+- **2025-11-22**: Interactive tour mode and referral promotion section
   - **Interactive Tour**: Added "Take a Tour" button on pricing page that lets users preview the app with sample data
   - Tour mode shows demo invoices, quotes, clients, settings, and referral data
   - All forms disabled during tour to prevent data entry
