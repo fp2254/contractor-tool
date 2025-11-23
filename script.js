@@ -33,12 +33,10 @@ let tourMode = false;
 let isOnline = navigator.onLine;
 let isSyncing = false;
 
-// LANGUAGE & TEMPLATE INIT
-// Initialize language from localStorage synchronously to avoid flash
+// TEMPLATE INIT
 document.addEventListener('DOMContentLoaded', () => {
-  // Set language from localStorage early (before async auth checks)
-  // If profile has a different preference, it will be updated in onLoggedIn()
-  setLanguage(currentLanguage);
+  // Language is initialized in languages.js DOMContentLoaded
+  // Profile preferences will update language in onLoggedIn() if different
   setTemplate(currentTemplate);
 });
 

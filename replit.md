@@ -69,11 +69,16 @@ TradeBase supports 5 languages with full UI translation:
 - Portuguese (pt) - Português
 
 **Implementation:**
-- `languages.js` contains all translations organized by screen/feature
+- `languages.js` contains all translations organized by screen/feature, with language initialization in DOMContentLoaded
 - HTML elements use `data-i18n` attribute for text content and `data-i18n-placeholder` for input placeholders
 - `applyLanguage()` function updates all translated elements dynamically
-- Language preference is saved to user profile and persists across sessions
-- Language picker is available on login/signup screen for immediate access
+- Language preference is saved to user profile and persists across sessions via localStorage and database
+- Language picker is available on both login/signup screen AND dashboard header for easy switching while using the app
+- Dashboard language dropdown is positioned in header-actions next to theme toggle and logout button
+- `setLanguage()` function handles language changes, localStorage persistence, and automatic UI translation
+- `saveLanguagePreference()` persists language choice to user profile (sends only {preferred_language} field to prevent data loss)
+- `updateLanguagePickerValue()` synchronizes dropdown value across different app states (login, dashboard, tour mode)
+- Initialization sequence ensures returning users see their saved language immediately with no flash
 - Translations cover: auth, navigation, dashboard, invoices, quotes, clients, inventory, payments, settings, referrals, trial banners, and tour mode
 
 **Files:**

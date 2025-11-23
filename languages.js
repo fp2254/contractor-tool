@@ -651,5 +651,7 @@ function applyLanguage() {
   });
 }
 
-// Apply language on load
-document.addEventListener('DOMContentLoaded', applyLanguage);
+// Apply language on load - ensure language is set from localStorage before translating
+document.addEventListener('DOMContentLoaded', () => {
+  setLanguage(currentLanguage); // This calls applyLanguage internally
+});
