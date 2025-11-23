@@ -170,7 +170,11 @@ app.post("/api/profile", async (req, res) => {
 
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .upsert(payload)
+    .upsert({
+      ...payload,
+      preferred_language: payload.preferred_language || 'en',
+      preferred_template: payload.preferred_template || 'basic_clean'
+    })
     .select()
     .single();
 

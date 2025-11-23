@@ -936,9 +936,52 @@ function renderDemoSettings() {
     if (el && value) el.value = value;
   });
   
+  // Set language selector
+  const langSelect = document.getElementById("settings-language");
+  if (langSelect) langSelect.value = currentLanguage;
+  
+  // Set template selector
+  const templateSelect = document.getElementById("settings-template");
+  if (templateSelect) templateSelect.value = currentTemplate;
+  
   if (DEMO_DATA.profile.stripe_connect_enabled) {
     const statusCard = document.getElementById("payment-collection-status");
     if (statusCard) statusCard.classList.remove("hidden");
+  }
+}
+
+function renderTemplateShowcase() {
+  const container = document.getElementById("screen-dashboard");
+  if (!container) return;
+  
+  const showcase = document.createElement("div");
+  showcase.style.cssText = "margin: 30px 0; padding: 20px; border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); background: var(--card);";
+  showcase.innerHTML = `
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 Invoice Templates - Try Them All</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 15px;">
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('basic_clean'); showToast('Switched to Basic Clean template');">
+        <strong>Basic Clean</strong>
+        <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Black & white classic</p>
+      </div>
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('modern_pro'); showToast('Switched to Modern Pro template');">
+        <strong>Modern Pro</strong>
+        <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Bold headers, clean</p>
+      </div>
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('color_accent'); showToast('Switched to Color Accent template');">
+        <strong>Color Accent</strong>
+        <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Blue official header</p>
+      </div>
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('big_total'); showToast('Switched to Big Total template');">
+        <strong>Big Total</strong>
+        <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Emphasizes total</p>
+      </div>
+    </div>
+  `;
+  
+  const dashboardTiles = container.querySelector(".tile-grid");
+  if (dashboardTiles && !document.getElementById("template-showcase")) {
+    showcase.id = "template-showcase";
+    dashboardTiles.insertAdjacentElement("afterend", showcase);
   }
 }
 
@@ -968,6 +1011,16 @@ function wireAuthUI() {
   signupForm.addEventListener("submit", handleSignup);
 
   document.getElementById("btn-logout").addEventListener("click", handleLogout);
+  
+  // Language selector on auth screen
+  const langSelect = document.getElementById("auth-language-select");
+  if (langSelect) {
+    langSelect.value = currentLanguage;
+    langSelect.addEventListener("change", (e) => {
+      setLanguage(e.target.value);
+      applyLanguage();
+    });
+  }
   
   const viewPricingLink = document.getElementById("view-pricing-link");
   if (viewPricingLink) {
@@ -2624,26 +2677,25 @@ async function downloadQuote(quote) {
       ${quoteData.notes ? `<br><strong>Notes:</strong> ${quoteData.notes}` : ""}
     `;
     
-    itemsBody.innerHTML = "";
-    (quoteData.items || []).forEach((item) => {
-      const row = document.createElement("tr");
-      row.style.borderBottom = "1px solid #ddd";
-      row.innerHTML = `
-        <td style="padding: 10px; color: #000 !important;">${item.description}</td>
-        <td style="padding: 10px; text-align: center; color: #000 !important;">${item.quantity}</td>
-        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.unit_price)}</td>
-        <td style="padding: 10px; text-align: right; color: #000 !important;">${formatCurrency(item.total)}</td>
-      `;
-      itemsBody.appendChild(row);
-    });
+    const quoteForTemplate = {
+      ...quoteData,
+      number: quoteData.quote_number,
+      date: quoteData.quote_date,
+      business_name: profile?.business_name,
+      address: profile?.address,
+      phone: profile?.phone,
+      email: profile?.email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (quoteData.items || []).map(item => ({
+        description: item.description,
+        qty: item.quantity || 1,
+        price: item.unit_price || 0,
+        total: item.total || 0
+      }))
+    };
     
-    totals.innerHTML = `
-      <div style="margin-bottom: 5px;"><strong>Subtotal:</strong> ${formatCurrency(quoteData.subtotal || 0)}</div>
-      <div style="margin-bottom: 5px;"><strong>Tax:</strong> ${formatCurrency(quoteData.tax || 0)}</div>
-      <div style="font-size: 16px; margin-top: 10px;"><strong>Total:</strong> ${formatCurrency(quoteData.total || 0)}</div>
-    `;
-    
-    footer.innerHTML = (profile && profile.invoice_footer) ? profile.invoice_footer : "";
+    renderInvoiceTemplate(quoteForTemplate, true);
     
     template.style.left = "0";
     template.style.top = "0";
