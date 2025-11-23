@@ -260,6 +260,45 @@ const DEMO_DATA = {
   }
 })();
 
+// OFFLINE HELPERS
+function generateOfflineId() {
+  return 'offline_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function isOfflineId(id) {
+  return typeof id === 'string' && id.startsWith('offline_');
+}
+
+async function saveOffline(storeName, data, endpoint, method = 'POST') {
+  if (!currentUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) {
+      throw new Error('Not authenticated');
+    }
+    currentUser = session.user;
+  }
+  
+  data.user_id = currentUser.id;
+  
+  if (storeName === 'invoices') {
+    await tradebaseDB.saveInvoice(data);
+  } else if (storeName === 'quotes') {
+    await tradebaseDB.saveQuote(data);
+  } else if (storeName === 'clients') {
+    await tradebaseDB.saveClient(data);
+  } else if (storeName === 'inventory') {
+    await tradebaseDB.saveInventory(data);
+  }
+  
+  await tradebaseDB.addToSyncQueue({
+    endpoint,
+    method,
+    data,
+    storeName,
+    localId: data.id
+  });
+}
+
 // OFFLINE/SYNC SYSTEM
 async function initializeOfflineSupport() {
   try {
@@ -1181,19 +1220,41 @@ async function handleInvoiceSubmit(e) {
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
 
+  const invoiceData = {
+    client_id: null,
+    client_name: clientName,
+    date,
+    notes,
+    subtotal,
+    tax,
+    total,
+    items,
+    status: 'draft',
+    payment_status: 'unpaid',
+    created_at: new Date().toISOString()
+  };
+
   try {
+    if (!navigator.onLine) {
+      const offlineId = generateOfflineId();
+      invoiceData.id = offlineId;
+      invoiceData.number = `INV-${Date.now()}`;
+      
+      await saveOffline('invoices', invoiceData, '/api/invoices', 'POST');
+      
+      showToast("📱 Invoice saved offline. Will sync when online.");
+      await loadInvoices();
+      showScreen("invoices");
+      
+      pendingPhotos = [];
+      document.getElementById("photo-preview").innerHTML = "";
+      document.getElementById("invoice-photos").value = "";
+      return;
+    }
+
     const res = await apiFetch("/api/invoices", {
       method: "POST",
-      body: JSON.stringify({
-        client_id: null,
-        client_name: clientName,
-        date,
-        notes,
-        subtotal,
-        tax,
-        total,
-        items,
-      }),
+      body: JSON.stringify(invoiceData),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -1202,6 +1263,10 @@ async function handleInvoiceSubmit(e) {
     }
 
     const invoiceId = data.id;
+    
+    invoiceData.id = invoiceId;
+    invoiceData.number = data.number;
+    await tradebaseDB.saveInvoice(invoiceData);
 
     if (pendingPhotos.length) {
       await uploadInvoicePhotos(invoiceId, pendingPhotos);
@@ -1368,18 +1433,60 @@ async function loadClients() {
 async function loadInvoices() {
   if (tourMode) return;
   
-  const res = await apiFetch("/api/invoices");
-  const data = await res.json();
   const list = document.getElementById("invoices-list");
   list.innerHTML = "";
+  
+  let invoices = [];
+  
+  if (!currentUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+    }
+  }
+  
+  if (currentUser) {
+    const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
+    invoices = localInvoices || [];
+  }
+  
+  if (navigator.onLine) {
+    try {
+      const res = await apiFetch("/api/invoices");
+      const apiInvoices = await res.json();
+      
+      if (apiInvoices && Array.isArray(apiInvoices)) {
+        for (const inv of apiInvoices) {
+          await tradebaseDB.saveInvoice(inv);
+        }
+        
+        const mergedMap = new Map();
+        apiInvoices.forEach(inv => mergedMap.set(inv.id, inv));
+        invoices.forEach(inv => {
+          if (!mergedMap.has(inv.id)) {
+            mergedMap.set(inv.id, inv);
+          }
+        });
+        invoices = Array.from(mergedMap.values());
+      }
+    } catch (error) {
+      console.log('Using offline invoices:', error.message);
+    }
+  }
 
-  (data || []).forEach((inv) => {
+  invoices.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  invoices.forEach((inv) => {
     const item = document.createElement("div");
     item.className = "list-item clickable";
     item.style.cursor = "pointer";
+    
+    const isOffline = isOfflineId(inv.id);
+    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
+    
     item.innerHTML = `
       <div class="list-item-header">
-        <strong>Invoice #${inv.number || inv.id}</strong>
+        <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
         <span>${formatCurrency(inv.total || 0)}</span>
       </div>
       <div class="list-item-sub">${inv.client_name || ""}</div>
