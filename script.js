@@ -952,6 +952,64 @@ function renderDemoSettings() {
   }
 }
 
+function previewTemplateInModal(templateId) {
+  const modal = document.getElementById("template-preview-modal");
+  const content = document.getElementById("template-preview-content");
+  const closeBtn = document.getElementById("close-template-preview");
+  
+  if (!modal || !content) return;
+  
+  const originalTemplate = currentTemplate;
+  setTemplate(templateId);
+  
+  const sampleInvoice = {
+    ...DEMO_DATA.invoices[0],
+    business_name: DEMO_DATA.profile.business_name,
+    address: DEMO_DATA.profile.address,
+    phone: DEMO_DATA.profile.phone,
+    email: DEMO_DATA.profile.email,
+    logo_url: DEMO_DATA.profile.logo_url,
+    invoice_footer: "Thank you for your business!"
+  };
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.id = 'temp-invoice-render';
+  tempDiv.style.cssText = 'position: absolute; left: -9999px;';
+  document.body.appendChild(tempDiv);
+  
+  if (currentTemplate === 'basic_clean') {
+    tempDiv.innerHTML = renderBasicClean(sampleInvoice, 'INVOICE', 'number', 'date');
+  } else if (currentTemplate === 'modern_pro') {
+    tempDiv.innerHTML = renderModernPro(sampleInvoice, 'INVOICE', 'number', 'date');
+  } else if (currentTemplate === 'color_accent') {
+    tempDiv.innerHTML = renderColorAccent(sampleInvoice, 'INVOICE', 'number', 'date');
+  } else if (currentTemplate === 'big_total') {
+    tempDiv.innerHTML = renderBigTotal(sampleInvoice, 'INVOICE', 'number', 'date');
+  }
+  
+  content.innerHTML = tempDiv.innerHTML;
+  document.body.removeChild(tempDiv);
+  
+  modal.style.display = 'block';
+  
+  setTemplate(originalTemplate);
+  
+  const closeModal = () => {
+    modal.style.display = 'none';
+    closeBtn.removeEventListener('click', closeModal);
+    modal.removeEventListener('click', handleOutsideClick);
+  };
+  
+  const handleOutsideClick = (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  };
+  
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', handleOutsideClick);
+}
+
 function renderTemplateShowcase() {
   const container = document.getElementById("screen-dashboard");
   if (!container) return;
@@ -959,21 +1017,21 @@ function renderTemplateShowcase() {
   const showcase = document.createElement("div");
   showcase.style.cssText = "margin: 30px 0; padding: 20px; border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); background: var(--card);";
   showcase.innerHTML = `
-    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 Invoice Templates - Try Them All</h3>
+    <h3 style="margin-top: 0; margin-bottom: 15px;">📄 Invoice Templates - Click to Preview</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 15px;">
-      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('basic_clean'); showToast('Switched to Basic Clean template');">
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';" onclick="previewTemplateInModal('basic_clean');">
         <strong>Basic Clean</strong>
         <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Black & white classic</p>
       </div>
-      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('modern_pro'); showToast('Switched to Modern Pro template');">
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';" onclick="previewTemplateInModal('modern_pro');">
         <strong>Modern Pro</strong>
         <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Bold headers, clean</p>
       </div>
-      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('color_accent'); showToast('Switched to Color Accent template');">
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';" onclick="previewTemplateInModal('color_accent');">
         <strong>Color Accent</strong>
         <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Blue official header</p>
       </div>
-      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;" onclick="setTemplate('big_total'); showToast('Switched to Big Total template');">
+      <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.transform=''; this.style.boxShadow='';" onclick="previewTemplateInModal('big_total');">
         <strong>Big Total</strong>
         <p style="font-size: 12px; color: var(--muted); margin: 5px 0 0 0;">Emphasizes total</p>
       </div>
