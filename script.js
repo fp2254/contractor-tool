@@ -34,7 +34,10 @@ let isOnline = navigator.onLine;
 let isSyncing = false;
 
 // LANGUAGE & TEMPLATE INIT
+// Initialize language from localStorage synchronously to avoid flash
 document.addEventListener('DOMContentLoaded', () => {
+  // Set language from localStorage early (before async auth checks)
+  // If profile has a different preference, it will be updated in onLoggedIn()
   setLanguage(currentLanguage);
   setTemplate(currentTemplate);
 });
@@ -465,8 +468,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireQuotesUI();
   wireInventoryUI();
   wireTourMode();
+  
+  // Check tour mode and session - these will update language if needed
   checkTourMode();
-  checkSession();
+  await checkSession();
+  
   updateTrialBanner();
   await initializeOfflineSupport();
   
@@ -546,16 +552,13 @@ function checkTourMode() {
     document.getElementById("btn-logout").classList.add("hidden");
     document.getElementById("screen-container").classList.add("tour-mode");
     
-    // Update language picker to show current language
-    const appLangSelect = document.getElementById("app-language-select");
-    if (appLangSelect) {
-      appLangSelect.value = currentLanguage;
-    }
+    // Set language and update picker
+    setLanguage(currentLanguage);
+    updateLanguagePickerValue();
     
     loadDemoData();
     renderTemplateShowcase();
     showScreen("dashboard");
-    applyLanguage();
   }
 }
 
@@ -571,15 +574,12 @@ function enterTourMode() {
   document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("screen-container").classList.add("tour-mode");
   
-  // Update language picker to show current language
-  const appLangSelect = document.getElementById("app-language-select");
-  if (appLangSelect) {
-    appLangSelect.value = currentLanguage;
-  }
+  // Set language and update picker
+  setLanguage(currentLanguage);
+  updateLanguagePickerValue();
   
   loadDemoData();
   showScreen("dashboard");
-  applyLanguage();
 }
 
 function exitTourMode() {
@@ -1210,10 +1210,7 @@ async function onLoggedIn() {
   }
   
   // Update language picker to show current language
-  const appLangSelect = document.getElementById("app-language-select");
-  if (appLangSelect) {
-    appLangSelect.value = currentLanguage;
-  }
+  updateLanguagePickerValue();
   
   await loadInitialData();
   await updateTrialBanner();
@@ -1248,19 +1245,26 @@ function wireDashboardUI() {
   // Language selector in app header
   const appLangSelect = document.getElementById("app-language-select");
   if (appLangSelect) {
-    appLangSelect.value = currentLanguage;
+    // Don't set value here - it will be set in onLoggedIn/tour mode functions
     appLangSelect.addEventListener("change", (e) => {
       setLanguage(e.target.value);
-      applyLanguage();
-      // Save preference to profile
+      // Save preference to profile (also updates dropdown value)
       saveLanguagePreference(e.target.value);
     });
+  }
+}
+
+function updateLanguagePickerValue() {
+  const appLangSelect = document.getElementById("app-language-select");
+  if (appLangSelect && currentLanguage) {
+    appLangSelect.value = currentLanguage;
   }
 }
 
 async function saveLanguagePreference(lang) {
   if (tourMode) return;
   try {
+    // Only send the language field - upsert will merge with existing data
     await apiFetch("/api/profile", {
       method: "POST",
       body: JSON.stringify({ preferred_language: lang }),
