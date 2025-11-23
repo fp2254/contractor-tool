@@ -607,6 +607,12 @@ function applyLanguage() {
       el.textContent = t(key);
     }
   });
+  
+  // Update all elements with data-i18n-placeholder attribute
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
 }
 
 // Apply language on load
