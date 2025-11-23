@@ -48,7 +48,7 @@ const DEMO_DATA = {
     email: "contact@abcplumbing.com",
     tax_rate: 8.5,
     markup_rate: 25,
-    logo_url: null,
+    logo_url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='80' viewBox='0 0 200 80'%3E%3Crect width='200' height='80' fill='%232563eb'/%3E%3Ctext x='100' y='45' font-family='Arial, sans-serif' font-size='24' font-weight='bold' fill='white' text-anchor='middle'%3EABC Plumbing%3C/text%3E%3C/svg%3E",
     stripe_connect_enabled: true
   },
   clients: [
@@ -952,7 +952,7 @@ function renderDemoSettings() {
   }
 }
 
-function previewTemplateInModal(templateId) {
+async function previewTemplateInModal(templateId) {
   const modal = document.getElementById("template-preview-modal");
   const content = document.getElementById("template-preview-content");
   const closeBtn = document.getElementById("close-template-preview");
@@ -962,13 +962,29 @@ function previewTemplateInModal(templateId) {
   const originalTemplate = currentTemplate;
   setTemplate(templateId);
   
+  let logoUrl = DEMO_DATA.profile.logo_url;
+  
+  if (!tourMode && currentUser) {
+    try {
+      const res = await apiFetch("/api/profile");
+      if (res.ok) {
+        const profile = await res.json();
+        if (profile.logo_url) {
+          logoUrl = profile.logo_url;
+        }
+      }
+    } catch (err) {
+      console.log("Could not load user logo for preview");
+    }
+  }
+  
   const sampleInvoice = {
     ...DEMO_DATA.invoices[0],
     business_name: DEMO_DATA.profile.business_name,
     address: DEMO_DATA.profile.address,
     phone: DEMO_DATA.profile.phone,
     email: DEMO_DATA.profile.email,
-    logo_url: DEMO_DATA.profile.logo_url,
+    logo_url: logoUrl,
     invoice_footer: "Thank you for your business!"
   };
   

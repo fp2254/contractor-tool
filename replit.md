@@ -96,6 +96,7 @@ TradeBase offers 4 professional invoice templates for customizable document gene
 - `renderTemplateShowcase()` displays all 4 templates as clickable cards in demo mode
 - `previewTemplateInModal()` function opens full-screen modal with complete invoice preview for any template
 - Interactive preview: Users can click any template card to see a full invoice rendered in that style with sample data
+- Logo display: Templates automatically display business logo on the left side when available (demo mode shows placeholder, real users see their uploaded logo)
 - Template preference is saved to user profile and used for all invoice/quote downloads
 - Each template includes custom fonts, colors, spacing, and visual hierarchy
 - Templates support business logo, line items, photos, tax calculation, and footer text
