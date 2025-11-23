@@ -24,6 +24,13 @@
         <div class="auth-toggle">
           <button id="btn-show-login" class="auth-tab active">Log In</button>
           <button id="btn-show-signup" class="auth-tab">Sign Up</button>
+          <select id="auth-language-select" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer;">
+            <option value="en">🇺🇸 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="pt">🇵🇹 Português</option>
+          </select>
         </div>
 
         <!-- LOGIN -->
@@ -691,6 +698,29 @@
               <div id="business-logo-preview" class="logo-preview"></div>
             </div>
 
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+
+            <div class="form-row">
+              <label data-i18n="settings.language">Language</label>
+              <select id="settings-language" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px;">
+                <option value="en">🇺🇸 English</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="pt">🇵🇹 Português</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="settings.invoice_template">Invoice Template</label>
+              <select id="settings-template" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px;">
+                <option value="basic_clean">Basic Clean - Black and white, classic contractor PDF</option>
+                <option value="modern_pro">Modern Pro - Bold headings, clean sections</option>
+                <option value="color_accent">Color Accent Header - Blue or gray header for official look</option>
+                <option value="big_total">Big Total - Emphasizes the total amount</option>
+              </select>
+            </div>
+
             <button type="submit" class="btn-primary">Save Settings</button>
             <p id="settings-message" class="success-text"></p>
           </form>
@@ -938,6 +968,8 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="config.js"></script>
+  <script src="languages.js"></script>
+  <script src="templates.js"></script>
   <script src="db.js"></script>
   <script src="script.js"></script>
 </body>

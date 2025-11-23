@@ -33,6 +33,12 @@ let tourMode = false;
 let isOnline = navigator.onLine;
 let isSyncing = false;
 
+// LANGUAGE & TEMPLATE INIT
+document.addEventListener('DOMContentLoaded', () => {
+  setLanguage(currentLanguage);
+  setTemplate(currentTemplate);
+});
+
 // DEMO DATA FOR TOUR MODE
 const DEMO_DATA = {
   profile: {
@@ -2052,6 +2058,9 @@ async function loadSettings() {
   document.getElementById("business-footer").value =
     profile.invoice_footer || "";
 
+  document.getElementById("settings-language").value = profile.preferred_language || "en";
+  document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
+
   if (profile.logo_url) {
     const preview = document.getElementById("business-logo-preview");
     preview.innerHTML = "";
@@ -2066,6 +2075,16 @@ async function handleSaveSettings(e) {
   const msg = document.getElementById("settings-message");
   msg.textContent = "";
 
+  const selectedLang = document.getElementById("settings-language").value;
+  const selectedTemplate = document.getElementById("settings-template").value;
+  
+  if (setLanguage(selectedLang)) {
+    applyLanguage();
+  }
+  if (setTemplate(selectedTemplate)) {
+    // Template will be applied when downloading next invoice
+  }
+
   const payload = {
     business_name: document.getElementById("business-name").value,
     phone: document.getElementById("business-phone").value,
@@ -2077,6 +2096,8 @@ async function handleSaveSettings(e) {
     default_markup_percent:
       parseFloat(document.getElementById("business-markup").value) || null,
     invoice_footer: document.getElementById("business-footer").value,
+    preferred_language: selectedLang,
+    preferred_template: selectedTemplate,
   };
 
   if (selectedLogoFile) {
