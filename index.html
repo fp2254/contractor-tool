@@ -186,8 +186,8 @@
             <button class="tile" data-screen="settings">
               <div class="tile-icon"><i class="fa-solid fa-gear"></i></div>
               <div class="tile-text">
-                <h3>Settings</h3>
-                <p>Logo, business info, defaults.</p>
+                <h3 data-i18n="dashboard.settings">Settings</h3>
+                <p data-i18n="dashboard.settings_desc">Logo, business info, defaults.</p>
               </div>
             </button>
 
@@ -195,8 +195,8 @@
             <button class="tile tile-full tile-referrals" data-screen="referrals">
               <div class="tile-icon"><i class="fa-solid fa-badge-dollar"></i></div>
               <div class="tile-text">
-                <h2>Referrals – 20% For Life</h2>
-                <p>Share your link. Get paid every month your referrals stay.</p>
+                <h2 data-i18n="dashboard.referrals">Referrals – 20% For Life</h2>
+                <p data-i18n="dashboard.referrals_desc">Share your link. Get paid every month your referrals stay.</p>
               </div>
             </button>
           </div>
@@ -205,68 +205,68 @@
         <!-- NEW INVOICE -->
         <section id="screen-new-invoice" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>New Invoice</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="invoice.new_invoice">New Invoice</h2>
           </div>
 
           <form id="invoice-form" class="form">
             <div class="form-row">
-              <label>Client</label>
-              <input type="text" id="invoice-client-name" placeholder="Type client name or select saved client" list="client-datalist" />
+              <label data-i18n="invoice.client">Client</label>
+              <input type="text" id="invoice-client-name" data-i18n-placeholder="invoice.client_placeholder" placeholder="Type client name or select saved client" list="client-datalist" />
               <datalist id="client-datalist"></datalist>
-              <button type="button" id="btn-add-client-inline" class="btn-sm">Save as new client</button>
+              <button type="button" id="btn-add-client-inline" class="btn-sm" data-i18n="invoice.save_client">Save as new client</button>
             </div>
 
             <div class="form-row">
-              <label>Invoice Date</label>
+              <label data-i18n="invoice.date">Invoice Date</label>
               <input type="date" id="invoice-date" />
             </div>
 
             <div class="form-row">
-              <label>Invoice Notes</label>
-              <textarea id="invoice-notes" rows="3" placeholder="Optional notes for the client"></textarea>
+              <label data-i18n="invoice.notes">Invoice Notes</label>
+              <textarea id="invoice-notes" rows="3" data-i18n-placeholder="invoice.notes_placeholder" placeholder="Optional notes for the client"></textarea>
             </div>
 
-            <h3>Line Items</h3>
+            <h3 data-i18n="invoice.line_items">Line Items</h3>
             <div id="line-items"></div>
-            <button type="button" id="btn-add-line-item" class="btn-outline-sm">
+            <button type="button" id="btn-add-line-item" class="btn-outline-sm" data-i18n="invoice.add_item">
               + Add Line Item
             </button>
 
             <!-- COST & MARKUP HELPER -->
             <div class="helper-card">
-              <h3>Cost & Markup Helper (optional)</h3>
+              <h3 data-i18n="invoice.cost_helper">Cost & Markup Helper (optional)</h3>
               <div class="form-row-inline">
                 <div>
-                  <label>Materials Cost</label>
+                  <label data-i18n="invoice.materials">Materials Cost</label>
                   <input type="number" id="helper-materials" min="0" step="0.01" />
                 </div>
                 <div>
-                  <label>Labor Hours</label>
+                  <label data-i18n="invoice.labor_hours">Labor Hours</label>
                   <input type="number" id="helper-hours" min="0" step="0.1" />
                 </div>
               </div>
               <div class="form-row-inline">
                 <div>
-                  <label>Hourly Rate</label>
+                  <label data-i18n="invoice.hourly_rate">Hourly Rate</label>
                   <input type="number" id="helper-rate" min="0" step="0.01" />
                 </div>
                 <div>
-                  <label>Markup %</label>
+                  <label data-i18n="invoice.markup">Markup %</label>
                   <input type="number" id="helper-markup" min="0" step="1" />
                 </div>
                 <div>
-                  <label>Tax %</label>
+                  <label data-i18n="invoice.tax">Tax %</label>
                   <input type="number" id="helper-tax" min="0" step="0.1" />
                 </div>
               </div>
-              <button type="button" id="btn-helper-calc" class="btn-outline-sm">
+              <button type="button" id="btn-helper-calc" class="btn-outline-sm" data-i18n="invoice.calculate">
                 Calculate Price
               </button>
               <div id="helper-results" class="helper-results hidden">
-                <p>Recommended total: <span id="helper-total"></span></p>
-                <p>Profit: <span id="helper-profit"></span> (<span id="helper-margin"></span>% margin)</p>
-                <button type="button" id="btn-helper-apply" class="btn-sm">
+                <p data-i18n="invoice.recommended_total">Recommended total: <span id="helper-total"></span></p>
+                <p data-i18n="invoice.profit">Profit: <span id="helper-profit"></span> (<span id="helper-margin"></span>% margin)</p>
+                <button type="button" id="btn-helper-apply" class="btn-sm" data-i18n="invoice.use_total">
                   Use this as invoice total
                 </button>
               </div>
@@ -274,7 +274,7 @@
 
             <!-- PHOTOS -->
             <div class="form-row">
-              <label>Attach Photos</label>
+              <label data-i18n="invoice.photos">Attach Photos</label>
               <input type="file" id="invoice-photos" accept="image/*" multiple />
               <div id="photo-preview" class="photo-preview"></div>
             </div>
@@ -282,20 +282,20 @@
             <!-- TOTALS -->
             <div class="totals-box">
               <div>
-                <span>Subtotal:</span>
+                <span data-i18n="invoice.subtotal">Subtotal:</span>
                 <span id="display-subtotal">$0.00</span>
               </div>
               <div>
-                <span>Tax:</span>
+                <span data-i18n="invoice.tax_label">Tax:</span>
                 <span id="display-tax">$0.00</span>
               </div>
               <div class="totals-main">
-                <span>Total:</span>
+                <span data-i18n="invoice.total">Total:</span>
                 <span id="display-total">$0.00</span>
               </div>
             </div>
 
-            <button type="submit" class="btn-primary">Save Invoice</button>
+            <button type="submit" class="btn-primary" data-i18n="invoice.save">Save Invoice</button>
             <p id="invoice-error" class="error-text"></p>
           </form>
         </section>
@@ -303,8 +303,8 @@
         <!-- INVOICES -->
         <section id="screen-invoices" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Invoices</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="invoice.invoices">Invoices</h2>
           </div>
           <div id="invoices-list" class="list"></div>
         </section>
@@ -312,8 +312,8 @@
         <!-- INVOICE DETAIL VIEW -->
         <section id="screen-invoice-detail" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="invoices"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2 id="invoice-detail-title">Invoice Details</h2>
+            <button class="btn-back" data-back="invoices"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 id="invoice-detail-title" data-i18n="invoice.details">Invoice Details</h2>
           </div>
           <div id="invoice-detail-content" class="detail-view"></div>
         </section>
@@ -321,9 +321,9 @@
         <!-- QUOTES (formerly estimates) -->
         <section id="screen-quotes" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Quotes</h2>
-            <button class="btn-primary" id="btn-new-quote">+ New Quote</button>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="quote.quotes">Quotes</h2>
+            <button class="btn-primary" id="btn-new-quote" data-i18n="quote.new_quote">+ New Quote</button>
           </div>
           <div id="quotes-list" class="list"></div>
         </section>
@@ -331,8 +331,8 @@
         <!-- QUOTE DETAIL VIEW -->
         <section id="screen-quote-detail" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2 id="quote-detail-title">Quote Details</h2>
+            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 id="quote-detail-title" data-i18n="quote.details">Quote Details</h2>
           </div>
           <div id="quote-detail-content" class="detail-view"></div>
         </section>
@@ -340,49 +340,49 @@
         <!-- NEW QUOTE -->
         <section id="screen-new-quote" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>New Quote</h2>
+            <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="quote.new_quote">New Quote</h2>
           </div>
 
           <form id="quote-form" class="form">
             <div class="form-row">
-              <label>Client</label>
-              <input type="text" id="quote-client-name" placeholder="Type client name or select saved client" list="quote-client-datalist" />
+              <label data-i18n="quote.client">Client</label>
+              <input type="text" id="quote-client-name" data-i18n-placeholder="quote.client_placeholder" placeholder="Type client name or select saved client" list="quote-client-datalist" />
               <datalist id="quote-client-datalist"></datalist>
             </div>
 
             <div class="form-row">
-              <label>Quote Date</label>
+              <label data-i18n="quote.date">Quote Date</label>
               <input type="date" id="quote-date" />
             </div>
 
             <div class="form-row">
-              <label>Quote Notes</label>
-              <textarea id="quote-notes" rows="3" placeholder="Optional notes for the client"></textarea>
+              <label data-i18n="quote.notes">Quote Notes</label>
+              <textarea id="quote-notes" rows="3" data-i18n-placeholder="quote.notes_placeholder" placeholder="Optional notes for the client"></textarea>
             </div>
 
-            <h3>Line Items</h3>
+            <h3 data-i18n="quote.line_items">Line Items</h3>
             <div id="quote-line-items"></div>
-            <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm">
+            <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm" data-i18n="quote.add_item">
               + Add Line Item
             </button>
 
             <div class="totals-box">
               <div>
-                <span>Subtotal:</span>
+                <span data-i18n="quote.subtotal">Subtotal:</span>
                 <span id="quote-display-subtotal">$0.00</span>
               </div>
               <div>
-                <span>Tax:</span>
+                <span data-i18n="quote.tax">Tax:</span>
                 <span id="quote-display-tax">$0.00</span>
               </div>
               <div class="totals-main">
-                <span>Total:</span>
+                <span data-i18n="quote.total">Total:</span>
                 <span id="quote-display-total">$0.00</span>
               </div>
             </div>
 
-            <button type="submit" class="btn-primary">Save Quote</button>
+            <button type="submit" class="btn-primary" data-i18n="quote.save">Save Quote</button>
             <p id="quote-error" class="error-text"></p>
           </form>
         </section>
@@ -589,15 +589,15 @@
         <!-- CLIENTS -->
         <section id="screen-clients" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Clients</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="client.clients">Clients</h2>
           </div>
           <form id="client-form" class="form-inline">
-            <input type="text" id="client-name" placeholder="Client name" required />
-            <input type="text" id="client-phone" placeholder="Phone" />
-            <input type="email" id="client-email" placeholder="Email" />
-            <input type="text" id="client-address" placeholder="Address" />
-            <button type="submit" class="btn-sm">Add Client</button>
+            <input type="text" id="client-name" data-i18n-placeholder="client.name_placeholder" placeholder="Client name" required />
+            <input type="text" id="client-phone" data-i18n-placeholder="client.phone_placeholder" placeholder="Phone" />
+            <input type="email" id="client-email" data-i18n-placeholder="client.email_placeholder" placeholder="Email" />
+            <input type="text" id="client-address" data-i18n-placeholder="client.address_placeholder" placeholder="Address" />
+            <button type="submit" class="btn-sm" data-i18n="client.add">Add Client</button>
           </form>
           <div id="clients-list" class="list"></div>
         </section>
@@ -653,47 +653,47 @@
         <!-- SETTINGS -->
         <section id="screen-settings" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Settings & Business Info</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="settings.title">Settings & Business Info</h2>
           </div>
           <form id="settings-form" class="form">
             <div class="form-row">
-              <label>Business Name</label>
+              <label data-i18n="settings.business_name">Business Name</label>
               <input type="text" id="business-name" />
             </div>
             <div class="form-row">
-              <label>Phone</label>
+              <label data-i18n="settings.phone">Phone</label>
               <input type="text" id="business-phone" />
             </div>
             <div class="form-row">
-              <label>Email</label>
+              <label data-i18n="settings.email">Email</label>
               <input type="email" id="business-email" />
             </div>
             <div class="form-row">
-              <label>Address</label>
+              <label data-i18n="settings.address">Address</label>
               <input type="text" id="business-address" />
             </div>
             <div class="form-row">
-              <label>Website</label>
+              <label data-i18n="settings.website">Website</label>
               <input type="text" id="business-website" />
             </div>
 
             <div class="form-row">
-              <label>Default Tax %</label>
+              <label data-i18n="settings.default_tax">Default Tax %</label>
               <input type="number" id="business-tax" min="0" step="0.1" />
             </div>
             <div class="form-row">
-              <label>Default Markup %</label>
+              <label data-i18n="settings.default_markup">Default Markup %</label>
               <input type="number" id="business-markup" min="0" step="1" />
             </div>
 
             <div class="form-row">
-              <label>Invoice Footer Text</label>
+              <label data-i18n="settings.footer">Invoice Footer Text</label>
               <textarea id="business-footer" rows="2"></textarea>
             </div>
 
             <div class="form-row">
-              <label>Upload Logo</label>
+              <label data-i18n="settings.logo">Upload Logo</label>
               <input type="file" id="business-logo" accept="image/*" />
               <div id="business-logo-preview" class="logo-preview"></div>
             </div>
@@ -721,7 +721,7 @@
               </select>
             </div>
 
-            <button type="submit" class="btn-primary">Save Settings</button>
+            <button type="submit" class="btn-primary" data-i18n="settings.save">Save Settings</button>
             <p id="settings-message" class="success-text"></p>
           </form>
 
@@ -777,8 +777,8 @@
         <!-- PAYMENTS -->
         <section id="screen-payments" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Payment Collection</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="payments.title">Payment Collection</h2>
           </div>
 
           <div class="feature-status-card">
@@ -834,22 +834,22 @@
         <!-- INVENTORY -->
         <section id="screen-inventory" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Inventory Management</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="inventory.title">Inventory Management</h2>
           </div>
 
           <div class="screen-actions">
-            <button id="btn-new-inventory" class="btn-primary"><i class="fa-solid fa-plus"></i> Add Item</button>
+            <button id="btn-new-inventory" class="btn-primary"><i class="fa-solid fa-plus"></i> <span data-i18n="inventory.add_item">Add Item</span></button>
           </div>
 
           <div class="feature-status-card">
             <div class="feature-status-header">
               <i class="fa-solid fa-dollar-sign"></i>
-              <h3>Total Inventory Value</h3>
+              <h3 data-i18n="inventory.total_value">Total Inventory Value</h3>
             </div>
             <div style="text-align: center; padding: 20px 0;">
               <strong id="inventory-total-value" style="font-size: 32px; color: var(--primary);">$0.00</strong>
-              <p style="color: var(--muted); margin-top: 8px;"><span id="inventory-item-count">0</span> items in stock</p>
+              <p style="color: var(--muted); margin-top: 8px;"><span id="inventory-item-count">0</span> <span data-i18n="inventory.items_in_stock">items in stock</span></p>
             </div>
           </div>
 
