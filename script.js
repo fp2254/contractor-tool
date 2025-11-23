@@ -545,6 +545,13 @@ function checkTourMode() {
     document.getElementById("trial-banner").classList.add("hidden");
     document.getElementById("btn-logout").classList.add("hidden");
     document.getElementById("screen-container").classList.add("tour-mode");
+    
+    // Update language picker to show current language
+    const appLangSelect = document.getElementById("app-language-select");
+    if (appLangSelect) {
+      appLangSelect.value = currentLanguage;
+    }
+    
     loadDemoData();
     renderTemplateShowcase();
     showScreen("dashboard");
@@ -563,6 +570,12 @@ function enterTourMode() {
   document.getElementById("trial-banner").classList.add("hidden");
   document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("screen-container").classList.add("tour-mode");
+  
+  // Update language picker to show current language
+  const appLangSelect = document.getElementById("app-language-select");
+  if (appLangSelect) {
+    appLangSelect.value = currentLanguage;
+  }
   
   loadDemoData();
   showScreen("dashboard");
@@ -1194,6 +1207,12 @@ async function onLoggedIn() {
     }
   } catch (err) {
     console.error("Error loading preferences:", err);
+  }
+  
+  // Update language picker to show current language
+  const appLangSelect = document.getElementById("app-language-select");
+  if (appLangSelect) {
+    appLangSelect.value = currentLanguage;
   }
   
   await loadInitialData();
