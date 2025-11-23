@@ -530,6 +530,7 @@ function checkTourMode() {
     document.getElementById("btn-logout").classList.add("hidden");
     document.getElementById("screen-container").classList.add("tour-mode");
     loadDemoData();
+    renderTemplateShowcase();
     showScreen("dashboard");
   }
 }
@@ -537,6 +538,7 @@ function checkTourMode() {
 function enterTourMode() {
   tourMode = true;
   sessionStorage.setItem("tb_tour_mode", "true");
+  renderTemplateShowcase();
   
   document.getElementById("auth-container").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
@@ -1085,6 +1087,24 @@ async function checkSession() {
 async function onLoggedIn() {
   document.getElementById("auth-container").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
+  
+  // Load user preferences
+  try {
+    const res = await apiFetch("/api/profile");
+    if (res.ok) {
+      const profile = await res.json();
+      if (profile?.preferred_language && profile.preferred_language !== currentLanguage) {
+        setLanguage(profile.preferred_language);
+        applyLanguage();
+      }
+      if (profile?.preferred_template && profile.preferred_template !== currentTemplate) {
+        setTemplate(profile.preferred_template);
+      }
+    }
+  } catch (err) {
+    console.error("Error loading preferences:", err);
+  }
+  
   await loadInitialData();
   await updateTrialBanner();
   wireSubscriptionUI();

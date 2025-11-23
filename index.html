@@ -22,8 +22,8 @@
         <p class="app-subtitle">Simple. Powerful. Built for trades.</p>
 
         <div class="auth-toggle">
-          <button id="btn-show-login" class="auth-tab active">Log In</button>
-          <button id="btn-show-signup" class="auth-tab">Sign Up</button>
+          <button id="btn-show-login" class="auth-tab active" data-i18n="auth.login">Log In</button>
+          <button id="btn-show-signup" class="auth-tab" data-i18n="auth.signup">Sign Up</button>
           <select id="auth-language-select" style="margin-left: auto; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer;">
             <option value="en">🇺🇸 English</option>
             <option value="es">🇪🇸 Español</option>
@@ -35,27 +35,27 @@
 
         <!-- LOGIN -->
         <form id="login-form" class="auth-form">
-          <label>Email</label>
+          <label data-i18n="auth.email">Email</label>
           <input type="email" id="login-email" required />
-          <label>Password</label>
+          <label data-i18n="auth.password">Password</label>
           <input type="password" id="login-password" required />
-          <button type="submit" class="btn-primary">Log In</button>
+          <button type="submit" class="btn-primary" data-i18n="auth.login">Log In</button>
           <p id="login-error" class="error-text"></p>
-          <a id="forgot-password-link" href="#" class="small-link">Forgot password?</a>
+          <a id="forgot-password-link" href="#" class="small-link" data-i18n="auth.forgot_password">Forgot password?</a>
         </form>
 
         <!-- SIGNUP -->
         <form id="signup-form" class="auth-form hidden">
-          <label>Email</label>
+          <label data-i18n="auth.email">Email</label>
           <input type="email" id="signup-email" required />
-          <label>Password</label>
+          <label data-i18n="auth.password">Password</label>
           <input type="password" id="signup-password" required />
-          <button type="submit" class="btn-primary">Create Account</button>
+          <button type="submit" class="btn-primary" data-i18n="auth.create_account">Create Account</button>
           <p id="signup-error" class="error-text"></p>
         </form>
 
         <div class="auth-footer">
-          <a id="view-pricing-link" href="#" class="small-link">View Pricing & Plans</a>
+          <a id="view-pricing-link" href="#" class="small-link" data-i18n="auth.view_pricing">View Pricing & Plans</a>
         </div>
       </div>
     </div>
@@ -102,8 +102,8 @@
             <button class="tile tile-full" data-screen="new-invoice">
               <div class="tile-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
               <div class="tile-text">
-                <h2>New Invoice</h2>
-                <p>Create a new invoice with photos & cost helper.</p>
+                <h2 data-i18n="dashboard.new_invoice">New Invoice</h2>
+                <p data-i18n="dashboard.create_invoice">Create a new invoice with photos & cost helper.</p>
               </div>
             </button>
 
@@ -129,24 +129,24 @@
             <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
-                <h3>Quotes</h3>
-                <p>Draft and track job quotes.</p>
+                <h3 data-i18n="dashboard.quotes">Quotes</h3>
+                <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
               </div>
             </button>
 
             <button class="tile" data-screen="clients">
               <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
               <div class="tile-text">
-                <h3>Clients</h3>
-                <p>Save clients once, reuse forever.</p>
+                <h3 data-i18n="dashboard.clients">Clients</h3>
+                <p data-i18n="dashboard.clients_desc">Save clients once, reuse forever.</p>
               </div>
             </button>
 
             <button class="tile" data-screen="photos">
               <div class="tile-icon"><i class="fa-solid fa-camera"></i></div>
               <div class="tile-text">
-                <h3>Photos</h3>
-                <p>Browse job photos by invoice.</p>
+                <h3 data-i18n="dashboard.photos">Photos</h3>
+                <p data-i18n="dashboard.photos_desc">Browse job photos by invoice.</p>
               </div>
             </button>
 
@@ -154,32 +154,32 @@
             <button class="tile" data-screen="invoices">
               <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
               <div class="tile-text">
-                <h3>Invoices</h3>
-                <p>View and manage past invoices.</p>
+                <h3 data-i18n="dashboard.invoices">Invoices</h3>
+                <p data-i18n="dashboard.invoices_desc">View and manage past invoices.</p>
               </div>
             </button>
 
             <button class="tile" data-screen="payments">
               <div class="tile-icon"><i class="fa-solid fa-credit-card"></i></div>
               <div class="tile-text">
-                <h3>Payments</h3>
-                <p>Accept payments & track status.</p>
+                <h3 data-i18n="dashboard.payments">Payments</h3>
+                <p data-i18n="dashboard.payments_desc">Accept payments & track status.</p>
               </div>
             </button>
 
             <button class="tile" data-screen="inventory">
               <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
               <div class="tile-text">
-                <h3>Inventory</h3>
-                <p>Track supplies, materials & stock.</p>
+                <h3 data-i18n="dashboard.inventory">Inventory</h3>
+                <p data-i18n="dashboard.inventory_desc">Track supplies, materials & stock.</p>
               </div>
             </button>
 
             <button class="tile" data-screen="calculator">
               <div class="tile-icon"><i class="fa-solid fa-calculator"></i></div>
               <div class="tile-text">
-                <h3>Cost Calculator</h3>
-                <p>Materials, hours, markup – done.</p>
+                <h3 data-i18n="dashboard.calculator">Cost Calculator</h3>
+                <p data-i18n="dashboard.calculator_desc">Materials, hours, markup – done.</p>
               </div>
             </button>
 
