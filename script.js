@@ -1225,6 +1225,30 @@ function wireDashboardUI() {
   });
 
   document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+  
+  // Language selector in app header
+  const appLangSelect = document.getElementById("app-language-select");
+  if (appLangSelect) {
+    appLangSelect.value = currentLanguage;
+    appLangSelect.addEventListener("change", (e) => {
+      setLanguage(e.target.value);
+      applyLanguage();
+      // Save preference to profile
+      saveLanguagePreference(e.target.value);
+    });
+  }
+}
+
+async function saveLanguagePreference(lang) {
+  if (tourMode) return;
+  try {
+    await apiFetch("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({ preferred_language: lang }),
+    });
+  } catch (err) {
+    console.error("Failed to save language preference:", err);
+  }
 }
 
 function showScreen(screenId) {
