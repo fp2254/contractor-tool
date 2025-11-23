@@ -175,7 +175,8 @@ class TradeBaseDB {
   }
 
   async getPendingSyncs() {
-    return this.getAll(STORES.SYNC_QUEUE, 'status', 'pending');
+    const allSyncs = await this.getAll(STORES.SYNC_QUEUE);
+    return allSyncs.filter(sync => sync.status === 'pending' || sync.status === 'failed');
   }
 
   async markSyncComplete(id) {

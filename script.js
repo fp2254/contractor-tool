@@ -308,11 +308,13 @@ async function initializeOfflineSupport() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'SYNC_REQUESTED') {
-        syncPendingChanges();
-      }
-    });
+    if (navigator.serviceWorker?.addEventListener) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SYNC_REQUESTED') {
+          syncPendingChanges();
+        }
+      });
+    }
     
     updateOnlineStatus();
     
@@ -370,16 +372,53 @@ async function syncPendingChanges() {
     console.log(`Syncing ${pending.length} pending changes...`);
     
     let failedCount = 0;
+    let syncedCount = 0;
     
     for (const item of pending) {
       try {
+        let payload = { ...item.data };
+        
+        if (item.method === 'POST') {
+          delete payload.id;
+          delete payload.user_id;
+          delete payload.created_at;
+          delete payload.updated_at;
+        }
+        
         const response = await apiFetch(item.endpoint, {
           method: item.method,
-          body: JSON.stringify(item.data)
+          body: JSON.stringify(payload)
         });
         
         if (response.ok) {
+          let serverData = null;
+          
+          if (response.status !== 204 && response.headers.get('content-length') !== '0') {
+            try {
+              serverData = await response.json();
+            } catch (e) {
+              console.log('No JSON body in response');
+            }
+          }
+          
+          if (item.method === 'POST' && item.localId && isOfflineId(item.localId) && serverData?.id) {
+            await tradebaseDB.delete(item.storeName, item.localId);
+            
+            const updatedData = { ...item.data, id: serverData.id, ...serverData };
+            
+            if (item.storeName === 'invoices') {
+              await tradebaseDB.saveInvoice(updatedData);
+            } else if (item.storeName === 'quotes') {
+              await tradebaseDB.saveQuote(updatedData);
+            } else if (item.storeName === 'clients') {
+              await tradebaseDB.saveClient(updatedData);
+            } else if (item.storeName === 'inventory') {
+              await tradebaseDB.saveInventory(updatedData);
+            }
+          }
+          
           await tradebaseDB.markSyncComplete(item.id);
+          syncedCount++;
         } else {
           await tradebaseDB.markSyncFailed(item.id, `HTTP ${response.status}`);
           failedCount++;
@@ -394,8 +433,8 @@ async function syncPendingChanges() {
     
     if (failedCount > 0) {
       showToast(`⚠️ ${failedCount} change(s) failed to sync. Will retry later.`, 'error');
-    } else if (pending.length > 0) {
-      showToast(`✓ ${pending.length} change(s) synced successfully`, 'success');
+    } else if (syncedCount > 0) {
+      showToast(`✓ ${syncedCount} change(s) synced successfully`, 'success');
     }
     
     console.log('Sync complete');
@@ -1374,20 +1413,47 @@ async function handleAddClient(e) {
   const address = document.getElementById("client-address").value.trim();
   if (!name) return;
 
-  await apiFetch("/api/clients", {
-    method: "POST",
-    body: JSON.stringify({ name, phone, email, address }),
-  });
+  const clientData = {
+    name,
+    phone,
+    email,
+    address,
+    created_at: new Date().toISOString()
+  };
 
-  document.getElementById("client-form").reset();
-  await loadClients();
+  try {
+    if (!navigator.onLine) {
+      clientData.id = generateOfflineId();
+      await saveOffline('clients', clientData, '/api/clients', 'POST');
+      showToast("📱 Client saved offline. Will sync when online.");
+      document.getElementById("client-form").reset();
+      await loadClients();
+      return;
+    }
+
+    const res = await apiFetch("/api/clients", {
+      method: "POST",
+      body: JSON.stringify(clientData),
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      clientData.id = data.id;
+      await tradebaseDB.saveClient(clientData);
+      showToast("Client added!");
+    }
+
+    document.getElementById("client-form").reset();
+    await loadClients();
+  } catch (error) {
+    console.error('Error adding client:', error);
+    showToast('Error adding client', 'error');
+  }
 }
 
 async function loadClients() {
   if (tourMode) return;
   
-  const res = await apiFetch("/api/clients");
-  const data = await res.json();
   const list = document.getElementById("clients-list");
   const invoiceDatalist = document.getElementById("client-datalist");
   const quoteDatalist = document.getElementById("quote-client-datalist");
@@ -1396,12 +1462,54 @@ async function loadClients() {
   if (invoiceDatalist) invoiceDatalist.innerHTML = "";
   if (quoteDatalist) quoteDatalist.innerHTML = "";
 
-  (data || []).forEach((c) => {
+  let clients = [];
+  
+  if (!currentUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+    }
+  }
+  
+  if (currentUser) {
+    const localClients = await tradebaseDB.getClients(currentUser.id);
+    clients = localClients || [];
+  }
+  
+  if (navigator.onLine) {
+    try {
+      const res = await apiFetch("/api/clients");
+      const apiClients = await res.json();
+      
+      if (apiClients && Array.isArray(apiClients)) {
+        for (const client of apiClients) {
+          await tradebaseDB.saveClient(client);
+        }
+        
+        const mergedMap = new Map();
+        apiClients.forEach(client => mergedMap.set(client.id, client));
+        clients.forEach(client => {
+          if (!mergedMap.has(client.id)) {
+            mergedMap.set(client.id, client);
+          }
+        });
+        clients = Array.from(mergedMap.values());
+      }
+    } catch (error) {
+      console.log('Using offline clients:', error.message);
+    }
+  }
+
+  clients.forEach((c) => {
     const item = document.createElement("div");
     item.className = "list-item";
+    
+    const isOffline = isOfflineId(c.id);
+    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning);">📱</span>' : '';
+    
     item.innerHTML = `
       <div class="list-item-header">
-        <strong>${c.name}</strong>
+        <strong>${c.name}${offlineBadge}</strong>
         <span>${c.phone || ""}</span>
       </div>
       <div class="list-item-sub">${c.email || ""}</div>
@@ -1420,11 +1528,6 @@ async function loadClients() {
       option.value = c.name;
       quoteDatalist.appendChild(option);
     }
-
-    const opt = document.createElement("option");
-    opt.value = c.id;
-    opt.textContent = c.name;
-    select.appendChild(opt);
   });
 }
 
@@ -1504,35 +1607,74 @@ async function loadInvoices() {
 async function loadQuotes() {
   if (tourMode) return;
   
-  try {
-    const res = await apiFetch("/api/quotes");
-    if (!res.ok) return;
-    const data = await res.json();
-    const list = document.getElementById("quotes-list");
-    list.innerHTML = "";
-
-    (data || []).forEach((quote) => {
-      const item = document.createElement("div");
-      item.className = "list-item clickable";
-      item.style.cursor = "pointer";
-      item.innerHTML = `
-        <div class="list-item-header">
-          <strong>Quote #${quote.quote_number || quote.id.slice(0, 8)}</strong>
-          <span>${formatCurrency(quote.total || 0)}</span>
-        </div>
-        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
-        <div class="list-item-sub">
-          ${quote.status || "draft"}
-        </div>
-      `;
-      
-      item.onclick = () => viewQuoteDetail(quote.id);
-      
-      list.appendChild(item);
-    });
-  } catch (error) {
-    console.error("Error loading quotes:", error);
+  const list = document.getElementById("quotes-list");
+  list.innerHTML = "";
+  
+  let quotes = [];
+  
+  if (!currentUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+    }
   }
+  
+  if (currentUser) {
+    const localQuotes = await tradebaseDB.getQuotes(currentUser.id);
+    quotes = localQuotes || [];
+  }
+  
+  if (navigator.onLine) {
+    try {
+      const res = await apiFetch("/api/quotes");
+      if (res.ok) {
+        const apiQuotes = await res.json();
+        
+        if (apiQuotes && Array.isArray(apiQuotes)) {
+          for (const quote of apiQuotes) {
+            await tradebaseDB.saveQuote(quote);
+          }
+          
+          const mergedMap = new Map();
+          apiQuotes.forEach(quote => mergedMap.set(quote.id, quote));
+          quotes.forEach(quote => {
+            if (!mergedMap.has(quote.id)) {
+              mergedMap.set(quote.id, quote);
+            }
+          });
+          quotes = Array.from(mergedMap.values());
+        }
+      }
+    } catch (error) {
+      console.log('Using offline quotes:', error.message);
+    }
+  }
+
+  quotes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  quotes.forEach((quote) => {
+    const item = document.createElement("div");
+    item.className = "list-item clickable";
+    item.style.cursor = "pointer";
+    
+    const isOffline = isOfflineId(quote.id);
+    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
+    
+    item.innerHTML = `
+      <div class="list-item-header">
+        <strong>Quote #${quote.quote_number || (typeof quote.id === 'string' ? quote.id.slice(0, 8) : quote.id)}${offlineBadge}</strong>
+        <span>${formatCurrency(quote.total || 0)}</span>
+      </div>
+      <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
+      <div class="list-item-sub">
+        ${quote.status || "draft"}
+      </div>
+    `;
+    
+    item.onclick = () => viewQuoteDetail(quote.id);
+    
+    list.appendChild(item);
+  });
 }
 
 // INVOICE & QUOTE DETAIL VIEWS
@@ -2328,23 +2470,44 @@ async function handleQuoteSubmit(e) {
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
 
+  const quoteData = {
+    client_name: clientName,
+    quote_date: quoteDate,
+    quote_number: quoteNumber || `QT-${Date.now()}`,
+    notes,
+    subtotal,
+    tax,
+    total,
+    items,
+    status: "draft",
+    created_at: new Date().toISOString()
+  };
+
   try {
+    if (!navigator.onLine) {
+      const offlineId = generateOfflineId();
+      quoteData.id = offlineId;
+      
+      await saveOffline('quotes', quoteData, '/api/quotes', 'POST');
+      
+      showToast("📱 Quote saved offline. Will sync when online.");
+      document.getElementById("quote-form").reset();
+      clearQuoteLineItems();
+      showScreen("quotes");
+      await loadQuotes();
+      return;
+    }
+
     const res = await apiFetch("/api/quotes", {
       method: "POST",
-      body: JSON.stringify({
-        client_name: clientName,
-        quote_date: quoteDate,
-        quote_number: quoteNumber,
-        notes,
-        subtotal,
-        tax,
-        total,
-        items,
-        status: "draft"
-      }),
+      body: JSON.stringify(quoteData),
     });
 
     if (res.ok) {
+      const data = await res.json();
+      quoteData.id = data.id;
+      await tradebaseDB.saveQuote(quoteData);
+      
       showToast("Quote created!");
       document.getElementById("quote-form").reset();
       clearQuoteLineItems();
@@ -2619,18 +2782,47 @@ async function loadInventory() {
     return;
   }
   
-  try {
-    const res = await apiFetch("/api/inventory");
-    if (!res.ok) {
-      console.error("Error loading inventory:", await res.text());
-      return;
+  allInventoryItems = [];
+  
+  if (!currentUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
     }
-
-    allInventoryItems = await res.json();
-    renderInventoryList(allInventoryItems);
-  } catch (err) {
-    console.error("Error loading inventory:", err);
   }
+  
+  if (currentUser) {
+    const localItems = await tradebaseDB.getInventory(currentUser.id);
+    allInventoryItems = localItems || [];
+  }
+  
+  if (navigator.onLine) {
+    try {
+      const res = await apiFetch("/api/inventory");
+      if (res.ok) {
+        const apiItems = await res.json();
+        
+        if (apiItems && Array.isArray(apiItems)) {
+          for (const item of apiItems) {
+            await tradebaseDB.saveInventory(item);
+          }
+          
+          const mergedMap = new Map();
+          apiItems.forEach(item => mergedMap.set(item.id, item));
+          allInventoryItems.forEach(item => {
+            if (!mergedMap.has(item.id)) {
+              mergedMap.set(item.id, item);
+            }
+          });
+          allInventoryItems = Array.from(mergedMap.values());
+        }
+      }
+    } catch (err) {
+      console.log('Using offline inventory:', err.message);
+    }
+  }
+
+  renderInventoryList(allInventoryItems);
 }
 
 function filterInventoryByCategory(category) {
@@ -2766,9 +2958,25 @@ async function handleInventorySubmit(e) {
     category,
     unit_type,
     low_stock_threshold,
+    created_at: itemId ? undefined : new Date().toISOString()
   };
 
   try {
+    if (!navigator.onLine) {
+      if (itemId) {
+        payload.id = itemId;
+        await saveOffline('inventory', payload, `/api/inventory/${itemId}`, 'PATCH');
+        showToast("📱 Item updated offline. Will sync when online.");
+      } else {
+        payload.id = generateOfflineId();
+        await saveOffline('inventory', payload, '/api/inventory', 'POST');
+        showToast("📱 Item saved offline. Will sync when online.");
+      }
+      showScreen("inventory");
+      loadInventory();
+      return;
+    }
+
     let res;
     if (itemId) {
       res = await apiFetch(`/api/inventory/${itemId}`, {
@@ -2787,6 +2995,10 @@ async function handleInventorySubmit(e) {
       showToast(`Error: ${errText}`);
       return;
     }
+
+    const data = await res.json();
+    payload.id = data.id;
+    await tradebaseDB.saveInventory(payload);
 
     showToast(itemId ? "Item updated!" : "Item added!");
     showScreen("inventory");
