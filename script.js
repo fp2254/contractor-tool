@@ -469,6 +469,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   checkSession();
   updateTrialBanner();
   await initializeOfflineSupport();
+  
+  // Wire up template chooser modal close button
+  const closeTemplateChooserBtn = document.getElementById("close-template-chooser");
+  if (closeTemplateChooserBtn) {
+    closeTemplateChooserBtn.addEventListener("click", closeTemplateChooser);
+  }
+  
+  // Close template chooser when clicking outside
+  const templateChooserModal = document.getElementById("template-chooser-modal");
+  if (templateChooserModal) {
+    templateChooserModal.addEventListener("click", (e) => {
+      if (e.target === templateChooserModal) {
+        closeTemplateChooser();
+      }
+    });
+  }
 });
 
 // API FETCH HELPER (sends JWT token in Authorization header)
@@ -532,6 +548,7 @@ function checkTourMode() {
     loadDemoData();
     renderTemplateShowcase();
     showScreen("dashboard");
+    applyLanguage();
   }
 }
 
@@ -549,6 +566,7 @@ function enterTourMode() {
   
   loadDemoData();
   showScreen("dashboard");
+  applyLanguage();
 }
 
 function exitTourMode() {
@@ -1169,7 +1187,6 @@ async function onLoggedIn() {
       const profile = await res.json();
       if (profile?.preferred_language && profile.preferred_language !== currentLanguage) {
         setLanguage(profile.preferred_language);
-        applyLanguage();
       }
       if (profile?.preferred_template && profile.preferred_template !== currentTemplate) {
         setTemplate(profile.preferred_template);
@@ -1182,6 +1199,7 @@ async function onLoggedIn() {
   await loadInitialData();
   await updateTrialBanner();
   wireSubscriptionUI();
+  applyLanguage();
 }
 
 // DASHBOARD / NAV
@@ -1933,7 +1951,7 @@ async function viewInvoiceDetail(invoiceId) {
             <i class="fa-solid fa-link"></i> Generate Payment Link
           </button>
         `}
-        <button class="btn-sm" onclick="downloadInvoice({id: '${invoice.id}'})">
+        <button class="btn-sm" id="download-invoice-btn" data-invoice-id="${invoice.id}">
           <i class="fa-solid fa-download"></i> Download
         </button>
         <button class="btn-sm" onclick="showScreen('invoices')">
@@ -1941,6 +1959,15 @@ async function viewInvoiceDetail(invoiceId) {
         </button>
       </div>
     `;
+    
+    // Wire up download button
+    const downloadBtn = document.getElementById('download-invoice-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const invoiceId = downloadBtn.getAttribute('data-invoice-id');
+        openTemplateChooserForInvoice({id: invoiceId});
+      });
+    }
     
     showScreen('invoice-detail');
   } catch (error) {
@@ -2032,7 +2059,7 @@ async function viewQuoteDetail(quoteId) {
         <button class="btn-sm" id="share-quote-btn-${quote.id}">
           <i class="fa-solid fa-share-nodes"></i> Send Quote
         </button>
-        <button class="btn-sm" onclick="downloadQuote({id: '${quote.id}'})">
+        <button class="btn-sm" id="download-quote-btn" data-quote-id="${quote.id}">
           <i class="fa-solid fa-download"></i> Download PDF
         </button>
         <button class="btn-sm" onclick="showScreen('quotes')">
@@ -2040,6 +2067,15 @@ async function viewQuoteDetail(quoteId) {
         </button>
       </div>
     `;
+    
+    // Wire up download button
+    const downloadBtn = document.getElementById('download-quote-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const quoteId = downloadBtn.getAttribute('data-quote-id');
+        openTemplateChooserForQuote({id: quoteId});
+      });
+    }
     
     document.getElementById(`share-quote-btn-${quote.id}`)?.addEventListener('click', () => shareQuote(quote));
     
@@ -2470,6 +2506,418 @@ async function downloadInvoice(invoice) {
   } catch (err) {
     console.error("Download error:", err);
     showToast("Failed to download invoice");
+  }
+}
+
+// TEMPLATE CHOOSER FOR DOWNLOADS
+
+function openTemplateChooserForInvoice(invoice) {
+  const modal = document.getElementById("template-chooser-modal");
+  const grid = document.getElementById("template-chooser-grid");
+  
+  const templates = [
+    { id: 'basic_clean', name: 'Basic Clean', desc: 'Classic black & white contractor PDF style' },
+    { id: 'modern_pro', name: 'Modern Pro', desc: 'Bold headings, clean professional layout' },
+    { id: 'color_accent', name: 'Color Accent Header', desc: 'Blue/gray header for official appearance' },
+    { id: 'big_total', name: 'Big Total', desc: 'Emphasizes the total amount prominently' }
+  ];
+  
+  grid.innerHTML = templates.map(template => `
+    <div class="template-card" data-invoice-id="${invoice.id}" data-template-id="${template.id}" data-type="invoice" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
+      <h3 style="margin: 0 0 8px 0; color: var(--text); font-size: 16px;">${template.name}</h3>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">${template.desc}</p>
+      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: var(--primary); font-size: 12px; font-weight: 600;">
+        CLICK TO PREVIEW
+      </div>
+    </div>
+  `).join('');
+  
+  // Add event listeners to template cards
+  grid.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const invoiceId = card.getAttribute('data-invoice-id');
+      const templateId = card.getAttribute('data-template-id');
+      previewInvoiceTemplate({id: invoiceId}, templateId);
+    });
+  });
+  
+  modal.style.display = 'block';
+  applyLanguage();
+}
+
+function openTemplateChooserForQuote(quote) {
+  const modal = document.getElementById("template-chooser-modal");
+  const grid = document.getElementById("template-chooser-grid");
+  const title = modal.querySelector('h2');
+  
+  title.setAttribute('data-i18n', 'template.choose_template');
+  title.textContent = 'Choose Quote Template';
+  
+  const templates = [
+    { id: 'basic_clean', name: 'Basic Clean', desc: 'Classic black & white contractor PDF style' },
+    { id: 'modern_pro', name: 'Modern Pro', desc: 'Bold headings, clean professional layout' },
+    { id: 'color_accent', name: 'Color Accent Header', desc: 'Blue/gray header for official appearance' },
+    { id: 'big_total', name: 'Big Total', desc: 'Emphasizes the total amount prominently' }
+  ];
+  
+  grid.innerHTML = templates.map(template => `
+    <div class="template-card" data-quote-id="${quote.id}" data-template-id="${template.id}" data-type="quote" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
+      <h3 style="margin: 0 0 8px 0; color: var(--text); font-size: 16px;">${template.name}</h3>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">${template.desc}</p>
+      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: var(--primary); font-size: 12px; font-weight: 600;">
+        CLICK TO PREVIEW
+      </div>
+    </div>
+  `).join('');
+  
+  // Add event listeners to template cards
+  grid.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const quoteId = card.getAttribute('data-quote-id');
+      const templateId = card.getAttribute('data-template-id');
+      previewQuoteTemplate({id: quoteId}, templateId);
+    });
+  });
+  
+  modal.style.display = 'block';
+  applyLanguage();
+}
+
+function closeTemplateChooser() {
+  const modal = document.getElementById("template-chooser-modal");
+  modal.style.display = 'none';
+}
+
+async function previewInvoiceTemplate(invoice, templateId) {
+  const modal = document.getElementById("template-preview-modal");
+  const content = document.getElementById("template-preview-content");
+  const closeBtn = document.getElementById("close-template-preview");
+  
+  if (!modal || !content) return;
+  
+  closeTemplateChooser();
+  
+  try {
+    const [invoiceRes, profileRes] = await Promise.all([
+      apiFetch(`/api/invoices/${invoice.id}`),
+      apiFetch("/api/profile")
+    ]);
+    
+    const invoiceData = await invoiceRes.json();
+    const profile = await profileRes.json();
+    
+    const invoiceForTemplate = {
+      ...invoiceData,
+      business_name: profile?.business_name,
+      address: profile?.address,
+      phone: profile?.phone,
+      email: profile?.email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (invoiceData.items || []).map(item => ({
+        description: item.description,
+        qty: item.qty || 1,
+        price: item.unit_price || 0,
+        total: item.line_total || 0
+      }))
+    };
+    
+    const originalTemplate = currentTemplate;
+    setTemplate(templateId);
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.style.cssText = 'position: absolute; left: -9999px;';
+    document.body.appendChild(tempDiv);
+    
+    if (templateId === 'basic_clean') {
+      tempDiv.innerHTML = renderBasicClean(invoiceForTemplate, 'INVOICE', 'number', 'date');
+    } else if (templateId === 'modern_pro') {
+      tempDiv.innerHTML = renderModernPro(invoiceForTemplate, 'INVOICE', 'number', 'date');
+    } else if (templateId === 'color_accent') {
+      tempDiv.innerHTML = renderColorAccent(invoiceForTemplate, 'INVOICE', 'number', 'date');
+    } else if (templateId === 'big_total') {
+      tempDiv.innerHTML = renderBigTotal(invoiceForTemplate, 'INVOICE', 'number', 'date');
+    }
+    
+    content.innerHTML = tempDiv.innerHTML + `
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd;">
+        <button id="download-preview-btn" data-invoice-id="${invoice.id}" data-template-id="${templateId}" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+          <i class="fa-solid fa-download"></i> Download This Version
+        </button>
+      </div>
+    `;
+    document.body.removeChild(tempDiv);
+    
+    // Add event listener for download button
+    const downloadBtn = document.getElementById('download-preview-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const invId = downloadBtn.getAttribute('data-invoice-id');
+        const tmpId = downloadBtn.getAttribute('data-template-id');
+        downloadInvoiceWithTemplate({id: invId}, tmpId);
+      });
+    }
+    
+    modal.style.display = 'block';
+    setTemplate(originalTemplate);
+    
+    const closeModal = () => {
+      modal.style.display = 'none';
+      closeBtn.removeEventListener('click', closeModal);
+      modal.removeEventListener('click', handleOutsideClick);
+    };
+    
+    const handleOutsideClick = (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', handleOutsideClick);
+    
+  } catch (err) {
+    console.error("Preview error:", err);
+    showToast("Failed to preview invoice");
+  }
+}
+
+async function previewQuoteTemplate(quote, templateId) {
+  const modal = document.getElementById("template-preview-modal");
+  const content = document.getElementById("template-preview-content");
+  const closeBtn = document.getElementById("close-template-preview");
+  
+  if (!modal || !content) return;
+  
+  closeTemplateChooser();
+  
+  try {
+    const res = await apiFetch(`/api/quotes/${quote.id}`);
+    if (!res.ok) {
+      showToast("Failed to load quote details");
+      return;
+    }
+    const quoteData = await res.json();
+    
+    const resProfile = await apiFetch("/api/profile");
+    const profile = resProfile.ok ? await resProfile.json() : null;
+    
+    const quoteForTemplate = {
+      ...quoteData,
+      number: quoteData.quote_number,
+      date: quoteData.quote_date,
+      business_name: profile?.business_name,
+      address: profile?.address,
+      phone: profile?.phone,
+      email: profile?.email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (quoteData.items || []).map(item => ({
+        description: item.description,
+        qty: item.quantity || 1,
+        price: item.unit_price || 0,
+        total: item.total || 0
+      }))
+    };
+    
+    const originalTemplate = currentTemplate;
+    setTemplate(templateId);
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.style.cssText = 'position: absolute; left: -9999px;';
+    document.body.appendChild(tempDiv);
+    
+    if (templateId === 'basic_clean') {
+      tempDiv.innerHTML = renderBasicClean(quoteForTemplate, 'QUOTE', 'number', 'date');
+    } else if (templateId === 'modern_pro') {
+      tempDiv.innerHTML = renderModernPro(quoteForTemplate, 'QUOTE', 'number', 'date');
+    } else if (templateId === 'color_accent') {
+      tempDiv.innerHTML = renderColorAccent(quoteForTemplate, 'QUOTE', 'number', 'date');
+    } else if (templateId === 'big_total') {
+      tempDiv.innerHTML = renderBigTotal(quoteForTemplate, 'QUOTE', 'number', 'date');
+    }
+    
+    content.innerHTML = tempDiv.innerHTML + `
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd;">
+        <button id="download-preview-btn" data-quote-id="${quote.id}" data-template-id="${templateId}" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+          <i class="fa-solid fa-download"></i> Download This Version
+        </button>
+      </div>
+    `;
+    document.body.removeChild(tempDiv);
+    
+    // Add event listener for download button
+    const downloadBtn = document.getElementById('download-preview-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const qteId = downloadBtn.getAttribute('data-quote-id');
+        const tmpId = downloadBtn.getAttribute('data-template-id');
+        downloadQuoteWithTemplate({id: qteId}, tmpId);
+      });
+    }
+    
+    modal.style.display = 'block';
+    setTemplate(originalTemplate);
+    
+    const closeModal = () => {
+      modal.style.display = 'none';
+      closeBtn.removeEventListener('click', closeModal);
+      modal.removeEventListener('click', handleOutsideClick);
+    };
+    
+    const handleOutsideClick = (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', handleOutsideClick);
+    
+  } catch (err) {
+    console.error("Preview error:", err);
+    showToast("Failed to preview quote");
+  }
+}
+
+async function downloadInvoiceWithTemplate(invoice, templateId) {
+  const previewModal = document.getElementById("template-preview-modal");
+  if (previewModal) previewModal.style.display = 'none';
+  
+  try {
+    if (typeof html2canvas === 'undefined') {
+      showToast("Download feature loading, please try again in a moment");
+      return;
+    }
+    
+    showToast("Generating invoice...");
+    
+    const [invoiceRes, profileRes] = await Promise.all([
+      apiFetch(`/api/invoices/${invoice.id}`),
+      apiFetch("/api/profile")
+    ]);
+    
+    const invoiceData = await invoiceRes.json();
+    const profile = await profileRes.json();
+    
+    const invoiceForTemplate = {
+      ...invoiceData,
+      business_name: profile?.business_name,
+      address: profile?.address,
+      phone: profile?.phone,
+      email: profile?.email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (invoiceData.items || []).map(item => ({
+        description: item.description,
+        qty: item.qty || 1,
+        price: item.unit_price || 0,
+        total: item.line_total || 0
+      }))
+    };
+    
+    const originalTemplate = currentTemplate;
+    setTemplate(templateId);
+    
+    renderInvoiceTemplate(invoiceForTemplate, false);
+    
+    const template = document.getElementById("invoice-template");
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    template.style.left = "-9999px";
+    setTemplate(originalTemplate);
+    
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invoiceData.number || invoiceData.id}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Invoice downloaded!");
+    });
+    
+  } catch (err) {
+    console.error("Download error:", err);
+    showToast("Failed to download invoice");
+  }
+}
+
+async function downloadQuoteWithTemplate(quote, templateId) {
+  closeTemplateChooser();
+  
+  try {
+    if (typeof html2canvas === 'undefined') {
+      showToast("Download feature loading, please try again in a moment");
+      return;
+    }
+    
+    showToast("Generating quote...");
+    
+    const res = await apiFetch(`/api/quotes/${quote.id}`);
+    if (!res.ok) {
+      showToast("Failed to load quote details");
+      return;
+    }
+    const quoteData = await res.json();
+    
+    const resProfile = await apiFetch("/api/profile");
+    const profile = resProfile.ok ? await resProfile.json() : null;
+    
+    const quoteForTemplate = {
+      ...quoteData,
+      number: quoteData.quote_number,
+      date: quoteData.quote_date,
+      business_name: profile?.business_name,
+      address: profile?.address,
+      phone: profile?.phone,
+      email: profile?.email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (quoteData.items || []).map(item => ({
+        description: item.description,
+        qty: item.quantity || 1,
+        price: item.unit_price || 0,
+        total: item.total || 0
+      }))
+    };
+    
+    const originalTemplate = currentTemplate;
+    setTemplate(templateId);
+    
+    renderInvoiceTemplate(quoteForTemplate, true);
+    
+    const template = document.getElementById("invoice-template");
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    template.style.left = "-9999px";
+    setTemplate(originalTemplate);
+    
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quote-${quoteData.quote_number || quoteData.id}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote downloaded!");
+    });
+    
+  } catch (err) {
+    console.error("Download error:", err);
+    showToast("Failed to download quote");
   }
 }
 

@@ -971,6 +971,22 @@
     </div>
   </div>
 
+  <!-- Template Chooser Modal for Download -->
+  <div id="template-chooser-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow: auto; padding: 20px;">
+    <div style="max-width: 1200px; margin: 0 auto; position: relative;">
+      <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; color: var(--text);" data-i18n="template.choose_template">Choose Invoice Template</h2>
+          <button id="close-template-chooser" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+        </div>
+        <p style="color: var(--muted); margin-bottom: 25px;" data-i18n="template.choose_desc">Click a template to download your invoice in that style.</p>
+        <div id="template-chooser-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+          <!-- Template cards will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SDKs -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://js.stripe.com/v3/"></script>

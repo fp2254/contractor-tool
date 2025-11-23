@@ -88,6 +88,10 @@ const TRANSLATIONS = {
     "settings.invoice_template": "Invoice Template",
     "settings.saved": "Settings saved.",
     
+    // Template Chooser
+    "template.choose_template": "Choose Invoice Template",
+    "template.choose_desc": "Click a template to download your invoice in that style.",
+    
     // Inventory
     "inventory.inventory": "Inventory Management",
     "inventory.add_item": "Add Item",
@@ -203,6 +207,9 @@ const TRANSLATIONS = {
     "settings.invoice_template": "Plantilla de factura",
     "settings.saved": "Configuración guardada.",
     
+    "template.choose_template": "Elegir Plantilla de Factura",
+    "template.choose_desc": "Haz clic en una plantilla para descargar tu factura en ese estilo.",
+    
     "inventory.inventory": "Gestión de inventario",
     "inventory.add_item": "Agregar artículo",
     "inventory.item_name": "Nombre del artículo",
@@ -313,6 +320,9 @@ const TRANSLATIONS = {
     "settings.language": "Langue",
     "settings.invoice_template": "Modèle de facture",
     "settings.saved": "Paramètres enregistrés.",
+    
+    "template.choose_template": "Choisir un Modèle de Facture",
+    "template.choose_desc": "Cliquez sur un modèle pour télécharger votre facture dans ce style.",
     
     "inventory.inventory": "Gestion de l'inventaire",
     "inventory.add_item": "Ajouter un article",
@@ -425,6 +435,9 @@ const TRANSLATIONS = {
     "settings.invoice_template": "Rechnungsvorlage",
     "settings.saved": "Einstellungen gespeichert.",
     
+    "template.choose_template": "Rechnungsvorlage Wählen",
+    "template.choose_desc": "Klicken Sie auf eine Vorlage, um Ihre Rechnung in diesem Stil herunterzuladen.",
+    
     "inventory.inventory": "Bestandsverwaltung",
     "inventory.add_item": "Artikel hinzufügen",
     "inventory.item_name": "Artikelname",
@@ -535,6 +548,9 @@ const TRANSLATIONS = {
     "settings.language": "Idioma",
     "settings.invoice_template": "Modelo de Fatura",
     "settings.saved": "Configurações salvas.",
+    
+    "template.choose_template": "Escolher Modelo de Fatura",
+    "template.choose_desc": "Clique em um modelo para baixar sua fatura nesse estilo.",
     
     "inventory.inventory": "Gerenciamento de Inventário",
     "inventory.add_item": "Adicionar Item",
