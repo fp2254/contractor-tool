@@ -93,15 +93,19 @@ TradeBase offers 4 professional invoice templates for customizable document gene
 **Implementation:**
 - `templates.js` contains template definitions with custom HTML, CSS, and layout logic
 - `renderInvoiceTemplate(template, data)` function generates styled invoice HTML
-- `renderTemplateShowcase()` displays all 4 templates in demo mode
+- `renderTemplateShowcase()` displays all 4 templates as clickable cards in demo mode
+- `previewTemplateInModal()` function opens full-screen modal with complete invoice preview for any template
+- Interactive preview: Users can click any template card to see a full invoice rendered in that style with sample data
 - Template preference is saved to user profile and used for all invoice/quote downloads
 - Each template includes custom fonts, colors, spacing, and visual hierarchy
 - Templates support business logo, line items, photos, tax calculation, and footer text
+- Modal preview includes close button and click-outside-to-close functionality
 
 **Files:**
 - `templates.js` - Template definitions and rendering logic
-- `script.js` - Download functions that utilize template rendering
+- `script.js` - Download functions, template showcase, and interactive preview modal
 - `server.js` - API endpoints for saving/loading template preferences
+- `index.html` - Preview modal container markup
 
 ## Inventory Management
 TradeBase includes a comprehensive inventory management system for tracking supplies, materials, and stock:
