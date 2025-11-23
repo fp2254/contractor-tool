@@ -176,6 +176,10 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Realiza un seguimiento de suministros, materiales y existencias.",
     "dashboard.calculator": "Calculadora",
     "dashboard.calculator_desc": "Materiales, horas, margen – hecho.",
+    "dashboard.settings": "Configuración",
+    "dashboard.settings_desc": "Logotipo, info empresarial, predeterminados.",
+    "dashboard.referrals": "Referidos",
+    "dashboard.referrals_desc": "Comparte tu enlace, gana 20% de por vida.",
     
     "invoice.invoice": "FACTURA",
     "invoice.quote": "PRESUPUESTO",
@@ -290,6 +294,10 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Suivez les fournitures, matériaux et stock.",
     "dashboard.calculator": "Calculatrice",
     "dashboard.calculator_desc": "Matériaux, heures, marge – terminé.",
+    "dashboard.settings": "Paramètres",
+    "dashboard.settings_desc": "Logo, infos entreprise, défauts.",
+    "dashboard.referrals": "Parrainages",
+    "dashboard.referrals_desc": "Partagez votre lien, gagnez 20% à vie.",
     
     "invoice.invoice": "FACTURE",
     "invoice.quote": "DEVIS",
@@ -404,6 +412,10 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Verfolgen Sie Vorräte, Materialien und Bestände.",
     "dashboard.calculator": "Kalkulator",
     "dashboard.calculator_desc": "Materialien, Stunden, Aufschlag – erledigt.",
+    "dashboard.settings": "Einstellungen",
+    "dashboard.settings_desc": "Logo, Geschäftsinfo, Standards.",
+    "dashboard.referrals": "Empfehlungen",
+    "dashboard.referrals_desc": "Teilen Sie Ihren Link, verdienen Sie 20% auf Lebenszeit.",
     
     "invoice.invoice": "RECHNUNG",
     "invoice.quote": "ANGEBOT",
@@ -518,6 +530,10 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Acompanhe suprimentos, materiais e estoque.",
     "dashboard.calculator": "Calculadora",
     "dashboard.calculator_desc": "Materiais, horas, margem – pronto.",
+    "dashboard.settings": "Configurações",
+    "dashboard.settings_desc": "Logotipo, info empresarial, padrões.",
+    "dashboard.referrals": "Indicações",
+    "dashboard.referrals_desc": "Compartilhe seu link, ganhe 20% vitalício.",
     
     "invoice.invoice": "FATURA",
     "invoice.quote": "ORÇAMENTO",
