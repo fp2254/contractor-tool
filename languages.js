@@ -9,6 +9,9 @@ const LANGUAGES = {
 
 const TRANSLATIONS = {
   en: {
+    // Common
+    "common.back": "Back",
+    
     // Auth
     "auth.login": "Log In",
     "auth.signup": "Sign Up",
@@ -151,6 +154,8 @@ const TRANSLATIONS = {
     "tour.exit": "Exit Tour & Subscribe",
   },
   es: {
+    "common.back": "Atrás",
+    
     "auth.login": "Iniciar sesión",
     "auth.signup": "Registrarse",
     "auth.email": "Correo",
@@ -279,6 +284,8 @@ const TRANSLATIONS = {
     "tour.exit": "Salir de la demostración y suscribirse",
   },
   fr: {
+    "common.back": "Retour",
+    
     "auth.login": "Connexion",
     "auth.signup": "Inscription",
     "auth.email": "Email",
@@ -407,6 +414,8 @@ const TRANSLATIONS = {
     "tour.exit": "Quitter la démo et s'abonner",
   },
   de: {
+    "common.back": "Zurück",
+    
     "auth.login": "Anmelden",
     "auth.signup": "Registrieren",
     "auth.email": "E-Mail",
@@ -535,6 +544,8 @@ const TRANSLATIONS = {
     "tour.exit": "Demo beenden und abonnieren",
   },
   pt: {
+    "common.back": "Voltar",
+    
     "auth.login": "Entrar",
     "auth.signup": "Registrar",
     "auth.email": "Email",
