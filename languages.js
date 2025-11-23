@@ -50,6 +50,10 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Track supplies, materials & stock.",
     "dashboard.calculator": "Cost Calculator",
     "dashboard.calculator_desc": "Materials, hours, markup – done.",
+    "dashboard.settings": "Settings",
+    "dashboard.settings_desc": "Logo, business info, defaults.",
+    "dashboard.referrals": "Referrals",
+    "dashboard.referrals_desc": "Share your link, earn 20% for life.",
     
     // Invoice
     "invoice.invoice": "INVOICE",
