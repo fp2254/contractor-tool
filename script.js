@@ -1387,9 +1387,9 @@ function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
   row.className = "line-item-row";
 
   row.innerHTML = `
-    <input type="text" class="li-desc" placeholder="Description" value="${item.description}" />
-    <input type="number" class="li-qty" min="0" step="0.1" value="${item.qty}" />
-    <input type="number" class="li-price" min="0" step="0.01" value="${item.price}" />
+    <input type="text" class="li-desc" placeholder="${t('invoice.line_description_placeholder')}" value="${item.description}" />
+    <input type="number" class="li-qty" min="0" step="0.1" value="${item.qty}" placeholder="${t('invoice.line_qty_placeholder')}" />
+    <input type="number" class="li-price" min="0" step="0.01" value="${item.price}" placeholder="${t('invoice.line_price_placeholder')}" />
     <button type="button" class="btn-remove-line">&times;</button>
   `;
 
@@ -3492,9 +3492,9 @@ function addQuoteLineItemRow(data = {}) {
   const row = document.createElement("div");
   row.className = "line-item-row";
   row.innerHTML = `
-    <input type="text" placeholder="Description" class="item-desc" value="${data.description || ""}" />
-    <input type="number" placeholder="Qty" class="item-qty" value="${data.qty || 1}" min="0" step="0.01" />
-    <input type="number" placeholder="Price" class="item-price" value="${data.unit_price || 0}" min="0" step="0.01" />
+    <input type="text" placeholder="${t('quote.line_description_placeholder')}" class="item-desc" value="${data.description || ""}" />
+    <input type="number" placeholder="${t('quote.line_qty_placeholder')}" class="item-qty" value="${data.qty || 1}" min="0" step="0.01" />
+    <input type="number" placeholder="${t('quote.line_price_placeholder')}" class="item-price" value="${data.unit_price || 0}" min="0" step="0.01" />
     <button type="button" class="btn-sm" onclick="this.parentElement.remove(); updateQuoteTotals()">Remove</button>
   `;
   container.appendChild(row);

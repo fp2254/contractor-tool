@@ -869,17 +869,17 @@
 
             <div class="form-row">
               <label>Item Name *</label>
-              <input type="text" id="inventory-name" placeholder="e.g., 2x4 Lumber, Wire Nuts, PVC Pipe" required />
+              <input type="text" id="inventory-name" data-i18n-placeholder="inventory.name_placeholder" placeholder="e.g., 2x4 Lumber, Wire Nuts, PVC Pipe" required />
             </div>
 
             <div class="form-row">
               <label>Description</label>
-              <textarea id="inventory-description" placeholder="Additional details about this item..." rows="2"></textarea>
+              <textarea id="inventory-description" data-i18n-placeholder="inventory.description_placeholder" placeholder="Additional details about this item..." rows="2"></textarea>
             </div>
 
             <div class="form-row">
               <label>Category</label>
-              <input type="text" id="inventory-category" placeholder="Type a category or choose from your existing ones" list="inventory-category-datalist" />
+              <input type="text" id="inventory-category" data-i18n-placeholder="inventory.category_placeholder" placeholder="Type a category or choose from your existing ones" list="inventory-category-datalist" />
               <datalist id="inventory-category-datalist"></datalist>
             </div>
 
@@ -910,7 +910,7 @@
 
             <div class="form-row">
               <label>Low Stock Threshold</label>
-              <input type="number" id="inventory-low-stock" step="0.01" min="0" value="0" placeholder="Alert when quantity is at or below this number" />
+              <input type="number" id="inventory-low-stock" step="0.01" min="0" value="0" data-i18n-placeholder="inventory.low_stock_placeholder" placeholder="Alert when quantity is at or below this number" />
             </div>
 
             <div class="form-actions">
