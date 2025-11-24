@@ -333,15 +333,15 @@ body {
 .tile {
   background: var(--tile);
   border-radius: 14px;
-  padding: 10px 10px 12px;
+  padding: 16px 14px 18px;
   border: 1px solid var(--border);
   text-align: left;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  min-height: 70px;
+  min-height: 95px;
 }
 
 .tile-full {
@@ -358,21 +358,22 @@ body {
 }
 
 .tile-icon {
-  font-size: 18px;
-  margin-top: 4px;
+  font-size: 24px;
+  margin-top: 2px;
   color: var(--accent);
 }
 
 .tile-text h2,
 .tile-text h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--text);
 }
 
 .tile-text p {
-  margin: 2px 0 0;
-  font-size: 11px;
+  margin: 3px 0 0;
+  font-size: 12px;
   color: var(--muted);
 }
 
