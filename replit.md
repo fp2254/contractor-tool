@@ -55,6 +55,11 @@ TradeBase is a full-stack web application built with Node.js and Express.js for 
     - **Storage**: Cloud storage for business logos and invoice photos.
 - **Stripe**:
     - **Payments**: Processing subscriptions and one-time invoice payments via Payment Links and webhooks.
+- **Email Service (Nodemailer)**:
+    - **Transactional Emails**: Send invoices directly to clients via email using nodemailer with SMTP.
+    - **Recommended Providers**: MailerSend (12,000 free emails/month) or Brevo (9,000 free emails/month).
+    - **Configuration**: Requires SMTP credentials stored as environment secrets (EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM).
+    - **Note**: Did not use Replit SendGrid integration (user dismissed) - using nodemailer for flexibility to choose any SMTP provider.
 - **Node.js + Express.js**: Backend framework.
 - **html2canvas**: JavaScript library for rendering HTML elements to canvas, used for generating downloadable PNG images of invoices and quotes.
 
