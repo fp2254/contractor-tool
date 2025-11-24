@@ -99,10 +99,14 @@ const TRANSLATIONS = {
     "invoice.labor_hours": "Labor Hours",
     "invoice.hourly_rate": "Hourly Rate",
     "invoice.markup": "Markup %",
+    "invoice.client_placeholder": "Type client name or select saved client",
+    "invoice.notes_placeholder": "Optional notes for the client",
     
     // Quotes
     "quote.quotes": "Quotes",
     "quote.new_quote": "+ New Quote",
+    "quote.client_placeholder": "Type client name or select saved client",
+    "quote.notes_placeholder": "Optional notes for the client",
     
     // Clients
     "client.clients": "Clients",
@@ -303,6 +307,13 @@ const TRANSLATIONS = {
     "invoice.email_sent_error": "Error al enviar el correo de la factura",
     "invoice.email_required": "Se requiere dirección de correo electrónico",
     "invoice.email_invalid": "Por favor ingrese una dirección de correo electrónico válida",
+    "invoice.client_placeholder": "Escriba el nombre del cliente o seleccione un cliente guardado",
+    "invoice.notes_placeholder": "Notas opcionales para el cliente",
+    
+    "quote.quotes": "Presupuestos",
+    "quote.new_quote": "+ Nuevo Presupuesto",
+    "quote.client_placeholder": "Escriba el nombre del cliente o seleccione un cliente guardado",
+    "quote.notes_placeholder": "Notas opcionales para el cliente",
     
     "client.clients": "Clientes",
     "client.add": "Agregar cliente",
@@ -493,6 +504,13 @@ const TRANSLATIONS = {
     "invoice.email_sent_error": "Échec de l'envoi de l'email de facture",
     "invoice.email_required": "L'adresse e-mail est requise",
     "invoice.email_invalid": "Veuillez saisir une adresse e-mail valide",
+    "invoice.client_placeholder": "Tapez le nom du client ou sélectionnez un client enregistré",
+    "invoice.notes_placeholder": "Notes facultatives pour le client",
+    
+    "quote.quotes": "Devis",
+    "quote.new_quote": "+ Nouveau Devis",
+    "quote.client_placeholder": "Tapez le nom du client ou sélectionnez un client enregistré",
+    "quote.notes_placeholder": "Notes facultatives pour le client",
     
     "client.clients": "Clients",
     "client.add": "Ajouter un client",
@@ -683,6 +701,13 @@ const TRANSLATIONS = {
     "invoice.email_sent_error": "Fehler beim Senden der Rechnungs-E-Mail",
     "invoice.email_required": "E-Mail-Adresse ist erforderlich",
     "invoice.email_invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "invoice.client_placeholder": "Geben Sie den Kundennamen ein oder wählen Sie einen gespeicherten Kunden",
+    "invoice.notes_placeholder": "Optionale Notizen für den Kunden",
+    
+    "quote.quotes": "Angebote",
+    "quote.new_quote": "+ Neues Angebot",
+    "quote.client_placeholder": "Geben Sie den Kundennamen ein oder wählen Sie einen gespeicherten Kunden",
+    "quote.notes_placeholder": "Optionale Notizen für den Kunden",
     
     "client.clients": "Kunden",
     "client.add": "Kunde hinzufügen",
@@ -873,6 +898,13 @@ const TRANSLATIONS = {
     "invoice.email_sent_error": "Falha ao enviar e-mail da fatura",
     "invoice.email_required": "O endereço de e-mail é obrigatório",
     "invoice.email_invalid": "Por favor, insira um endereço de e-mail válido",
+    "invoice.client_placeholder": "Digite o nome do cliente ou selecione um cliente salvo",
+    "invoice.notes_placeholder": "Notas opcionais para o cliente",
+    
+    "quote.quotes": "Orçamentos",
+    "quote.new_quote": "+ Novo Orçamento",
+    "quote.client_placeholder": "Digite o nome do cliente ou selecione um cliente salvo",
+    "quote.notes_placeholder": "Notas opcionais para o cliente",
     
     "client.clients": "Clientes",
     "client.add": "Adicionar cliente",
