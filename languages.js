@@ -207,6 +207,8 @@ const TRANSLATIONS = {
     "pricing.one_time": "one-time",
     "pricing.trial_included": "7-day free trial included!",
     "pricing.yearly_savings": "Save $20/year · 2 months free!",
+    "pricing.monthly_desc": "Get started free for 7 days",
+    "pricing.yearly_desc": "Best value - save 2 months",
     "pricing.first_500": "First 500 only",
     "pricing.spots_left": "spots left",
     "pricing.after_early": "After early bird spots filled",
