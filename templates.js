@@ -200,12 +200,12 @@ function renderColorAccent(data, type, numberField, dateField) {
   return `
     <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 0; background: white; color: #000; font-family: Arial, sans-serif; box-sizing: border-box;">
       <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 180px; max-height: 70px; filter: brightness(0) invert(1);">` : ''}
-            <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">${data.business_name || ''}</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
+          <div style="flex: 1; min-width: 150px;">
+            ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 150px; max-height: 60px; filter: brightness(0) invert(1); display: block;">` : ''}
+            <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9; word-wrap: break-word;">${data.business_name || ''}</p>
           </div>
-          <h1 style="margin: 0; font-size: 36px; font-weight: 700;">${type}</h1>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; text-align: right; flex-shrink: 0;">${type}</h1>
         </div>
       </div>
       
