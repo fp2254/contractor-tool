@@ -92,6 +92,17 @@ const TRANSLATIONS = {
     "invoice.email_sent_error": "Failed to send invoice email",
     "invoice.email_required": "Email address is required",
     "invoice.email_invalid": "Please enter a valid email address",
+    "invoice.line_items": "Line Items",
+    "invoice.add_item": "+ Add Item",
+    "invoice.cost_helper": "Cost & Markup Helper (optional)",
+    "invoice.materials": "Materials Cost",
+    "invoice.labor_hours": "Labor Hours",
+    "invoice.hourly_rate": "Hourly Rate",
+    "invoice.markup": "Markup %",
+    
+    // Quotes
+    "quote.quotes": "Quotes",
+    "quote.new_quote": "+ New Quote",
     
     // Clients
     "client.clients": "Clients",
