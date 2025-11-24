@@ -47,9 +47,19 @@ TradeBase is a full-stack web application built with Node.js and Express.js for 
 - **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `invoice_attachments`, `quotes`, `quote_items`, `inventory_items`, and `referral_earnings` tables. Profile table includes `preferred_language` and `preferred_template` fields for user preferences.
 - **File Storage**: Supabase Storage is used for `logos` and `invoice-photos`.
 - **API Endpoints**: Comprehensive set of RESTful APIs for managing profiles, clients, invoices, quotes, payments, inventory, referrals, and Stripe integrations. Profile endpoints support language and template preference updates.
-- **Environment Variables**: Critical secrets (`STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are managed via Replit Secrets. Shared variables include `SUPABASE_URL`, `FRONTEND_URL`, and `PORT`.
+- **Environment Variables**: Critical secrets (`STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are managed via Replit Secrets. Shared variables include `SUPABASE_URL`, `FRONTEND_URL`, and `PORT`. **NOTE: Add `STRIPE_WEBHOOK_SECRET` to environment variables** (get from Stripe dashboard → Webhooks → Signing secret)
 - **Static File Serving**: The Express server serves static frontend files with cache-control headers.
 - **Client Entry**: Supports both selection of saved clients and manual freeform entry.
+
+## Setup Requirements
+
+**⚠️ CRITICAL: Run Supabase Migration**
+Before launching, you MUST run the database migration in your Supabase project:
+1. Go to Supabase Dashboard → SQL Editor
+2. Create a new query and paste the contents of `supabase_migration.sql`
+3. Click "Run" to apply all migrations
+
+This adds subscription tables, quotes system, payment tracking, and inventory management.
 
 ## External Dependencies
 - **Supabase**:
