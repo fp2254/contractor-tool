@@ -12,6 +12,7 @@ const APP_SHELL = [
   '/templates.js',
   '/manifest.json',
   '/icon.svg',
+  '/icon-180.png',
   '/icon-192.png',
   '/icon-512.png'
 ];
