@@ -6,6 +6,9 @@ TradeBase is a comprehensive invoicing and billing application designed for trad
 ## User Preferences
 None currently documented.
 
+## Recent Changes & Fixes
+- **Nov 24, 2025**: Fixed iOS PWA home screen installation by adding required Apple meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-title`, `apple-mobile-web-app-status-bar-style`) to index.html and creating icon-180.png for iOS home screen. "Add to Home Screen" option now appears in Safari share menu on iOS.
+
 ## System Architecture
 TradeBase is a full-stack web application built with Node.js and Express.js for the backend, and Vanilla JavaScript for a Single-Page Application (SPA) frontend. Supabase (PostgreSQL) is used for the database, authentication, and file storage. Stripe is integrated for payment processing.
 
@@ -43,7 +46,7 @@ TradeBase is a full-stack web application built with Node.js and Express.js for 
 - **Payment Collection Workflow**: Users can enable Stripe Connect. Stripe Payment Links are generated for invoices, and webhooks automatically update invoice payment statuses. Manual payment status updates are also supported.
 - **Multi-Language System**: Translation system uses `data-i18n` and `data-i18n-placeholder` HTML attributes. The `applyLanguage()` function in `languages.js` traverses the DOM and applies translations. User language preference is stored in `profiles.preferred_language` and persisted via API. Language selection triggers immediate UI update.
 - **Invoice Template System**: 4 distinct invoice templates defined in `templates.js` with unique styling (fonts, colors, layouts). The `renderInvoiceTemplate()` function generates HTML based on selected template. User template preference is stored in `profiles.preferred_template`. Templates are showcased in demo mode via `renderTemplateShowcase()`.
-- **Offline PWA**: Service Worker (v2) caches all critical static assets including `languages.js` and `templates.js` for full offline functionality. IndexedDB stores user data locally. Background sync ensures offline changes sync when connectivity returns. Users must visit the app online at least once to download all cached files before offline mode works. Cache is automatically updated when service worker version changes.
+- **Offline PWA**: Service Worker (v2) caches all critical static assets including `languages.js`, `templates.js`, and all icon files for full offline functionality. IndexedDB stores user data locally. Background sync ensures offline changes sync when connectivity returns. Users must visit the app online at least once to download all cached files before offline mode works. Cache is automatically updated when service worker version changes. **iOS Support**: Apple meta tags and icon-180.png enable home screen installation on iOS Safari. Users access "Add to Home Screen" via Safari share menu.
 - **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `invoice_attachments`, `quotes`, `quote_items`, `inventory_items`, and `referral_earnings` tables. Profile table includes `preferred_language` and `preferred_template` fields for user preferences.
 - **File Storage**: Supabase Storage is used for `logos` and `invoice-photos`.
 - **API Endpoints**: Comprehensive set of RESTful APIs for managing profiles, clients, invoices, quotes, payments, inventory, referrals, and Stripe integrations. Profile endpoints support language and template preference updates.
