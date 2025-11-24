@@ -174,7 +174,8 @@ app.post("/api/profile", async (req, res) => {
     .upsert({
       ...payload,
       preferred_language: payload.preferred_language || 'en',
-      preferred_template: payload.preferred_template || 'basic_clean'
+      preferred_template: payload.preferred_template || 'basic_clean',
+      stripe_connect_enabled: true
     })
     .select()
     .single();
@@ -436,12 +437,12 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("stripe_connect_enabled, business_name")
+      .select("business_name")
       .eq("id", userId)
       .single();
 
-    if (!profile || !profile.stripe_connect_enabled) {
-      return res.status(403).json({ error: "Payment collection not enabled" });
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
     }
 
     const amountInCents = Math.round((invoice.total || 0) * 100);
