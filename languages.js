@@ -974,6 +974,11 @@ const TRANSLATIONS = {
     "invoice.notes_placeholder": "Notas opcionais para o cliente",
     "invoice.save_client": "Salvar como novo cliente",
     "invoice.invoices": "Faturas",
+    "invoice.photos": "Fotos",
+    "invoice.calculate": "Calcular",
+    "invoice.tax_label": "Imposto",
+    "invoice.save": "Salvar fatura",
+    "invoice.new_invoice": "Nova fatura",
     
     "quote.quotes": "Orçamentos",
     "quote.new_quote": "+ Novo Orçamento",
