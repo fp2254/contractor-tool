@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { Resend } from "resend";
 
 dotenv.config();
 
@@ -1089,6 +1090,217 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   } catch (error) {
     console.error("Webhook handler error:", error);
     res.status(500).send("Webhook handler failed");
+  }
+});
+
+// RESEND EMAIL HELPER
+async function getResendClient() {
+  try {
+    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+    const xReplitToken = process.env.REPL_IDENTITY 
+      ? 'repl ' + process.env.REPL_IDENTITY 
+      : process.env.WEB_REPL_RENEWAL 
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+      : null;
+
+    if (!xReplitToken || !hostname) {
+      return null;
+    }
+
+    const connectionSettings = await fetch(
+      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'X_REPLIT_TOKEN': xReplitToken
+        }
+      }
+    ).then(res => res.json()).then(data => data.items?.[0]);
+
+    if (!connectionSettings || !connectionSettings.settings.api_key) {
+      return null;
+    }
+    
+    return {
+      client: new Resend(connectionSettings.settings.api_key),
+      fromEmail: connectionSettings.settings.from_email
+    };
+  } catch (error) {
+    console.error("Resend client error:", error);
+    return null;
+  }
+}
+
+// SEND INVOICE EMAIL
+app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { recipientEmail, recipientName } = req.body;
+
+    if (!recipientEmail) {
+      return res.status(400).json({ error: "Recipient email is required" });
+    }
+
+    // Get invoice with all related data
+    const { data: invoice, error: invoiceError } = await supabaseAdmin
+      .from("invoices")
+      .select(`
+        *,
+        invoice_items (*),
+        invoice_attachments (*)
+      `)
+      .eq("id", id)
+      .eq("user_id", req.userId)
+      .single();
+
+    if (invoiceError || !invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Get user profile for business info and template preference
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("business_name, business_email, business_phone, business_address, logo_url, preferred_template")
+      .eq("id", req.userId)
+      .single();
+
+    // Get Resend client
+    const resendConnection = await getResendClient();
+    if (!resendConnection) {
+      return res.status(503).json({ error: "Email service is not configured. Please contact support." });
+    }
+    const { client: resend, fromEmail } = resendConnection;
+
+    // Escape HTML to prevent XSS injection in emails
+    const escapeHtml = (text) => {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
+    // Sanitize for email subject/filename (remove special chars, allow only alphanumeric, space, dash, underscore)
+    const sanitizeForMetadata = (text) => {
+      if (!text) return '';
+      return String(text).replace(/[^a-zA-Z0-9\s\-_]/g, '').trim();
+    };
+    
+    // Generate email subject (plain text - sanitize to prevent control character injection)
+    const businessNameSafe = sanitizeForMetadata(profile?.business_name || "Business");
+    const invoiceNumberSafe = sanitizeForMetadata(invoice.invoice_number);
+    const subject = `Invoice #${invoiceNumberSafe} from ${businessNameSafe}`;
+    
+    // For HTML display, use proper HTML escaping
+    const businessName = escapeHtml(profile?.business_name || "Business");
+
+    // Generate email HTML body
+    const emailBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .invoice-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .detail-label { font-weight: 600; color: #6b7280; }
+          .total { font-size: 1.5rem; font-weight: bold; color: #2563eb; }
+          .footer { text-align: center; color: #6b7280; font-size: 0.875rem; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+          .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Invoice from ${businessName}</h1>
+        </div>
+        <div class="content">
+          <p>Hi ${escapeHtml(recipientName || 'there')},</p>
+          <p>Please find your invoice details below.</p>
+          
+          <div class="invoice-details">
+            <div class="detail-row">
+              <span class="detail-label">Invoice Number:</span>
+              <span>#${escapeHtml(invoice.invoice_number)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Date:</span>
+              <span>${new Date(invoice.created_at).toLocaleDateString()}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Client:</span>
+              <span>${escapeHtml(invoice.client_name)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Amount:</span>
+              <span class="total">$${invoice.total.toFixed(2)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status:</span>
+              <span style="color: ${invoice.payment_status === 'paid' ? '#10b981' : invoice.payment_status === 'pending' ? '#f59e0b' : '#ef4444'};">
+                ${escapeHtml(invoice.payment_status.charAt(0).toUpperCase() + invoice.payment_status.slice(1))}
+              </span>
+            </div>
+          </div>
+
+          ${invoice.payment_link ? `
+            <p style="text-align: center;">
+              <a href="${escapeHtml(invoice.payment_link)}" class="button">Pay Invoice Online</a>
+            </p>
+          ` : ''}
+
+          <p>If you have any questions about this invoice, please contact us:</p>
+          <p>
+            ${profile?.business_email ? `<strong>Email:</strong> ${escapeHtml(profile.business_email)}<br>` : ''}
+            ${profile?.business_phone ? `<strong>Phone:</strong> ${escapeHtml(profile.business_phone)}<br>` : ''}
+            ${profile?.business_address ? `<strong>Address:</strong> ${escapeHtml(profile.business_address)}` : ''}
+          </p>
+
+          <div class="footer">
+            <p>This is an automated email from ${businessName}.</p>
+            <p>Thank you for your business!</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Send email via Resend
+    const { data: emailResult, error: emailError } = await resend.emails.send({
+      from: fromEmail,
+      to: recipientEmail,
+      subject: subject,
+      html: emailBody,
+    });
+
+    if (emailError) {
+      console.error("Email send error:", emailError);
+      return res.status(500).json({ error: "Failed to send email. Please try again later." });
+    }
+
+    // Update invoice to mark as sent
+    await supabaseAdmin
+      .from("invoices")
+      .update({ 
+        sent_at: new Date().toISOString(),
+        sent_to: recipientEmail
+      })
+      .eq("id", id);
+
+    res.json({ 
+      success: true, 
+      message: "Invoice sent successfully",
+      emailId: emailResult.id 
+    });
+
+  } catch (error) {
+    console.error("Send invoice error:", error);
+    res.status(500).json({ error: "Failed to send invoice email" });
   }
 });
 

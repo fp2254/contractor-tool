@@ -14,6 +14,9 @@ TradeBase is a full-stack web application built with Node.js and Express.js for 
 - **Multi-Language Support**: Full UI translation in 5 languages (English, Spanish, French, German, Portuguese) with language picker available immediately on login/signup screen.
 - **Invoice Template System**: 4 professional invoice templates (Basic Clean, Modern Pro, Color Accent Header, Big Total) selectable in settings.
 - **Invoice & Quote Management**: Create, track, download, and send professional invoices and quotes with line items and payment tracking.
+- **Email Invoices**: Send invoices directly to clients via email using Resend integration (3,000 free emails/month). Professional HTML emails include invoice details, payment links, and business contact information.
+- **Quote to Invoice Conversion**: One-click button to convert any quote into an invoice with all data pre-filled (client info, line items, totals).
+- **Monthly Financial Dashboard**: Real-time stats cards showing total invoiced this month, paid this month, and outstanding balance with currency formatting.
 - **Payment Collection**: Full Stripe Payment Link integration with automatic status updates via webhooks, manual payment controls, and payment statistics.
 - **Inventory Management**: Track supplies, materials, and stock with quantity, pricing, categories, low stock alerts, and total value calculations.
 - **Client Database**: Store client information with flexible entry options.
@@ -55,11 +58,12 @@ TradeBase is a full-stack web application built with Node.js and Express.js for 
     - **Storage**: Cloud storage for business logos and invoice photos.
 - **Stripe**:
     - **Payments**: Processing subscriptions and one-time invoice payments via Payment Links and webhooks.
-- **Email Service (Nodemailer)**:
-    - **Transactional Emails**: Send invoices directly to clients via email using nodemailer with SMTP.
-    - **Recommended Providers**: MailerSend (12,000 free emails/month) or Brevo (9,000 free emails/month).
-    - **Configuration**: Requires SMTP credentials stored as environment secrets (EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD, EMAIL_FROM).
-    - **Note**: Did not use Replit SendGrid integration (user dismissed) - using nodemailer for flexibility to choose any SMTP provider.
+- **Resend (Email Service)**:
+    - **Integration**: Using Replit's Resend connector for seamless email sending.
+    - **Free Tier**: 3,000 emails/month with 100 emails/day limit.
+    - **Features**: Professional transactional emails with HTML templates, auto-filled business info, and payment links.
+    - **Security**: API key and sender email managed via Replit connector integration (no manual secrets required).
+    - **Implementation**: Backend endpoint POST /api/invoices/:id/send-email protected by requireSubscription middleware.
 - **Node.js + Express.js**: Backend framework.
 - **html2canvas**: JavaScript library for rendering HTML elements to canvas, used for generating downloadable PNG images of invoices and quotes.
 

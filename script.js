@@ -489,6 +489,47 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   }
+  
+  // Wire up email invoice modal close buttons
+  const closeEmailModalBtn = document.getElementById("close-email-modal");
+  const cancelEmailModalBtn = document.getElementById("cancel-email-modal");
+  if (closeEmailModalBtn) {
+    closeEmailModalBtn.addEventListener("click", closeEmailInvoiceModal);
+  }
+  if (cancelEmailModalBtn) {
+    cancelEmailModalBtn.addEventListener("click", closeEmailInvoiceModal);
+  }
+  
+  // Close email modal when clicking outside
+  const emailInvoiceModal = document.getElementById("email-invoice-modal");
+  if (emailInvoiceModal) {
+    emailInvoiceModal.addEventListener("click", (e) => {
+      if (e.target === emailInvoiceModal) {
+        closeEmailInvoiceModal();
+      }
+    });
+  }
+  
+  // Wire up email invoice form submission
+  const emailInvoiceForm = document.getElementById("email-invoice-form");
+  if (emailInvoiceForm) {
+    emailInvoiceForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      if (tourMode) {
+        showToast(t('tour.email_disabled'));
+        return;
+      }
+      
+      const invoiceId = emailInvoiceForm.getAttribute('data-invoice-id');
+      const recipientEmail = document.getElementById('email-recipient-email').value;
+      const recipientName = document.getElementById('email-recipient-name').value;
+      
+      if (invoiceId && recipientEmail && recipientName) {
+        await sendInvoiceEmail(invoiceId, recipientEmail, recipientName);
+      }
+    });
+  }
 });
 
 // API FETCH HELPER (sends JWT token in Authorization header)
@@ -667,6 +708,9 @@ function renderDemoPaymentStats() {
   if (outstanding2) outstanding2.textContent = `$${outstanding.toFixed(2)}`;
   if (paidMonth2) paidMonth2.textContent = `$${paidMonth.toFixed(2)}`;
   if (pending2) pending2.textContent = `$${pending.toFixed(2)}`;
+  
+  renderDashboardStats(DEMO_DATA.invoices);
+  applyLanguage(); // Apply translations to stat labels
 }
 
 function renderDemoPaymentScreen() {
@@ -924,6 +968,9 @@ function viewDemoQuoteDetail(quote) {
     </div>
     
     <div class="detail-actions">
+      <button class="btn-convert-quote" disabled style="opacity: 0.6;">
+        <i class="fa-solid fa-file-invoice"></i> <span data-i18n="quote.convert_to_invoice">Convert to Invoice</span>
+      </button>
       <button class="btn-sm" id="share-demo-quote-btn">
         <i class="fa-solid fa-share-nodes"></i> Send Quote
       </button>
@@ -935,6 +982,7 @@ function viewDemoQuoteDetail(quote) {
   
   setTimeout(() => {
     document.getElementById('share-demo-quote-btn')?.addEventListener('click', () => shareQuote(quote));
+    applyLanguage();
   }, 0);
   
   showScreen('quote-detail');
@@ -1818,6 +1866,9 @@ async function loadInvoices() {
     
     list.appendChild(item);
   });
+  
+  renderDashboardStats(invoices);
+  applyLanguage(); // Apply translations to stat labels
 }
 
 async function loadQuotes() {
@@ -1996,6 +2047,9 @@ async function viewInvoiceDetail(invoiceId) {
             <i class="fa-solid fa-link"></i> Generate Payment Link
           </button>
         `}
+        <button class="btn-sm" id="send-email-invoice-btn" data-invoice-id="${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
+          <i class="fa-solid fa-envelope"></i> <span data-i18n="invoice.send_email">Send Email</span>
+        </button>
         <button class="btn-sm" id="download-invoice-btn" data-invoice-id="${invoice.id}">
           <i class="fa-solid fa-download"></i> Download
         </button>
@@ -2013,6 +2067,17 @@ async function viewInvoiceDetail(invoiceId) {
         openTemplateChooserForInvoice({id: invoiceId});
       });
     }
+    
+    // Wire up send email button
+    const sendEmailBtn = document.getElementById('send-email-invoice-btn');
+    if (sendEmailBtn) {
+      sendEmailBtn.addEventListener('click', () => {
+        openEmailInvoiceModal(invoice);
+      });
+    }
+    
+    // Re-apply translations to dynamically added buttons
+    applyLanguage();
     
     showScreen('invoice-detail');
   } catch (error) {
@@ -2101,6 +2166,9 @@ async function viewQuoteDetail(quoteId) {
       </div>
       
       <div class="detail-actions">
+        <button class="btn-convert-quote" id="convert-quote-btn-${quote.id}" data-quote-id="${quote.id}" ${tourMode ? 'disabled style="opacity: 0.6;"' : ''}>
+          <i class="fa-solid fa-file-invoice"></i> <span data-i18n="quote.convert_to_invoice">Convert to Invoice</span>
+        </button>
         <button class="btn-sm" id="share-quote-btn-${quote.id}">
           <i class="fa-solid fa-share-nodes"></i> Send Quote
         </button>
@@ -2113,6 +2181,15 @@ async function viewQuoteDetail(quoteId) {
       </div>
     `;
     
+    // Wire up convert button
+    const convertBtn = document.getElementById(`convert-quote-btn-${quote.id}`);
+    if (convertBtn && !tourMode) {
+      convertBtn.addEventListener('click', () => {
+        const quoteId = convertBtn.getAttribute('data-quote-id');
+        convertQuoteToInvoice(quoteId);
+      });
+    }
+    
     // Wire up download button
     const downloadBtn = document.getElementById('download-quote-btn');
     if (downloadBtn) {
@@ -2124,10 +2201,83 @@ async function viewQuoteDetail(quoteId) {
     
     document.getElementById(`share-quote-btn-${quote.id}`)?.addEventListener('click', () => shareQuote(quote));
     
+    // Re-apply translations
+    applyLanguage();
+    
     showScreen('quote-detail');
   } catch (error) {
     console.error("Error loading quote details:", error);
     showToast("Failed to load quote details");
+  }
+}
+
+async function convertQuoteToInvoice(quoteId) {
+  if (tourMode) {
+    showToast(t('tour.convert_disabled'));
+    return;
+  }
+  
+  try {
+    // Fetch the quote data
+    const res = await apiFetch(`/api/quotes/${quoteId}`);
+    const quote = await res.json();
+    
+    // Switch to invoice form
+    showScreen('new-invoice');
+    
+    // Clear existing line items
+    const lineItemsContainer = document.getElementById("line-items");
+    lineItemsContainer.innerHTML = "";
+    
+    // Pre-fill client name
+    const clientNameEl = document.getElementById("invoice-client-name");
+    if (clientNameEl) {
+      clientNameEl.value = quote.client_name || (quote.client ? quote.client.name : '');
+    }
+    
+    // Pre-fill date (use today's date)
+    const dateEl = document.getElementById("invoice-date");
+    if (dateEl) {
+      dateEl.value = new Date().toISOString().split('T')[0];
+    }
+    
+    // Pre-fill notes
+    const notesEl = document.getElementById("invoice-notes");
+    if (notesEl && quote.notes) {
+      notesEl.value = quote.notes;
+    }
+    
+    // Pre-fill line items
+    if (quote.items && quote.items.length > 0) {
+      quote.items.forEach(item => {
+        // Guard against missing fields
+        if (!item.description && !item.quantity && !item.unit_price) {
+          return; // Skip empty items
+        }
+        addLineItemRow({
+          description: item.description || '',
+          qty: item.quantity || 1,
+          price: item.unit_price || 0
+        });
+      });
+    } else {
+      // Add one empty line item if no items
+      addLineItemRow();
+    }
+    
+    // Update totals - recalculate to ensure accuracy
+    recalculateTotals();
+    
+    // Focus on first input
+    if (clientNameEl) {
+      clientNameEl.focus();
+    }
+    
+    // Show success toast
+    showToast(t('quote.converted_success'));
+  } catch (error) {
+    console.error("Error converting quote to invoice:", error);
+    showToast("Failed to convert quote to invoice");
   }
 }
 
@@ -2245,6 +2395,65 @@ async function loadPaymentScreenData() {
     await loadPaymentStats();
   } catch (error) {
     console.error("Error loading payment screen data:", error);
+  }
+}
+
+function calculateMonthlyStats(invoicesArray = []) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  let invoicedMonth = 0;
+  let paidMonth = 0;
+  let outstanding = 0;
+  
+  invoicesArray.forEach(invoice => {
+    // Fallback to invoice.date if created_at is missing
+    const dateStr = invoice.created_at || invoice.date;
+    if (!dateStr) return; // Skip if no date available
+    
+    const createdDate = new Date(dateStr);
+    if (isNaN(createdDate.getTime())) return; // Guard against invalid dates
+    
+    const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+    
+    if (isCurrentMonth) {
+      invoicedMonth += invoice.total || 0;
+      
+      if (invoice.payment_status === 'paid') {
+        paidMonth += invoice.total || 0;
+      }
+    }
+    
+    if (invoice.payment_status === 'unpaid' || invoice.payment_status === 'pending') {
+      outstanding += invoice.total || 0;
+    }
+  });
+  
+  return {
+    invoicedMonth,
+    paidMonth,
+    outstanding
+  };
+}
+
+function renderDashboardStats(invoicesArray = []) {
+  const stats = calculateMonthlyStats(invoicesArray);
+  
+  const invoicedMonthEl = document.getElementById('stat-invoiced-month');
+  const paidMonthEl = document.getElementById('stat-paid-month');
+  const outstandingEl = document.getElementById('stat-outstanding');
+  
+  if (invoicedMonthEl) {
+    invoicedMonthEl.textContent = `$${stats.invoicedMonth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  
+  if (paidMonthEl) {
+    paidMonthEl.textContent = `$${stats.paidMonth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  
+  if (outstandingEl) {
+    outstandingEl.textContent = `$${stats.outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 }
 
@@ -2631,6 +2840,84 @@ function openTemplateChooserForQuote(quote) {
 function closeTemplateChooser() {
   const modal = document.getElementById("template-chooser-modal");
   modal.style.display = 'none';
+}
+
+// EMAIL INVOICE MODAL
+
+function openEmailInvoiceModal(invoice) {
+  const modal = document.getElementById('email-invoice-modal');
+  const form = document.getElementById('email-invoice-form');
+  const emailInput = document.getElementById('email-recipient-email');
+  const nameInput = document.getElementById('email-recipient-name');
+  const preview = document.getElementById('email-modal-preview');
+  
+  if (!modal || !form || !emailInput || !nameInput || !preview) return;
+  
+  // Auto-fill from client data if available
+  if (invoice.client) {
+    emailInput.value = invoice.client.email || '';
+    nameInput.value = invoice.client.name || '';
+  } else {
+    emailInput.value = '';
+    nameInput.value = invoice.client_name || '';
+  }
+  
+  // Set placeholder for missing email
+  if (!emailInput.value) {
+    emailInput.placeholder = t('invoice.no_client_email') || 'No client email saved - enter email address';
+  } else {
+    emailInput.placeholder = '';
+  }
+  
+  // Set preview text
+  preview.innerHTML = `<strong>Invoice #${invoice.number || invoice.id}</strong> · Total: ${formatCurrency(invoice.total || 0)}`;
+  
+  // Store invoice data for form submission
+  form.setAttribute('data-invoice-id', invoice.id);
+  
+  modal.style.display = 'block';
+  applyLanguage();
+}
+
+function closeEmailInvoiceModal() {
+  const modal = document.getElementById('email-invoice-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function sendInvoiceEmail(invoiceId, recipientEmail, recipientName) {
+  if (!recipientEmail || !recipientEmail.trim()) {
+    showToast(t('invoice.email_required'), 'error');
+    return;
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(recipientEmail.trim())) {
+    showToast(t('invoice.email_invalid'), 'error');
+    return;
+  }
+  
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}/send-email`, {
+      method: 'POST',
+      body: JSON.stringify({
+        recipientEmail: recipientEmail.trim(),
+        recipientName: recipientName ? recipientName.trim() : ''
+      })
+    });
+    
+    if (res.ok) {
+      showToast(t('invoice.email_sent_success'));
+      closeEmailInvoiceModal();
+    } else {
+      const error = await res.json();
+      showToast(error.error || t('invoice.email_sent_error'), 'error');
+    }
+  } catch (error) {
+    console.error('Error sending invoice email:', error);
+    showToast(t('invoice.email_sent_error'), 'error');
+  }
 }
 
 async function previewInvoiceTemplate(invoice, templateId) {

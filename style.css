@@ -376,6 +376,73 @@ body {
   color: var(--muted);
 }
 
+/* DASHBOARD STATS */
+
+.stats-section {
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  background: var(--tile);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px var(--shadow-light);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.stat-card-blue {
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.1) 0%, var(--tile) 100%);
+  border-color: rgba(79, 140, 255, 0.3);
+}
+
+.stat-card-green {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, var(--tile) 100%);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.stat-card-orange {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, var(--tile) 100%);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.stat-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
 /* FORMS */
 
 .form,
@@ -649,6 +716,19 @@ body {
   
   .tile {
     min-height: 60px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    padding: 20px;
+    min-height: 100px;
+  }
+  
+  .stat-value {
+    font-size: 1.75rem;
   }
   
   .form-row-inline {
@@ -1237,6 +1317,41 @@ body {
   gap: 12px;
   margin-top: 24px;
   flex-wrap: wrap;
+}
+
+.btn-convert-quote {
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: var(--text-inverse);
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-convert-quote:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-convert-quote:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-convert-quote:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-convert-quote i {
+  font-size: 16px;
 }
 
 .payment-status-badge {

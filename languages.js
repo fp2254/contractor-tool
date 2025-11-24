@@ -11,6 +11,7 @@ const TRANSLATIONS = {
   en: {
     // Common
     "common.back": "Back",
+    "common.cancel": "Cancel",
     
     // Auth
     "auth.login": "Log In",
@@ -39,6 +40,9 @@ const TRANSLATIONS = {
     // Dashboard
     "dashboard.new_invoice": "New Invoice",
     "dashboard.create_invoice": "Create a new invoice with photos & cost helper.",
+    "dashboard.invoiced_month": "Invoiced This Month",
+    "dashboard.paid_month": "Paid This Month",
+    "dashboard.outstanding": "Outstanding Balance",
     "dashboard.quotes": "Quotes",
     "dashboard.quotes_desc": "Draft and track job quotes.",
     "dashboard.clients": "Clients",
@@ -78,6 +82,16 @@ const TRANSLATIONS = {
     "invoice.thank_you": "Thank you for your business!",
     "invoice.download": "Download",
     "invoice.send": "Send",
+    "invoice.send_email": "Send Email",
+    "invoice.email_modal_title": "Send Invoice via Email",
+    "invoice.recipient_email": "Recipient Email",
+    "invoice.recipient_name": "Recipient Name",
+    "invoice.send_button": "Send Invoice",
+    "invoice.no_client_email": "No client email saved - enter email address",
+    "invoice.email_sent_success": "Invoice sent successfully!",
+    "invoice.email_sent_error": "Failed to send invoice email",
+    "invoice.email_required": "Email address is required",
+    "invoice.email_invalid": "Please enter a valid email address",
     
     // Clients
     "client.clients": "Clients",
@@ -194,9 +208,16 @@ const TRANSLATIONS = {
     "trial.subscribe_now": "Subscribe Now",
     "tour.demo": "You're viewing a demo with sample data. Forms are disabled.",
     "tour.exit": "Exit Tour & Subscribe",
+    "tour.email_disabled": "Email sending is disabled in tour mode",
+    "tour.convert_disabled": "Converting quotes is disabled in tour mode",
+    
+    // Quote
+    "quote.convert_to_invoice": "Convert to Invoice",
+    "quote.converted_success": "Quote converted to invoice. Fill in any additional details and save.",
   },
   es: {
     "common.back": "Atrás",
+    "common.cancel": "Cancelar",
     
     "auth.login": "Iniciar sesión",
     "auth.signup": "Registrarse",
@@ -220,6 +241,9 @@ const TRANSLATIONS = {
     
     "dashboard.new_invoice": "Nueva factura",
     "dashboard.create_invoice": "Crea una nueva factura con fotos y ayuda de costos.",
+    "dashboard.invoiced_month": "Facturado este mes",
+    "dashboard.paid_month": "Pagado este mes",
+    "dashboard.outstanding": "Saldo pendiente",
     "dashboard.quotes": "Presupuestos",
     "dashboard.quotes_desc": "Redacta y realiza un seguimiento de presupuestos de trabajos.",
     "dashboard.clients": "Clientes",
@@ -257,6 +281,16 @@ const TRANSLATIONS = {
     "invoice.thank_you": "¡Gracias por tu negocio!",
     "invoice.download": "Descargar",
     "invoice.send": "Enviar",
+    "invoice.send_email": "Enviar correo",
+    "invoice.email_modal_title": "Enviar factura por correo",
+    "invoice.recipient_email": "Correo del destinatario",
+    "invoice.recipient_name": "Nombre del destinatario",
+    "invoice.send_button": "Enviar factura",
+    "invoice.no_client_email": "No hay correo del cliente guardado - ingrese dirección de correo",
+    "invoice.email_sent_success": "¡Factura enviada con éxito!",
+    "invoice.email_sent_error": "Error al enviar el correo de la factura",
+    "invoice.email_required": "Se requiere dirección de correo electrónico",
+    "invoice.email_invalid": "Por favor ingrese una dirección de correo electrónico válida",
     
     "client.clients": "Clientes",
     "client.add": "Agregar cliente",
@@ -365,9 +399,15 @@ const TRANSLATIONS = {
     "trial.subscribe_now": "Suscribirse ahora",
     "tour.demo": "Estás viendo una demostración con datos de ejemplo. Los formularios están deshabilitados.",
     "tour.exit": "Salir de la demostración y suscribirse",
+    "tour.email_disabled": "El envío de correo está deshabilitado en modo demo",
+    "tour.convert_disabled": "La conversión de presupuestos está deshabilitada en modo demo",
+    
+    "quote.convert_to_invoice": "Convertir a factura",
+    "quote.converted_success": "Presupuesto convertido a factura. Complete los detalles adicionales y guarde.",
   },
   fr: {
     "common.back": "Retour",
+    "common.cancel": "Annuler",
     
     "auth.login": "Connexion",
     "auth.signup": "Inscription",
@@ -391,6 +431,9 @@ const TRANSLATIONS = {
     
     "dashboard.new_invoice": "Nouvelle facture",
     "dashboard.create_invoice": "Créez une nouvelle facture avec photos et aide aux coûts.",
+    "dashboard.invoiced_month": "Facturé ce mois",
+    "dashboard.paid_month": "Payé ce mois",
+    "dashboard.outstanding": "Solde impayé",
     "dashboard.quotes": "Devis",
     "dashboard.quotes_desc": "Rédigez et suivez les devis de travaux.",
     "dashboard.clients": "Clients",
@@ -428,6 +471,16 @@ const TRANSLATIONS = {
     "invoice.thank_you": "Merci pour votre confiance!",
     "invoice.download": "Télécharger",
     "invoice.send": "Envoyer",
+    "invoice.send_email": "Envoyer email",
+    "invoice.email_modal_title": "Envoyer la facture par email",
+    "invoice.recipient_email": "Email du destinataire",
+    "invoice.recipient_name": "Nom du destinataire",
+    "invoice.send_button": "Envoyer la facture",
+    "invoice.no_client_email": "Aucun email client enregistré - saisissez l'adresse email",
+    "invoice.email_sent_success": "Facture envoyée avec succès!",
+    "invoice.email_sent_error": "Échec de l'envoi de l'email de facture",
+    "invoice.email_required": "L'adresse e-mail est requise",
+    "invoice.email_invalid": "Veuillez saisir une adresse e-mail valide",
     
     "client.clients": "Clients",
     "client.add": "Ajouter un client",
@@ -536,9 +589,15 @@ const TRANSLATIONS = {
     "trial.subscribe_now": "S'abonner maintenant",
     "tour.demo": "Vous visualisez une démonstration avec des données d'exemple. Les formulaires sont désactivés.",
     "tour.exit": "Quitter la démo et s'abonner",
+    "tour.email_disabled": "L'envoi d'email est désactivé en mode démo",
+    "tour.convert_disabled": "La conversion de devis est désactivée en mode démo",
+    
+    "quote.convert_to_invoice": "Convertir en facture",
+    "quote.converted_success": "Devis converti en facture. Remplissez les détails supplémentaires et enregistrez.",
   },
   de: {
     "common.back": "Zurück",
+    "common.cancel": "Abbrechen",
     
     "auth.login": "Anmelden",
     "auth.signup": "Registrieren",
@@ -562,6 +621,9 @@ const TRANSLATIONS = {
     
     "dashboard.new_invoice": "Neue Rechnung",
     "dashboard.create_invoice": "Erstelle eine neue Rechnung mit Fotos und Kostenhilfe.",
+    "dashboard.invoiced_month": "Diesen Monat in Rechnung gestellt",
+    "dashboard.paid_month": "Diesen Monat bezahlt",
+    "dashboard.outstanding": "Ausstehender Betrag",
     "dashboard.quotes": "Angebote",
     "dashboard.quotes_desc": "Jobangebotstwürfe erstellen und verfolgen.",
     "dashboard.clients": "Kunden",
@@ -599,6 +661,16 @@ const TRANSLATIONS = {
     "invoice.thank_you": "Vielen Dank für Ihr Geschäft!",
     "invoice.download": "Herunterladen",
     "invoice.send": "Senden",
+    "invoice.send_email": "E-Mail senden",
+    "invoice.email_modal_title": "Rechnung per E-Mail senden",
+    "invoice.recipient_email": "Empfänger-E-Mail",
+    "invoice.recipient_name": "Empfängername",
+    "invoice.send_button": "Rechnung senden",
+    "invoice.no_client_email": "Keine Kunden-E-Mail gespeichert - E-Mail-Adresse eingeben",
+    "invoice.email_sent_success": "Rechnung erfolgreich gesendet!",
+    "invoice.email_sent_error": "Fehler beim Senden der Rechnungs-E-Mail",
+    "invoice.email_required": "E-Mail-Adresse ist erforderlich",
+    "invoice.email_invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
     
     "client.clients": "Kunden",
     "client.add": "Kunde hinzufügen",
@@ -707,9 +779,15 @@ const TRANSLATIONS = {
     "trial.subscribe_now": "Jetzt abonnieren",
     "tour.demo": "Sie sehen eine Demo mit Beispieldaten. Formulare sind deaktiviert.",
     "tour.exit": "Demo beenden und abonnieren",
+    "tour.email_disabled": "E-Mail-Versand ist im Demo-Modus deaktiviert",
+    "tour.convert_disabled": "Die Umwandlung von Angeboten ist im Demo-Modus deaktiviert",
+    
+    "quote.convert_to_invoice": "In Rechnung umwandeln",
+    "quote.converted_success": "Angebot in Rechnung umgewandelt. Füllen Sie zusätzliche Details aus und speichern Sie.",
   },
   pt: {
     "common.back": "Voltar",
+    "common.cancel": "Cancelar",
     
     "auth.login": "Entrar",
     "auth.signup": "Registrar",
@@ -733,6 +811,9 @@ const TRANSLATIONS = {
     
     "dashboard.new_invoice": "Nova Fatura",
     "dashboard.create_invoice": "Crie uma nova fatura com fotos e ajuda de custos.",
+    "dashboard.invoiced_month": "Faturado este mês",
+    "dashboard.paid_month": "Pago este mês",
+    "dashboard.outstanding": "Saldo pendente",
     "dashboard.quotes": "Orçamentos",
     "dashboard.quotes_desc": "Rascunhe e acompanhe orçamentos de trabalhos.",
     "dashboard.clients": "Clientes",
@@ -770,6 +851,16 @@ const TRANSLATIONS = {
     "invoice.thank_you": "Obrigado pelo seu negócio!",
     "invoice.download": "Baixar",
     "invoice.send": "Enviar",
+    "invoice.send_email": "Enviar e-mail",
+    "invoice.email_modal_title": "Enviar fatura por e-mail",
+    "invoice.recipient_email": "E-mail do destinatário",
+    "invoice.recipient_name": "Nome do destinatário",
+    "invoice.send_button": "Enviar fatura",
+    "invoice.no_client_email": "Nenhum e-mail do cliente salvo - insira o endereço de e-mail",
+    "invoice.email_sent_success": "Fatura enviada com sucesso!",
+    "invoice.email_sent_error": "Falha ao enviar e-mail da fatura",
+    "invoice.email_required": "O endereço de e-mail é obrigatório",
+    "invoice.email_invalid": "Por favor, insira um endereço de e-mail válido",
     
     "client.clients": "Clientes",
     "client.add": "Adicionar cliente",
@@ -878,6 +969,11 @@ const TRANSLATIONS = {
     "trial.subscribe_now": "Inscrever-se Agora",
     "tour.demo": "Você está visualizando uma demonstração com dados de amostra. Formulários são desabilitados.",
     "tour.exit": "Sair da Demo e Inscrever-se",
+    "tour.email_disabled": "O envio de e-mail está desabilitado no modo demonstração",
+    "tour.convert_disabled": "A conversão de orçamentos está desabilitada no modo demonstração",
+    
+    "quote.convert_to_invoice": "Converter em fatura",
+    "quote.converted_success": "Orçamento convertido em fatura. Preencha detalhes adicionais e salve.",
   }
 };
 

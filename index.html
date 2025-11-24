@@ -104,6 +104,27 @@
       <main id="screen-container">
         <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
+          <!-- MONTHLY STATS -->
+          <div class="stats-section">
+            <div class="stats-grid">
+              <div class="stat-card stat-card-blue">
+                <div class="stat-icon">📊</div>
+                <div class="stat-label" data-i18n="dashboard.invoiced_month">Invoiced This Month</div>
+                <div class="stat-value" id="stat-invoiced-month">$0.00</div>
+              </div>
+              <div class="stat-card stat-card-green">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label" data-i18n="dashboard.paid_month">Paid This Month</div>
+                <div class="stat-value" id="stat-paid-month">$0.00</div>
+              </div>
+              <div class="stat-card stat-card-orange">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-label" data-i18n="dashboard.outstanding">Outstanding Balance</div>
+                <div class="stat-value" id="stat-outstanding">$0.00</div>
+              </div>
+            </div>
+          </div>
+
           <div class="tile-grid">
             <!-- FULL-WIDTH NEW INVOICE -->
             <button class="tile tile-full" data-screen="new-invoice">
@@ -984,12 +1005,43 @@
       <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0; color: var(--text);" data-i18n="template.choose_template">Choose Invoice Template</h2>
-          <button id="close-template-chooser" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+          <button id="close-template-chooser" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
         </div>
         <p style="color: var(--muted); margin-bottom: 25px;" data-i18n="template.choose_desc">Click a template to download your invoice in that style.</p>
         <div id="template-chooser-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
           <!-- Template cards will be inserted here -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Invoice Modal -->
+  <div id="email-invoice-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow: auto; padding: 20px;">
+    <div style="max-width: 500px; margin: 50px auto; position: relative;">
+      <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; color: var(--text);" data-i18n="invoice.email_modal_title">Send Invoice via Email</h2>
+          <button id="close-email-modal" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+        </div>
+        
+        <div id="email-modal-preview" style="padding: 12px; background: var(--tile); border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: var(--muted);"></div>
+        
+        <form id="email-invoice-form" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;" data-i18n="invoice.recipient_email">Recipient Email</label>
+            <input type="email" id="email-recipient-email" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;" data-i18n="invoice.recipient_name">Recipient Name</label>
+            <input type="text" id="email-recipient-name" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="submit" class="btn-primary" style="flex: 1; min-height: 44px; font-size: 15px;" data-i18n="invoice.send_button">Send Invoice</button>
+            <button type="button" id="cancel-email-modal" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 15px;" data-i18n="common.cancel">Cancel</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
