@@ -154,6 +154,7 @@ const TRANSLATIONS = {
     "template.choose_desc": "Click a template to download your invoice in that style.",
     
     // Inventory
+    "inventory.title": "Inventory",
     "inventory.inventory": "Inventory Management",
     "inventory.add_item": "Add Item",
     "inventory.item_name": "Item Name",
@@ -171,6 +172,7 @@ const TRANSLATIONS = {
     "inventory.add_first": "Add Your First Item",
     
     // Payments
+    "payments.title": "Payments",
     "payments.payment_collection": "Payment Collection",
     "payments.stripe_status": "Stripe Connect Status",
     "payments.active": "Active",
@@ -375,6 +377,7 @@ const TRANSLATIONS = {
     "template.choose_template": "Elegir Plantilla de Factura",
     "template.choose_desc": "Haz clic en una plantilla para descargar tu factura en ese estilo.",
     
+    "inventory.title": "Inventario",
     "inventory.inventory": "Gestión de inventario",
     "inventory.add_item": "Agregar artículo",
     "inventory.item_name": "Nombre del artículo",
@@ -391,6 +394,7 @@ const TRANSLATIONS = {
     "inventory.no_items": "Sin artículos de inventario aún",
     "inventory.add_first": "Agregar tu primer artículo",
     
+    "payments.title": "Pagos",
     "payments.payment_collection": "Cobro de pagos",
     "payments.stripe_status": "Estado de Stripe Connect",
     "payments.active": "Activo",
@@ -590,6 +594,7 @@ const TRANSLATIONS = {
     "template.choose_template": "Choisir un Modèle de Facture",
     "template.choose_desc": "Cliquez sur un modèle pour télécharger votre facture dans ce style.",
     
+    "inventory.title": "Inventaire",
     "inventory.inventory": "Gestion de l'inventaire",
     "inventory.add_item": "Ajouter un article",
     "inventory.item_name": "Nom de l'article",
@@ -606,6 +611,7 @@ const TRANSLATIONS = {
     "inventory.no_items": "Pas encore d'articles d'inventaire",
     "inventory.add_first": "Ajouter votre premier article",
     
+    "payments.title": "Paiements",
     "payments.payment_collection": "Recouvrement des paiements",
     "payments.stripe_status": "Statut de Stripe Connect",
     "payments.active": "Actif",
@@ -805,6 +811,7 @@ const TRANSLATIONS = {
     "template.choose_template": "Rechnungsvorlage Wählen",
     "template.choose_desc": "Klicken Sie auf eine Vorlage, um Ihre Rechnung in diesem Stil herunterzuladen.",
     
+    "inventory.title": "Inventar",
     "inventory.inventory": "Bestandsverwaltung",
     "inventory.add_item": "Artikel hinzufügen",
     "inventory.item_name": "Artikelname",
@@ -821,6 +828,7 @@ const TRANSLATIONS = {
     "inventory.no_items": "Noch keine Bestandsartikel",
     "inventory.add_first": "Fügen Sie Ihren ersten Artikel hinzu",
     
+    "payments.title": "Zahlungen",
     "payments.payment_collection": "Zahlungseinzug",
     "payments.stripe_status": "Stripe Connect Status",
     "payments.active": "Aktiv",
@@ -1020,6 +1028,7 @@ const TRANSLATIONS = {
     "template.choose_template": "Escolher Modelo de Fatura",
     "template.choose_desc": "Clique em um modelo para baixar sua fatura nesse estilo.",
     
+    "inventory.title": "Inventário",
     "inventory.inventory": "Gerenciamento de Inventário",
     "inventory.add_item": "Adicionar Item",
     "inventory.item_name": "Nome do Item",
@@ -1036,6 +1045,7 @@ const TRANSLATIONS = {
     "inventory.no_items": "Sem itens de inventário ainda",
     "inventory.add_first": "Adicione Seu Primeiro Item",
     
+    "payments.title": "Pagamentos",
     "payments.payment_collection": "Cobrança de Pagamentos",
     "payments.stripe_status": "Status do Stripe Connect",
     "payments.active": "Ativo",
