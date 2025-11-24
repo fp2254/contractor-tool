@@ -94,10 +94,10 @@ function renderBasicClean(data, type, numberField, dateField) {
         <tbody>
           ${data.items?.map(item => `
             <tr style="border: 1px solid #ccc;">
-              <td style="padding: 8px; border: 1px solid #ccc;">${item.description}</td>
-              <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${item.qty}</td>
-              <td style="padding: 8px; text-align: right; border: 1px solid #ccc;">$${parseFloat(item.price).toFixed(2)}</td>
-              <td style="padding: 8px; text-align: right; border: 1px solid #ccc;">$${parseFloat(item.total).toFixed(2)}</td>
+              <td style="padding: 8px; border: 1px solid #ccc; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
+              <td style="padding: 8px; text-align: center; border: 1px solid #ccc; white-space: nowrap;">${item.qty}</td>
+              <td style="padding: 8px; text-align: right; border: 1px solid #ccc; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 8px; text-align: right; border: 1px solid #ccc; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
         </tbody>
@@ -166,10 +166,10 @@ function renderModernPro(data, type, numberField, dateField) {
         <tbody>
           ${data.items?.map((item, i) => `
             <tr style="background: ${i % 2 === 0 ? '#f8f9fa' : 'white'}; border-bottom: 1px solid #e9ecef;">
-              <td style="padding: 10px;">${item.description}</td>
-              <td style="padding: 10px; text-align: center;">${item.qty}</td>
-              <td style="padding: 10px; text-align: right;">$${parseFloat(item.price).toFixed(2)}</td>
-              <td style="padding: 10px; text-align: right; font-weight: 600;">$${parseFloat(item.total).toFixed(2)}</td>
+              <td style="padding: 10px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
+              <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.qty}</td>
+              <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 10px; text-align: right; font-weight: 600; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
         </tbody>
@@ -242,10 +242,10 @@ function renderColorAccent(data, type, numberField, dateField) {
           <tbody>
             ${data.items?.map(item => `
               <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px;">${item.description}</td>
-                <td style="padding: 10px; text-align: center;">${item.qty}</td>
-                <td style="padding: 10px; text-align: right;">$${parseFloat(item.price).toFixed(2)}</td>
-                <td style="padding: 10px; text-align: right;">${item.total}</td>
+                <td style="padding: 10px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
+                <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.qty}</td>
+                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${item.total}</td>
               </tr>
             `).join('') || ''}
           </tbody>
@@ -306,10 +306,10 @@ function renderBigTotal(data, type, numberField, dateField) {
         <tbody>
           ${data.items?.map(item => `
             <tr style="border-bottom: 1px solid #ddd;">
-              <td style="padding: 8px;">${item.description}</td>
-              <td style="padding: 8px; text-align: center;">${item.qty}</td>
-              <td style="padding: 8px; text-align: right;">$${parseFloat(item.price).toFixed(2)}</td>
-              <td style="padding: 8px; text-align: right;">$${parseFloat(item.total).toFixed(2)}</td>
+              <td style="padding: 8px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
+              <td style="padding: 8px; text-align: center; white-space: nowrap;">${item.qty}</td>
+              <td style="padding: 8px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 8px; text-align: right; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
         </tbody>
