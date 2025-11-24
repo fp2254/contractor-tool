@@ -8,43 +8,12 @@ ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trial',
 ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS subscription_ends_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS stripe_connect_enabled BOOLEAN DEFAULT FALSE;
 
 -- Create index for faster subscription queries
 CREATE INDEX IF NOT EXISTS idx_profiles_subscription_status ON profiles(subscription_status);
 CREATE INDEX IF NOT EXISTS idx_profiles_stripe_customer_id ON profiles(stripe_customer_id);
-
--- Rename estimates table to quotes (if exists)
-ALTER TABLE IF EXISTS estimates RENAME TO quotes;
-
--- Add quotes table if it doesn't exist
-CREATE TABLE IF NOT EXISTS quotes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
-  client_name TEXT,
-  quote_number TEXT,
-  quote_date DATE DEFAULT CURRENT_DATE,
-  due_date DATE,
-  subtotal NUMERIC(10,2) DEFAULT 0,
-  tax NUMERIC(10,2) DEFAULT 0,
-  total NUMERIC(10,2) DEFAULT 0,
-  notes TEXT,
-  status TEXT DEFAULT 'draft',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create quote_items table if it doesn't exist
-CREATE TABLE IF NOT EXISTS quote_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
-  description TEXT NOT NULL,
-  quantity NUMERIC(10,2) DEFAULT 1,
-  unit_price NUMERIC(10,2) DEFAULT 0,
-  total NUMERIC(10,2) DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
 
 -- Add client_name to invoices table for freeform entry
 ALTER TABLE invoices
@@ -58,6 +27,35 @@ ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
 
 -- Create index for faster payment queries
 CREATE INDEX IF NOT EXISTS idx_invoices_payment_status ON invoices(payment_status);
+
+-- Create quotes table (simple version - uses BIGINT like other tables)
+CREATE TABLE IF NOT EXISTS quotes (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
+  client_name TEXT,
+  quote_number TEXT,
+  quote_date DATE DEFAULT CURRENT_DATE,
+  due_date DATE,
+  subtotal NUMERIC(10,2) DEFAULT 0,
+  tax NUMERIC(10,2) DEFAULT 0,
+  total NUMERIC(10,2) DEFAULT 0,
+  notes TEXT,
+  status TEXT DEFAULT 'draft',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create quote_items table
+CREATE TABLE IF NOT EXISTS quote_items (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  quote_id BIGINT NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  quantity NUMERIC(10,2) DEFAULT 1,
+  unit_price NUMERIC(10,2) DEFAULT 0,
+  total NUMERIC(10,2) DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
 -- Enable Row Level Security
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
@@ -105,13 +103,9 @@ CREATE POLICY "Users can delete their own quote items"
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
   ));
 
--- Add Stripe Connect field to profiles
-ALTER TABLE profiles
-ADD COLUMN IF NOT EXISTS stripe_connect_enabled BOOLEAN DEFAULT FALSE;
-
 -- Create inventory_items table
 CREATE TABLE IF NOT EXISTS inventory_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
