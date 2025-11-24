@@ -64,42 +64,42 @@ ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for quotes
-CREATE POLICY IF NOT EXISTS "Users can view their own quotes"
+CREATE POLICY "Users can view their own quotes"
   ON quotes FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own quotes"
+CREATE POLICY "Users can insert their own quotes"
   ON quotes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can update their own quotes"
+CREATE POLICY "Users can update their own quotes"
   ON quotes FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can delete their own quotes"
+CREATE POLICY "Users can delete their own quotes"
   ON quotes FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Create RLS policies for quote_items
-CREATE POLICY IF NOT EXISTS "Users can view their own quote items"
+CREATE POLICY "Users can view their own quote items"
   ON quote_items FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
   ));
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own quote items"
+CREATE POLICY "Users can insert their own quote items"
   ON quote_items FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
   ));
 
-CREATE POLICY IF NOT EXISTS "Users can update their own quote items"
+CREATE POLICY "Users can update their own quote items"
   ON quote_items FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
   ));
 
-CREATE POLICY IF NOT EXISTS "Users can delete their own quote items"
+CREATE POLICY "Users can delete their own quote items"
   ON quote_items FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM quotes WHERE quotes.id = quote_items.quote_id AND quotes.user_id = auth.uid()
@@ -132,18 +132,18 @@ CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category);
 ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for inventory_items
-CREATE POLICY IF NOT EXISTS "Users can view their own inventory items"
+CREATE POLICY "Users can view their own inventory items"
   ON inventory_items FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own inventory items"
+CREATE POLICY "Users can insert their own inventory items"
   ON inventory_items FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can update their own inventory items"
+CREATE POLICY "Users can update their own inventory items"
   ON inventory_items FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can delete their own inventory items"
+CREATE POLICY "Users can delete their own inventory items"
   ON inventory_items FOR DELETE
   USING (auth.uid() = user_id);
