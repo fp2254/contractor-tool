@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tradebase-v1';
-const RUNTIME_CACHE = 'tradebase-runtime';
+const CACHE_NAME = 'tradebase-v2';
+const RUNTIME_CACHE = 'tradebase-runtime-v2';
 
 const APP_SHELL = [
   '/',
@@ -8,6 +8,8 @@ const APP_SHELL = [
   '/script.js',
   '/config.js',
   '/db.js',
+  '/languages.js',
+  '/templates.js',
   '/manifest.json',
   '/icon.svg',
   '/icon-192.png',
