@@ -544,6 +544,11 @@ const TRANSLATIONS = {
     "invoice.notes_placeholder": "Notes facultatives pour le client",
     "invoice.save_client": "Enregistrer comme nouveau client",
     "invoice.invoices": "Factures",
+    "invoice.photos": "Photos",
+    "invoice.calculate": "Calculer",
+    "invoice.tax_label": "Taxe",
+    "invoice.save": "Enregistrer la facture",
+    "invoice.new_invoice": "Nouvelle facture",
     
     "quote.quotes": "Devis",
     "quote.new_quote": "+ Nouveau Devis",
@@ -754,6 +759,11 @@ const TRANSLATIONS = {
     "invoice.notes_placeholder": "Optionale Notizen für den Kunden",
     "invoice.save_client": "Als neuen Kunden speichern",
     "invoice.invoices": "Rechnungen",
+    "invoice.photos": "Fotos",
+    "invoice.calculate": "Berechnen",
+    "invoice.tax_label": "Steuer",
+    "invoice.save": "Rechnung speichern",
+    "invoice.new_invoice": "Neue Rechnung",
     
     "quote.quotes": "Angebote",
     "quote.new_quote": "+ Neues Angebot",
