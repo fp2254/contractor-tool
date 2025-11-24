@@ -2378,18 +2378,53 @@ async function loadPaymentScreenData() {
       statusEl.innerHTML = `
         <div class="status-badge status-active">
           <i class="fa-solid fa-check-circle"></i>
-          <span>Active</span>
+          <span>${t('payments.active')}</span>
         </div>
       `;
-      messageEl.textContent = "Payment collection is enabled. You can generate payment links for your invoices.";
+      messageEl.textContent = t('payments.enabled_message');
     } else {
       statusEl.innerHTML = `
         <div class="status-badge" style="background: rgba(158, 158, 158, 0.15); color: #9E9E9E; border: 1px solid rgba(158, 158, 158, 0.3);">
           <i class="fa-solid fa-circle-xmark"></i>
-          <span>Not Enabled</span>
+          <span>${t('payments.not_enabled')}</span>
         </div>
       `;
-      messageEl.textContent = "Payment collection is not enabled on your account. This feature is included with Lifetime plans or available as a $4/month add-on for Monthly/Yearly plans.";
+      messageEl.innerHTML = `
+        <p style="margin-bottom: 16px;">${t('payments.connect_message')}</p>
+        <button id="btn-enable-payment-collection" class="btn-primary" style="min-height: 44px;">
+          <i class="fa-solid fa-credit-card"></i> ${t('payments.enable_button')}
+        </button>
+      `;
+      
+      // Add event listener for enable button
+      const enableBtn = document.getElementById('btn-enable-payment-collection');
+      if (enableBtn) {
+        enableBtn.addEventListener('click', async () => {
+          try {
+            enableBtn.disabled = true;
+            enableBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t('payments.enabling')}`;
+            
+            const res = await apiFetch('/api/stripe-connect/enable', {
+              method: 'POST'
+            });
+            
+            if (res.ok) {
+              // Success! Reload the payment screen data
+              await loadPaymentScreenData();
+            } else {
+              const error = await res.json();
+              alert('Failed to enable payment collection: ' + (error.error || 'Unknown error'));
+              enableBtn.disabled = false;
+              enableBtn.innerHTML = `<i class="fa-solid fa-credit-card"></i> ${t('payments.enable_button')}`;
+            }
+          } catch (error) {
+            console.error('Error enabling payment collection:', error);
+            alert('Failed to enable payment collection. Please try again.');
+            enableBtn.disabled = false;
+            enableBtn.innerHTML = `<i class="fa-solid fa-credit-card"></i> ${t('payments.enable_button')}`;
+          }
+        });
+      }
     }
     
     await loadPaymentStats();

@@ -229,6 +229,31 @@ app.get("/api/profile/lifetime-count", async (req, res) => {
   }
 });
 
+// ENABLE STRIPE CONNECT (FREE FOR EVERYONE)
+app.post("/api/stripe-connect/enable", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ stripe_connect_enabled: true })
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error enabling Stripe Connect:", error);
+      return res.status(500).json({ error: "Failed to enable payment collection" });
+    }
+
+    res.json({ success: true, message: "Payment collection enabled successfully" });
+  } catch (err) {
+    console.error("Error in enable Stripe Connect:", err);
+    res.status(500).json({ error: "Failed to enable payment collection" });
+  }
+});
+
 // CLIENTS
 
 app.get("/api/clients", requireSubscription, async (req, res) => {
