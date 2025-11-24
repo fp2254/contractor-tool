@@ -54,7 +54,7 @@ function renderInvoiceTemplate(invoiceData, isQuote = false) {
 
 function renderBasicClean(data, type, numberField, dateField) {
   return `
-    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 40px; background: white; color: #000; font-family: Arial, sans-serif;">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background: white; color: #000; font-family: Arial, sans-serif; box-sizing: border-box;">
       ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 200px; max-height: 80px; margin-bottom: 20px;">` : ''}
       
       <div style="border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
@@ -126,7 +126,7 @@ function renderBasicClean(data, type, numberField, dateField) {
 
 function renderModernPro(data, type, numberField, dateField) {
   return `
-    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 40px; background: white; color: #000; font-family: 'Segoe UI', Arial, sans-serif;">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background: white; color: #000; font-family: 'Segoe UI', Arial, sans-serif; box-sizing: border-box;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
         <div>
           ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 200px; max-height: 80px; margin-bottom: 15px;">` : ''}
@@ -198,8 +198,8 @@ function renderModernPro(data, type, numberField, dateField) {
 
 function renderColorAccent(data, type, numberField, dateField) {
   return `
-    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 0; background: white; color: #000; font-family: Arial, sans-serif;">
-      <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 40px;">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 0; background: white; color: #000; font-family: Arial, sans-serif; box-sizing: border-box;">
+      <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 180px; max-height: 70px; filter: brightness(0) invert(1);">` : ''}
@@ -209,7 +209,7 @@ function renderColorAccent(data, type, numberField, dateField) {
         </div>
       </div>
       
-      <div style="padding: 40px;">
+      <div style="padding: 20px; box-sizing: border-box;">
         <table style="width: 100%; margin-bottom: 30px; font-size: 12px;">
           <tr>
             <td style="vertical-align: top; width: 50%;">
@@ -271,7 +271,7 @@ function renderColorAccent(data, type, numberField, dateField) {
 
 function renderBigTotal(data, type, numberField, dateField) {
   return `
-    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 40px; background: white; color: #000; font-family: Arial, sans-serif;">
+    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background: white; color: #000; font-family: Arial, sans-serif; box-sizing: border-box;">
       ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 200px; max-height: 80px; margin-bottom: 20px;">` : ''}
       
       <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
