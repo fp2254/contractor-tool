@@ -1200,6 +1200,22 @@ async function handleSignup(e) {
     return;
   }
 
+  // Send confirmation email via Resend
+  if (data && data.user && data.user.id) {
+    try {
+      const res = await fetch("/api/send-signup-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, userId: data.user.id })
+      });
+      if (!res.ok) {
+        console.warn("Failed to send confirmation email via Resend");
+      }
+    } catch (err) {
+      console.error("Error sending confirmation email:", err);
+    }
+  }
+
   showToast("Check your email to confirm your account.");
 }
 
