@@ -39,6 +39,7 @@ const TRANSLATIONS = {
     
     // Dashboard
     "dashboard.new_invoice": "New Invoice",
+    "dashboard.create_quote": "Create Quote",
     "dashboard.create_invoice": "Create a new invoice with photos & cost helper.",
     "dashboard.invoiced_month": "Invoiced This Month",
     "dashboard.paid_month": "Paid This Month",
@@ -285,6 +286,7 @@ const TRANSLATIONS = {
     "nav.referrals": "Referidos",
     
     "dashboard.new_invoice": "Nueva factura",
+    "dashboard.create_quote": "Crear Presupuesto",
     "dashboard.create_invoice": "Crea una nueva factura con fotos y ayuda de costos.",
     "dashboard.invoiced_month": "Facturado este mes",
     "dashboard.paid_month": "Pagado este mes",
@@ -511,6 +513,7 @@ const TRANSLATIONS = {
     "nav.referrals": "Parrainages",
     
     "dashboard.new_invoice": "Nouvelle facture",
+    "dashboard.create_quote": "Créer un Devis",
     "dashboard.create_invoice": "Créez une nouvelle facture avec photos et aide aux coûts.",
     "dashboard.invoiced_month": "Facturé ce mois",
     "dashboard.paid_month": "Payé ce mois",
@@ -740,6 +743,7 @@ const TRANSLATIONS = {
     "nav.referrals": "Empfehlungen",
     
     "dashboard.new_invoice": "Neue Rechnung",
+    "dashboard.create_quote": "Angebot Erstellen",
     "dashboard.create_invoice": "Erstelle eine neue Rechnung mit Fotos und Kostenhilfe.",
     "dashboard.invoiced_month": "Diesen Monat in Rechnung gestellt",
     "dashboard.paid_month": "Diesen Monat bezahlt",
@@ -969,6 +973,7 @@ const TRANSLATIONS = {
     "nav.referrals": "Indicações",
     
     "dashboard.new_invoice": "Nova Fatura",
+    "dashboard.create_quote": "Criar Orçamento",
     "dashboard.create_invoice": "Crie uma nova fatura com fotos e ajuda de custos.",
     "dashboard.invoiced_month": "Faturado este mês",
     "dashboard.paid_month": "Pago este mês",
