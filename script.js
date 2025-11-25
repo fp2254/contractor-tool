@@ -1907,46 +1907,25 @@ async function loadQuotes() {
   if (tourMode) return;
   
   const list = document.getElementById("quotes-list");
+  if (!list) return;
   list.innerHTML = "";
   
   let quotes = [];
-  
-  if (!currentUser) {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-    }
-  }
-  
-  if (currentUser) {
-    const localQuotes = await tradebaseDB.getQuotes(currentUser.id);
-    quotes = localQuotes || [];
-  }
   
   if (navigator.onLine) {
     try {
       const res = await apiFetch("/api/quotes");
       if (res.ok) {
-        const apiQuotes = await res.json();
-        
-        if (apiQuotes && Array.isArray(apiQuotes)) {
-          for (const quote of apiQuotes) {
-            await tradebaseDB.saveQuote(quote);
-          }
-          
-          const mergedMap = new Map();
-          apiQuotes.forEach(quote => mergedMap.set(quote.id, quote));
-          quotes.forEach(quote => {
-            if (!mergedMap.has(quote.id)) {
-              mergedMap.set(quote.id, quote);
-            }
-          });
-          quotes = Array.from(mergedMap.values());
-        }
+        quotes = await res.json() || [];
       }
     } catch (error) {
-      console.log('Using offline quotes:', error.message);
+      console.error('Failed to load quotes:', error);
     }
+  }
+
+  if (!quotes.length) {
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">No quotes yet. Create one to get started!</div>';
+    return;
   }
 
   quotes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
@@ -1956,12 +1935,9 @@ async function loadQuotes() {
     item.className = "list-item clickable";
     item.style.cursor = "pointer";
     
-    const isOffline = isOfflineId(quote.id);
-    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
-    
     item.innerHTML = `
       <div class="list-item-header">
-        <strong>Quote #${quote.quote_number || (typeof quote.id === 'string' ? quote.id.slice(0, 8) : quote.id)}${offlineBadge}</strong>
+        <strong>Quote #${quote.quote_number || quote.id}</strong>
         <span>${formatCurrency(quote.total || 0)}</span>
       </div>
       <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
@@ -3498,6 +3474,7 @@ async function handleQuoteSubmit(e) {
     }
   } catch (err) {
     console.error("Quote submit error:", err);
+    console.error("Error details:", JSON.stringify(err, null, 2));
     errorEl.textContent = err.message || "An error occurred.";
   }
 }
