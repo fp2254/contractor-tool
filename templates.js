@@ -37,15 +37,18 @@ function renderInvoiceTemplate(invoiceData, isQuote = false) {
   const numberField = isQuote ? 'quote_number' : 'number';
   const dateField = isQuote ? 'quote_date' : 'date';
   
+  // Use template from invoice/quote data if available, otherwise fall back to current global template
+  const templateToUse = invoiceData.template || currentTemplate;
+  
   let html = '';
   
-  if (currentTemplate === 'basic_clean') {
+  if (templateToUse === 'basic_clean') {
     html = renderBasicClean(invoiceData, type, numberField, dateField);
-  } else if (currentTemplate === 'modern_pro') {
+  } else if (templateToUse === 'modern_pro') {
     html = renderModernPro(invoiceData, type, numberField, dateField);
-  } else if (currentTemplate === 'color_accent') {
+  } else if (templateToUse === 'color_accent') {
     html = renderColorAccent(invoiceData, type, numberField, dateField);
-  } else if (currentTemplate === 'big_total') {
+  } else if (templateToUse === 'big_total') {
     html = renderBigTotal(invoiceData, type, numberField, dateField);
   }
   
