@@ -1351,6 +1351,9 @@ function showScreen(screenId) {
   );
   const el = document.getElementById(`screen-${screenId}`);
   if (el) el.classList.add("active");
+  
+  // Apply translations when switching screens to ensure all text is in correct language
+  applyLanguage();
 }
 
 // INITIAL LOAD
