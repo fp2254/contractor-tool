@@ -1,0 +1,37 @@
+Please update the dashboard UI as follows:
+	1.	Header clean-up
+	•	Keep the app name “TradeBase” and the small tagline exactly as they are.
+	•	On the right side, keep the Online status badge and Language selector, but place them in a single compact row (less vertical height).
+	•	Move the Log Out button out of the big pill on the right.
+	•	Either make it a small text/icon button in the top right of the header, or move it into a simple dropdown/menu icon.
+	•	Overall: reduce the vertical height of the header while keeping the same style.
+	2.	Primary action: New Invoice
+	•	Turn the “New Invoice” card into a clear primary button just under the header.
+	•	It should be a full-width button with rounded corners, more visually prominent than other tiles.
+	•	Keep the current icon and text, just style it like a main CTA button (e.g., same blue you already use in the UI).
+	3.	Summary stats bar
+	•	Under the New Invoice button, keep the three stats: Outstanding, Paid (This Month), Pending.
+	•	Put them in a single tight horizontal bar with 3 equal columns instead of a large card.
+	•	Reduce padding/height so it’s compact but still readable. Keep the same dollar colors (red/green/orange).
+	4.	Feature tiles → 2-column grid
+	•	All the existing feature tiles (except Referrals) should be shown in a 2-column grid instead of one long vertical list.
+	•	Tiles to include in the grid:
+	•	Quotes
+	•	Clients
+	•	Photos
+	•	Invoices
+	•	Payments
+	•	Inventory
+	•	Cost Calculator
+	•	Settings
+	•	Each tile:
+	•	Uses the existing icon and text.
+	•	Same general style as now (dark rounded card), just resized so two fit side-by-side on mobile.
+	•	Use responsive layout so on small screens it shows 2 columns; on very narrow screens it can fall back to 1 column if needed.
+	5.	Referrals as bottom banner
+	•	Move “Referrals – Share your link, earn 20% for life.” out of the grid and display it as a full-width banner at the bottom of the dashboard.
+	•	Make it slightly highlighted (e.g., subtle border or glow) but not more dominant than the “New Invoice” button.
+	6.	General notes
+	•	Keep all current navigation logic and links the same; this is mainly a layout/styling refactor.
+	•	Preserve dark mode colors, typography, icon set, and spacing style used elsewhere in the app.
+	•	Ensure the new layout looks great on iPhone-sized screens (the app is primarily used on mobile).
