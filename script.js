@@ -1537,7 +1537,7 @@ async function handleInvoiceSubmit(e) {
   const clientName = document.getElementById("invoice-client-name").value.trim();
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
-  const template = document.getElementById("invoice-template").value || "basic_clean";
+  const template = document.getElementById("invoice-template-select").value || "basic_clean";
   const items = getLineItemsFromUI();
 
   if (!clientName) {

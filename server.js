@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
+import puppeteer from "puppeteer-core";
 
 dotenv.config();
 
@@ -1130,6 +1131,151 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   }
 });
 
+// PDF GENERATION HELPER
+async function generateInvoicePDF(invoice, profile) {
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const items = invoice.invoice_items || [];
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.qty || 1}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.unit_price || 0).toFixed(2)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.line_total || 0).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  const pdfHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; line-height: 1.5; color: #333; padding: 40px; }
+        .header { border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { max-width: 180px; max-height: 60px; margin-bottom: 10px; }
+        .business-name { font-size: 24px; font-weight: bold; color: #1f2937; }
+        .business-info { font-size: 12px; color: #6b7280; margin-top: 5px; }
+        .invoice-title { font-size: 32px; font-weight: bold; color: #2563eb; margin: 20px 0; }
+        .meta-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .meta-block { }
+        .meta-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+        .meta-value { font-size: 14px; color: #1f2937; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f3f4f6; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+        .totals { text-align: right; margin-top: 20px; }
+        .totals-row { display: flex; justify-content: flex-end; padding: 8px 0; }
+        .totals-label { width: 150px; color: #6b7280; }
+        .totals-value { width: 100px; text-align: right; font-weight: 500; }
+        .grand-total { font-size: 24px; font-weight: bold; color: #2563eb; border-top: 2px solid #2563eb; padding-top: 15px; margin-top: 10px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+        .notes { background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 13px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        ${profile?.logo_url ? `<img src="${profile.logo_url}" class="logo" />` : ''}
+        <div class="business-name">${escapeHtml(profile?.business_name || 'Business')}</div>
+        <div class="business-info">
+          ${profile?.business_address ? escapeHtml(profile.business_address) + '<br>' : ''}
+          ${profile?.business_phone ? escapeHtml(profile.business_phone) + ' | ' : ''}
+          ${profile?.business_email ? escapeHtml(profile.business_email) : ''}
+        </div>
+      </div>
+
+      <div class="invoice-title">INVOICE</div>
+
+      <div class="meta-section">
+        <div class="meta-block">
+          <div class="meta-label">Bill To</div>
+          <div class="meta-value" style="font-size: 16px; font-weight: 600;">${escapeHtml(invoice.client_name)}</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-label">Invoice Number</div>
+          <div class="meta-value">#${escapeHtml(invoice.invoice_number)}</div>
+          <div class="meta-label" style="margin-top: 10px;">Date</div>
+          <div class="meta-value">${new Date(invoice.created_at).toLocaleDateString()}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50%;">Description</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Unit Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="totals-row">
+          <span class="totals-label">Subtotal:</span>
+          <span class="totals-value">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</span>
+        </div>
+        ${invoice.tax > 0 ? `
+        <div class="totals-row">
+          <span class="totals-label">Tax:</span>
+          <span class="totals-value">$${parseFloat(invoice.tax || 0).toFixed(2)}</span>
+        </div>
+        ` : ''}
+        <div class="grand-total">
+          <span class="totals-label">Total:</span>
+          <span class="totals-value">$${parseFloat(invoice.total || 0).toFixed(2)}</span>
+        </div>
+      </div>
+
+      ${invoice.notes ? `
+      <div class="notes">
+        <strong>Notes:</strong><br>
+        ${escapeHtml(invoice.notes)}
+      </div>
+      ` : ''}
+
+      <div class="footer">
+        <p>Thank you for your business!</p>
+        ${invoice.payment_link ? `<p>Pay online: ${invoice.payment_link}</p>` : ''}
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: '/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
+    });
+
+    await browser.close();
+    return pdfBuffer;
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    return null;
+  }
+}
+
 // RESEND EMAIL HELPER
 async function getResendClient() {
   try {
@@ -1388,13 +1534,28 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
       </html>
     `;
 
-    // Send email via Resend
-    const { data: emailResult, error: emailError } = await resend.emails.send({
+    // Generate PDF attachment
+    const pdfBuffer = await generateInvoicePDF(invoice, profile);
+    
+    // Prepare email options
+    const emailOptions = {
       from: fromEmail,
       to: recipientEmail,
       subject: subject,
       html: emailBody,
-    });
+    };
+    
+    // Add PDF attachment if generated successfully
+    if (pdfBuffer) {
+      emailOptions.attachments = [{
+        filename: `Invoice-${invoice.invoice_number}.pdf`,
+        content: pdfBuffer.toString('base64'),
+        content_type: 'application/pdf'
+      }];
+    }
+
+    // Send email via Resend
+    const { data: emailResult, error: emailError } = await resend.emails.send(emailOptions);
 
     if (emailError) {
       console.error("Email send error:", emailError);
