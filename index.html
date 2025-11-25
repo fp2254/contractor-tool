@@ -381,18 +381,23 @@
               + Add Line Item
             </button>
 
+            <div class="form-row">
+              <label data-i18n="invoice.tax_label">Tax %</label>
+              <input type="number" id="quote-tax" placeholder="0" min="0" step="0.01" value="0" />
+            </div>
+
             <div class="totals-box">
               <div>
                 <span data-i18n="quote.subtotal">Subtotal:</span>
-                <span id="quote-display-subtotal">$0.00</span>
+                <span id="quote-subtotal">$0.00</span>
               </div>
               <div>
                 <span data-i18n="quote.tax">Tax:</span>
-                <span id="quote-display-tax">$0.00</span>
+                <span id="quote-tax-amount">$0.00</span>
               </div>
               <div class="totals-main">
                 <span data-i18n="quote.total">Total:</span>
-                <span id="quote-display-total">$0.00</span>
+                <span id="quote-total">$0.00</span>
               </div>
             </div>
 
