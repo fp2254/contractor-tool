@@ -113,8 +113,12 @@
         <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
           <!-- PRIMARY ACTION: CREATE QUOTE BUTTON -->
-          <button class="tile btn-primary btn-new-quote" data-screen="quotes">
-            <i class="fa-solid fa-quote-left"></i> <span data-i18n="dashboard.create_quote">Create Quote</span>
+          <button class="tile" data-screen="quotes">
+            <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+            <div class="tile-text">
+              <h3 data-i18n="dashboard.create_quote">Create Quote</h3>
+              <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
+            </div>
           </button>
 
           <!-- SUMMARY STATS BAR -->
