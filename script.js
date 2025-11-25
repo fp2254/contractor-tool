@@ -3476,7 +3476,12 @@ async function handleQuoteSubmit(e) {
     if (res.ok) {
       const data = await res.json();
       quoteData.id = data.id;
-      await tradebaseDB.saveQuote(quoteData);
+      
+      try {
+        await tradebaseDB.saveQuote(quoteData);
+      } catch (dbErr) {
+        console.warn("IndexedDB save failed (non-critical):", dbErr);
+      }
       
       showToast("Quote created!");
       document.getElementById("quote-form").reset();
@@ -3488,7 +3493,8 @@ async function handleQuoteSubmit(e) {
       errorEl.textContent = data.error || "Failed to create quote.";
     }
   } catch (err) {
-    errorEl.textContent = "An error occurred.";
+    console.error("Quote submit error:", err);
+    errorEl.textContent = err.message || "An error occurred.";
   }
 }
 
