@@ -3552,7 +3552,7 @@ function wireQuotesUI() {
     quoteForm.addEventListener("submit", handleQuoteSubmit);
   }
 
-  const addQuoteItemBtn = document.getElementById("btn-add-quote-item");
+  const addQuoteItemBtn = document.getElementById("btn-add-quote-line-item");
   if (addQuoteItemBtn) {
     addQuoteItemBtn.addEventListener("click", () => addQuoteLineItemRow());
   }
