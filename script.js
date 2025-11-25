@@ -1216,6 +1216,9 @@ async function handleSignup(e) {
     }
   }
 
+  // Sign out immediately to prevent auto-login before email confirmation
+  await sb.auth.signOut();
+  
   showToast("Check your email to confirm your account.");
 }
 
@@ -1246,8 +1249,14 @@ async function handleLogout() {
 async function checkSession() {
   const { data } = await sb.auth.getUser();
   if (data && data.user) {
-    currentUser = data.user;
-    await onLoggedIn();
+    // Only auto-login if email is confirmed or if there's no email_confirmed field (legacy)
+    if (data.user.user_metadata?.email_verified || !data.user.email_confirmed_at) {
+      // If email_confirmed_at is null, they haven't confirmed yet
+      if (data.user.email_confirmed_at) {
+        currentUser = data.user;
+        await onLoggedIn();
+      }
+    }
   }
 }
 
