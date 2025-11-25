@@ -91,7 +91,7 @@
         </div>
         <div class="header-actions">
           <div id="online-status-indicator" class="online-status online">
-            <i class="fas fa-wifi"></i> Online
+            <i class="fas fa-wifi"></i> <span class="online-text">Online</span>
           </div>
           <select id="app-language-select" class="language-select" title="Change language">
             <option value="en">🇺🇸 English</option>
@@ -103,42 +103,38 @@
           <button id="theme-toggle" class="icon-btn" title="Toggle theme">
             <i class="fa-solid fa-moon"></i>
           </button>
-          <button id="btn-logout" class="btn-outline">Log Out</button>
+          <button id="btn-logout" class="icon-btn logout-btn" title="Log Out">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
         </div>
       </header>
 
       <main id="screen-container">
         <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
-          <div class="tile-grid">
-            <!-- FULL-WIDTH NEW INVOICE -->
-            <button class="tile tile-full" data-screen="new-invoice">
-              <div class="tile-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-              <div class="tile-text">
-                <h2 data-i18n="dashboard.new_invoice">New Invoice</h2>
-                <p data-i18n="dashboard.create_invoice">Create a new invoice with photos & cost helper.</p>
-              </div>
-            </button>
+          <!-- PRIMARY ACTION: NEW INVOICE BUTTON -->
+          <button class="btn-primary btn-new-invoice" data-screen="new-invoice">
+            <i class="fa-solid fa-file-invoice-dollar"></i> <span data-i18n="dashboard.new_invoice">New Invoice</span>
+          </button>
 
-            <!-- PAYMENT STATS OVERVIEW -->
-            <div class="tile tile-full" id="dashboard-payment-stats" style="pointer-events: none; background: linear-gradient(135deg, var(--tile) 0%, var(--tile) 100%); border: 2px solid var(--border);">
-              <div style="display: flex; justify-content: space-around; align-items: center; width: 100%; gap: 20px;">
-                <div style="text-align: center;">
-                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Outstanding</div>
-                  <div id="dashboard-outstanding" style="color: #F44336; font-size: 24px; font-weight: 600;">$0.00</div>
-                </div>
-                <div style="text-align: center;">
-                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Paid (This Month)</div>
-                  <div id="dashboard-paid-month" style="color: #4CAF50; font-size: 24px; font-weight: 600;">$0.00</div>
-                </div>
-                <div style="text-align: center;">
-                  <div style="color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">Pending</div>
-                  <div id="dashboard-pending" style="color: #FF9800; font-size: 24px; font-weight: 600;">$0.00</div>
-                </div>
-              </div>
+          <!-- SUMMARY STATS BAR -->
+          <div class="dashboard-stats-bar" id="dashboard-payment-stats" style="pointer-events: none;">
+            <div class="stat-column">
+              <div class="stat-label">Outstanding</div>
+              <div class="stat-value" id="dashboard-outstanding" style="color: #F44336;">$0.00</div>
             </div>
+            <div class="stat-column">
+              <div class="stat-label">Paid (This Month)</div>
+              <div class="stat-value" id="dashboard-paid-month" style="color: #4CAF50;">$0.00</div>
+            </div>
+            <div class="stat-column">
+              <div class="stat-label">Pending</div>
+              <div class="stat-value" id="dashboard-pending" style="color: #FF9800;">$0.00</div>
+            </div>
+          </div>
 
-            <!-- ROW 1 -->
+          <!-- FEATURE TILES GRID (2-COLUMN) -->
+          <div class="tile-grid">
             <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
@@ -163,7 +159,6 @@
               </div>
             </button>
 
-            <!-- ROW 2 -->
             <button class="tile" data-screen="invoices">
               <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
               <div class="tile-text">
@@ -203,16 +198,18 @@
                 <p data-i18n="dashboard.settings_desc">Logo, business info, defaults.</p>
               </div>
             </button>
+          </div>
 
-            <!-- FULL-WIDTH REFERRALS -->
-            <button class="tile tile-full tile-referrals" data-screen="referrals">
-              <div class="tile-icon"><i class="fa-solid fa-badge-dollar"></i></div>
-              <div class="tile-text">
-                <h2 data-i18n="dashboard.referrals">Referrals – 20% For Life</h2>
+          <!-- REFERRALS BOTTOM BANNER -->
+          <button class="referrals-banner" data-screen="referrals">
+            <div class="referrals-banner-content">
+              <i class="fa-solid fa-badge-dollar"></i>
+              <div>
+                <h3 data-i18n="dashboard.referrals">Referrals – 20% For Life</h3>
                 <p data-i18n="dashboard.referrals_desc">Share your link. Get paid every month your referrals stay.</p>
               </div>
-            </button>
-          </div>
+            </div>
+          </button>
         </section>
 
         <!-- NEW INVOICE -->

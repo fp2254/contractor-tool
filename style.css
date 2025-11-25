@@ -211,7 +211,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 14px 8px;
+  padding: 10px 14px 6px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-alt);
   position: sticky;
@@ -222,18 +222,22 @@ body {
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
 .online-status {
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+.online-status .online-text {
+  display: none;
 }
 
 .online-status.online {
@@ -252,12 +256,12 @@ body {
 }
 
 .language-select {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -325,9 +329,10 @@ body {
 
 .tile-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
 }
 
 .tile {
@@ -346,11 +351,6 @@ body {
 
 .tile-full {
   grid-column: 1 / -1;
-}
-
-.tile-referrals {
-  background: var(--tile);
-  border: 2px solid var(--accent);
 }
 
 .tile:hover {
@@ -378,6 +378,93 @@ body {
 }
 
 /* DASHBOARD STATS */
+
+.btn-new-invoice {
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dashboard-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--tile) 0%, var(--tile) 100%);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.stat-column {
+  text-align: center;
+}
+
+.stat-column .stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.stat-column .stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.referrals-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--tile);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.referrals-banner:hover {
+  background: var(--tile-hover);
+  transform: translateY(-2px);
+}
+
+.referrals-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.referrals-banner-content i {
+  font-size: 24px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.referrals-banner-content h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.referrals-banner-content p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
 
 .stats-section {
   margin-bottom: 16px;
