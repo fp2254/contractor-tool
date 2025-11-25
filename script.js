@@ -1299,6 +1299,10 @@ function wireDashboardUI() {
         showScreen(screen);
         if (screen === "payments") {
           loadPaymentScreenData();
+        } else if (screen === "quotes") {
+          loadQuotes();
+        } else if (screen === "invoices") {
+          loadInvoices();
         }
       }
     });
