@@ -2230,7 +2230,13 @@ async function convertQuoteToInvoice(quoteId) {
   try {
     // Fetch the quote data
     const res = await apiFetch(`/api/quotes/${quoteId}`);
-    const quote = await res.json();
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to fetch quote');
+    }
+    
+    const quote = data;
     
     // Switch to invoice form
     showScreen('new-invoice');
@@ -2276,7 +2282,7 @@ async function convertQuoteToInvoice(quoteId) {
     }
     
     // Update totals - recalculate to ensure accuracy
-    recalculateTotals();
+    updateInvoiceTotals();
     
     // Focus on first input
     if (clientNameEl) {
