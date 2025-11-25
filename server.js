@@ -115,6 +115,15 @@ async function hasActiveSubscription(userId) {
   return false;
 }
 
+// AUTH ONLY MIDDLEWARE (no subscription check)
+async function requireAuth(req, res, next) {
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated", needsAuth: true });
+  }
+  next();
+}
+
 // SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
 async function requireSubscription(req, res, next) {
   const userId = req.userId;
@@ -738,7 +747,7 @@ app.delete("/api/inventory/:id", requireSubscription, async (req, res) => {
 
 // QUOTES (formerly estimates)
 
-app.get("/api/quotes", requireSubscription, async (req, res) => {
+app.get("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
@@ -752,7 +761,7 @@ app.get("/api/quotes", requireSubscription, async (req, res) => {
   res.json(data);
 });
 
-app.post("/api/quotes", requireSubscription, async (req, res) => {
+app.post("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
@@ -796,7 +805,7 @@ app.post("/api/quotes", requireSubscription, async (req, res) => {
   res.json({ id: quote.id });
 });
 
-app.get("/api/quotes/:id", requireSubscription, async (req, res) => {
+app.get("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
