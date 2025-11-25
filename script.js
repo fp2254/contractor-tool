@@ -3422,7 +3422,6 @@ async function handleQuoteSubmit(e) {
 
   const clientName = document.getElementById("quote-client-name").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
-  const quoteNumber = document.getElementById("quote-number").value.trim();
   const notes = document.getElementById("quote-notes").value;
   const items = getQuoteLineItemsFromUI();
 
@@ -3444,7 +3443,7 @@ async function handleQuoteSubmit(e) {
   const quoteData = {
     client_name: clientName,
     quote_date: quoteDate,
-    quote_number: quoteNumber || `QT-${Date.now()}`,
+    quote_number: `QT-${Date.now()}`,
     notes,
     subtotal,
     tax,
