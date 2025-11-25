@@ -225,6 +225,16 @@
 
           <form id="invoice-form" class="form">
             <div class="form-row">
+              <label data-i18n="invoice.template">Template</label>
+              <select id="invoice-template">
+                <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
+                <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
+                <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
+                <option value="big_total" data-i18n="templates.big_total">Big Total</option>
+              </select>
+            </div>
+
+            <div class="form-row">
               <label data-i18n="invoice.client">Client</label>
               <input type="text" id="invoice-client-name" data-i18n-placeholder="invoice.client_placeholder" placeholder="Type client name or select saved client" list="client-datalist" />
               <datalist id="client-datalist"></datalist>
@@ -319,6 +329,7 @@
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="invoice.invoices">Invoices</h2>
+            <button class="btn-primary" id="btn-new-invoice" data-i18n="invoice.new_invoice">+ New Invoice</button>
           </div>
           <div id="invoices-list" class="list"></div>
         </section>
@@ -359,6 +370,16 @@
           </div>
 
           <form id="quote-form" class="form">
+            <div class="form-row">
+              <label data-i18n="quote.template">Template</label>
+              <select id="quote-template">
+                <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
+                <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
+                <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
+                <option value="big_total" data-i18n="templates.big_total">Big Total</option>
+              </select>
+            </div>
+
             <div class="form-row">
               <label data-i18n="quote.client">Client</label>
               <input type="text" id="quote-client-name" data-i18n-placeholder="quote.client_placeholder" placeholder="Type client name or select saved client" list="quote-client-datalist" />

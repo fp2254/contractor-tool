@@ -1537,6 +1537,7 @@ async function handleInvoiceSubmit(e) {
   const clientName = document.getElementById("invoice-client-name").value.trim();
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
+  const template = document.getElementById("invoice-template").value || "basic_clean";
   const items = getLineItemsFromUI();
 
   if (!clientName) {
@@ -1560,6 +1561,7 @@ async function handleInvoiceSubmit(e) {
     client_name: clientName,
     date,
     notes,
+    template,
     subtotal,
     tax,
     total,
@@ -3366,6 +3368,13 @@ function wireSubscriptionUI() {
     });
   }
   
+  const newInvoiceBtn = document.getElementById("btn-new-invoice");
+  if (newInvoiceBtn) {
+    newInvoiceBtn.addEventListener("click", () => {
+      showScreen("new-invoice");
+    });
+  }
+  
   updateLifetimeEarlyCount();
 }
 
@@ -3403,6 +3412,7 @@ async function handleQuoteSubmit(e) {
   const clientName = document.getElementById("quote-client-name").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
   const notes = document.getElementById("quote-notes").value;
+  const template = document.getElementById("quote-template").value || "basic_clean";
   const items = getQuoteLineItemsFromUI();
 
   if (!clientName) {
@@ -3425,6 +3435,7 @@ async function handleQuoteSubmit(e) {
     quote_date: quoteDate,
     quote_number: `QT-${Date.now()}`,
     notes,
+    template,
     subtotal,
     tax,
     total,

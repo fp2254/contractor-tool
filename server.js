@@ -315,7 +315,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -325,6 +325,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       client_name,
       date,
       notes,
+      template: template || "basic_clean",
       subtotal,
       tax,
       total,
@@ -765,7 +766,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, quote_date, quote_number, notes, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, items } = req.body;
 
   const { data: quote, error: errQuote } = await supabaseAdmin
     .from("quotes")
@@ -779,6 +780,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
       tax,
       total,
       notes,
+      template: template || "basic_clean",
       status: "draft",
     })
     .select()

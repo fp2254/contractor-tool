@@ -141,3 +141,10 @@ CREATE POLICY "Users can update their own inventory items"
 CREATE POLICY "Users can delete their own inventory items"
   ON inventory_items FOR DELETE
   USING (auth.uid() = user_id);
+
+-- Add template field to invoices and quotes for template selection
+ALTER TABLE invoices
+ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
+
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';

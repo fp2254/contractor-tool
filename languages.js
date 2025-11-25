@@ -111,11 +111,19 @@ const TRANSLATIONS = {
     "invoice.calculate": "Calculate",
     "invoice.tax_label": "Tax",
     "invoice.save": "Save Invoice",
-    "invoice.new_invoice": "New Invoice",
+    "invoice.new_invoice": "+ New Invoice",
+    "invoice.template": "Template",
+    
+    // Templates
+    "templates.basic_clean": "Basic Clean",
+    "templates.modern_pro": "Modern Pro",
+    "templates.color_accent": "Color Accent",
+    "templates.big_total": "Big Total",
     
     // Quotes
     "quote.quotes": "Quotes",
     "quote.new_quote": "+ New Quote",
+    "quote.template": "Template",
     "quote.client": "Client",
     "quote.client_placeholder": "Type client name or select saved client",
     "quote.date": "Date",
@@ -354,10 +362,18 @@ const TRANSLATIONS = {
     "invoice.calculate": "Calcular",
     "invoice.tax_label": "Impuesto",
     "invoice.save": "Guardar factura",
-    "invoice.new_invoice": "Nueva factura",
+    "invoice.new_invoice": "+ Nueva factura",
+    "invoice.template": "Plantilla",
+    
+    // Templates
+    "templates.basic_clean": "Básico Limpio",
+    "templates.modern_pro": "Moderno Pro",
+    "templates.color_accent": "Acento de Color",
+    "templates.big_total": "Total Grande",
     
     "quote.quotes": "Presupuestos",
     "quote.new_quote": "+ Nuevo Presupuesto",
+    "quote.template": "Plantilla",
     "quote.client": "Cliente",
     "quote.client_placeholder": "Escriba el nombre del cliente o seleccione un cliente guardado",
     "quote.date": "Fecha",
@@ -593,10 +609,18 @@ const TRANSLATIONS = {
     "invoice.calculate": "Calculer",
     "invoice.tax_label": "Taxe",
     "invoice.save": "Enregistrer la facture",
-    "invoice.new_invoice": "Nouvelle facture",
+    "invoice.new_invoice": "+ Nouvelle facture",
+    "invoice.template": "Modèle",
+    
+    // Templates
+    "templates.basic_clean": "Basique Propre",
+    "templates.modern_pro": "Moderne Pro",
+    "templates.color_accent": "Accent Couleur",
+    "templates.big_total": "Grand Total",
     
     "quote.quotes": "Devis",
     "quote.new_quote": "+ Nouveau Devis",
+    "quote.template": "Modèle",
     "quote.client": "Client",
     "quote.client_placeholder": "Tapez le nom du client ou sélectionnez un client enregistré",
     "quote.date": "Date",
@@ -828,10 +852,18 @@ const TRANSLATIONS = {
     "invoice.calculate": "Berechnen",
     "invoice.tax_label": "Steuer",
     "invoice.save": "Rechnung speichern",
-    "invoice.new_invoice": "Neue Rechnung",
+    "invoice.new_invoice": "+ Neue Rechnung",
+    "invoice.template": "Vorlage",
+    
+    // Templates
+    "templates.basic_clean": "Einfach Sauber",
+    "templates.modern_pro": "Modern Pro",
+    "templates.color_accent": "Farbakzent",
+    "templates.big_total": "Großer Betrag",
     
     "quote.quotes": "Angebote",
     "quote.new_quote": "+ Neues Angebot",
+    "quote.template": "Vorlage",
     "quote.client": "Kunde",
     "quote.client_placeholder": "Geben Sie den Kundennamen ein oder wählen Sie einen gespeicherten Kunden",
     "quote.date": "Datum",
@@ -1063,10 +1095,18 @@ const TRANSLATIONS = {
     "invoice.calculate": "Calcular",
     "invoice.tax_label": "Imposto",
     "invoice.save": "Salvar fatura",
-    "invoice.new_invoice": "Nova fatura",
+    "invoice.new_invoice": "+ Nova fatura",
+    "invoice.template": "Modelo",
+    
+    // Templates
+    "templates.basic_clean": "Básico Limpo",
+    "templates.modern_pro": "Moderno Pro",
+    "templates.color_accent": "Destaque de Cor",
+    "templates.big_total": "Total Grande",
     
     "quote.quotes": "Orçamentos",
     "quote.new_quote": "+ Novo Orçamento",
+    "quote.template": "Modelo",
     "quote.client": "Cliente",
     "quote.client_placeholder": "Digite o nome do cliente ou selecione um cliente salvo",
     "quote.date": "Data",
