@@ -1062,6 +1062,84 @@ app.patch("/api/messages/:id/read", requireAuth, async (req, res) => {
 
 // REFERRALS SUMMARY
 
+// INVITE TRACKING - Generate unique referral codes and track signups
+app.post("/api/invites/send", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
+
+  try {
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("referral_code, invites_sent, referral_bonus_days")
+      .eq("id", userId)
+      .single();
+
+    if (profileErr) return res.status(500).json({ error: profileErr.message });
+
+    const invitesSent = (profile.invites_sent || 0) + 1;
+    let bonusDays = profile.referral_bonus_days || 0;
+
+    if (invitesSent === 4) {
+      bonusDays += 60;
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ 
+        invites_sent: invitesSent,
+        referral_bonus_days: bonusDays
+      })
+      .eq("id", userId);
+
+    if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+    res.json({ 
+      success: true, 
+      invites_sent: invitesSent,
+      bonus_unlocked: invitesSent === 4 ? 60 : 0
+    });
+  } catch (error) {
+    console.error("Error tracking invite:", error);
+    res.status(500).json({ error: "Failed to track invite" });
+  }
+});
+
+// Get referral stats
+app.get("/api/invites/stats", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("invites_sent, referral_bonus_days, referral_code")
+      .eq("id", userId)
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const invitesSent = profile.invites_sent || 0;
+    let badge = "None";
+    if (invitesSent >= 25) badge = "Champion";
+    else if (invitesSent >= 10) badge = "Ambassador";
+    else if (invitesSent >= 4) badge = "Team Builder";
+    else if (invitesSent >= 1) badge = "First Referral";
+
+    res.json({
+      invites_sent: invitesSent,
+      bonus_days: profile.referral_bonus_days || 0,
+      referral_code: profile.referral_code,
+      badge: badge
+    });
+  } catch (error) {
+    console.error("Error getting invite stats:", error);
+    res.status(500).json({ error: "Failed to get stats" });
+  }
+});
+
 app.get("/api/referrals/summary", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json({});
