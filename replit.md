@@ -4,7 +4,10 @@
 TradeBase is a comprehensive, full-stack web application designed for tradespeople, offering client management, invoice and estimate creation, job photo tracking, cost calculation with markup, and a referral program. It aims to streamline business operations through multi-language support, customizable invoice templates, and robust financial tracking capabilities. The project's ambition is to provide a robust solution for managing business operations.
 
 ## User Preferences
-None currently documented.
+- "Keep it stupid simple" philosophy for non-technical users
+- Big buttons and one-page layouts
+- 14-day free trial for all users
+- Invite 4 friends = 60 free days bonus
 
 ## System Architecture
 TradeBase is a full-stack web application using Node.js and Express.js for the backend, and Vanilla JavaScript for a Single-Page Application (SPA) frontend. Supabase (PostgreSQL) handles the database, authentication, and file storage, while Stripe is integrated for payment processing.
@@ -16,18 +19,31 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - Payment status badges are color-coded (🟢 Paid / 🔴 Unpaid / 🟡 Pending).
 - Language picker is prominently displayed on login/signup and in the dashboard header.
 - Demo mode showcases all 4 invoice template styles.
+- Notification bell icon in header with dropdown for system messages.
 
 **Technical Implementations & System Design:**
 - **Authentication**: Supabase Authentication with email/password and server-side JWT validation.
-- **Subscription Flow**: Multi-tier subscription paywall (Monthly, Yearly, Lifetime) with a 7-day free trial, managed via `trial_ends_at` and a `requireSubscription` middleware. Stripe webhooks handle subscription events.
+- **Subscription Flow**: 14-day free trial managed via `trial_ends_at` and a `requireSubscription` middleware. Stripe webhooks handle subscription events.
 - **Payment Collection Workflow**: Integration with Stripe Payment Links for invoice payments, automatic status updates via webhooks, and manual payment controls.
 - **Multi-Language System**: UI translation in 5 languages (English, Spanish, French, German, Portuguese) using `data-i18n` attributes and a dynamic `applyLanguage()` function. User language preference is stored in `profiles.preferred_language`.
-- **Invoice Template System**: 4 distinct, professional invoice templates (`Basic Clean`, `Modern Pro`, `Color Accent Header`, `Big Total`) defined in `templates.js`. The `renderInvoiceTemplate()` function generates HTML based on the user's `preferred_template`.
+- **Invoice Template System**: 4 distinct, professional invoice templates (`Basic Clean`, `Modern Pro`, `Color Accent Header`, `Big Total`) defined in `templates.js`. The `renderInvoiceTemplate()` function generates HTML based on the user's `preferred_template`. All templates include "Powered by TradeBase" footer with signup link.
 - **Offline PWA**: Progressive Web App with an offline-first architecture using Service Worker (v5) for caching and IndexedDB for local data storage. Supports iOS home screen installation.
-- **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `invoice_attachments`, `quotes`, `quote_items`, `inventory_items`, and `referral_earnings` tables.
+- **Job Folders**: Automatic job folder organization by ClientName_Address_Date_JobType. Jobs can link invoices, quotes, photos, and voice notes.
+- **Notification Center**: In-app notification system for system messages and announcements.
+- **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `invoice_attachments`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, and `system_messages` tables.
 - **File Storage**: Supabase Storage for `logos` and `invoice-photos`.
-- **API Endpoints**: RESTful APIs for managing profiles, clients, invoices, quotes, payments, inventory, and referrals.
+- **API Endpoints**: RESTful APIs for managing profiles, clients, invoices, quotes, payments, inventory, referrals, jobs, and system messages.
 - **Inventory Management**: Comprehensive system to add, edit, and delete inventory items, track quantity, unit price, category, low stock alerts, and calculate total inventory value.
+
+## Recent Changes
+- Added Terms of Service modal with required checkbox on signup
+- Added trade type selection on signup (Electrician, Plumber, HVAC, etc.)
+- Extended trial period from 7 to 14 days
+- Added "Powered by TradeBase" promotional footer to all invoice templates
+- Created Jobs system for automatic job folder organization
+- Added System Messages API for in-app notifications
+- Built notification center with bell icon in header
+- Updated database migration with jobs, voice_notes, system_messages tables
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
@@ -35,3 +51,4 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Resend (Email Service)**: For sending transactional emails (invoices) via a Replit connector.
 - **Node.js + Express.js**: Backend framework.
 - **html2canvas**: JavaScript library for generating downloadable PNG images of invoices and quotes.
+- **Puppeteer-core**: For generating PDF attachments for email invoices.
