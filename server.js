@@ -8,8 +8,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
+import Filter from "bad-words";
 
 dotenv.config();
+
+// Initialize profanity filter
+const filter = new Filter();
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -2243,7 +2247,10 @@ app.post("/api/ai/transcribe", requireAI, upload.single("audio"), async (req, re
       model: "whisper-1"
     });
 
-    res.json({ transcript: transcription.text });
+    // Filter profanities from transcript to keep it professional
+    const cleanedTranscript = filter.clean(transcription.text);
+
+    res.json({ transcript: cleanedTranscript });
   } catch (error) {
     console.error("AI transcription error:", error);
     res.status(500).json({ error: "Failed to transcribe audio" });
@@ -2257,12 +2264,15 @@ app.post("/api/ai/parse-quote", requireAI, async (req, res) => {
 
   await logAIUsage(userId, "quote_parsing");
 
-  const { transcript } = req.body;
+  let { transcript } = req.body;
 
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: "Parsing service not configured" });
     }
+
+    // Clean profanities from transcript before parsing (defensive filter)
+    transcript = filter.clean(transcript);
 
     const openai = new (await import("openai")).default({
       apiKey: process.env.OPENAI_API_KEY
