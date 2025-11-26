@@ -2227,10 +2227,16 @@ async function convertQuoteToInvoice(quoteId) {
     return;
   }
   
+  console.log("Converting quote to invoice, quoteId:", quoteId);
+  
   try {
     // Fetch the quote data
+    console.log("Fetching quote data...");
     const res = await apiFetch(`/api/quotes/${quoteId}`);
+    console.log("API response status:", res.status);
+    
     const data = await res.json();
+    console.log("Quote data received:", data);
     
     if (!res.ok) {
       throw new Error(data.error || 'Failed to fetch quote');
@@ -2239,22 +2245,29 @@ async function convertQuoteToInvoice(quoteId) {
     const quote = data;
     
     // Switch to invoice form
+    console.log("Switching to new-invoice screen...");
     showScreen('new-invoice');
     
     // Clear existing line items
     const lineItemsContainer = document.getElementById("line-items");
+    if (!lineItemsContainer) {
+      throw new Error("Line items container not found");
+    }
     lineItemsContainer.innerHTML = "";
+    console.log("Cleared line items");
     
     // Pre-fill client name
     const clientNameEl = document.getElementById("invoice-client-name");
     if (clientNameEl) {
       clientNameEl.value = quote.client_name || (quote.client ? quote.client.name : '');
+      console.log("Set client name:", clientNameEl.value);
     }
     
     // Pre-fill date (use today's date)
     const dateEl = document.getElementById("invoice-date");
     if (dateEl) {
       dateEl.value = new Date().toISOString().split('T')[0];
+      console.log("Set date:", dateEl.value);
     }
     
     // Pre-fill notes
@@ -2264,10 +2277,13 @@ async function convertQuoteToInvoice(quoteId) {
     }
     
     // Pre-fill line items
+    console.log("Quote items:", quote.items);
     if (quote.items && quote.items.length > 0) {
-      quote.items.forEach(item => {
+      quote.items.forEach((item, index) => {
+        console.log(`Adding line item ${index}:`, item);
         // Guard against missing fields
         if (!item.description && !item.quantity && !item.unit_price) {
+          console.log("Skipping empty item");
           return; // Skip empty items
         }
         addLineItemRow({
@@ -2278,10 +2294,12 @@ async function convertQuoteToInvoice(quoteId) {
       });
     } else {
       // Add one empty line item if no items
+      console.log("No items, adding empty row");
       addLineItemRow();
     }
     
     // Update totals - recalculate to ensure accuracy
+    console.log("Updating totals...");
     updateInvoiceTotals();
     
     // Focus on first input
@@ -2290,10 +2308,12 @@ async function convertQuoteToInvoice(quoteId) {
     }
     
     // Show success toast
+    console.log("Conversion successful!");
     showToast(t('quote.converted_success'));
   } catch (error) {
     console.error("Error converting quote to invoice:", error);
-    showToast("Failed to convert quote to invoice");
+    console.error("Error stack:", error.stack);
+    showToast("Failed to convert quote to invoice: " + error.message);
   }
 }
 
