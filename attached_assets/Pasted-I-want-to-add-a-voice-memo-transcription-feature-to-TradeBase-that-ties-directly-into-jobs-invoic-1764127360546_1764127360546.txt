@@ -1,0 +1,57 @@
+I want to add a voice memo + transcription feature to TradeBase that ties directly into jobs, invoices, and quotes.
+
+Core behavior
+	•	Add a “Record Voice Note” button anywhere I’m viewing or editing:
+	•	a Job
+	•	an Invoice
+	•	a Quote
+	•	When tapped, open a simple recorder UI: Start / Stop / Cancel.
+	•	On Stop, save the audio file and send it to a transcription API (for now assume OpenAI Whisper or similar – write the code in a way where I can just drop in the API key/endpoint as an env var).
+	•	When the transcription returns, store:
+	•	audio file URL
+	•	text transcript
+	•	date/time
+	•	user ID
+	•	linked job_id / invoice_id / quote_id
+
+Data model
+	•	Create a voice_notes table with columns:
+	•	id (uuid)
+	•	user_id (uuid, FK to profiles)
+	•	job_id (nullable, FK)
+	•	invoice_id (nullable, FK)
+	•	quote_id (nullable, FK)
+	•	audio_url (text)
+	•	transcript (text)
+	•	created_at (timestamp, default now)
+
+UI requirements
+	•	On each Job / Invoice / Quote page, show a “Voice Notes” section listing:
+	•	timestamp
+	•	first 1–2 lines of the transcript
+	•	a play button to listen to the audio
+	•	Clicking a voice note opens a detail view showing:
+	•	full transcript
+	•	playback controls
+	•	option to copy transcript text
+	•	Let the user choose “Attach photos to this voice note” when viewing a job:
+	•	After saving a voice note, allow uploading 1–10 photos that are linked to that same job and note.
+
+Usage flow example
+	•	User opens a Job on mobile
+	•	Taps “Record Voice Note”
+	•	Walks around the property describing everything (ex: “Crack in foundation east wall, recommend 2-tap system…”)
+	•	Stops recording
+	•	Audio gets uploaded, transcript saved to voice_notes, and linked to that Job
+	•	That Job’s page now shows the note in the Voice Notes list with transcript + play button.
+
+Constraints / details
+	•	Optimize for mobile: large record button, simple UI.
+	•	Handle failures gracefully (if transcription fails, still save audio and mark transcript as null with an error flag).
+	•	Add basic length limit (e.g. 5–10 minutes per note) to keep files reasonable.
+
+Finally, update the admin/stats panel to show:
+	•	total voice notes per user
+	•	average length (or at least count) of voice notes
+
+Implement the backend, frontend UI, and any necessary hooks so this is fully working end-to-end.
