@@ -4793,6 +4793,174 @@ async function cancelAISubscription() {
   }
 }
 
+// AI VOICE RECORDING FOR QUOTES/INVOICES
+let voiceRecorder = null;
+let isRecording = false;
+
+async function startVoiceRecording(formType) {
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    voiceRecorder.ondataavailable = (e) => chunks.push(e.data);
+    voiceRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await transcribeAndParse(blob, formType);
+    };
+
+    voiceRecorder.start();
+    isRecording = true;
+    showToast("Recording... Tap again to stop");
+    document.getElementById(`btn-${formType}-voice`).textContent = "⏹ Stop";
+    document.getElementById(`btn-${formType}-voice`).style.backgroundColor = "#ef4444";
+  } catch (err) {
+    console.error("Microphone access error:", err);
+    showToast("Microphone access denied. Please check browser permissions.");
+  }
+}
+
+async function transcribeAndParse(audioBlob, formType) {
+  if (!isRecording) return;
+
+  isRecording = false;
+  document.getElementById(`btn-${formType}-voice`).textContent = "🎤 Voice";
+  document.getElementById(`btn-${formType}-voice`).style.backgroundColor = "#10b981";
+  showToast("Transcribing...");
+
+  try {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!transcribeRes.ok) {
+      const err = await transcribeRes.json();
+      showToast(err.error || "Transcription failed");
+      return;
+    }
+
+    const { transcript } = await transcribeRes.json();
+    showToast("Parsing...");
+
+    const parseRes = await apiFetch("/api/ai/parse-quote", {
+      method: "POST",
+      body: JSON.stringify({ transcript })
+    });
+
+    if (!parseRes.ok) {
+      const err = await parseRes.json();
+      showToast(err.error || "Parsing failed");
+      return;
+    }
+
+    const parsed = await parseRes.json();
+    autoFillForm(formType, parsed, transcript);
+  } catch (err) {
+    console.error("AI error:", err);
+    showToast("Failed to process audio");
+  }
+}
+
+function autoFillForm(formType, parsed, transcript) {
+  if (formType === "invoice") {
+    const clientInput = document.getElementById("invoice-client-name");
+    const notesInput = document.getElementById("invoice-notes");
+    const lineItemsContainer = document.getElementById("line-items");
+
+    if (parsed.client_name && clientInput) clientInput.value = parsed.client_name;
+    if (parsed.notes && notesInput) {
+      notesInput.value = (notesInput.value ? notesInput.value + "\n" : "") + parsed.notes;
+    }
+
+    if (parsed.line_items && Array.isArray(parsed.line_items)) {
+      parsed.line_items.forEach(item => {
+        addInvoiceLineItem(item.description, item.quantity || 1, item.unit_price || 0);
+      });
+    }
+
+    showToast("Invoice fields auto-filled!");
+  } else if (formType === "quote") {
+    const clientInput = document.getElementById("quote-client-name");
+    const notesInput = document.getElementById("quote-notes");
+    const lineItemsContainer = document.getElementById("quote-line-items");
+
+    if (parsed.client_name && clientInput) clientInput.value = parsed.client_name;
+    if (parsed.notes && notesInput) {
+      notesInput.value = (notesInput.value ? notesInput.value + "\n" : "") + parsed.notes;
+    }
+
+    if (parsed.line_items && Array.isArray(parsed.line_items)) {
+      parsed.line_items.forEach(item => {
+        addQuoteLineItem(item.description, item.quantity || 1, item.unit_price || 0);
+      });
+    }
+
+    showToast("Quote fields auto-filled!");
+  }
+}
+
+function addInvoiceLineItem(description = "", qty = 1, price = 0) {
+  const container = document.getElementById("line-items");
+  const id = Date.now();
+
+  const html = `
+    <div class="line-item" data-id="${id}">
+      <input type="text" class="item-description" placeholder="Description" value="${description}" />
+      <input type="number" class="item-qty" value="${qty}" min="1" />
+      <input type="number" class="item-price" value="${price}" min="0" step="0.01" />
+      <button type="button" class="btn-remove-item">Remove</button>
+    </div>
+  `;
+
+  const elem = document.createElement("div");
+  elem.innerHTML = html;
+  container.appendChild(elem.firstElementChild);
+
+  elem.querySelector(".btn-remove-item")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    container.querySelector(`[data-id="${id}"]`)?.remove();
+    updateInvoiceTotals();
+  });
+
+  updateInvoiceTotals();
+}
+
+function addQuoteLineItem(description = "", qty = 1, price = 0) {
+  const container = document.getElementById("quote-line-items");
+  const id = Date.now();
+
+  const html = `
+    <div class="line-item" data-id="${id}">
+      <input type="text" class="item-description" placeholder="Description" value="${description}" />
+      <input type="number" class="item-qty" value="${qty}" min="1" />
+      <input type="number" class="item-price" value="${price}" min="0" step="0.01" />
+      <button type="button" class="btn-remove-item">Remove</button>
+    </div>
+  `;
+
+  const elem = document.createElement("div");
+  elem.innerHTML = html;
+  container.appendChild(elem.firstElementChild);
+
+  elem.querySelector(".btn-remove-item")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    container.querySelector(`[data-id="${id}"]`)?.remove();
+    updateQuoteTotals();
+  });
+
+  updateQuoteTotals();
+}
+
 // INVENTORY MANAGEMENT
 
 let inventoryFilterCategory = null;

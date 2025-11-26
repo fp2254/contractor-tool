@@ -300,7 +300,12 @@
 
             <div class="form-row">
               <label data-i18n="invoice.notes">Invoice Notes</label>
-              <textarea id="invoice-notes" rows="3" data-i18n-placeholder="invoice.notes_placeholder" placeholder="Optional notes for the client"></textarea>
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <textarea id="invoice-notes" rows="3" data-i18n-placeholder="invoice.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
+                <button type="button" id="btn-invoice-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
+                  <i class="fas fa-microphone"></i> Voice
+                </button>
+              </div>
             </div>
 
             <h3 data-i18n="invoice.line_items">Line Items</h3>
@@ -445,7 +450,12 @@
 
             <div class="form-row">
               <label data-i18n="quote.notes">Quote Notes</label>
-              <textarea id="quote-notes" rows="3" data-i18n-placeholder="quote.notes_placeholder" placeholder="Optional notes for the client"></textarea>
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <textarea id="quote-notes" rows="3" data-i18n-placeholder="quote.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
+                <button type="button" id="btn-quote-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
+                  <i class="fas fa-microphone"></i> Voice
+                </button>
+              </div>
             </div>
 
             <h3 data-i18n="quote.line_items">Line Items</h3>

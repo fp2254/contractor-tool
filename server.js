@@ -2216,6 +2216,99 @@ app.post("/api/voice-transcribe", requireAI, async (req, res) => {
   }
 });
 
+// AI TRANSCRIBE FOR QUOTE/INVOICE - Convert audio blob to transcript using Whisper
+app.post("/api/ai/transcribe", requireAI, upload.single("audio"), async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "voice_transcription");
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Transcription service not configured" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const audioBlob = new (await import("buffer")).Blob([req.file.buffer], { type: "audio/wav" });
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioBlob,
+      model: "whisper-1"
+    });
+
+    res.json({ transcript: transcription.text });
+  } catch (error) {
+    console.error("AI transcription error:", error);
+    res.status(500).json({ error: "Failed to transcribe audio" });
+  }
+});
+
+// AI PARSE QUOTE/INVOICE - Extract structured data from transcript using GPT
+app.post("/api/ai/parse-quote", requireAI, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "quote_parsing");
+
+  const { transcript } = req.body;
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Parsing service not configured" });
+    }
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const systemPrompt = `You are a contractor AI assistant. Parse the user's voice transcription and extract structured data for a quote/invoice. Return ONLY valid JSON with these fields:
+{
+  "client_name": "extracted client name or empty string",
+  "description": "work description or service details from transcript",
+  "line_items": [
+    {
+      "description": "item description",
+      "quantity": 1,
+      "unit_price": extracted_number or 0
+    }
+  ],
+  "notes": "any additional notes from the transcript"
+}
+
+Be smart about parsing prices (look for dollar amounts like "$500" or "500 dollars"). If no prices are mentioned, return empty items. Extract ONE line item per major service mentioned.`;
+
+    const message = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Parse this transcription into quote data: "${transcript}"` }
+      ],
+      temperature: 0
+    });
+
+    let parsedData = {};
+    try {
+      const content = message.choices[0].message.content;
+      parsedData = JSON.parse(content);
+    } catch (e) {
+      console.error("Failed to parse GPT response:", e);
+      parsedData = { description: transcript, line_items: [], notes: "" };
+    }
+
+    res.json(parsedData);
+  } catch (error) {
+    console.error("AI parsing error:", error);
+    res.status(500).json({ error: "Failed to parse transcript" });
+  }
+});
+
 // START
 
 app.listen(port, '0.0.0.0', () => {
