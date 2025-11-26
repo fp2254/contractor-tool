@@ -152,7 +152,8 @@ ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
 -- Add trade type and TOS acceptance tracking to profiles
 ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS trade_type TEXT,
-ADD COLUMN IF NOT EXISTS tos_accepted_at TIMESTAMP WITH TIME ZONE;
+ADD COLUMN IF NOT EXISTS tos_accepted_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 
 -- Add invite tracking for referral program
 ALTER TABLE profiles

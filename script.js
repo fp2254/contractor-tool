@@ -32,6 +32,7 @@ let toastTimeout = null;
 let tourMode = false;
 let isOnline = navigator.onLine;
 let isSyncing = false;
+let isAdminUser = false;
 
 // TEMPLATE INIT
 document.addEventListener('DOMContentLoaded', () => {
@@ -467,7 +468,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireInventoryUI();
   wireJobsUI();
   wireNotificationsUI();
+  wireVoiceRecording();
   wireTourMode();
+  wireAdminPanel();
   
   // Check tour mode and session - these will update language if needed
   checkTourMode();
@@ -4594,6 +4597,21 @@ async function sendInvite() {
 
 // ADMIN PANEL
 
+function wireAdminPanel() {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === "A") {
+      e.preventDefault();
+      if (isAdminUser && currentUser) {
+        showScreen("admin");
+        loadAdminUsers();
+        showToast("Welcome to Admin Panel");
+      } else {
+        console.log("Admin access denied");
+      }
+    }
+  });
+}
+
 async function loadAdminUsers() {
   if (!currentUser) return;
 
@@ -4642,10 +4660,30 @@ async function sendAdminMessage() {
       showToast("Message sent to all users!");
       titleEl.value = "";
       contentEl.value = "";
+    } else {
+      showToast("Failed to send message - check admin access");
     }
   } catch (err) {
     console.error("Error sending admin message:", err);
     showToast("Failed to send message");
+  }
+}
+
+// Check admin status after user logs in
+async function checkAdminStatus() {
+  if (!currentUser) {
+    isAdminUser = false;
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/admin/check");
+    if (res.ok) {
+      const data = await res.json();
+      isAdminUser = data.is_admin;
+    }
+  } catch (err) {
+    isAdminUser = false;
   }
 }
 

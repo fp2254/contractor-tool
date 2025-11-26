@@ -125,6 +125,26 @@ async function requireAuth(req, res, next) {
   next();
 }
 
+// ADMIN ONLY MIDDLEWARE
+async function requireAdmin(req, res, next) {
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated", needsAuth: true });
+  }
+
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+
+  if (error || !profile || !profile.is_admin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+
+  next();
+}
+
 // SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
 async function requireSubscription(req, res, next) {
   const userId = req.userId;
@@ -1866,7 +1886,28 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
 
 // ADMIN ENDPOINTS
 
-app.get("/api/admin/users", requireAuth, async (req, res) => {
+// Check if user is admin
+app.get("/api/admin/check", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", userId)
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ is_admin: profile?.is_admin || false });
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    res.status(500).json({ error: "Failed to check admin status" });
+  }
+});
+
+app.get("/api/admin/users", requireAdmin, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
@@ -1887,7 +1928,7 @@ app.get("/api/admin/users", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/admin/send-message", requireAuth, async (req, res) => {
+app.post("/api/admin/send-message", requireAdmin, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
