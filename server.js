@@ -174,7 +174,7 @@ app.post("/api/profile", async (req, res) => {
   
   if (!existing || !existing.trial_ends_at) {
     const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 7);
+    trialEnd.setDate(trialEnd.getDate() + 14);
     payload.trial_ends_at = trialEnd.toISOString();
     payload.subscription_status = "trial";
   }
@@ -857,6 +857,209 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
   });
 });
 
+// JOBS API - Job Folder Management
+
+// Get all jobs
+app.get("/api/jobs", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { status, search } = req.query;
+
+  let query = supabaseAdmin
+    .from("jobs")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (status && status !== 'all') {
+    query = query.eq("status", status);
+  }
+
+  if (search) {
+    query = query.or(`client_name.ilike.%${search}%,address.ilike.%${search}%,job_type.ilike.%${search}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// Create a new job
+app.post("/api/jobs", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { client_name, address, job_type, notes } = req.body;
+
+  if (!client_name) {
+    return res.status(400).json({ error: "Client name is required" });
+  }
+
+  // Generate folder name: ClientName_Address_Date_JobType
+  const dateStr = new Date().toISOString().split('T')[0];
+  const sanitize = (str) => (str || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+  const folderName = `${sanitize(client_name)}_${sanitize(address)}_${dateStr}_${sanitize(job_type)}`;
+
+  const { data, error } = await supabaseAdmin
+    .from("jobs")
+    .insert({
+      user_id: userId,
+      client_name,
+      address: address || '',
+      job_type: job_type || '',
+      folder_name: folderName,
+      notes: notes || '',
+      status: 'open'
+    })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// Get single job with related invoices, quotes, and voice notes
+app.get("/api/jobs/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const jobId = req.params.id;
+
+  const { data: job, error: jobError } = await supabaseAdmin
+    .from("jobs")
+    .select("*")
+    .eq("id", jobId)
+    .eq("user_id", userId)
+    .single();
+
+  if (jobError) {
+    if (jobError.code === "PGRST116") {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    return res.status(500).json({ error: jobError.message });
+  }
+
+  // Get related invoices
+  const { data: invoices } = await supabaseAdmin
+    .from("invoices")
+    .select("id, invoice_number, client_name, total, payment_status, created_at")
+    .eq("job_id", jobId)
+    .eq("user_id", userId);
+
+  // Get related quotes
+  const { data: quotes } = await supabaseAdmin
+    .from("quotes")
+    .select("id, quote_number, client_name, total, status, created_at")
+    .eq("job_id", jobId)
+    .eq("user_id", userId);
+
+  // Get related voice notes
+  const { data: voiceNotes } = await supabaseAdmin
+    .from("voice_notes")
+    .select("*")
+    .eq("job_id", jobId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  res.json({
+    ...job,
+    invoices: invoices || [],
+    quotes: quotes || [],
+    voice_notes: voiceNotes || []
+  });
+});
+
+// Update job
+app.patch("/api/jobs/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const jobId = req.params.id;
+  const updates = req.body;
+
+  // Regenerate folder name if key fields changed
+  if (updates.client_name || updates.address || updates.job_type) {
+    const { data: existing } = await supabaseAdmin
+      .from("jobs")
+      .select("client_name, address, job_type, job_date")
+      .eq("id", jobId)
+      .eq("user_id", userId)
+      .single();
+
+    if (existing) {
+      const clientName = updates.client_name || existing.client_name;
+      const address = updates.address || existing.address;
+      const jobType = updates.job_type || existing.job_type;
+      const dateStr = existing.job_date || new Date().toISOString().split('T')[0];
+      
+      const sanitize = (str) => (str || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+      updates.folder_name = `${sanitize(clientName)}_${sanitize(address)}_${dateStr}_${sanitize(jobType)}`;
+    }
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("jobs")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// Delete job
+app.delete("/api/jobs/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const jobId = req.params.id;
+
+  const { error } = await supabaseAdmin
+    .from("jobs")
+    .delete()
+    .eq("id", jobId)
+    .eq("user_id", userId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// SYSTEM MESSAGES API
+
+app.get("/api/messages", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { data, error } = await supabaseAdmin
+    .from("system_messages")
+    .select("*")
+    .or(`user_id.eq.${userId},user_id.is.null`)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+app.patch("/api/messages/:id/read", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const messageId = req.params.id;
+
+  const { error } = await supabaseAdmin
+    .from("system_messages")
+    .update({ is_read: true })
+    .eq("id", messageId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
 // REFERRALS SUMMARY
 
 app.get("/api/referrals/summary", async (req, res) => {
@@ -977,10 +1180,10 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
       },
     };
 
-    // Add 7-day trial for monthly plan
+    // Add 14-day trial for monthly plan
     if (plan === "monthly") {
       sessionConfig.subscription_data = {
-        trial_period_days: 7,
+        trial_period_days: 14,
       };
     }
 

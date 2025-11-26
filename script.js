@@ -465,6 +465,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireSubscriptionUI();
   wireQuotesUI();
   wireInventoryUI();
+  wireJobsUI();
   wireTourMode();
   
   // Check tour mode and session - these will update language if needed
@@ -1185,14 +1186,69 @@ function wireAuthUI() {
       updateLifetimeEarlyCount();
     });
   }
+  
+  // Terms of Service modal handlers
+  const showTosLink = document.getElementById("show-tos-link");
+  const tosModal = document.getElementById("tos-modal");
+  const closeTosModal = document.getElementById("close-tos-modal");
+  const acceptTosBtn = document.getElementById("accept-tos-btn");
+  
+  if (showTosLink && tosModal) {
+    showTosLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      tosModal.style.display = "block";
+      document.body.style.overflow = "hidden";
+    });
+  }
+  
+  if (closeTosModal && tosModal) {
+    closeTosModal.addEventListener("click", () => {
+      tosModal.style.display = "none";
+      document.body.style.overflow = "";
+    });
+  }
+  
+  if (acceptTosBtn && tosModal) {
+    acceptTosBtn.addEventListener("click", () => {
+      tosModal.style.display = "none";
+      document.body.style.overflow = "";
+      // Auto-check the TOS checkbox
+      const tosCheckbox = document.getElementById("signup-tos");
+      if (tosCheckbox) tosCheckbox.checked = true;
+    });
+  }
+  
+  // Close TOS modal when clicking outside
+  if (tosModal) {
+    tosModal.addEventListener("click", (e) => {
+      if (e.target === tosModal) {
+        tosModal.style.display = "none";
+        document.body.style.overflow = "";
+      }
+    });
+  }
 }
 
 async function handleSignup(e) {
   e.preventDefault();
   const email = document.getElementById("signup-email").value.trim();
   const password = document.getElementById("signup-password").value;
+  const tradeType = document.getElementById("signup-trade")?.value || '';
+  const tosChecked = document.getElementById("signup-tos")?.checked;
   const errorEl = document.getElementById("signup-error");
   errorEl.textContent = "";
+
+  // Validate trade selection
+  if (!tradeType) {
+    errorEl.textContent = "Please select your trade.";
+    return;
+  }
+
+  // Validate TOS acceptance
+  if (!tosChecked) {
+    errorEl.textContent = "Please agree to the Terms of Service.";
+    return;
+  }
 
   const { data, error } = await sb.auth.signUp({ email, password });
   if (error) {
@@ -1200,8 +1256,23 @@ async function handleSignup(e) {
     return;
   }
 
-  // Send confirmation email via Resend
+  // Save trade type to profile after signup
   if (data && data.user && data.user.id) {
+    try {
+      // Store trade type in profile
+      await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          trade_type: tradeType,
+          tos_accepted_at: new Date().toISOString()
+        })
+      });
+    } catch (err) {
+      console.error("Error saving trade type:", err);
+    }
+    
+    // Send confirmation email via Resend
     try {
       const res = await fetch("/api/send-signup-confirmation", {
         method: "POST",
@@ -3728,6 +3799,412 @@ Generated with TradeBase`;
       }
     }
   }
+}
+
+// JOBS MANAGEMENT
+
+let allJobs = [];
+let currentJob = null;
+
+function wireJobsUI() {
+  const btnNewJob = document.getElementById("btn-new-job");
+  if (btnNewJob) {
+    btnNewJob.addEventListener("click", () => {
+      document.getElementById("job-form-title").textContent = "New Job";
+      document.getElementById("job-id").value = "";
+      document.getElementById("job-form").reset();
+      showScreen("job-form");
+    });
+  }
+
+  const jobForm = document.getElementById("job-form");
+  if (jobForm) {
+    jobForm.addEventListener("submit", handleJobSubmit);
+  }
+
+  const jobsSearch = document.getElementById("jobs-search");
+  if (jobsSearch) {
+    jobsSearch.addEventListener("input", debounce(() => filterAndRenderJobs(), 300));
+  }
+
+  const jobsFilter = document.getElementById("jobs-filter");
+  if (jobsFilter) {
+    jobsFilter.addEventListener("change", () => filterAndRenderJobs());
+  }
+
+  const tileJobs = document.querySelector('[data-screen="jobs"]');
+  if (tileJobs) {
+    tileJobs.addEventListener("click", loadJobs);
+  }
+
+  const btnEditJob = document.getElementById("btn-edit-job");
+  if (btnEditJob) {
+    btnEditJob.addEventListener("click", () => {
+      if (!currentJob) return;
+      document.getElementById("job-form-title").textContent = "Edit Job";
+      document.getElementById("job-id").value = currentJob.id;
+      document.getElementById("job-client-name").value = currentJob.client_name || "";
+      document.getElementById("job-address").value = currentJob.address || "";
+      document.getElementById("job-type").value = currentJob.job_type || "";
+      document.getElementById("job-notes").value = currentJob.notes || "";
+      showScreen("job-form");
+    });
+  }
+
+  const btnCloseJob = document.getElementById("btn-close-job");
+  if (btnCloseJob) {
+    btnCloseJob.addEventListener("click", async () => {
+      if (!currentJob) return;
+      await updateJobStatus(currentJob.id, "closed");
+    });
+  }
+
+  const btnArchiveJob = document.getElementById("btn-archive-job");
+  if (btnArchiveJob) {
+    btnArchiveJob.addEventListener("click", async () => {
+      if (!currentJob) return;
+      await updateJobStatus(currentJob.id, "archived");
+    });
+  }
+
+  const btnDeleteJob = document.getElementById("btn-delete-job");
+  if (btnDeleteJob) {
+    btnDeleteJob.addEventListener("click", handleJobDelete);
+  }
+}
+
+async function loadJobs() {
+  if (tourMode) {
+    allJobs = [
+      { id: 1, client_name: "John Smith", address: "123 Main St", job_type: "Electrical", status: "open", created_at: new Date().toISOString() },
+      { id: 2, client_name: "Jane Doe", address: "456 Oak Ave", job_type: "Plumbing", status: "closed", created_at: new Date(Date.now() - 86400000).toISOString() }
+    ];
+    renderJobsList(allJobs);
+    updateJobStats();
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/jobs");
+    if (res.ok) {
+      allJobs = await res.json();
+      renderJobsList(allJobs);
+      updateJobStats();
+    } else {
+      showToast("Failed to load jobs");
+    }
+  } catch (err) {
+    console.error("Error loading jobs:", err);
+    showToast("Error loading jobs");
+  }
+}
+
+function filterAndRenderJobs() {
+  const searchTerm = document.getElementById("jobs-search")?.value?.toLowerCase() || "";
+  const statusFilter = document.getElementById("jobs-filter")?.value || "all";
+
+  let filtered = allJobs;
+
+  if (statusFilter !== "all") {
+    filtered = filtered.filter(job => job.status === statusFilter);
+  }
+
+  if (searchTerm) {
+    filtered = filtered.filter(job =>
+      (job.client_name || "").toLowerCase().includes(searchTerm) ||
+      (job.address || "").toLowerCase().includes(searchTerm) ||
+      (job.job_type || "").toLowerCase().includes(searchTerm)
+    );
+  }
+
+  renderJobsList(filtered);
+}
+
+function renderJobsList(jobs) {
+  const list = document.getElementById("jobs-list");
+  const emptyState = document.getElementById("jobs-empty-state");
+
+  if (!list) return;
+
+  if (!jobs || jobs.length === 0) {
+    list.innerHTML = "";
+    if (emptyState) emptyState.style.display = "block";
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = "none";
+
+  list.innerHTML = jobs.map(job => {
+    const statusColor = job.status === "open" ? "var(--primary)" :
+                        job.status === "closed" ? "#4CAF50" : "var(--muted)";
+    const statusIcon = job.status === "open" ? "fa-folder-open" :
+                       job.status === "closed" ? "fa-check-circle" : "fa-box-archive";
+    const dateStr = job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
+
+    return `
+      <div class="list-item" data-job-id="${job.id}">
+        <div class="list-item-info" style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid ${statusIcon}" style="color: ${statusColor}; font-size: 18px;"></i>
+            <div>
+              <strong>${job.client_name || "Unnamed Job"}</strong>
+              <div style="font-size: 13px; color: var(--muted);">
+                ${job.address ? `<i class="fa-solid fa-map-marker-alt"></i> ${job.address}` : ""}
+                ${job.job_type ? `<span style="margin-left: 10px;"><i class="fa-solid fa-wrench"></i> ${job.job_type}</span>` : ""}
+              </div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                <i class="fa-solid fa-calendar"></i> ${dateStr}
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-icon" onclick="viewJobDetail(${job.id})">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function updateJobStats() {
+  const openCount = allJobs.filter(j => j.status === "open").length;
+  const closedCount = allJobs.filter(j => j.status === "closed").length;
+  const totalCount = allJobs.length;
+
+  const elOpen = document.getElementById("jobs-open-count");
+  const elClosed = document.getElementById("jobs-closed-count");
+  const elTotal = document.getElementById("jobs-total-count");
+
+  if (elOpen) elOpen.textContent = openCount;
+  if (elClosed) elClosed.textContent = closedCount;
+  if (elTotal) elTotal.textContent = totalCount;
+}
+
+async function viewJobDetail(jobId) {
+  if (tourMode) {
+    currentJob = allJobs.find(j => j.id === jobId);
+    renderJobDetail(currentJob);
+    showScreen("job-detail");
+    return;
+  }
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}`);
+    if (res.ok) {
+      currentJob = await res.json();
+      renderJobDetail(currentJob);
+      showScreen("job-detail");
+    } else {
+      showToast("Failed to load job details");
+    }
+  } catch (err) {
+    console.error("Error loading job:", err);
+    showToast("Error loading job");
+  }
+}
+
+function renderJobDetail(job) {
+  if (!job) return;
+
+  document.getElementById("job-detail-title").textContent = job.folder_name || job.client_name || "Job Details";
+  document.getElementById("job-detail-client").textContent = job.client_name || "-";
+  document.getElementById("job-detail-address").textContent = job.address || "-";
+  document.getElementById("job-detail-type").textContent = job.job_type || "-";
+  document.getElementById("job-detail-notes").textContent = job.notes || "No notes";
+  document.getElementById("job-detail-date").textContent = job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
+
+  const statusEl = document.getElementById("job-detail-status");
+  if (statusEl) {
+    statusEl.textContent = (job.status || "open").charAt(0).toUpperCase() + (job.status || "open").slice(1);
+    statusEl.className = "status-badge";
+    if (job.status === "open") statusEl.style.color = "var(--primary)";
+    else if (job.status === "closed") statusEl.style.color = "#4CAF50";
+    else statusEl.style.color = "var(--muted)";
+  }
+
+  const btnClose = document.getElementById("btn-close-job");
+  if (btnClose) {
+    btnClose.style.display = job.status === "closed" ? "none" : "inline-flex";
+  }
+
+  renderJobLinkedItems(job);
+}
+
+function renderJobLinkedItems(job) {
+  const invoicesList = document.getElementById("job-invoices-list");
+  const invoicesEmpty = document.getElementById("job-invoices-empty");
+  const quotesList = document.getElementById("job-quotes-list");
+  const quotesEmpty = document.getElementById("job-quotes-empty");
+  const voiceNotesList = document.getElementById("job-voice-notes-list");
+  const voiceNotesEmpty = document.getElementById("job-voice-notes-empty");
+
+  if (job.invoices && job.invoices.length > 0) {
+    if (invoicesEmpty) invoicesEmpty.style.display = "none";
+    if (invoicesList) {
+      invoicesList.innerHTML = job.invoices.map(inv => `
+        <div class="list-item" onclick="viewInvoiceDetail(${inv.id})">
+          <span><strong>${inv.invoice_number || "Invoice"}</strong> - ${formatCurrency(inv.total || 0)}</span>
+          <span class="status-badge" style="color: ${inv.payment_status === 'paid' ? '#4CAF50' : '#F44336'};">${inv.payment_status || 'unpaid'}</span>
+        </div>
+      `).join("");
+    }
+  } else {
+    if (invoicesList) invoicesList.innerHTML = "";
+    if (invoicesEmpty) invoicesEmpty.style.display = "block";
+  }
+
+  if (job.quotes && job.quotes.length > 0) {
+    if (quotesEmpty) quotesEmpty.style.display = "none";
+    if (quotesList) {
+      quotesList.innerHTML = job.quotes.map(q => `
+        <div class="list-item" onclick="viewQuoteDetail(${q.id})">
+          <span><strong>${q.quote_number || "Quote"}</strong> - ${formatCurrency(q.total || 0)}</span>
+          <span class="status-badge">${q.status || 'draft'}</span>
+        </div>
+      `).join("");
+    }
+  } else {
+    if (quotesList) quotesList.innerHTML = "";
+    if (quotesEmpty) quotesEmpty.style.display = "block";
+  }
+
+  if (job.voice_notes && job.voice_notes.length > 0) {
+    if (voiceNotesEmpty) voiceNotesEmpty.style.display = "none";
+    if (voiceNotesList) {
+      voiceNotesList.innerHTML = job.voice_notes.map(vn => `
+        <div class="list-item">
+          <span><i class="fa-solid fa-microphone"></i> ${new Date(vn.created_at).toLocaleDateString()}</span>
+          <span style="color: var(--muted); font-size: 12px;">${vn.transcript ? vn.transcript.substring(0, 50) + '...' : 'No transcript'}</span>
+        </div>
+      `).join("");
+    }
+  } else {
+    if (voiceNotesList) voiceNotesList.innerHTML = "";
+    if (voiceNotesEmpty) voiceNotesEmpty.style.display = "block";
+  }
+}
+
+async function handleJobSubmit(e) {
+  e.preventDefault();
+
+  const jobId = document.getElementById("job-id").value;
+  const payload = {
+    client_name: document.getElementById("job-client-name").value.trim(),
+    address: document.getElementById("job-address").value.trim(),
+    job_type: document.getElementById("job-type").value,
+    notes: document.getElementById("job-notes").value.trim()
+  };
+
+  if (!payload.client_name) {
+    showToast("Client name is required");
+    return;
+  }
+
+  if (tourMode) {
+    showToast(jobId ? "Job updated!" : "Job created!");
+    showScreen("jobs");
+    return;
+  }
+
+  try {
+    let res;
+    if (jobId) {
+      res = await apiFetch(`/api/jobs/${jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await apiFetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (res.ok) {
+      showToast(jobId ? "Job updated!" : "Job created!");
+      await loadJobs();
+      showScreen("jobs");
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to save job");
+    }
+  } catch (err) {
+    console.error("Error saving job:", err);
+    showToast("Error saving job");
+  }
+}
+
+async function updateJobStatus(jobId, newStatus) {
+  if (tourMode) {
+    showToast(`Job marked as ${newStatus}!`);
+    showScreen("jobs");
+    return;
+  }
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (res.ok) {
+      showToast(`Job marked as ${newStatus}!`);
+      await loadJobs();
+      showScreen("jobs");
+    } else {
+      showToast("Failed to update job status");
+    }
+  } catch (err) {
+    console.error("Error updating job:", err);
+    showToast("Error updating job");
+  }
+}
+
+async function handleJobDelete() {
+  if (!currentJob) return;
+
+  if (!confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
+    return;
+  }
+
+  if (tourMode) {
+    showToast("Job deleted!");
+    showScreen("jobs");
+    return;
+  }
+
+  try {
+    const res = await apiFetch(`/api/jobs/${currentJob.id}`, {
+      method: "DELETE"
+    });
+
+    if (res.ok) {
+      showToast("Job deleted!");
+      await loadJobs();
+      showScreen("jobs");
+    } else {
+      showToast("Failed to delete job");
+    }
+  } catch (err) {
+    console.error("Error deleting job:", err);
+    showToast("Error deleting job");
+  }
+}
+
+// Debounce helper for search input
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
 // INVENTORY MANAGEMENT

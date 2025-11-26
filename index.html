@@ -59,7 +59,33 @@
           <input type="email" id="signup-email" required />
           <label data-i18n="auth.password">Password</label>
           <input type="password" id="signup-password" required />
-          <button type="submit" class="btn-primary" data-i18n="auth.create_account">Create Account</button>
+          
+          <label data-i18n="auth.select_trade">What's your trade?</label>
+          <select id="signup-trade" required style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 16px; margin-bottom: 12px;">
+            <option value="" data-i18n="auth.select_trade_placeholder">Select your trade...</option>
+            <option value="electrician">Electrician</option>
+            <option value="plumber">Plumber</option>
+            <option value="hvac">HVAC Technician</option>
+            <option value="carpenter">Carpenter</option>
+            <option value="roofer">Roofer</option>
+            <option value="painter">Painter</option>
+            <option value="landscaper">Landscaper</option>
+            <option value="mason">Mason</option>
+            <option value="general_contractor">General Contractor</option>
+            <option value="handyman">Handyman</option>
+            <option value="radon">Radon Mitigation</option>
+            <option value="other">Other</option>
+          </select>
+          
+          <div class="tos-checkbox" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px;">
+            <input type="checkbox" id="signup-tos" required style="margin-top: 4px; width: 18px; height: 18px; cursor: pointer;" />
+            <label for="signup-tos" style="font-size: 14px; color: var(--text-secondary); cursor: pointer;">
+              I agree to the <a href="#" id="show-tos-link" style="color: var(--primary); text-decoration: underline;">Terms of Service</a>
+            </label>
+          </div>
+          
+          <button type="submit" class="btn-primary" data-i18n="auth.start_trial">Start 14-Day Free Trial</button>
+          <p class="trial-note" style="font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px;">No credit card required. Cancel anytime.</p>
           <p id="signup-error" class="error-text"></p>
         </form>
 
@@ -187,6 +213,14 @@
               <div class="tile-text">
                 <h3 data-i18n="dashboard.inventory">Inventory</h3>
                 <p data-i18n="dashboard.inventory_desc">Track supplies, materials & stock.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="jobs">
+              <div class="tile-icon"><i class="fa-solid fa-folder-tree"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.jobs">Job Folders</h3>
+                <p data-i18n="dashboard.jobs_desc">Organize all your work by job.</p>
               </div>
             </button>
 
@@ -835,6 +869,162 @@
           </div>
         </section>
 
+        <!-- JOBS -->
+        <section id="screen-jobs" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="jobs.title">Job Folders</h2>
+          </div>
+
+          <div class="screen-actions" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button id="btn-new-job" class="btn-primary"><i class="fa-solid fa-plus"></i> <span data-i18n="jobs.new_job">New Job</span></button>
+            <input type="text" id="jobs-search" placeholder="Search jobs..." style="flex: 1; min-width: 150px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);" />
+            <select id="jobs-filter" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
+              <option value="all">All Jobs</option>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          <div id="jobs-stats" class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-folder-tree"></i>
+              <h3>Job Summary</h3>
+            </div>
+            <div style="display: flex; justify-content: space-around; text-align: center; padding: 16px 0;">
+              <div>
+                <span style="color: var(--muted); font-size: 14px;">Open</span>
+                <div id="jobs-open-count" style="font-size: 24px; font-weight: bold; color: var(--primary);">0</div>
+              </div>
+              <div>
+                <span style="color: var(--muted); font-size: 14px;">Closed</span>
+                <div id="jobs-closed-count" style="font-size: 24px; font-weight: bold; color: #4CAF50;">0</div>
+              </div>
+              <div>
+                <span style="color: var(--muted); font-size: 14px;">Total</span>
+                <div id="jobs-total-count" style="font-size: 24px; font-weight: bold; color: var(--text);">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="jobs-list" class="list"></div>
+
+          <div id="jobs-empty-state" class="empty-state" style="display: none;">
+            <i class="fa-solid fa-folder-tree"></i>
+            <p>No jobs yet</p>
+            <button class="btn-primary" onclick="document.getElementById('btn-new-job').click()">
+              <i class="fa-solid fa-plus"></i> Create Your First Job
+            </button>
+          </div>
+        </section>
+
+        <!-- JOB DETAIL -->
+        <section id="screen-job-detail" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="jobs"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 id="job-detail-title">Job Details</h2>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-info-circle"></i>
+              <h3>Job Information</h3>
+            </div>
+            <div class="detail-section" style="padding: 16px;">
+              <p><strong>Client:</strong> <span id="job-detail-client">-</span></p>
+              <p><strong>Address:</strong> <span id="job-detail-address">-</span></p>
+              <p><strong>Job Type:</strong> <span id="job-detail-type">-</span></p>
+              <p><strong>Status:</strong> <span id="job-detail-status" class="status-badge">-</span></p>
+              <p><strong>Created:</strong> <span id="job-detail-date">-</span></p>
+              <p style="margin-top: 12px;"><strong>Notes:</strong></p>
+              <p id="job-detail-notes" style="color: var(--muted); white-space: pre-wrap;">-</p>
+            </div>
+          </div>
+
+          <div class="screen-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btn-edit-job" class="btn-secondary"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button id="btn-close-job" class="btn-secondary"><i class="fa-solid fa-check"></i> Mark Closed</button>
+            <button id="btn-archive-job" class="btn-secondary"><i class="fa-solid fa-box-archive"></i> Archive</button>
+            <button id="btn-delete-job" class="btn-danger"><i class="fa-solid fa-trash"></i> Delete</button>
+          </div>
+
+          <div class="feature-status-card" style="margin-top: 20px;">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+              <h3>Linked Invoices</h3>
+            </div>
+            <div id="job-invoices-list" class="list" style="padding: 8px;"></div>
+            <div id="job-invoices-empty" style="padding: 20px; text-align: center; color: var(--muted);">No invoices linked to this job</div>
+          </div>
+
+          <div class="feature-status-card" style="margin-top: 20px;">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-clipboard-list"></i>
+              <h3>Linked Quotes</h3>
+            </div>
+            <div id="job-quotes-list" class="list" style="padding: 8px;"></div>
+            <div id="job-quotes-empty" style="padding: 20px; text-align: center; color: var(--muted);">No quotes linked to this job</div>
+          </div>
+
+          <div class="feature-status-card" style="margin-top: 20px;">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-microphone"></i>
+              <h3>Voice Notes</h3>
+            </div>
+            <div id="job-voice-notes-list" class="list" style="padding: 8px;"></div>
+            <div id="job-voice-notes-empty" style="padding: 20px; text-align: center; color: var(--muted);">No voice notes for this job</div>
+          </div>
+        </section>
+
+        <!-- NEW/EDIT JOB -->
+        <section id="screen-job-form" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="jobs"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 id="job-form-title">New Job</h2>
+          </div>
+
+          <form id="job-form" class="form">
+            <input type="hidden" id="job-id" />
+
+            <div class="form-row">
+              <label>Client Name *</label>
+              <input type="text" id="job-client-name" placeholder="e.g., John Smith" required />
+            </div>
+
+            <div class="form-row">
+              <label>Address</label>
+              <input type="text" id="job-address" placeholder="e.g., 123 Main St, City, State" />
+            </div>
+
+            <div class="form-row">
+              <label>Job Type</label>
+              <select id="job-type">
+                <option value="">Select a job type...</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="HVAC">HVAC</option>
+                <option value="Carpentry">Carpentry</option>
+                <option value="Roofing">Roofing</option>
+                <option value="Painting">Painting</option>
+                <option value="General">General</option>
+                <option value="Renovation">Renovation</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Installation">Installation</option>
+                <option value="Repair">Repair</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label>Notes</label>
+              <textarea id="job-notes" placeholder="Additional details about this job..." rows="4"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary btn-full"><i class="fa-solid fa-save"></i> Save Job</button>
+          </form>
+        </section>
+
         <!-- INVENTORY -->
         <section id="screen-inventory" class="screen">
           <div class="screen-header">
@@ -1018,6 +1208,89 @@
             <button type="button" id="cancel-email-modal" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 15px;" data-i18n="common.cancel">Cancel</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms of Service Modal -->
+  <div id="tos-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.9); z-index: 10001; overflow: auto; padding: 20px;">
+    <div style="max-width: 800px; margin: 30px auto; position: relative;">
+      <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: var(--bg); padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+          <h2 style="margin: 0; color: var(--text);">Terms of Service</h2>
+          <button id="close-tos-modal" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+        </div>
+        <div id="tos-content" style="color: var(--text); line-height: 1.7; font-size: 14px;">
+          <p style="text-align: center; font-weight: bold; font-size: 18px; margin-bottom: 5px;">TRADEBASE TERMS OF SERVICE</p>
+          <p style="text-align: center; color: var(--muted); margin-bottom: 25px;">Effective Date: November 25, 2025</p>
+          
+          <p>This Terms of Service Agreement ("Agreement") is a legally binding contract between you ("User," "you," or "your") and TradeBase ("Company," "we," "us," or "our"). By accessing, registering with, or using the TradeBase application, website, or services (collectively, the "Service"), you acknowledge that you have read, understood, and agree to be bound by this Agreement.</p>
+          
+          <p><strong>If you do not agree to these terms, you must not access or use the Service.</strong></p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">1. ELIGIBILITY</h3>
+          <p>You represent that you are at least eighteen (18) years of age and have the legal authority to enter into this Agreement.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">2. SERVICE DESCRIPTION</h3>
+          <p>TradeBase provides digital tools for managing invoices, estimates, photos, documents, job records, and related operational tasks. TradeBase does not perform contractor services and does not provide legal, accounting, tax, or business advice.</p>
+          <p>You assume sole responsibility for your actions, invoices, pricing, compliance with laws, and business operations.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">3. ACCOUNT RESPONSIBILITY</h3>
+          <p>You are solely responsible for maintaining the confidentiality of your credentials and all activities under your account.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">4. ACCEPTABLE USE</h3>
+          <p>You agree not to:</p>
+          <ul style="margin-left: 20px;">
+            <li>Violate any laws</li>
+            <li>Submit false or fraudulent invoices</li>
+            <li>Upload unlawful or harmful content</li>
+            <li>Disrupt or exploit the infrastructure</li>
+            <li>Reverse engineer or replicate any system</li>
+          </ul>
+          <p>Violation may result in suspension or permanent termination with no refund.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">5. FEES, BILLING, AND TERMINATION</h3>
+          <p>Subscription fees are billed in advance and non-refundable unless required by law. The Company may modify pricing with reasonable notice. Accounts may be terminated for non-payment or violation.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">6. DATA OWNERSHIP AND EXPORT</h3>
+          <p>Users retain ownership of their data. Users located in Maine are entitled to export their data at any time. Upon termination, data may be deleted at the Company's discretion after a reasonable retention period.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">7. SYSTEM RELIABILITY</h3>
+          <p>Services are provided "AS IS" and "AS AVAILABLE." No uptime or data retention guarantees are made.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">8. DISCLAIMER OF WARRANTIES</h3>
+          <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, ALL WARRANTIES ARE DISCLAIMED, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">9. LIMITATION OF LIABILITY</h3>
+          <p>IN NO EVENT SHALL TRADEBASE BE LIABLE FOR INDIRECT, INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES. TOTAL LIABILITY SHALL NOT EXCEED AMOUNTS PAID IN THE PREVIOUS THIRTY (30) DAYS.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">10. INDEMNIFICATION</h3>
+          <p>You agree to indemnify and hold harmless TradeBase from all claims, damages, or losses arising from your use of the Service.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">11. INTELLECTUAL PROPERTY</h3>
+          <p>All intellectual property rights belong to TradeBase. Unauthorized use is prohibited.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">12. TERMINATION</h3>
+          <p>We may suspend or terminate user accounts at our sole discretion.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">13. DISPUTE RESOLUTION BY ARBITRATION</h3>
+          <p>Any controversy arising from this Agreement shall be resolved by binding arbitration administered by the American Arbitration Association under its Commercial Arbitration Rules. Users waive the right to participate in any class action lawsuit.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">14. GOVERNING LAW AND VENUE</h3>
+          <p>This Agreement shall be governed by the laws of the State of Maine.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">15. ENTIRE AGREEMENT</h3>
+          <p>This Agreement constitutes the entire agreement between you and TradeBase and supersedes all prior agreements.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">16. SEVERABILITY</h3>
+          <p>If any provision is held unlawful, the remaining provisions remain valid.</p>
+          
+          <h3 style="margin-top: 25px; color: var(--primary);">17. CONTACT</h3>
+          <p>Support Contact: <a href="mailto:support@trade-base.biz" style="color: var(--primary);">support@trade-base.biz</a></p>
+        </div>
+        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center;">
+          <button id="accept-tos-btn" class="btn-primary" style="min-width: 200px;">I Understand</button>
+        </div>
       </div>
     </div>
   </div>
