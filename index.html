@@ -802,6 +802,38 @@
               <p>Stripe Connect is enabled. You can collect payments directly from your invoices.</p>
             </div>
           </div>
+
+          <!-- AI Add-On Subscription -->
+          <div id="ai-subscription-card" class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-robot"></i>
+              <h3>AI Tools Add-On</h3>
+            </div>
+            <div class="feature-status-body">
+              <div id="ai-status-inactive" class="ai-status-section">
+                <p style="color: var(--muted); margin-bottom: 16px;">Unlock voice transcription, smart quote generation, and more with AI Tools.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" class="btn-primary" onclick="subscribeToAI('monthly')">
+                    <i class="fa-solid fa-bolt"></i> Subscribe Monthly
+                  </button>
+                  <button type="button" class="btn-secondary" onclick="subscribeToAI('yearly')">
+                    <i class="fa-solid fa-calendar"></i> Subscribe Yearly (Save 20%)
+                  </button>
+                </div>
+              </div>
+              <div id="ai-status-active" class="ai-status-section hidden">
+                <div class="status-badge status-active" style="margin-bottom: 12px;">
+                  <i class="fa-solid fa-check-circle"></i>
+                  <span>AI Active</span>
+                </div>
+                <p style="color: var(--muted); margin-bottom: 12px;">Your AI subscription is active. You have access to all AI tools.</p>
+                <p style="font-size: 13px; color: var(--muted);">Plan: <strong id="ai-plan-display">-</strong></p>
+                <button type="button" class="btn-danger" onclick="cancelAISubscription()" style="margin-top: 12px;">
+                  <i class="fa-solid fa-times"></i> Cancel AI Subscription
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- REFERRALS -->

@@ -33,6 +33,7 @@ let tourMode = false;
 let isOnline = navigator.onLine;
 let isSyncing = false;
 let isAdminUser = false;
+let aiEnabled = false;
 
 // TEMPLATE INIT
 document.addEventListener('DOMContentLoaded', () => {
@@ -1362,6 +1363,10 @@ async function onLoggedIn() {
   await updateTrialBanner();
   wireSubscriptionUI();
   applyLanguage();
+  
+  // Check admin and AI status
+  await checkAdminStatus();
+  await checkAIStatus();
 }
 
 // DASHBOARD / NAV
@@ -4684,6 +4689,107 @@ async function checkAdminStatus() {
     }
   } catch (err) {
     isAdminUser = false;
+  }
+}
+
+// AI SUBSCRIPTION FUNCTIONS
+
+async function checkAIStatus() {
+  if (tourMode) {
+    aiEnabled = false;
+    updateAIUI();
+    return;
+  }
+
+  if (!currentUser) {
+    aiEnabled = false;
+    updateAIUI();
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/ai/status");
+    if (res.ok) {
+      const data = await res.json();
+      aiEnabled = data.ai_enabled;
+      updateAIUI(data);
+    }
+  } catch (err) {
+    console.log("Error checking AI status:", err);
+    aiEnabled = false;
+    updateAIUI();
+  }
+}
+
+function updateAIUI(data = {}) {
+  const inactiveSection = document.getElementById("ai-status-inactive");
+  const activeSection = document.getElementById("ai-status-active");
+  const planDisplay = document.getElementById("ai-plan-display");
+  const voiceRecorder = document.getElementById("voice-recorder");
+
+  if (aiEnabled) {
+    inactiveSection?.classList.add("hidden");
+    activeSection?.classList.remove("hidden");
+    voiceRecorder?.classList.remove("hidden");
+    if (planDisplay && data.ai_plan) {
+      planDisplay.textContent = data.ai_plan === "yearly" ? "Yearly" : "Monthly";
+    }
+  } else {
+    inactiveSection?.classList.remove("hidden");
+    activeSection?.classList.add("hidden");
+    voiceRecorder?.classList.add("hidden");
+  }
+}
+
+async function subscribeToAI(plan) {
+  if (tourMode) {
+    showToast("AI subscription not available in demo mode");
+    return;
+  }
+
+  try {
+    showToast("Redirecting to checkout...");
+    const res = await apiFetch("/api/ai/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ plan })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to start checkout");
+    }
+  } catch (err) {
+    console.error("Error subscribing to AI:", err);
+    showToast("Failed to start AI subscription");
+  }
+}
+
+async function cancelAISubscription() {
+  if (!confirm("Are you sure you want to cancel your AI subscription? You will immediately lose access to all AI tools.")) {
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/ai/cancel", {
+      method: "POST"
+    });
+
+    if (res.ok) {
+      aiEnabled = false;
+      updateAIUI();
+      showToast("AI subscription canceled");
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to cancel subscription");
+    }
+  } catch (err) {
+    console.error("Error canceling AI subscription:", err);
+    showToast("Failed to cancel AI subscription");
   }
 }
 

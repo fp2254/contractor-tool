@@ -1390,13 +1390,37 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
         const subscription = event.data.object;
         const customerId = subscription.customer;
 
-        const { data: profile } = await supabaseAdmin
+        // Check if this is an AI subscription by checking if subscription ID matches ai_subscription_id
+        const { data: aiCheck } = await supabaseAdmin
           .from("profiles")
           .select("id")
+          .eq("ai_subscription_id", subscription.id)
+          .single();
+
+        // If this is an AI subscription, handle it separately (don't update base subscription fields)
+        if (aiCheck) {
+          const aiStatus = subscription.status === "active" || subscription.status === "trialing";
+          await supabaseAdmin
+            .from("profiles")
+            .update({ ai_enabled: aiStatus })
+            .eq("id", aiCheck.id);
+          console.log(`AI subscription ${subscription.id} status updated: ai_enabled=${aiStatus}`);
+          break;
+        }
+
+        // This is a base subscription - update base subscription fields only
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, ai_subscription_id")
           .eq("stripe_customer_id", customerId)
           .single();
 
         if (profile) {
+          // Skip if this subscription ID matches the AI subscription (edge case)
+          if (profile.ai_subscription_id === subscription.id) {
+            break;
+          }
+
           const status = subscription.status === "active" || subscription.status === "trialing" 
             ? "active" 
             : subscription.status;
@@ -1416,13 +1440,35 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
         const subscription = event.data.object;
         const customerId = subscription.customer;
 
-        const { data: profile } = await supabaseAdmin
+        // FIRST: Check if this is an AI subscription being deleted
+        const { data: aiProfile } = await supabaseAdmin
           .from("profiles")
           .select("id")
+          .eq("ai_subscription_id", subscription.id)
+          .single();
+
+        if (aiProfile) {
+          // This is an AI subscription cancellation - disable AI but leave base subscription intact
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              ai_enabled: false,
+              ai_plan: null,
+              ai_subscription_id: null,
+            })
+            .eq("id", aiProfile.id);
+          console.log(`AI subscription canceled for user ${aiProfile.id}`);
+          break;
+        }
+
+        // This is a base subscription cancellation
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, stripe_subscription_id")
           .eq("stripe_customer_id", customerId)
           .single();
 
-        if (profile) {
+        if (profile && profile.stripe_subscription_id === subscription.id) {
           await supabaseAdmin
             .from("profiles")
             .update({
@@ -1456,7 +1502,8 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       }
     }
 
-    // Handle AI subscription events separately (check metadata for ai_subscription flag)
+    // Handle AI subscription activation from checkout.session.completed
+    // (This runs AFTER the switch statement so AI subscriptions are properly flagged before updates)
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       if (session.metadata?.is_ai_subscription === "true") {
@@ -1472,29 +1519,6 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
             .eq("id", userId);
           console.log(`AI subscription activated for user ${userId}`);
         }
-      }
-    }
-
-    // Handle AI subscription cancellation
-    if (event.type === "customer.subscription.deleted") {
-      const subscription = event.data.object;
-      // Check if this is an AI subscription by looking at the subscription ID in profiles
-      const { data: aiProfile } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("ai_subscription_id", subscription.id)
-        .single();
-
-      if (aiProfile) {
-        await supabaseAdmin
-          .from("profiles")
-          .update({
-            ai_enabled: false,
-            ai_plan: null,
-            ai_subscription_id: null,
-          })
-          .eq("id", aiProfile.id);
-        console.log(`AI subscription canceled for user ${aiProfile.id}`);
       }
     }
 
@@ -2154,10 +2178,10 @@ app.post("/api/ai/cancel", requireAuth, async (req, res) => {
 // VOICE TRANSCRIPTION - Convert audio to text using OpenAI (REQUIRES AI SUBSCRIPTION)
 app.post("/api/voice-transcribe", requireAI, async (req, res) => {
   const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
   // Log AI usage
   await logAIUsage(userId, "voice_transcription");
-  const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const { voice_note_id, audio_url } = req.body;
 
