@@ -34,6 +34,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **File Storage**: Supabase Storage for `logos` and `invoice-photos`.
 - **API Endpoints**: RESTful APIs for managing profiles, clients, invoices, quotes, payments, inventory, referrals, jobs, and system messages.
 - **Inventory Management**: Comprehensive system to add, edit, and delete inventory items, track quantity, unit price, category, low stock alerts, and calculate total inventory value.
+- **AI Add-On System**: Separate AI subscription that is completely independent from the base TradeBase subscription. Uses `ai_enabled`, `ai_plan`, `ai_subscription_id` fields in profiles table. Stripe webhooks distinguish AI subscriptions from base subscriptions using subscription ID matching. AI features are disabled by default and only enabled via paid AI subscription - NOT included in lifetime plans.
 
 ## Recent Changes
 - Added Terms of Service modal with required checkbox on signup
@@ -44,6 +45,12 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - Added System Messages API for in-app notifications
 - Built notification center with bell icon in header
 - Updated database migration with jobs, voice_notes, system_messages tables
+- Implemented AI Add-On subscription system with separate billing from base subscription
+- Added ai_enabled, ai_plan, ai_subscription_id columns and ai_usage_logs table
+- Created requireAI middleware and AI subscription endpoints (/api/ai/status, /api/ai/subscribe, /api/ai/cancel)
+- Fixed Stripe webhook to properly distinguish AI subscriptions from base subscriptions
+- Added AI subscription section in Settings screen
+- Voice recorder hidden by default, only visible when ai_enabled=true
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
