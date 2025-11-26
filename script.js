@@ -4396,6 +4396,259 @@ async function checkAndLoadNotifications() {
   }
 }
 
+// VOICE RECORDING & TRANSCRIPTION
+
+let mediaRecorder;
+let recordingChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let currentJobId = null;
+
+function wireVoiceRecording() {
+  const btnRecord = document.getElementById("btn-record-voice");
+  const btnStop = document.getElementById("btn-stop-voice");
+  const btnCancel = document.getElementById("btn-cancel-voice");
+
+  if (btnRecord) {
+    btnRecord.addEventListener("click", startVoiceRecording);
+  }
+  if (btnStop) {
+    btnStop.addEventListener("click", stopVoiceRecording);
+  }
+  if (btnCancel) {
+    btnCancel.addEventListener("click", cancelVoiceRecording);
+  }
+}
+
+async function startVoiceRecording() {
+  if (tourMode) {
+    showToast("Voice recording disabled in demo mode");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recordingChunks = [];
+    recordingSeconds = 0;
+
+    mediaRecorder.addEventListener("dataavailable", (e) => {
+      recordingChunks.push(e.data);
+    });
+
+    mediaRecorder.start();
+
+    document.getElementById("btn-record-voice").classList.add("hidden");
+    document.getElementById("btn-stop-voice").classList.remove("hidden");
+    document.getElementById("btn-cancel-voice").classList.remove("hidden");
+    document.getElementById("voice-timer").style.display = "inline";
+
+    recordingTimer = setInterval(() => {
+      recordingSeconds++;
+      const mins = Math.floor(recordingSeconds / 60);
+      const secs = recordingSeconds % 60;
+      document.getElementById("voice-timer").textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+
+    showToast("Recording...");
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied");
+  }
+}
+
+function stopVoiceRecording() {
+  if (!mediaRecorder) return;
+
+  mediaRecorder.stop();
+  clearInterval(recordingTimer);
+
+  mediaRecorder.addEventListener("stop", async () => {
+    const audioBlob = new Blob(recordingChunks, { type: "audio/wav" });
+    await uploadVoiceNote(audioBlob, recordingSeconds);
+    
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    resetVoiceUI();
+  });
+}
+
+function cancelVoiceRecording() {
+  if (!mediaRecorder) return;
+
+  mediaRecorder.stop();
+  mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  clearInterval(recordingTimer);
+  recordingChunks = [];
+  resetVoiceUI();
+  showToast("Recording cancelled");
+}
+
+function resetVoiceUI() {
+  document.getElementById("btn-record-voice").classList.remove("hidden");
+  document.getElementById("btn-stop-voice").classList.add("hidden");
+  document.getElementById("btn-cancel-voice").classList.add("hidden");
+  document.getElementById("voice-timer").style.display = "none";
+  recordingSeconds = 0;
+}
+
+async function uploadVoiceNote(audioBlob, duration) {
+  if (tourMode) {
+    showToast("Voice notes disabled in demo mode");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+    formData.append("job_id", currentJobId);
+    formData.append("duration", duration);
+
+    const res = await fetch("/api/voice-notes", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${currentUser?.access_token}` },
+      body: formData
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      showToast("Voice note saved!");
+      await loadJobDetail(currentJobId);
+    } else {
+      showToast("Failed to save voice note");
+    }
+  } catch (err) {
+    console.error("Error uploading voice note:", err);
+    showToast("Error uploading voice note");
+  }
+}
+
+// REFERRAL STATS & INVITE TRACKING
+
+async function loadReferralStats() {
+  if (tourMode) {
+    document.getElementById("referral-count").textContent = "3";
+    document.getElementById("referral-month").textContent = "$120.00";
+    document.getElementById("referral-lifetime").textContent = "$2,400.00";
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/invites/stats");
+    if (res.ok) {
+      const stats = await res.json();
+      document.getElementById("referral-count").textContent = stats.invites_sent;
+      
+      const badgeEl = document.getElementById("referral-badge");
+      if (badgeEl) {
+        if (stats.badge === "None") {
+          badgeEl.classList.add("hidden");
+        } else {
+          badgeEl.classList.remove("hidden");
+          badgeEl.textContent = `🏆 ${stats.badge}`;
+          if (stats.badge === "Champion") badgeEl.style.color = "#fbbf24";
+          else if (stats.badge === "Ambassador") badgeEl.style.color = "#a78bfa";
+          else if (stats.badge === "Team Builder") badgeEl.style.color = "#60a5fa";
+          else if (stats.badge === "First Referral") badgeEl.style.color = "#34d399";
+        }
+      }
+
+      if (stats.bonus_days > 0) {
+        showToast(`You've unlocked ${stats.bonus_days} bonus trial days!`);
+      }
+    }
+  } catch (err) {
+    console.error("Error loading referral stats:", err);
+  }
+}
+
+async function sendInvite() {
+  const emailInput = document.getElementById("invite-email");
+  if (!emailInput) return;
+
+  const email = emailInput.value;
+  if (!email) {
+    showToast("Please enter an email address");
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/invites/send", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Invite sent! You've sent ${data.invites_sent} invites.`);
+      if (data.bonus_unlocked) {
+        showToast(`🎉 Bonus unlocked: +${data.bonus_unlocked} days!`);
+      }
+      emailInput.value = "";
+      await loadReferralStats();
+    }
+  } catch (err) {
+    console.error("Error sending invite:", err);
+    showToast("Failed to send invite");
+  }
+}
+
+// ADMIN PANEL
+
+async function loadAdminUsers() {
+  if (!currentUser) return;
+
+  try {
+    const res = await apiFetch("/api/admin/users");
+    if (res.ok) {
+      const users = await res.json();
+      const list = document.getElementById("admin-users-list");
+      if (list) {
+        list.innerHTML = users.map(u => `
+          <div class="list-item">
+            <div>${u.email}</div>
+            <div style="font-size: 12px; color: var(--muted);">Joined ${new Date(u.created_at).toLocaleDateString()}</div>
+          </div>
+        `).join("");
+      }
+    }
+  } catch (err) {
+    console.error("Error loading admin users:", err);
+  }
+}
+
+async function sendAdminMessage() {
+  const titleEl = document.getElementById("admin-message-title");
+  const contentEl = document.getElementById("admin-message-content");
+  const typeEl = document.getElementById("admin-message-type");
+
+  if (!titleEl || !contentEl) return;
+
+  const title = titleEl.value;
+  const content = contentEl.value;
+  const message_type = typeEl?.value || "info";
+
+  if (!title || !content) {
+    showToast("Please fill in title and message");
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/admin/send-message", {
+      method: "POST",
+      body: JSON.stringify({ title, content, message_type, target_users: null })
+    });
+
+    if (res.ok) {
+      showToast("Message sent to all users!");
+      titleEl.value = "";
+      contentEl.value = "";
+    }
+  } catch (err) {
+    console.error("Error sending admin message:", err);
+    showToast("Failed to send message");
+  }
+}
+
 // INVENTORY MANAGEMENT
 
 let inventoryFilterCategory = null;

@@ -1864,6 +1864,91 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
   }
 });
 
+// ADMIN ENDPOINTS
+
+app.get("/api/admin/users", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) return res.status(500).json({ error: error.message });
+
+    const userList = users.users.slice(0, 50).map(u => ({
+      id: u.id,
+      email: u.email,
+      created_at: u.created_at
+    }));
+
+    res.json(userList);
+  } catch (error) {
+    console.error("Error listing users:", error);
+    res.status(500).json({ error: "Failed to list users" });
+  }
+});
+
+app.post("/api/admin/send-message", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { title, content, message_type, target_users } = req.body;
+
+  try {
+    const messages = target_users && target_users.length
+      ? target_users.map(uid => ({ user_id: uid, title, content, message_type }))
+      : [{ user_id: null, title, content, message_type }];
+
+    const { error } = await supabaseAdmin
+      .from("system_messages")
+      .insert(messages);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error sending admin message:", error);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+// VOICE TRANSCRIPTION - Convert audio to text using OpenAI
+app.post("/api/voice-transcribe", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { voice_note_id, audio_url } = req.body;
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Transcription service not configured" });
+    }
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const audioBuffer = await fetch(audio_url).then(r => r.arrayBuffer());
+    const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioBlob,
+      model: "whisper-1"
+    });
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("voice_notes")
+      .update({ transcript: transcription.text })
+      .eq("id", voice_note_id);
+
+    if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+    res.json({ transcript: transcription.text });
+  } catch (error) {
+    console.error("Transcription error:", error);
+    res.status(500).json({ error: "Failed to transcribe audio" });
+  }
+});
+
 // START
 
 app.listen(port, '0.0.0.0', () => {

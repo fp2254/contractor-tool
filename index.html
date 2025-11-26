@@ -811,7 +811,20 @@
             <h2>Referrals – 20% For Life</h2>
           </div>
           <div class="referral-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3>Your Badge</h3>
+              <span id="referral-badge" class="hidden" style="font-size: 18px; font-weight: bold;">🏆 First Referral</span>
+            </div>
             <p>Share your link. Earn 20% of every monthly payment for everyone you bring in, for as long as they stay subscribed.</p>
+            
+            <div class="form-row" style="margin-top: 20px;">
+              <label>Invite a Friend</label>
+              <div class="ref-link-row">
+                <input type="email" id="invite-email" placeholder="friend@example.com" />
+                <button type="button" class="btn-sm" onclick="sendInvite()">Send Invite</button>
+              </div>
+            </div>
+
             <div class="form-row">
               <label>Your referral link</label>
               <div class="ref-link-row">
@@ -821,11 +834,11 @@
             </div>
             <div class="referral-stats">
               <div>
-                <span>Active referrals</span>
+                <span>Invites sent</span>
                 <strong id="referral-count">0</strong>
               </div>
               <div>
-                <span>This month</span>
+                <span>This month earned</span>
                 <strong id="referral-month">$0.00</strong>
               </div>
               <div>
@@ -834,6 +847,49 @@
               </div>
             </div>
             <div id="referral-list" class="list"></div>
+          </div>
+        </section>
+
+        <!-- ADMIN PANEL -->
+        <section id="screen-admin" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Admin Panel</h2>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-bell"></i>
+              <h3>Send System Announcement</h3>
+            </div>
+            <form id="admin-message-form" class="form" style="padding: 16px;">
+              <div class="form-row">
+                <label>Message Title</label>
+                <input type="text" id="admin-message-title" placeholder="e.g., New Feature Available" required />
+              </div>
+              <div class="form-row">
+                <label>Message Content</label>
+                <textarea id="admin-message-content" placeholder="What would you like to tell users?" rows="4" required></textarea>
+              </div>
+              <div class="form-row">
+                <label>Message Type</label>
+                <select id="admin-message-type">
+                  <option value="info">Info</option>
+                  <option value="success">Success</option>
+                  <option value="warning">Warning</option>
+                  <option value="promo">Promotion</option>
+                </select>
+              </div>
+              <button type="button" class="btn-primary" onclick="sendAdminMessage()">Send to All Users</button>
+            </form>
+          </div>
+
+          <div class="feature-status-card">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-users"></i>
+              <h3>Users</h3>
+            </div>
+            <div id="admin-users-list" class="list" style="padding: 16px;"></div>
           </div>
         </section>
 
