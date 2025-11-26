@@ -2319,6 +2319,164 @@ Be smart about parsing prices (look for dollar amounts like "$500" or "500 dolla
   }
 });
 
+// AI CREATE QUOTE FULL WORKFLOW - Complete voice-to-quote-PDF pipeline
+app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "quote_creation");
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "OpenAI not configured" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    // STEP 1: Transcribe
+    const audioBlob = new (await import("buffer")).Blob([req.file.buffer], { type: "audio/wav" });
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioBlob,
+      model: "whisper-1"
+    });
+
+    let cleanedTranscript = filter.clean(transcription.text);
+
+    // STEP 2: Parse with GPT to extract quote details
+    const parseSystemPrompt = `You are a contractor AI. Parse this voice note into a complete quote. Extract: client_name, address, job_type, quote_date (YYYY-MM-DD), description, and line_items with prices. Return ONLY valid JSON:
+{
+  "client_name": "name",
+  "address": "address or empty",
+  "job_type": "type or empty",
+  "quote_date": "YYYY-MM-DD",
+  "description": "work description",
+  "line_items": [{"description": "item", "quantity": 1, "unit_price": 0}],
+  "template": "basic_clean"
+}`;
+
+    const parseMessage = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: parseSystemPrompt },
+        { role: "user", content: `Parse into quote data: "${cleanedTranscript}"` }
+      ],
+      temperature: 0
+    });
+
+    let quoteData = {};
+    try {
+      quoteData = JSON.parse(parseMessage.choices[0].message.content);
+    } catch (e) {
+      return res.status(400).json({ error: "Failed to parse voice command" });
+    }
+
+    if (!quoteData.client_name) {
+      return res.status(400).json({ error: "Could not extract client name from voice" });
+    }
+
+    // STEP 3: Create or find job folder
+    const dateStr = quoteData.quote_date || new Date().toISOString().split('T')[0];
+    const sanitize = (str) => (str || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+    const folderName = `${sanitize(quoteData.client_name)}_${sanitize(quoteData.address || '')}_${dateStr}_${sanitize(quoteData.job_type || '')}`;
+
+    // Find or create job
+    let job;
+    const { data: existingJobs } = await supabaseAdmin
+      .from("jobs")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("folder_name", folderName)
+      .limit(1);
+
+    if (existingJobs && existingJobs.length > 0) {
+      job = existingJobs[0];
+    } else {
+      const { data: newJob, error: jobError } = await supabaseAdmin
+        .from("jobs")
+        .insert({
+          user_id: userId,
+          client_name: quoteData.client_name,
+          address: quoteData.address || '',
+          job_type: quoteData.job_type || '',
+          folder_name: folderName,
+          notes: quoteData.description || '',
+          status: 'open'
+        })
+        .select()
+        .single();
+
+      if (jobError) throw new Error(`Job creation failed: ${jobError.message}`);
+      job = newJob;
+    }
+
+    // STEP 4: Create quote
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("tax_rate")
+      .eq("id", userId)
+      .single();
+
+    const items = quoteData.line_items || [];
+    const subtotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+    const taxRate = profile?.tax_rate || 0;
+    const tax = (subtotal * taxRate) / 100;
+    const total = subtotal + tax;
+
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from("quotes")
+      .insert({
+        user_id: userId,
+        job_id: job.id,
+        client_name: quoteData.client_name,
+        quote_date: quoteData.quote_date || null,
+        quote_number: `QUO-${Date.now()}`,
+        notes: quoteData.description || '',
+        template: quoteData.template || 'basic_clean',
+        subtotal,
+        tax,
+        total,
+        status: 'draft'
+      })
+      .select()
+      .single();
+
+    if (quoteError) throw new Error(`Quote creation failed: ${quoteError.message}`);
+
+    // Add line items
+    if (items.length > 0) {
+      const itemRows = items.map(it => ({
+        quote_id: quote.id,
+        description: it.description,
+        quantity: it.quantity || 1,
+        unit_price: it.unit_price,
+        total: it.unit_price * (it.quantity || 1)
+      }));
+
+      await supabaseAdmin
+        .from("quote_items")
+        .insert(itemRows);
+    }
+
+    res.json({
+      success: true,
+      quote_id: quote.id,
+      job_id: job.id,
+      quote_number: quote.quote_number,
+      client_name: quoteData.client_name,
+      total: total
+    });
+  } catch (error) {
+    console.error("AI create quote full error:", error);
+    res.status(500).json({ error: error.message || "Failed to create quote" });
+  }
+});
+
 // START
 
 app.listen(port, '0.0.0.0', () => {

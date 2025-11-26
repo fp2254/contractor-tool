@@ -4793,6 +4793,87 @@ async function cancelAISubscription() {
   }
 }
 
+// AI VOICE QUOTE FLOW - Complete do-it-all feature
+async function startAIVoiceQuoteFlow() {
+  if (!aiEnabled) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await completeVoiceQuoteWorkflow(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    const btn = document.getElementById("btn-ai-voice-quote");
+    btn.textContent = "⏹ Stop Recording";
+    btn.style.opacity = "0.7";
+    showToast("🎤 Recording... Say: 'Quote for [client name] doing [job] at [address] for [amount]'");
+
+    setTimeout(() => {
+      if (isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.textContent = "🎤 Voice Quote Creator";
+        btn.style.opacity = "1";
+        showToast("Processing your voice command...");
+      }
+    }, 30000);
+
+    window.currentMediaRecorder = mediaRecorder;
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied");
+  }
+}
+
+async function completeVoiceQuoteWorkflow(audioBlob) {
+  if (!isRecording) return;
+  isRecording = false;
+
+  try {
+    showToast("🎤 Transcribing...");
+
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+
+    const res = await apiFetch("/api/ai/create-quote-full", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || "Failed to create quote");
+      return;
+    }
+
+    const result = await res.json();
+    showToast(`✅ Quote created! #${result.quote_number} for ${result.client_name} - $${result.total.toFixed(2)}`);
+
+    setTimeout(() => {
+      goToScreen("quotes");
+    }, 1000);
+  } catch (err) {
+    console.error("Voice quote workflow error:", err);
+    showToast("Failed to create quote from voice");
+  }
+}
+
 // AI VOICE RECORDING FOR QUOTES/INVOICES
 let voiceRecorder = null;
 let isRecording = false;
