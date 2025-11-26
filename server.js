@@ -145,6 +145,37 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
+// AI ACCESS MIDDLEWARE - Checks ai_enabled flag (NO EXCEPTIONS for lifetime users)
+async function requireAI(req, res, next) {
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated", needsAuth: true });
+  }
+
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("ai_enabled")
+    .eq("id", userId)
+    .single();
+
+  if (error || !profile || !profile.ai_enabled) {
+    return res.status(403).json({ error: "AI subscription required", needsAI: true });
+  }
+
+  next();
+}
+
+// Log AI usage for tracking
+async function logAIUsage(userId, toolType) {
+  try {
+    await supabaseAdmin
+      .from("ai_usage_logs")
+      .insert({ user_id: userId, tool_type: toolType });
+  } catch (err) {
+    console.error("Failed to log AI usage:", err);
+  }
+}
+
 // SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
 async function requireSubscription(req, res, next) {
   const userId = req.userId;
@@ -1425,6 +1456,48 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       }
     }
 
+    // Handle AI subscription events separately (check metadata for ai_subscription flag)
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      if (session.metadata?.is_ai_subscription === "true") {
+        const userId = session.client_reference_id || session.metadata?.user_id;
+        if (userId && session.subscription) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              ai_enabled: true,
+              ai_plan: session.metadata?.ai_plan || "monthly",
+              ai_subscription_id: session.subscription,
+            })
+            .eq("id", userId);
+          console.log(`AI subscription activated for user ${userId}`);
+        }
+      }
+    }
+
+    // Handle AI subscription cancellation
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object;
+      // Check if this is an AI subscription by looking at the subscription ID in profiles
+      const { data: aiProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("ai_subscription_id", subscription.id)
+        .single();
+
+      if (aiProfile) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({
+            ai_enabled: false,
+            ai_plan: null,
+            ai_subscription_id: null,
+          })
+          .eq("id", aiProfile.id);
+        console.log(`AI subscription canceled for user ${aiProfile.id}`);
+      }
+    }
+
     res.json({ received: true });
   } catch (error) {
     console.error("Webhook handler error:", error);
@@ -1952,8 +2025,137 @@ app.post("/api/admin/send-message", requireAdmin, async (req, res) => {
   }
 });
 
-// VOICE TRANSCRIPTION - Convert audio to text using OpenAI
-app.post("/api/voice-transcribe", requireAuth, async (req, res) => {
+// AI SUBSCRIPTION ENDPOINTS
+
+// Check AI subscription status
+app.get("/api/ai/status", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("ai_enabled, ai_plan, ai_subscription_id")
+      .eq("id", userId)
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({
+      ai_enabled: profile?.ai_enabled || false,
+      ai_plan: profile?.ai_plan || null,
+      has_subscription: !!profile?.ai_subscription_id
+    });
+  } catch (error) {
+    console.error("Error checking AI status:", error);
+    res.status(500).json({ error: "Failed to check AI status" });
+  }
+});
+
+// Create AI subscription checkout session
+app.post("/api/ai/subscribe", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { plan } = req.body; // 'monthly' or 'yearly'
+
+  try {
+    // Get user's profile for stripe customer ID
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("stripe_customer_id, email")
+      .eq("id", userId)
+      .single();
+
+    // Get or create Stripe customer
+    let customerId = profile?.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: profile?.email,
+        metadata: { user_id: userId }
+      });
+      customerId = customer.id;
+
+      await supabaseAdmin
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", userId);
+    }
+
+    // AI subscription prices - these should be created in Stripe Dashboard
+    // For now, we'll use placeholder price IDs that you need to replace
+    const priceId = plan === "yearly" 
+      ? process.env.STRIPE_AI_YEARLY_PRICE_ID 
+      : process.env.STRIPE_AI_MONTHLY_PRICE_ID;
+
+    if (!priceId) {
+      return res.status(500).json({ 
+        error: "AI subscription not configured. Please set STRIPE_AI_MONTHLY_PRICE_ID and STRIPE_AI_YEARLY_PRICE_ID." 
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      client_reference_id: userId,
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${req.headers.origin || 'https://tradebase.com'}?ai_subscribed=true`,
+      cancel_url: `${req.headers.origin || 'https://tradebase.com'}?ai_canceled=true`,
+      metadata: {
+        user_id: userId,
+        is_ai_subscription: "true",
+        ai_plan: plan
+      }
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error("Error creating AI checkout:", error);
+    res.status(500).json({ error: "Failed to create AI subscription checkout" });
+  }
+});
+
+// Cancel AI subscription
+app.post("/api/ai/cancel", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("ai_subscription_id")
+      .eq("id", userId)
+      .single();
+
+    if (!profile?.ai_subscription_id) {
+      return res.status(400).json({ error: "No AI subscription found" });
+    }
+
+    // Cancel the Stripe subscription immediately
+    await stripe.subscriptions.cancel(profile.ai_subscription_id);
+
+    // Immediately disable AI access
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        ai_enabled: false,
+        ai_plan: null,
+        ai_subscription_id: null,
+      })
+      .eq("id", userId);
+
+    res.json({ success: true, message: "AI subscription canceled" });
+  } catch (error) {
+    console.error("Error canceling AI subscription:", error);
+    res.status(500).json({ error: "Failed to cancel AI subscription" });
+  }
+});
+
+// VOICE TRANSCRIPTION - Convert audio to text using OpenAI (REQUIRES AI SUBSCRIPTION)
+app.post("/api/voice-transcribe", requireAI, async (req, res) => {
+  const userId = req.userId;
+  // Log AI usage
+  await logAIUsage(userId, "voice_transcription");
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 

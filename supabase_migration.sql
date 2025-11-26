@@ -160,6 +160,36 @@ ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS invites_sent INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS referral_bonus_days INTEGER DEFAULT 0;
 
+-- AI ADD-ON SUBSCRIPTION (separate from main subscription)
+-- AI is NOT included in lifetime or any base plan - must be purchased separately
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS ai_plan TEXT,
+ADD COLUMN IF NOT EXISTS ai_subscription_id TEXT;
+
+-- AI Usage Logs for tracking and future limits
+CREATE TABLE IF NOT EXISTS ai_usage_logs (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  tool_type TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for fast usage queries
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs(created_at);
+
+-- Enable RLS for ai_usage_logs
+ALTER TABLE ai_usage_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own AI usage"
+  ON ai_usage_logs FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "System can insert AI usage logs"
+  ON ai_usage_logs FOR INSERT
+  WITH CHECK (true);
+
 -- Create system_messages table for in-app notifications
 CREATE TABLE IF NOT EXISTS system_messages (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
