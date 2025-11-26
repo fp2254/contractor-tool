@@ -987,6 +987,12 @@
               <i class="fa-solid fa-microphone"></i>
               <h3>Voice Notes</h3>
             </div>
+            <div id="voice-recorder" style="padding: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border); margin-bottom: 12px;">
+              <button id="btn-record-voice" type="button" class="btn-sm" style="background: #ef4444; color: white;"><i class="fa-solid fa-circle"></i> Record</button>
+              <button id="btn-stop-voice" type="button" class="btn-sm hidden" style="background: #f59e0b; color: white;"><i class="fa-solid fa-stop"></i> Stop</button>
+              <button id="btn-cancel-voice" type="button" class="btn-sm hidden" style="background: #6b7280; color: white;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+              <span id="voice-timer" style="font-size: 12px; color: var(--muted); display: none;">0:00</span>
+            </div>
             <div id="job-voice-notes-list" class="list" style="padding: 8px;"></div>
             <div id="job-voice-notes-empty" style="padding: 20px; text-align: center; color: var(--muted);">No voice notes for this job</div>
           </div>
