@@ -466,6 +466,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireQuotesUI();
   wireInventoryUI();
   wireJobsUI();
+  wireNotificationsUI();
   wireTourMode();
   
   // Check tour mode and session - these will update language if needed
@@ -4205,6 +4206,194 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+// NOTIFICATION CENTER
+
+let allNotifications = [];
+
+function wireNotificationsUI() {
+  const btnNotifications = document.getElementById("btn-notifications");
+  const notificationDropdown = document.getElementById("notification-dropdown");
+  const btnMarkAllRead = document.getElementById("btn-mark-all-read");
+
+  if (btnNotifications) {
+    btnNotifications.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notificationDropdown?.classList.toggle("hidden");
+      if (!notificationDropdown?.classList.contains("hidden")) {
+        loadNotifications();
+      }
+    });
+  }
+
+  if (btnMarkAllRead) {
+    btnMarkAllRead.addEventListener("click", markAllNotificationsRead);
+  }
+
+  document.addEventListener("click", (e) => {
+    const container = document.getElementById("notification-container");
+    if (container && !container.contains(e.target)) {
+      notificationDropdown?.classList.add("hidden");
+    }
+  });
+}
+
+async function loadNotifications() {
+  if (tourMode) {
+    allNotifications = [
+      { id: 1, title: "Welcome to TradeBase!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
+      { id: 2, title: "Trial Reminder", content: "Your 14-day free trial has started. Enjoy all features!", message_type: "info", is_read: false, created_at: new Date(Date.now() - 86400000).toISOString() }
+    ];
+    renderNotifications(allNotifications);
+    updateNotificationBadge();
+    return;
+  }
+
+  try {
+    const res = await apiFetch("/api/messages");
+    if (res.ok) {
+      allNotifications = await res.json();
+      renderNotifications(allNotifications);
+      updateNotificationBadge();
+    }
+  } catch (err) {
+    console.error("Error loading notifications:", err);
+  }
+}
+
+function renderNotifications(notifications) {
+  const list = document.getElementById("notification-list");
+  if (!list) return;
+
+  if (!notifications || notifications.length === 0) {
+    list.innerHTML = '<div class="notification-empty">No new notifications</div>';
+    return;
+  }
+
+  list.innerHTML = notifications.map(notification => {
+    const iconClass = getNotificationIconClass(notification.message_type);
+    const iconName = getNotificationIcon(notification.message_type);
+    const timeAgo = formatTimeAgo(notification.created_at);
+
+    return `
+      <div class="notification-item ${notification.is_read ? '' : 'unread'}" data-notification-id="${notification.id}" onclick="markNotificationRead(${notification.id})">
+        <div class="notification-icon ${iconClass}">
+          <i class="fa-solid ${iconName}"></i>
+        </div>
+        <div class="notification-content">
+          <div class="notification-title">${notification.title}</div>
+          <div class="notification-message">${notification.content}</div>
+          <div class="notification-time">${timeAgo}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function getNotificationIconClass(type) {
+  switch (type) {
+    case "success": return "success";
+    case "warning": return "warning";
+    case "promo": return "promo";
+    default: return "info";
+  }
+}
+
+function getNotificationIcon(type) {
+  switch (type) {
+    case "success": return "fa-check-circle";
+    case "warning": return "fa-exclamation-triangle";
+    case "promo": return "fa-gift";
+    default: return "fa-info-circle";
+  }
+}
+
+function formatTimeAgo(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
+function updateNotificationBadge() {
+  const badge = document.getElementById("notification-badge");
+  if (!badge) return;
+
+  const unreadCount = allNotifications.filter(n => !n.is_read).length;
+
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+async function markNotificationRead(notificationId) {
+  if (tourMode) {
+    const notification = allNotifications.find(n => n.id === notificationId);
+    if (notification) {
+      notification.is_read = true;
+      renderNotifications(allNotifications);
+      updateNotificationBadge();
+    }
+    return;
+  }
+
+  try {
+    await apiFetch(`/api/messages/${notificationId}/read`, {
+      method: "PATCH"
+    });
+
+    const notification = allNotifications.find(n => n.id === notificationId);
+    if (notification) {
+      notification.is_read = true;
+      renderNotifications(allNotifications);
+      updateNotificationBadge();
+    }
+  } catch (err) {
+    console.error("Error marking notification as read:", err);
+  }
+}
+
+async function markAllNotificationsRead() {
+  if (tourMode) {
+    allNotifications.forEach(n => n.is_read = true);
+    renderNotifications(allNotifications);
+    updateNotificationBadge();
+    showToast("All notifications marked as read");
+    return;
+  }
+
+  try {
+    for (const notification of allNotifications.filter(n => !n.is_read)) {
+      await apiFetch(`/api/messages/${notification.id}/read`, {
+        method: "PATCH"
+      });
+      notification.is_read = true;
+    }
+    renderNotifications(allNotifications);
+    updateNotificationBadge();
+    showToast("All notifications marked as read");
+  } catch (err) {
+    console.error("Error marking all notifications as read:", err);
+  }
+}
+
+// Fetch notifications on session start
+async function checkAndLoadNotifications() {
+  if (currentUser && !tourMode) {
+    await loadNotifications();
+  }
 }
 
 // INVENTORY MANAGEMENT
