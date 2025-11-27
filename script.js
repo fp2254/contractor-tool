@@ -5757,9 +5757,23 @@ async function createQuoteFromParsedData(parsed, transcript) {
     let clientId = null;
     let clientName = parsed.client_name || "Voice Quote Client";
     
+    // Make sure clients array exists
+    if (typeof clients === 'undefined' || !Array.isArray(clients)) {
+      window.clients = [];
+      // Try to load clients
+      try {
+        const clientsRes = await apiFetch("/api/clients");
+        if (clientsRes.ok) {
+          window.clients = await clientsRes.json();
+        }
+      } catch (e) {
+        console.log("Could not load clients, will create new one");
+      }
+    }
+    
     if (parsed.client_name) {
-      const existingClient = clients.find(c => 
-        c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
+      const existingClient = (clients || []).find(c => 
+        c.name && c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
       );
       
       if (existingClient) {
@@ -5780,9 +5794,14 @@ async function createQuoteFromParsedData(parsed, transcript) {
         if (clientRes.ok) {
           const newClient = await clientRes.json();
           clientId = newClient.id;
-          clients.push(newClient);
+          if (Array.isArray(clients)) {
+            clients.push(newClient);
+          }
         }
       }
+    } else {
+      // No client name provided - create a generic one
+      clientName = "Voice Quote Client";
     }
 
     // Build line items from parsed data
