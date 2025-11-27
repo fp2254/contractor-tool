@@ -602,6 +602,7 @@ function checkTourMode() {
     updateLanguagePickerValue();
     
     loadDemoData();
+    checkAIStatus();
     renderTemplateShowcase();
     showScreen("dashboard");
   }
@@ -624,6 +625,7 @@ function enterTourMode() {
   updateLanguagePickerValue();
   
   loadDemoData();
+  checkAIStatus();
   showScreen("dashboard");
 }
 
@@ -692,6 +694,127 @@ async function loadDemoData() {
   renderDemoSettings();
   renderDemoPaymentStats();
   renderDemoPaymentScreen();
+}
+
+function showDemoVoiceNote() {
+  const btnRecord = document.getElementById("btn-record-voice");
+  const btnStop = document.getElementById("btn-stop-voice");
+  const btnCancel = document.getElementById("btn-cancel-voice");
+  const timer = document.getElementById("voice-timer");
+  
+  if (!btnRecord) return;
+  
+  btnRecord.classList.add("hidden");
+  btnStop.classList.remove("hidden");
+  btnCancel.classList.remove("hidden");
+  timer.style.display = "inline";
+  timer.textContent = "0:00";
+  
+  showToast("🎤 Demo: Recording voice note...");
+  
+  let seconds = 0;
+  const interval = setInterval(() => {
+    seconds++;
+    timer.textContent = `0:${seconds.toString().padStart(2, '0')}`;
+    if (seconds >= 3) {
+      clearInterval(interval);
+      btnRecord.classList.remove("hidden");
+      btnStop.classList.add("hidden");
+      btnCancel.classList.add("hidden");
+      timer.style.display = "none";
+      showToast("🎉 Demo: Voice note saved! Sign up to use voice notes in your jobs.");
+    }
+  }, 1000);
+}
+
+function showDemoFormVoice(formType) {
+  const btn = document.getElementById(`btn-${formType}-voice`);
+  if (!btn) return;
+  
+  const originalText = btn.textContent;
+  const originalBg = btn.style.backgroundColor;
+  
+  btn.textContent = "⏹ Recording...";
+  btn.style.backgroundColor = "#ef4444";
+  
+  showToast("🎤 Demo: 'Quote for Smith Electric, panel upgrade at 456 Oak Ave, $1200'");
+  
+  setTimeout(() => {
+    btn.textContent = "🔄 Parsing...";
+    btn.style.backgroundColor = "#f59e0b";
+    showToast("🔄 Demo: AI transcribing and parsing your voice...");
+  }, 2000);
+  
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.style.backgroundColor = originalBg;
+    
+    if (formType === 'quote') {
+      document.getElementById("quote-client-name").value = "Smith Electric";
+      document.getElementById("quote-notes").value = "Panel upgrade at 456 Oak Ave";
+      showToast("✅ Demo: Form filled! Client: Smith Electric, Amount: $1,200");
+    } else if (formType === 'invoice') {
+      document.getElementById("invoice-client-name").value = "Smith Electric";
+      document.getElementById("invoice-notes").value = "Panel upgrade completed at 456 Oak Ave";
+      showToast("✅ Demo: Form filled! Client: Smith Electric, Amount: $1,200");
+    }
+  }, 4000);
+}
+
+function showDemoAIVoiceQuote() {
+  const btn = document.getElementById("btn-ai-voice-quote");
+  const originalContent = btn.innerHTML;
+  
+  btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-circle" style="color: #ef4444; animation: pulse 1s infinite;"></i></div>
+    <div class="tile-text">
+      <h3 style="color: white; margin: 0;">Recording...</h3>
+      <p style="color: rgba(255,255,255,0.9); margin: 0;">🎤 Listening to your voice</p>
+    </div>`;
+  btn.style.opacity = "0.9";
+  
+  showToast("🎤 Demo: Recording voice... 'Quote for John Smith, electrical work at 123 Main St, $850'");
+  
+  setTimeout(() => {
+    btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      <div class="tile-text">
+        <h3 style="color: white; margin: 0;">Processing...</h3>
+        <p style="color: rgba(255,255,255,0.9); margin: 0;">🔄 AI is transcribing & parsing</p>
+      </div>`;
+    showToast("🔄 Demo: AI transcribing audio with Whisper...");
+  }, 2000);
+  
+  setTimeout(() => {
+    btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-check-circle"></i></div>
+      <div class="tile-text">
+        <h3 style="color: white; margin: 0;">Quote Created!</h3>
+        <p style="color: rgba(255,255,255,0.9); margin: 0;">✅ Job folder + quote saved</p>
+      </div>`;
+    showToast("✅ Demo: Quote created for John Smith - $850 electrical work!");
+  }, 4000);
+  
+  setTimeout(() => {
+    btn.innerHTML = originalContent;
+    btn.style.opacity = "1";
+    
+    const demoQuote = {
+      id: "demo-ai-" + Date.now(),
+      quote_number: "Q-AI-001",
+      client_name: "John Smith",
+      quote_date: new Date().toISOString().split('T')[0],
+      status: "draft",
+      subtotal: 850.00,
+      tax: 72.25,
+      total: 922.25,
+      notes: "Electrical panel upgrade - Created via AI Voice Quote",
+      items: [
+        { description: "Electrical panel upgrade", quantity: 1, unit_price: 650, total: 650 },
+        { description: "Labor (2 hours)", quantity: 2, unit_price: 100, total: 200 }
+      ]
+    };
+    
+    viewDemoQuoteDetail(demoQuote);
+    showToast("🎉 This is how Voice Quote Creator works! Sign up to try it yourself.");
+  }, 6000);
 }
 
 function renderDemoPaymentStats() {
@@ -4418,7 +4541,7 @@ function wireVoiceRecording() {
   const btnCancel = document.getElementById("btn-cancel-voice");
 
   if (btnRecord) {
-    btnRecord.addEventListener("click", startVoiceRecording);
+    btnRecord.addEventListener("click", startJobVoiceRecording);
   }
   if (btnStop) {
     btnStop.addEventListener("click", stopVoiceRecording);
@@ -4428,9 +4551,9 @@ function wireVoiceRecording() {
   }
 }
 
-async function startVoiceRecording() {
+async function startJobVoiceRecording() {
   if (tourMode) {
-    showToast("Voice recording disabled in demo mode");
+    showDemoVoiceNote();
     return;
   }
 
@@ -4696,8 +4819,8 @@ async function checkAdminStatus() {
 
 async function checkAIStatus() {
   if (tourMode) {
-    aiEnabled = false;
-    updateAIUI();
+    aiEnabled = true;
+    updateAIUI({ ai_enabled: true, ai_plan: "monthly" });
     return;
   }
 
@@ -4743,7 +4866,8 @@ function updateAIUI(data = {}) {
 
 async function subscribeToAI(plan) {
   if (tourMode) {
-    showToast("AI subscription not available in demo mode");
+    showToast("🚀 Sign up for a free trial to unlock AI Tools! Exit the demo to get started.");
+    document.getElementById("btn-exit-tour")?.scrollIntoView({ behavior: 'smooth' });
     return;
   }
 
@@ -4795,6 +4919,11 @@ async function cancelAISubscription() {
 
 // AI VOICE QUOTE FLOW - Complete do-it-all feature
 async function startAIVoiceQuoteFlow() {
+  if (tourMode) {
+    showDemoAIVoiceQuote();
+    return;
+  }
+
   if (!aiEnabled) {
     showToast("AI subscription required. Enable in Settings.");
     return;
@@ -4879,6 +5008,11 @@ let voiceRecorder = null;
 let isRecording = false;
 
 async function startVoiceRecording(formType) {
+  if (tourMode) {
+    showDemoFormVoice(formType);
+    return;
+  }
+
   if (isRecording) {
     showToast("Already recording");
     return;
