@@ -2943,19 +2943,26 @@ app.post("/api/ai/parse-quote", requireAI, async (req, res) => {
 
     const systemPrompt = `You are a contractor AI assistant. Parse the user's voice transcription and extract structured data for a quote/invoice. Return ONLY valid JSON with these fields:
 {
-  "client_name": "extracted client name or empty string",
-  "description": "work description or service details from transcript",
+  "client_name": "extracted client name (first and last name)",
+  "address": "extracted street address if mentioned",
+  "job_type": "short job description like 'Electrical work' or 'Plumbing repair'",
   "line_items": [
     {
-      "description": "item description",
+      "description": "brief service description (e.g., 'Electrical installation', 'Plumbing repair')",
       "quantity": 1,
-      "unit_price": extracted_number or 0
+      "unit_price": extracted_dollar_amount_as_number
     }
   ],
-  "notes": "any additional notes from the transcript"
+  "notes": ""
 }
 
-Be smart about parsing prices (look for dollar amounts like "$500" or "500 dollars"). If no prices are mentioned, return empty items. Extract ONE line item per major service mentioned.`;
+RULES:
+- Extract the client's FULL NAME (first and last) 
+- Extract the ADDRESS separately from the job description
+- Line item description should be SHORT and professional (not include the address or client name)
+- Parse dollar amounts like "$1354.95" or "1354 dollars" into numbers (1354.95)
+- Do NOT put the whole transcript in notes - leave notes empty unless there are specific additional notes
+- Return ONLY valid JSON, no markdown or explanation`;
 
     const message = await openai.chat.completions.create({
       model: "gpt-4o-mini",

@@ -5813,24 +5813,28 @@ async function createQuoteFromParsedData(parsed, transcript) {
           line_total: (item.quantity || 1) * (item.unit_price || 0)
         }))
       : [{
-          description: parsed.description || parsed.job_type || transcript,
+          description: parsed.job_type || "Service",
           qty: 1,
-          unit_price: parsed.amount || 0,
-          line_total: parsed.amount || 0
+          unit_price: 0,
+          line_total: 0
         }];
     
     const subtotal = lineItems.reduce((sum, item) => sum + item.line_total, 0);
     const quoteNumber = `QT-${Date.now()}`;
+    const clientAddress = parsed.address || "";
+    
+    // Only include actual notes, not the raw transcript
+    const quoteNotes = parsed.notes && parsed.notes.trim() ? parsed.notes : "";
     
     // Create quote via API (same as normal quote creation)
     const quoteData = {
       client_id: clientId,
       client_name: clientName,
-      client_address: parsed.address || "",
+      client_address: clientAddress,
       client_email: "",
       quote_date: new Date().toISOString().split("T")[0],
       quote_number: quoteNumber,
-      notes: transcript,
+      notes: quoteNotes,
       template: "basic_clean",
       subtotal: subtotal,
       tax: 0,
