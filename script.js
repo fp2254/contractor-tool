@@ -575,10 +575,15 @@ async function apiFetch(path, options = {}) {
 
 function wireTourMode() {
   const takeTourBtn = document.getElementById("btn-take-tour");
+  const tryDemoBtn = document.getElementById("btn-try-demo");
   const exitTourBtn = document.getElementById("btn-exit-tour");
   
   if (takeTourBtn) {
     takeTourBtn.addEventListener("click", enterTourMode);
+  }
+  
+  if (tryDemoBtn) {
+    tryDemoBtn.addEventListener("click", enterTourMode);
   }
   
   if (exitTourBtn) {
