@@ -1302,6 +1302,41 @@ function wireAuthUI() {
 
   document.getElementById("btn-logout").addEventListener("click", handleLogout);
   
+  // Forgot password handler
+  const forgotPasswordLink = document.getElementById("forgot-password-link");
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      const errorEl = document.getElementById("login-error");
+      
+      if (!email) {
+        errorEl.textContent = "Please enter your email address first";
+        return;
+      }
+      
+      try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + "/app"
+        });
+        
+        if (error) {
+          errorEl.textContent = error.message;
+        } else {
+          errorEl.style.color = "var(--success)";
+          errorEl.textContent = "Password reset email sent! Check your inbox.";
+          setTimeout(() => {
+            errorEl.style.color = "";
+            errorEl.textContent = "";
+          }, 5000);
+        }
+      } catch (err) {
+        console.error("Password reset error:", err);
+        errorEl.textContent = "Failed to send reset email";
+      }
+    });
+  }
+  
   // Language selector on auth screen
   const langSelect = document.getElementById("auth-language-select");
   if (langSelect) {
