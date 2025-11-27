@@ -2766,18 +2766,10 @@ async function loadSettings() {
   const profile = await res.json();
   if (!profile) return;
 
-  document.getElementById("business-name").value =
-    profile.business_name || "";
-  document.getElementById("business-phone").value = profile.phone || "";
-  document.getElementById("business-email").value = profile.email || "";
-  document.getElementById("business-address").value = profile.address || "";
-  document.getElementById("business-website").value = profile.website || "";
-  document.getElementById("business-tax").value =
-    profile.default_tax_percent || "";
-  document.getElementById("business-markup").value =
-    profile.default_markup_percent || "";
-  document.getElementById("business-footer").value =
-    profile.invoice_footer || "";
+  document.getElementById("business-name").value = profile.business_name || "";
+  document.getElementById("business-phone").value = profile.business_phone || "";
+  document.getElementById("business-email").value = profile.business_email || "";
+  document.getElementById("business-address").value = profile.business_address || "";
 
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
@@ -2808,15 +2800,9 @@ async function handleSaveSettings(e) {
 
   const payload = {
     business_name: document.getElementById("business-name").value,
-    phone: document.getElementById("business-phone").value,
-    email: document.getElementById("business-email").value,
-    address: document.getElementById("business-address").value,
-    website: document.getElementById("business-website").value,
-    default_tax_percent:
-      parseFloat(document.getElementById("business-tax").value) || null,
-    default_markup_percent:
-      parseFloat(document.getElementById("business-markup").value) || null,
-    invoice_footer: document.getElementById("business-footer").value,
+    business_phone: document.getElementById("business-phone").value,
+    business_email: document.getElementById("business-email").value,
+    business_address: document.getElementById("business-address").value,
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
   };
