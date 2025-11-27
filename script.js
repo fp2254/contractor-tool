@@ -2786,7 +2786,8 @@ async function loadSettings() {
 async function handleSaveSettings(e) {
   e.preventDefault();
   const msg = document.getElementById("settings-message");
-  msg.textContent = "";
+  msg.textContent = "Saving...";
+  msg.style.color = "var(--muted)";
 
   const selectedLang = document.getElementById("settings-language").value;
   const selectedTemplate = document.getElementById("settings-template").value;
@@ -2808,29 +2809,57 @@ async function handleSaveSettings(e) {
   };
 
   if (selectedLogoFile) {
-    const formData = new FormData();
-    formData.append("logo", selectedLogoFile);
+    try {
+      const formData = new FormData();
+      formData.append("logo", selectedLogoFile);
 
-    const resLogo = await apiFetch("/api/profile/logo", {
-      method: "POST",
-      body: formData,
-    });
-    const logoData = await resLogo.json();
-    if (resLogo.ok && logoData.logo_url) {
-      payload.logo_url = logoData.logo_url;
+      const resLogo = await apiFetch("/api/profile/logo", {
+        method: "POST",
+        body: formData,
+      });
+      const logoData = await resLogo.json();
+      
+      if (!resLogo.ok) {
+        console.error("Logo upload failed:", logoData);
+        msg.textContent = "Failed to upload logo: " + (logoData.error || "Unknown error");
+        msg.style.color = "var(--danger)";
+        return;
+      }
+      
+      if (logoData.logo_url) {
+        payload.logo_url = logoData.logo_url;
+      }
+    } catch (err) {
+      console.error("Logo upload error:", err);
+      msg.textContent = "Failed to upload logo. Please try again.";
+      msg.style.color = "var(--danger)";
+      return;
     }
   }
 
-  const res = await apiFetch("/api/profile", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  try {
+    const res = await apiFetch("/api/profile", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
-  if (!res.ok) {
-    msg.textContent = "Failed to save settings.";
-    return;
+    const data = await res.json();
+    
+    if (!res.ok) {
+      console.error("Profile save failed:", data);
+      msg.textContent = "Failed to save: " + (data.error || "Unknown error");
+      msg.style.color = "var(--danger)";
+      return;
+    }
+    
+    msg.textContent = "Settings saved!";
+    msg.style.color = "var(--success)";
+    selectedLogoFile = null;
+  } catch (err) {
+    console.error("Profile save error:", err);
+    msg.textContent = "Failed to save settings. Please try again.";
+    msg.style.color = "var(--danger)";
   }
-  msg.textContent = "Settings saved.";
 }
 
 // REFERRALS

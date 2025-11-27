@@ -273,26 +273,45 @@ app.post("/api/profile", async (req, res) => {
 // UPLOAD LOGO
 app.post("/api/profile/logo", upload.single("logo"), async (req, res) => {
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
-  if (!req.file) return res.status(400).json({ error: "No file" });
+  console.log("Logo upload attempt for user:", userId);
+  
+  if (!userId) {
+    console.log("Logo upload failed: Not authenticated");
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  if (!req.file) {
+    console.log("Logo upload failed: No file provided");
+    return res.status(400).json({ error: "No file provided" });
+  }
 
+  console.log("File received:", req.file.originalname, req.file.size, "bytes");
+  
   const ext = req.file.originalname.split(".").pop();
   const pathKey = `${userId}/logo.${ext || "png"}`;
 
-  const { error: uploadErr } = await supabaseAdmin.storage
-    .from("logos")
-    .upload(pathKey, req.file.buffer, {
-      upsert: true,
-      contentType: req.file.mimetype,
-    });
+  try {
+    const { error: uploadErr } = await supabaseAdmin.storage
+      .from("logos")
+      .upload(pathKey, req.file.buffer, {
+        upsert: true,
+        contentType: req.file.mimetype,
+      });
 
-  if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+    if (uploadErr) {
+      console.error("Logo storage upload error:", uploadErr);
+      return res.status(500).json({ error: uploadErr.message });
+    }
 
-  const {
-    data: { publicUrl },
-  } = supabaseAdmin.storage.from("logos").getPublicUrl(pathKey);
+    const {
+      data: { publicUrl },
+    } = supabaseAdmin.storage.from("logos").getPublicUrl(pathKey);
 
-  res.json({ logo_url: publicUrl });
+    console.log("Logo uploaded successfully:", publicUrl);
+    res.json({ logo_url: publicUrl });
+  } catch (err) {
+    console.error("Logo upload exception:", err);
+    res.status(500).json({ error: "Failed to upload logo" });
+  }
 });
 
 // GET LIFETIME EARLY BIRD COUNT
