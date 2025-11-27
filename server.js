@@ -8,11 +8,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
-import Filter from "bad-words";
+import BadWords from "bad-words";
 
 dotenv.config();
 
 // Initialize profanity filter
+const Filter = BadWords.default || BadWords;
 const filter = new Filter();
 
 const app = express();
