@@ -5123,10 +5123,17 @@ async function sendAdminMessage() {
 
 // Check admin status after user logs in
 async function checkAdminStatus() {
+  const adminTile = document.getElementById("admin-tile-dashboard");
+  const adminSettingsCard = document.getElementById("admin-settings-card");
+  
+  function setAdminUI(isAdmin) {
+    if (adminTile) adminTile.style.display = isAdmin ? "flex" : "none";
+    if (adminSettingsCard) adminSettingsCard.style.display = isAdmin ? "block" : "none";
+  }
+  
   if (!currentUser) {
     isAdminUser = false;
-    const adminTile = document.getElementById("admin-tile-dashboard");
-    if (adminTile) adminTile.style.display = "none";
+    setAdminUI(false);
     return;
   }
 
@@ -5138,22 +5145,16 @@ async function checkAdminStatus() {
     if (res.ok) {
       isAdminUser = data.is_admin;
       console.log("Is admin:", isAdminUser);
-      const adminTile = document.getElementById("admin-tile-dashboard");
-      if (adminTile) {
-        adminTile.style.display = isAdminUser ? "flex" : "none";
-        console.log("Admin tile display:", adminTile.style.display);
-      }
+      setAdminUI(isAdminUser);
     } else {
       console.log("Admin check failed:", data);
       isAdminUser = false;
-      const adminTile = document.getElementById("admin-tile-dashboard");
-      if (adminTile) adminTile.style.display = "none";
+      setAdminUI(false);
     }
   } catch (err) {
     console.error("Admin check error:", err);
     isAdminUser = false;
-    const adminTile = document.getElementById("admin-tile-dashboard");
-    if (adminTile) adminTile.style.display = "none";
+    setAdminUI(false);
   }
 }
 
