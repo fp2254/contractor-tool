@@ -471,6 +471,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireNotificationsUI();
   wireVoiceRecording();
   wireTourMode();
+  wireAIDoAllMenu();
   wireAdminPanel();
   
   // Check tour mode and session - these will update language if needed
@@ -767,39 +768,14 @@ function showDemoFormVoice(formType) {
 }
 
 function showDemoAIVoiceQuote() {
-  const btn = document.getElementById("btn-ai-voice-quote");
-  const originalContent = btn.innerHTML;
-  
-  btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-circle" style="color: #ef4444; animation: pulse 1s infinite;"></i></div>
-    <div class="tile-text">
-      <h3 style="color: white; margin: 0;">Recording...</h3>
-      <p style="color: rgba(255,255,255,0.9); margin: 0;">🎤 Listening to your voice</p>
-    </div>`;
-  btn.style.opacity = "0.9";
-  
   showToast("🎤 Demo: Recording voice... 'Quote for John Smith, electrical work at 123 Main St, $850'");
   
   setTimeout(() => {
-    btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
-      <div class="tile-text">
-        <h3 style="color: white; margin: 0;">Processing...</h3>
-        <p style="color: rgba(255,255,255,0.9); margin: 0;">🔄 AI is transcribing & parsing</p>
-      </div>`;
     showToast("🔄 Demo: AI transcribing audio with Whisper...");
   }, 2000);
   
   setTimeout(() => {
-    btn.innerHTML = `<div class="tile-icon"><i class="fa-solid fa-check-circle"></i></div>
-      <div class="tile-text">
-        <h3 style="color: white; margin: 0;">Quote Created!</h3>
-        <p style="color: rgba(255,255,255,0.9); margin: 0;">✅ Job folder + quote saved</p>
-      </div>`;
     showToast("✅ Demo: Quote created for John Smith - $850 electrical work!");
-  }, 4000);
-  
-  setTimeout(() => {
-    btn.innerHTML = originalContent;
-    btn.style.opacity = "1";
     
     const demoQuote = {
       id: "demo-ai-" + Date.now(),
@@ -4922,8 +4898,148 @@ async function cancelAISubscription() {
   }
 }
 
+// AI DO-ALL MENU
+function wireAIDoAllMenu() {
+  const doAllBtn = document.getElementById("btn-ai-do-all");
+  const doAllMenu = document.getElementById("ai-do-all-menu");
+  
+  if (doAllBtn && doAllMenu) {
+    doAllBtn.addEventListener("click", toggleAIDoAllMenu);
+    
+    document.addEventListener("click", (e) => {
+      if (!doAllBtn.contains(e.target) && !doAllMenu.contains(e.target)) {
+        closeAIDoAllMenu();
+      }
+    });
+    
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeAIDoAllMenu();
+      }
+    });
+  }
+}
+
+function toggleAIDoAllMenu() {
+  const menu = document.getElementById("ai-do-all-menu");
+  const btn = document.getElementById("btn-ai-do-all");
+  
+  if (menu && btn) {
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+      menu.classList.remove("hidden");
+      btn.classList.add("active");
+    } else {
+      menu.classList.add("hidden");
+      btn.classList.remove("active");
+    }
+  }
+}
+
+function closeAIDoAllMenu() {
+  const menu = document.getElementById("ai-do-all-menu");
+  const btn = document.getElementById("btn-ai-do-all");
+  
+  if (menu && btn) {
+    menu.classList.add("hidden");
+    btn.classList.remove("active");
+  }
+}
+
+// AI VOICE INVENTORY
+async function startAIVoiceInventory() {
+  closeAIDoAllMenu();
+  
+  if (tourMode) {
+    showDemoAIVoiceInventory();
+    return;
+  }
+  
+  if (!aiEnabled) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+  
+  showToast("🎤 Voice Inventory coming soon! For now, use manual entry.");
+  goToScreen("inventory");
+}
+
+function showDemoAIVoiceInventory() {
+  showToast("🎤 Demo: Voice Add to Inventory");
+  
+  setTimeout(() => {
+    showToast("🎧 Recording: '50 copper fittings, quarter inch, 2 dollars each'");
+  }, 1000);
+  
+  setTimeout(() => {
+    showToast("✅ Demo: Added 50x 1/4\" Copper Fittings @ $2.00 each");
+  }, 3000);
+}
+
+// AI VOICE INVOICE
+async function startAIVoiceInvoice() {
+  closeAIDoAllMenu();
+  
+  if (tourMode) {
+    showDemoAIVoiceInvoice();
+    return;
+  }
+  
+  if (!aiEnabled) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+  
+  showToast("🎤 Voice Invoice coming soon! For now, use manual entry.");
+  goToScreen("new-invoice");
+}
+
+function showDemoAIVoiceInvoice() {
+  showToast("🎤 Demo: Voice Invoice Creator");
+  
+  setTimeout(() => {
+    showToast("🎧 Recording: 'Invoice for Smith residence, water heater install, 850 dollars'");
+  }, 1000);
+  
+  setTimeout(() => {
+    showToast("✅ Demo: Created invoice #INV-1001 for $850.00");
+  }, 3000);
+}
+
+// AI VOICE CLIENT
+async function startAIVoiceClient() {
+  closeAIDoAllMenu();
+  
+  if (tourMode) {
+    showDemoAIVoiceClient();
+    return;
+  }
+  
+  if (!aiEnabled) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+  
+  showToast("🎤 Voice Client coming soon! For now, use manual entry.");
+  goToScreen("new-client");
+}
+
+function showDemoAIVoiceClient() {
+  showToast("🎤 Demo: Voice Add Client");
+  
+  setTimeout(() => {
+    showToast("🎧 Recording: 'New client John Smith, phone 555-123-4567, email john@example.com'");
+  }, 1000);
+  
+  setTimeout(() => {
+    showToast("✅ Demo: Added client John Smith to your list");
+  }, 3000);
+}
+
 // AI VOICE QUOTE FLOW - Complete do-it-all feature
 async function startAIVoiceQuoteFlow() {
+  closeAIDoAllMenu();
+  
   if (tourMode) {
     showDemoAIVoiceQuote();
     return;
@@ -4953,17 +5069,12 @@ async function startAIVoiceQuoteFlow() {
 
     mediaRecorder.start();
     isRecording = true;
-    const btn = document.getElementById("btn-ai-voice-quote");
-    btn.textContent = "⏹ Stop Recording";
-    btn.style.opacity = "0.7";
     showToast("🎤 Recording... Say: 'Quote for [client name] doing [job] at [address] for [amount]'");
 
     setTimeout(() => {
       if (isRecording) {
         mediaRecorder.stop();
         isRecording = false;
-        btn.textContent = "🎤 Voice Quote Creator";
-        btn.style.opacity = "1";
         showToast("Processing your voice command...");
       }
     }, 30000);

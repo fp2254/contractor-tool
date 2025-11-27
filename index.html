@@ -159,23 +159,49 @@
       <main id="screen-container">
         <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
-          <!-- AI VOICE QUOTE BUTTON - Do-It-All Feature -->
-          <button id="btn-ai-voice-quote" class="tile" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer;" onclick="startAIVoiceQuoteFlow()" title="Record voice to create a complete quote">
-            <div class="tile-icon"><i class="fa-solid fa-microphone"></i></div>
-            <div class="tile-text">
-              <h3 style="color: white; margin: 0;">Voice Quote Creator</h3>
-              <p style="color: rgba(255,255,255,0.9); margin: 0;">🎤 Talk to create a quote instantly</p>
+          <!-- AI DO-ALL BUTTON - Main AI Hub -->
+          <div id="ai-do-all-container" class="ai-do-all-container">
+            <button id="btn-ai-do-all" class="tile ai-do-all-tile" title="AI-powered actions">
+              <div class="tile-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+              <div class="tile-text">
+                <h3>AI Assistant</h3>
+                <p>Voice-powered tools for your business</p>
+              </div>
+              <div class="tile-arrow"><i class="fa-solid fa-chevron-down"></i></div>
+            </button>
+            
+            <!-- AI Actions Dropdown Menu -->
+            <div id="ai-do-all-menu" class="ai-do-all-menu hidden">
+              <button class="ai-menu-item" onclick="startAIVoiceQuoteFlow()">
+                <i class="fa-solid fa-microphone"></i>
+                <div class="ai-menu-text">
+                  <span class="ai-menu-title">Voice Quote Creator</span>
+                  <span class="ai-menu-desc">Talk to create a quote instantly</span>
+                </div>
+              </button>
+              <button class="ai-menu-item" onclick="startAIVoiceInventory()">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <div class="ai-menu-text">
+                  <span class="ai-menu-title">Voice Add to Inventory</span>
+                  <span class="ai-menu-desc">Add items by speaking</span>
+                </div>
+              </button>
+              <button class="ai-menu-item" onclick="startAIVoiceInvoice()">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <div class="ai-menu-text">
+                  <span class="ai-menu-title">Voice Invoice Creator</span>
+                  <span class="ai-menu-desc">Create invoices with your voice</span>
+                </div>
+              </button>
+              <button class="ai-menu-item" onclick="startAIVoiceClient()">
+                <i class="fa-solid fa-user-plus"></i>
+                <div class="ai-menu-text">
+                  <span class="ai-menu-title">Voice Add Client</span>
+                  <span class="ai-menu-desc">Add new clients by speaking</span>
+                </div>
+              </button>
             </div>
-          </button>
-
-          <!-- PRIMARY ACTION: CREATE QUOTE BUTTON -->
-          <button class="tile" data-screen="new-quote">
-            <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
-            <div class="tile-text">
-              <h3 data-i18n="dashboard.create_quote">Create Quote</h3>
-              <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
-            </div>
-          </button>
+          </div>
 
           <!-- SUMMARY STATS BAR -->
           <div class="dashboard-stats-bar" id="dashboard-payment-stats" style="pointer-events: none;">
@@ -195,6 +221,15 @@
 
           <!-- FEATURE TILES GRID (2-COLUMN) -->
           <div class="tile-grid">
+            <!-- CREATE QUOTE - Primary Action -->
+            <button class="tile tile-primary" data-screen="new-quote">
+              <div class="tile-icon"><i class="fa-solid fa-plus-circle"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.create_quote">Create Quote</h3>
+                <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
+              </div>
+            </button>
+
             <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
