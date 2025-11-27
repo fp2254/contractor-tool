@@ -89,3 +89,24 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 1. Set up Resend integration via Replit connectors
 2. Ensure `from_email` is configured in the Resend connector settings
 3. Emails include PDF attachments for both invoices and quotes
+
+### Database Schema Changes (IMPORTANT!)
+**Development and Production use SEPARATE Supabase databases.**
+
+When making database schema changes:
+1. Changes made via the development SQL tool only affect the development database
+2. **You MUST also run the same changes in your Production Supabase SQL Editor**
+3. After running schema changes, always run: `SELECT pg_notify('pgrst', 'reload schema');`
+
+The complete schema is documented in `supabase_migration.sql`. Run this file in both environments to ensure they stay in sync.
+
+Quick schema sync (run in Supabase SQL Editor for PRODUCTION):
+```sql
+-- Add any missing columns
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+-- Refresh schema cache
+SELECT pg_notify('pgrst', 'reload schema');
+```

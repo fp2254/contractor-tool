@@ -3106,6 +3106,21 @@ app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (
   }
 });
 
+// DATABASE SCHEMA REQUIREMENTS
+// When adding new columns, run these in BOTH dev and production Supabase SQL Editor:
+// 
+// ALTER TABLE invoices ADD COLUMN IF NOT EXISTS template text DEFAULT 'basic_clean';
+// ALTER TABLE quotes ADD COLUMN IF NOT EXISTS template text DEFAULT 'basic_clean';
+// ALTER TABLE invoices ADD COLUMN IF NOT EXISTS archived boolean DEFAULT false;
+// ALTER TABLE quotes ADD COLUMN IF NOT EXISTS archived boolean DEFAULT false;
+// ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ai_enabled boolean DEFAULT false;
+// ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ai_plan text;
+// ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ai_subscription_id text;
+// ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false;
+// SELECT pg_notify('pgrst', 'reload schema');
+//
+// This comment serves as the master schema reference.
+
 // INITIALIZE STORAGE BUCKETS
 async function initializeStorageBuckets() {
   try {

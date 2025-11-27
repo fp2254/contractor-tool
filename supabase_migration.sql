@@ -149,6 +149,13 @@ ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
 ALTER TABLE quotes
 ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
 
+-- Add archived columns for archive functionality
+ALTER TABLE invoices
+ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+
 -- Add trade type and TOS acceptance tracking to profiles
 ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS trade_type TEXT,
@@ -287,3 +294,9 @@ CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_voice_notes_job_id ON voice_notes(job_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_trade_type ON profiles(trade_type);
+
+-- ============================================
+-- IMPORTANT: REFRESH SCHEMA CACHE
+-- Run this AFTER all migrations to update PostgREST
+-- ============================================
+SELECT pg_notify('pgrst', 'reload schema');
