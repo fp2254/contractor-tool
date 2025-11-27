@@ -1,7 +1,23 @@
 -- TradeBase Database Setup for Supabase
 -- Run this in your Supabase SQL Editor
+-- This version uses BIGSERIAL IDs for compatibility
 
--- PROFILES
+-- First, drop existing tables if you want a fresh start (uncomment if needed)
+-- DROP TABLE IF EXISTS referral_earnings CASCADE;
+-- DROP TABLE IF EXISTS ai_usage_logs CASCADE;
+-- DROP TABLE IF EXISTS system_messages CASCADE;
+-- DROP TABLE IF EXISTS voice_notes CASCADE;
+-- DROP TABLE IF EXISTS jobs CASCADE;
+-- DROP TABLE IF EXISTS inventory_items CASCADE;
+-- DROP TABLE IF EXISTS quote_items CASCADE;
+-- DROP TABLE IF EXISTS quotes CASCADE;
+-- DROP TABLE IF EXISTS invoice_attachments CASCADE;
+-- DROP TABLE IF EXISTS invoice_items CASCADE;
+-- DROP TABLE IF EXISTS invoices CASCADE;
+-- DROP TABLE IF EXISTS clients CASCADE;
+-- DROP TABLE IF EXISTS profiles CASCADE;
+
+-- PROFILES (uses auth.users UUID as primary key)
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE,
@@ -34,9 +50,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- CLIENTS
+-- CLIENTS (using BIGSERIAL for compatibility)
 CREATE TABLE IF NOT EXISTS clients (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   email TEXT,
@@ -49,9 +65,9 @@ CREATE TABLE IF NOT EXISTS clients (
 
 -- INVOICES
 CREATE TABLE IF NOT EXISTS invoices (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
   invoice_number TEXT,
   status TEXT DEFAULT 'draft',
   payment_status TEXT DEFAULT 'unpaid',
@@ -64,15 +80,15 @@ CREATE TABLE IF NOT EXISTS invoices (
   notes TEXT,
   stripe_payment_link TEXT,
   stripe_payment_intent_id TEXT,
-  job_id UUID,
+  job_id BIGINT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- INVOICE ITEMS
 CREATE TABLE IF NOT EXISTS invoice_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_id UUID REFERENCES invoices(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  invoice_id BIGINT REFERENCES invoices(id) ON DELETE CASCADE,
   description TEXT,
   quantity DECIMAL(10,2) DEFAULT 1,
   unit_price DECIMAL(10,2) DEFAULT 0,
@@ -82,8 +98,8 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 
 -- INVOICE ATTACHMENTS
 CREATE TABLE IF NOT EXISTS invoice_attachments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invoice_id UUID REFERENCES invoices(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  invoice_id BIGINT REFERENCES invoices(id) ON DELETE CASCADE,
   file_url TEXT,
   file_name TEXT,
   file_type TEXT,
@@ -92,9 +108,9 @@ CREATE TABLE IF NOT EXISTS invoice_attachments (
 
 -- QUOTES
 CREATE TABLE IF NOT EXISTS quotes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
   quote_number TEXT,
   status TEXT DEFAULT 'draft',
   issue_date DATE DEFAULT CURRENT_DATE,
@@ -104,15 +120,15 @@ CREATE TABLE IF NOT EXISTS quotes (
   tax_amount DECIMAL(10,2) DEFAULT 0,
   total DECIMAL(10,2) DEFAULT 0,
   notes TEXT,
-  job_id UUID,
+  job_id BIGINT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- QUOTE ITEMS
 CREATE TABLE IF NOT EXISTS quote_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  quote_id UUID REFERENCES quotes(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  quote_id BIGINT REFERENCES quotes(id) ON DELETE CASCADE,
   description TEXT,
   quantity DECIMAL(10,2) DEFAULT 1,
   unit_price DECIMAL(10,2) DEFAULT 0,
@@ -122,7 +138,7 @@ CREATE TABLE IF NOT EXISTS quote_items (
 
 -- INVENTORY ITEMS
 CREATE TABLE IF NOT EXISTS inventory_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -137,9 +153,9 @@ CREATE TABLE IF NOT EXISTS inventory_items (
 
 -- JOBS
 CREATE TABLE IF NOT EXISTS jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
   folder_name TEXT,
   job_type TEXT,
   address TEXT,
@@ -149,11 +165,18 @@ CREATE TABLE IF NOT EXISTS jobs (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add job_id foreign keys after jobs table exists
+ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_job_id_fkey;
+ALTER TABLE invoices ADD CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
+
+ALTER TABLE quotes DROP CONSTRAINT IF EXISTS quotes_job_id_fkey;
+ALTER TABLE quotes ADD CONSTRAINT quotes_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
+
 -- VOICE NOTES
 CREATE TABLE IF NOT EXISTS voice_notes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  job_id UUID REFERENCES jobs(id) ON DELETE CASCADE,
+  job_id BIGINT REFERENCES jobs(id) ON DELETE CASCADE,
   file_url TEXT,
   transcript TEXT,
   duration INTEGER,
@@ -162,7 +185,7 @@ CREATE TABLE IF NOT EXISTS voice_notes (
 
 -- SYSTEM MESSAGES
 CREATE TABLE IF NOT EXISTS system_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   title TEXT,
   message TEXT,
   type TEXT DEFAULT 'info',
@@ -172,7 +195,7 @@ CREATE TABLE IF NOT EXISTS system_messages (
 
 -- AI USAGE LOGS
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   action_type TEXT,
   tokens_used INTEGER DEFAULT 0,
@@ -182,17 +205,13 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
 
 -- REFERRAL EARNINGS
 CREATE TABLE IF NOT EXISTS referral_earnings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   referrer_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   referred_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   status TEXT DEFAULT 'pending',
   bonus_days INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Update job_id foreign keys
-ALTER TABLE invoices ADD CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
-ALTER TABLE quotes ADD CONSTRAINT quotes_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
@@ -219,6 +238,66 @@ ALTER TABLE voice_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_usage_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referral_earnings ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+DROP POLICY IF EXISTS "Service role full access profiles" ON profiles;
+
+DROP POLICY IF EXISTS "Users can view own clients" ON clients;
+DROP POLICY IF EXISTS "Users can insert own clients" ON clients;
+DROP POLICY IF EXISTS "Users can update own clients" ON clients;
+DROP POLICY IF EXISTS "Users can delete own clients" ON clients;
+DROP POLICY IF EXISTS "Service role full access clients" ON clients;
+
+DROP POLICY IF EXISTS "Users can view own invoices" ON invoices;
+DROP POLICY IF EXISTS "Users can insert own invoices" ON invoices;
+DROP POLICY IF EXISTS "Users can update own invoices" ON invoices;
+DROP POLICY IF EXISTS "Users can delete own invoices" ON invoices;
+DROP POLICY IF EXISTS "Service role full access invoices" ON invoices;
+
+DROP POLICY IF EXISTS "Users can manage invoice items" ON invoice_items;
+DROP POLICY IF EXISTS "Service role full access invoice_items" ON invoice_items;
+
+DROP POLICY IF EXISTS "Users can manage invoice attachments" ON invoice_attachments;
+DROP POLICY IF EXISTS "Service role full access invoice_attachments" ON invoice_attachments;
+
+DROP POLICY IF EXISTS "Users can view own quotes" ON quotes;
+DROP POLICY IF EXISTS "Users can insert own quotes" ON quotes;
+DROP POLICY IF EXISTS "Users can update own quotes" ON quotes;
+DROP POLICY IF EXISTS "Users can delete own quotes" ON quotes;
+DROP POLICY IF EXISTS "Service role full access quotes" ON quotes;
+
+DROP POLICY IF EXISTS "Users can manage quote items" ON quote_items;
+DROP POLICY IF EXISTS "Service role full access quote_items" ON quote_items;
+
+DROP POLICY IF EXISTS "Users can view own inventory" ON inventory_items;
+DROP POLICY IF EXISTS "Users can insert own inventory" ON inventory_items;
+DROP POLICY IF EXISTS "Users can update own inventory" ON inventory_items;
+DROP POLICY IF EXISTS "Users can delete own inventory" ON inventory_items;
+DROP POLICY IF EXISTS "Service role full access inventory" ON inventory_items;
+
+DROP POLICY IF EXISTS "Users can view own jobs" ON jobs;
+DROP POLICY IF EXISTS "Users can insert own jobs" ON jobs;
+DROP POLICY IF EXISTS "Users can update own jobs" ON jobs;
+DROP POLICY IF EXISTS "Users can delete own jobs" ON jobs;
+DROP POLICY IF EXISTS "Service role full access jobs" ON jobs;
+
+DROP POLICY IF EXISTS "Users can view own voice notes" ON voice_notes;
+DROP POLICY IF EXISTS "Users can insert own voice notes" ON voice_notes;
+DROP POLICY IF EXISTS "Users can delete own voice notes" ON voice_notes;
+DROP POLICY IF EXISTS "Service role full access voice_notes" ON voice_notes;
+
+DROP POLICY IF EXISTS "Anyone can view system messages" ON system_messages;
+DROP POLICY IF EXISTS "Service role full access system_messages" ON system_messages;
+
+DROP POLICY IF EXISTS "Users can view own ai logs" ON ai_usage_logs;
+DROP POLICY IF EXISTS "Users can insert own ai logs" ON ai_usage_logs;
+DROP POLICY IF EXISTS "Service role full access ai_logs" ON ai_usage_logs;
+
+DROP POLICY IF EXISTS "Users can view own referrals" ON referral_earnings;
+DROP POLICY IF EXISTS "Service role full access referrals" ON referral_earnings;
 
 -- RLS Policies for profiles
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
@@ -275,7 +354,7 @@ CREATE POLICY "Users can view own voice notes" ON voice_notes FOR SELECT USING (
 CREATE POLICY "Users can insert own voice notes" ON voice_notes FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own voice notes" ON voice_notes FOR DELETE USING (auth.uid() = user_id);
 
--- RLS Policies for system_messages (everyone can read)
+-- RLS Policies for system_messages (everyone can read active messages)
 CREATE POLICY "Anyone can view system messages" ON system_messages FOR SELECT USING (is_active = true);
 
 -- RLS Policies for ai_usage_logs
@@ -285,7 +364,7 @@ CREATE POLICY "Users can insert own ai logs" ON ai_usage_logs FOR INSERT WITH CH
 -- RLS Policies for referral_earnings
 CREATE POLICY "Users can view own referrals" ON referral_earnings FOR SELECT USING (auth.uid() = referrer_id);
 
--- Service role bypass for server-side operations
+-- Service role bypass for server-side operations (CRITICAL for API to work)
 CREATE POLICY "Service role full access profiles" ON profiles FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access clients" ON clients FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access invoices" ON invoices FOR ALL USING (auth.role() = 'service_role');
