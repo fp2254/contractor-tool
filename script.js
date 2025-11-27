@@ -4721,6 +4721,9 @@ async function sendInvite() {
 
 // ADMIN PANEL
 
+let adminUsersList = [];
+let selectedAdminUser = null;
+
 function wireAdminPanel() {
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === "A") {
@@ -4743,6 +4746,7 @@ async function loadAdminUsers() {
     const res = await apiFetch("/api/admin/users");
     if (res.ok) {
       const users = await res.json();
+      adminUsersList = users;
       const list = document.getElementById("admin-users-list");
       if (list) {
         list.innerHTML = users.map(u => `
@@ -4758,10 +4762,88 @@ async function loadAdminUsers() {
   }
 }
 
+function toggleUserSearch(show) {
+  const container = document.getElementById("admin-user-search-container");
+  const sendBtn = document.getElementById("admin-send-btn");
+  
+  if (container) {
+    container.style.display = show ? "block" : "none";
+  }
+  
+  if (!show) {
+    clearSelectedUser();
+    if (sendBtn) sendBtn.textContent = "Send to All Users";
+  }
+}
+
+function filterAdminUserList() {
+  const searchInput = document.getElementById("admin-user-search");
+  const resultsDiv = document.getElementById("admin-user-search-results");
+  
+  if (!searchInput || !resultsDiv) return;
+  
+  const query = searchInput.value.toLowerCase().trim();
+  
+  if (!query) {
+    resultsDiv.style.display = "none";
+    return;
+  }
+  
+  const filtered = adminUsersList.filter(u => 
+    u.email.toLowerCase().includes(query)
+  ).slice(0, 10);
+  
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = '<div style="padding: 12px; color: var(--muted);">No users found</div>';
+  } else {
+    resultsDiv.innerHTML = filtered.map(u => `
+      <div class="list-item" style="cursor: pointer; padding: 10px 12px;" onclick="selectAdminUser('${u.id}', '${u.email}')">
+        <div>${u.email}</div>
+      </div>
+    `).join("");
+  }
+  
+  resultsDiv.style.display = "block";
+}
+
+function selectAdminUser(userId, email) {
+  selectedAdminUser = { id: userId, email: email };
+  
+  const searchInput = document.getElementById("admin-user-search");
+  const resultsDiv = document.getElementById("admin-user-search-results");
+  const selectedDiv = document.getElementById("admin-selected-user");
+  const selectedEmail = document.getElementById("admin-selected-user-email");
+  const sendBtn = document.getElementById("admin-send-btn");
+  
+  if (searchInput) searchInput.value = "";
+  if (resultsDiv) resultsDiv.style.display = "none";
+  if (selectedDiv) selectedDiv.style.display = "block";
+  if (selectedEmail) selectedEmail.textContent = email;
+  if (sendBtn) sendBtn.textContent = `Send to ${email}`;
+}
+
+function clearSelectedUser() {
+  selectedAdminUser = null;
+  
+  const searchInput = document.getElementById("admin-user-search");
+  const selectedDiv = document.getElementById("admin-selected-user");
+  const sendBtn = document.getElementById("admin-send-btn");
+  const recipientRadio = document.querySelector('input[name="admin-recipient"][value="all"]');
+  
+  if (searchInput) searchInput.value = "";
+  if (selectedDiv) selectedDiv.style.display = "none";
+  
+  const isSpecificSelected = document.querySelector('input[name="admin-recipient"][value="specific"]')?.checked;
+  if (sendBtn) {
+    sendBtn.textContent = isSpecificSelected ? "Select a user first" : "Send to All Users";
+  }
+}
+
 async function sendAdminMessage() {
   const titleEl = document.getElementById("admin-message-title");
   const contentEl = document.getElementById("admin-message-content");
   const typeEl = document.getElementById("admin-message-type");
+  const isSpecific = document.querySelector('input[name="admin-recipient"][value="specific"]')?.checked;
 
   if (!titleEl || !contentEl) return;
 
@@ -4774,16 +4856,32 @@ async function sendAdminMessage() {
     return;
   }
 
+  if (isSpecific && !selectedAdminUser) {
+    showToast("Please select a user first");
+    return;
+  }
+
   try {
+    const payload = { 
+      title, 
+      content, 
+      message_type, 
+      target_users: isSpecific && selectedAdminUser ? [selectedAdminUser.id] : null 
+    };
+
     const res = await apiFetch("/api/admin/send-message", {
       method: "POST",
-      body: JSON.stringify({ title, content, message_type, target_users: null })
+      body: JSON.stringify(payload)
     });
 
     if (res.ok) {
-      showToast("Message sent to all users!");
+      const recipient = isSpecific ? selectedAdminUser.email : "all users";
+      showToast(`Message sent to ${recipient}!`);
       titleEl.value = "";
       contentEl.value = "";
+      clearSelectedUser();
+      document.querySelector('input[name="admin-recipient"][value="all"]').checked = true;
+      toggleUserSearch(false);
     } else {
       showToast("Failed to send message - check admin access");
     }

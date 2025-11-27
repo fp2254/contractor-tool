@@ -962,7 +962,30 @@
                   <option value="promo">Promotion</option>
                 </select>
               </div>
-              <button type="button" class="btn-primary" onclick="sendAdminMessage()">Send to All Users</button>
+              <div class="form-row">
+                <label>Send To</label>
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="admin-recipient" value="all" checked onchange="toggleUserSearch(false)" />
+                    <span>All Users</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="admin-recipient" value="specific" onchange="toggleUserSearch(true)" />
+                    <span>Specific User</span>
+                  </label>
+                </div>
+                <div id="admin-user-search-container" style="display: none;">
+                  <input type="text" id="admin-user-search" placeholder="Search by email..." oninput="filterAdminUserList()" style="margin-bottom: 8px;" />
+                  <div id="admin-user-search-results" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; display: none;"></div>
+                  <div id="admin-selected-user" style="display: none; padding: 10px; background: var(--accent); border-radius: 8px; margin-top: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span id="admin-selected-user-email" style="font-weight: 500;"></span>
+                      <button type="button" onclick="clearSelectedUser()" style="background: none; border: none; color: var(--text); cursor: pointer; font-size: 18px;">&times;</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn-primary" id="admin-send-btn" onclick="sendAdminMessage()">Send to All Users</button>
             </form>
           </div>
 
