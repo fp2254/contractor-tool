@@ -63,6 +63,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: AI Assistant Do-All Menu** - Prominent AI button on dashboard with dropdown for Voice Quote Creator, Voice Add to Inventory, Voice Invoice Creator, Voice Add Client
 - **UPDATED: Dashboard Layout** - Create Quote button moved into main tile grid, AI Assistant tile at top with expandable menu
 - **UPDATED: AI Cancellation Flow** - Requires typing "cancel" to confirm AI subscription cancellation (prevents accidental cancels)
+- **UPDATED: Pricing Page** - Redesigned as professional landing page focused on 14-day free trial with feature grid, trust signals, and hidden plans modal
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.

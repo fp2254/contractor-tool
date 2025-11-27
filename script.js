@@ -471,6 +471,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireNotificationsUI();
   wireVoiceRecording();
   wireTourMode();
+  wirePlansModal();
   wireAIDoAllMenu();
   wireAdminPanel();
   
@@ -589,6 +590,32 @@ function wireTourMode() {
   
   if (exitTourBtn) {
     exitTourBtn.addEventListener("click", exitTourMode);
+  }
+}
+
+function wirePlansModal() {
+  const viewPlansBtn = document.getElementById("btn-view-all-plans");
+  const closePlansBtn = document.getElementById("close-plans-modal");
+  const plansModal = document.getElementById("plans-modal");
+  
+  if (viewPlansBtn) {
+    viewPlansBtn.addEventListener("click", () => {
+      plansModal.classList.add("active");
+    });
+  }
+  
+  if (closePlansBtn) {
+    closePlansBtn.addEventListener("click", () => {
+      plansModal.classList.remove("active");
+    });
+  }
+  
+  if (plansModal) {
+    plansModal.addEventListener("click", (e) => {
+      if (e.target === plansModal) {
+        plansModal.classList.remove("active");
+      }
+    });
   }
 }
 

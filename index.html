@@ -536,170 +536,153 @@
           </form>
         </section>
 
-        <!-- SUBSCRIPTION / PRICING -->
+        <!-- SUBSCRIPTION / PRICING - Landing Page Style -->
         <section id="screen-subscription" class="screen">
-          <div class="screen-header">
-            <h2 data-i18n="pricing.choose_plan">Choose Your Plan</h2>
+          <!-- Hero Section -->
+          <div class="landing-hero">
+            <div class="landing-badge">
+              <i class="fa-solid fa-gift"></i> No Credit Card Required
+            </div>
+            <h1 class="landing-title">Try TradeBase Free for 14 Days</h1>
+            <p class="landing-subtitle">The all-in-one invoicing app built for tradespeople. Create professional invoices, manage clients, and get paid faster.</p>
+            <button id="btn-start-trial-hero" class="btn-trial-cta btn-subscribe" data-plan="monthly">
+              <i class="fa-solid fa-rocket"></i> Start Your Free Trial
+            </button>
+            <p class="landing-note">Full access to all features. Cancel anytime.</p>
           </div>
-          <div class="pricing-grid">
-            <!-- Monthly Plan -->
-            <div class="pricing-card">
-              <h3 data-i18n="pricing.monthly">Monthly</h3>
-              <div class="price">$9.99<span data-i18n="pricing.per_month">/month</span></div>
-              <p class="trial-notice" data-i18n="pricing.monthly_desc">Get started free for 7 days</p>
-              <ul class="features-list">
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_unlimited_invoices">Unlimited invoices</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_unlimited_quotes">Unlimited quotes</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_client_mgmt">Client management</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_email_invoices">Email invoices to clients</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_quote_convert">Convert quotes to invoices</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_dashboard">Monthly financial dashboard</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_stripe">Stripe payment collection</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_photos">Photo attachments</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_branding">Business logo & branding</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_calculator">Cost calculator</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_download">Invoice download (PNG)</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_inventory">Inventory management</span></li>
-              </ul>
-              <button class="btn-primary btn-subscribe" data-plan="monthly" data-i18n="pricing.start_trial">Start Free Trial</button>
-            </div>
 
-            <!-- Yearly Plan -->
-            <div class="pricing-card pricing-card-featured">
-              <div class="badge-popular" data-i18n="pricing.best_value">BEST VALUE</div>
-              <h3 data-i18n="pricing.yearly">Yearly</h3>
-              <div class="price">$99<span data-i18n="pricing.per_year">/year</span></div>
-              <p class="trial-notice" data-i18n="pricing.yearly_desc">Best value - save 2 months</p>
-              <ul class="features-list">
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_unlimited_invoices">Unlimited invoices</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_unlimited_quotes">Unlimited quotes</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_client_mgmt">Client management</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_email_invoices">Email invoices to clients</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_quote_convert">Convert quotes to invoices</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_dashboard">Monthly financial dashboard</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_stripe">Stripe payment collection</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_photos">Photo attachments</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_branding">Business logo & branding</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_calculator">Cost calculator</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_download">Invoice download (PNG)</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_inventory">Inventory management</span></li>
-              </ul>
-              <button class="btn-primary btn-subscribe" data-plan="yearly" data-i18n="pricing.subscribe_now">Subscribe Now</button>
-            </div>
-
-            <!-- Lifetime Early Bird -->
-            <div class="pricing-card">
-              <div class="badge-limited" data-i18n="pricing.limited_offer">LIMITED OFFER</div>
-              <h3 data-i18n="pricing.lifetime_early">Lifetime Early Bird</h3>
-              <div class="price">$149<span data-i18n="pricing.one_time">one-time</span></div>
-              <p class="trial-notice"><span data-i18n="pricing.first_500">First 500 only</span> · <span id="lifetime-early-remaining">Loading...</span> <span data-i18n="pricing.spots_left">spots left</span></p>
-              <ul class="features-list">
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_all_forever">All features forever</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_no_fees">No monthly fees</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_priority">Priority support</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_updates">Lifetime updates</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_early_access">Early access to new features</span></li>
-                <li class="feature-highlight"><i class="fa-solid fa-check-circle"></i> <strong data-i18n="pricing.feature_payment_included">Payment collection included</strong></li>
-              </ul>
-              <button class="btn-primary btn-subscribe" data-plan="lifetime_early" data-i18n="pricing.get_lifetime">Get Lifetime Access</button>
-            </div>
-
-            <!-- Lifetime Regular -->
-            <div class="pricing-card">
-              <h3 data-i18n="pricing.lifetime_regular">Lifetime Regular</h3>
-              <div class="price">$199<span data-i18n="pricing.one_time">one-time</span></div>
-              <p class="trial-notice" data-i18n="pricing.after_early">After early bird spots filled</p>
-              <ul class="features-list">
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_all_forever">All features forever</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_no_fees">No monthly fees</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_priority">Priority support</span></li>
-                <li><i class="fa-solid fa-check"></i> <span data-i18n="pricing.feature_updates">Lifetime updates</span></li>
-                <li class="feature-highlight"><i class="fa-solid fa-check-circle"></i> <strong data-i18n="pricing.feature_payment_included">Payment collection included</strong></li>
-              </ul>
-              <button class="btn-primary btn-subscribe" data-plan="lifetime_regular" data-i18n="pricing.get_lifetime">Get Lifetime Access</button>
+          <!-- Features Grid -->
+          <div class="landing-features">
+            <h2 class="landing-section-title">Everything You Need to Run Your Business</h2>
+            <div class="features-grid-landing">
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <h3>Professional Invoices</h3>
+                <p>Create beautiful invoices in seconds with 4 customizable templates</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-users"></i></div>
+                <h3>Client Management</h3>
+                <p>Keep all your client info organized in one place</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-file-contract"></i></div>
+                <h3>Quotes & Estimates</h3>
+                <p>Send quotes and convert them to invoices with one click</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-credit-card"></i></div>
+                <h3>Get Paid Online</h3>
+                <p>Accept payments via Stripe directly from your invoices</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-envelope"></i></div>
+                <h3>Email Invoices</h3>
+                <p>Send professional invoices with PDF attachments</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-chart-line"></i></div>
+                <h3>Financial Dashboard</h3>
+                <p>Track earnings, paid vs unpaid, and monthly trends</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <h3>Inventory Tracking</h3>
+                <p>Manage materials and supplies with low stock alerts</p>
+              </div>
+              <div class="feature-card-landing">
+                <div class="feature-icon-landing"><i class="fa-solid fa-folder-open"></i></div>
+                <h3>Job Folders</h3>
+                <p>Organize jobs with photos, notes, and documents</p>
+              </div>
             </div>
           </div>
 
-
-          <!-- Referral Program -->
-          <div class="referral-promo">
-            <div class="referral-icon">
-              <i class="fa-solid fa-users"></i>
+          <!-- Trust Signals -->
+          <div class="landing-trust">
+            <div class="trust-item">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Bank-Level Security</span>
             </div>
-            <div class="referral-content">
-              <h3 data-i18n="pricing.referral_title">Earn 20% Commission</h3>
-              <p data-i18n="pricing.referral_desc">Refer friends and colleagues to TradeBase and earn 20% recurring commission on their subscription. The more you share, the more you earn!</p>
-              <p class="referral-note" data-i18n="pricing.referral_note">Get your referral link after subscribing</p>
+            <div class="trust-item">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <span>Works on Any Device</span>
+            </div>
+            <div class="trust-item">
+              <i class="fa-solid fa-wifi-slash"></i>
+              <span>Works Offline</span>
+            </div>
+            <div class="trust-item">
+              <i class="fa-solid fa-headset"></i>
+              <span>Email Support</span>
+            </div>
+          </div>
+
+          <!-- CTA Section -->
+          <div class="landing-cta-section">
+            <h2>Ready to Simplify Your Business?</h2>
+            <p>Join thousands of tradespeople who save hours every week with TradeBase</p>
+            <button id="btn-start-trial-bottom" class="btn-trial-cta btn-subscribe" data-plan="monthly">
+              <i class="fa-solid fa-rocket"></i> Start 14-Day Free Trial
+            </button>
+            <div class="landing-pricing-note">
+              <p>After trial: <strong>$9.99/month</strong> or <strong>$99/year</strong> (save 2 months)</p>
+              <button id="btn-view-all-plans" class="btn-text-link">View all plan options</button>
             </div>
           </div>
 
           <!-- Tour Button -->
-          <div class="tour-section">
-            <button id="btn-take-tour" class="btn-outline">
-              <i class="fa-solid fa-compass"></i> <span data-i18n="pricing.take_tour">Take a Tour</span>
+          <div class="tour-section-landing">
+            <div class="tour-divider">
+              <span>or</span>
+            </div>
+            <button id="btn-take-tour" class="btn-outline-landing">
+              <i class="fa-solid fa-play-circle"></i> Take a Demo Tour
             </button>
-            <p class="tour-description" data-i18n="pricing.tour_desc">See all features in action with sample data</p>
-            
+            <p class="tour-description-landing">See all features in action with sample data - no signup required</p>
+          </div>
 
-            <!-- Sample Invoice Preview -->
-            <div class="invoice-preview">
-              <div class="invoice-preview-header">
-                <h4>Example Invoice</h4>
-                <span class="preview-badge">What you'll create</span>
+          <!-- Hidden Plans Modal -->
+          <div id="plans-modal" class="plans-modal-overlay">
+            <div class="plans-modal-content">
+              <div class="plans-modal-header">
+                <h2>Choose Your Plan</h2>
+                <button id="close-plans-modal" class="modal-close">&times;</button>
               </div>
-              <div class="invoice-preview-card">
-                <div class="invoice-preview-logo">
-                  <div class="logo-placeholder">
-                    <i class="fa-solid fa-image"></i>
-                    <span>Your Logo Here</span>
+              <div class="plans-modal-body">
+                <div class="plan-option">
+                  <div class="plan-info">
+                    <h3>Monthly</h3>
+                    <p class="plan-price">$9.99<span>/month</span></p>
+                    <p class="plan-desc">Flexible month-to-month billing</p>
                   </div>
+                  <button class="btn-primary btn-subscribe" data-plan="monthly">Start Free Trial</button>
                 </div>
-                <div class="invoice-preview-business">
-                  <strong>ABC Plumbing & Heating</strong>
-                  <div>123 Main Street, Denver, CO 80202</div>
-                  <div>(555) 123-4567 · contact@abcplumbing.com</div>
+                <div class="plan-option plan-featured">
+                  <div class="plan-badge">BEST VALUE</div>
+                  <div class="plan-info">
+                    <h3>Yearly</h3>
+                    <p class="plan-price">$99<span>/year</span></p>
+                    <p class="plan-desc">Save 2 months - best for serious businesses</p>
+                  </div>
+                  <button class="btn-primary btn-subscribe" data-plan="yearly">Subscribe Now</button>
                 </div>
-                <div class="invoice-preview-details">
-                  <div class="invoice-preview-row">
-                    <span>Invoice #:</span>
-                    <strong>INV-1001</strong>
+                <div class="plan-option">
+                  <div class="plan-badge plan-badge-limited">LIMITED</div>
+                  <div class="plan-info">
+                    <h3>Lifetime Early Bird</h3>
+                    <p class="plan-price">$149<span> one-time</span></p>
+                    <p class="plan-desc">First 500 only - <span id="lifetime-early-remaining">Loading...</span> spots left</p>
                   </div>
-                  <div class="invoice-preview-row">
-                    <span>Date:</span>
-                    <strong>Nov 15, 2025</strong>
-                  </div>
-                  <div class="invoice-preview-row">
-                    <span>Client:</span>
-                    <strong>John Smith</strong>
-                  </div>
+                  <button class="btn-primary btn-subscribe" data-plan="lifetime_early">Get Lifetime</button>
                 </div>
-                <div class="invoice-preview-items">
-                  <div class="invoice-preview-item">
-                    <span>Water heater replacement - 50 gal tank</span>
-                    <span>$850.00</span>
+                <div class="plan-option">
+                  <div class="plan-info">
+                    <h3>Lifetime Regular</h3>
+                    <p class="plan-price">$199<span> one-time</span></p>
+                    <p class="plan-desc">All features forever, no monthly fees</p>
                   </div>
-                  <div class="invoice-preview-item">
-                    <span>Labor (4 hours)</span>
-                    <span>$320.00</span>
-                  </div>
-                </div>
-                <div class="invoice-preview-totals">
-                  <div class="invoice-preview-row">
-                    <span>Subtotal:</span>
-                    <span>$1,170.00</span>
-                  </div>
-                  <div class="invoice-preview-row">
-                    <span>Tax (8.5%):</span>
-                    <span>$99.45</span>
-                  </div>
-                  <div class="invoice-preview-row invoice-preview-total">
-                    <strong>Total:</strong>
-                    <strong>$1,269.45</strong>
-                  </div>
-                </div>
-                <div class="invoice-preview-footer">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                  Invoice footer - your text here
+                  <button class="btn-primary btn-subscribe" data-plan="lifetime_regular">Get Lifetime</button>
                 </div>
               </div>
             </div>
