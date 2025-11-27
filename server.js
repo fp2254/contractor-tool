@@ -1263,15 +1263,31 @@ app.get("/api/messages", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { data, error } = await supabaseAdmin
-    .from("system_messages")
-    .select("*")
-    .or(`user_id.eq.${userId},user_id.is.null`)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("system_messages")
+      .select("*")
+      .or(`target_user_id.eq.${userId},is_global.eq.true`)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // Transform to expected format and check read status
+    const messages = (data || []).map(msg => ({
+      id: msg.id,
+      title: msg.title,
+      content: msg.content,
+      message_type: msg.type || 'info',
+      is_read: msg.read_by ? msg.read_by.includes(userId) : false,
+      created_at: msg.created_at
+    }));
+    
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
 });
 
 app.patch("/api/messages/:id/read", requireAuth, async (req, res) => {
@@ -1280,13 +1296,32 @@ app.patch("/api/messages/:id/read", requireAuth, async (req, res) => {
 
   const messageId = req.params.id;
 
-  const { error } = await supabaseAdmin
-    .from("system_messages")
-    .update({ is_read: true })
-    .eq("id", messageId);
+  try {
+    // First get the current read_by array
+    const { data: message, error: fetchError } = await supabaseAdmin
+      .from("system_messages")
+      .select("read_by")
+      .eq("id", messageId)
+      .single();
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (fetchError) return res.status(500).json({ error: fetchError.message });
+
+    // Add user to read_by array if not already there
+    const currentReadBy = message?.read_by || [];
+    if (!currentReadBy.includes(userId)) {
+      const { error } = await supabaseAdmin
+        .from("system_messages")
+        .update({ read_by: [...currentReadBy, userId] })
+        .eq("id", messageId);
+
+      if (error) return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error marking message as read:", err);
+    res.status(500).json({ error: "Failed to mark message as read" });
+  }
 });
 
 // REFERRALS SUMMARY
