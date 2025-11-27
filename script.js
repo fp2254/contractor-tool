@@ -4818,15 +4818,25 @@ async function checkAdminStatus() {
 
   try {
     const res = await apiFetch("/api/admin/check");
+    const data = await res.json();
+    console.log("Admin check response:", data);
+    
     if (res.ok) {
-      const data = await res.json();
       isAdminUser = data.is_admin;
+      console.log("Is admin:", isAdminUser);
       const adminTile = document.getElementById("admin-tile-dashboard");
       if (adminTile) {
         adminTile.style.display = isAdminUser ? "flex" : "none";
+        console.log("Admin tile display:", adminTile.style.display);
       }
+    } else {
+      console.log("Admin check failed:", data);
+      isAdminUser = false;
+      const adminTile = document.getElementById("admin-tile-dashboard");
+      if (adminTile) adminTile.style.display = "none";
     }
   } catch (err) {
+    console.error("Admin check error:", err);
     isAdminUser = false;
     const adminTile = document.getElementById("admin-tile-dashboard");
     if (adminTile) adminTile.style.display = "none";
