@@ -2643,6 +2643,45 @@ app.post("/api/admin/enable-ai", requireAdmin, async (req, res) => {
   }
 });
 
+app.post("/api/admin/grant-lifetime", requireAdmin, async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    // Find user by email in auth
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update their profile to lifetime
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ 
+        subscription_status: "active",
+        subscription_plan: "lifetime_early",
+        trial_ends_at: null,
+        subscription_ends_at: null
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Error granting lifetime:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true, message: `Lifetime membership granted to ${email}` });
+  } catch (error) {
+    console.error("Error granting lifetime:", error);
+    res.status(500).json({ error: "Failed to grant lifetime membership" });
+  }
+});
+
 // AI SUBSCRIPTION ENDPOINTS
 
 // Check AI subscription status

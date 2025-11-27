@@ -5069,6 +5069,30 @@ async function enableAIForUser() {
   }
 }
 
+async function grantLifetimeToUser() {
+  if (!selectedAdminUser) {
+    showToast("Please select a user first");
+    return;
+  }
+  
+  try {
+    const res = await apiFetch("/api/admin/grant-lifetime", {
+      method: "POST",
+      body: JSON.stringify({ email: selectedAdminUser.email })
+    });
+    
+    if (res.ok) {
+      showToast(`Lifetime membership granted to ${selectedAdminUser.email}!`);
+    } else {
+      const data = await res.json();
+      showToast(data.error || "Failed to grant lifetime");
+    }
+  } catch (err) {
+    console.error("Error granting lifetime:", err);
+    showToast("Failed to grant lifetime membership");
+  }
+}
+
 async function sendAdminMessage() {
   const titleEl = document.getElementById("admin-message-title");
   const contentEl = document.getElementById("admin-message-content");

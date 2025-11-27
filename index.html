@@ -1006,9 +1006,12 @@
                   <div id="admin-selected-user" style="display: none; padding: 10px; background: var(--accent); border-radius: 8px; margin-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                       <span id="admin-selected-user-email" style="font-weight: 500;"></span>
-                      <div style="display: flex; gap: 8px; align-items: center;">
+                      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <button type="button" onclick="enableAIForUser()" class="btn-sm" style="background: var(--primary); color: white; padding: 4px 10px; font-size: 12px;">
-                          <i class="fa-solid fa-wand-magic-sparkles"></i> Enable AI
+                          <i class="fa-solid fa-wand-magic-sparkles"></i> AI
+                        </button>
+                        <button type="button" onclick="grantLifetimeToUser()" class="btn-sm" style="background: #22c55e; color: white; padding: 4px 10px; font-size: 12px;">
+                          <i class="fa-solid fa-crown"></i> Lifetime
                         </button>
                         <button type="button" onclick="clearSelectedUser()" style="background: none; border: none; color: var(--text); cursor: pointer; font-size: 18px;">&times;</button>
                       </div>
