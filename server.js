@@ -18,24 +18,30 @@ const filter = new Filter();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// STATIC FRONTEND (serves index.html, script.js, etc.)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+
+// Main landing page at root (must be before static middleware)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "landing.html"));
+});
+
+// App login/dashboard at /app
+app.get("/app", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// STATIC FRONTEND (serves script.js, style.css, etc.)
 app.use(express.static(__dirname, {
-  setHeaders: (res, path) => {
+  setHeaders: (res, filePath) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   }
 }));
-
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-
-// Landing page route
-app.get("/landing", (req, res) => {
-  res.sendFile(path.join(__dirname, "landing.html"));
-});
 
 // FILE UPLOADS
 const upload = multer({ storage: multer.memoryStorage() });

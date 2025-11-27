@@ -1,9 +1,11 @@
-const CACHE_NAME = 'tradebase-v13';
-const RUNTIME_CACHE = 'tradebase-runtime-v13';
+const CACHE_NAME = 'tradebase-v14';
+const RUNTIME_CACHE = 'tradebase-runtime-v14';
 
 const APP_SHELL = [
-  '/',
+  '/app',
   '/index.html',
+  '/landing.html',
+  '/landing.css',
   '/style.css',
   '/script.js',
   '/config.js',
@@ -50,9 +52,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/')) {
+  // Always use network-first for root and app routes to ensure fresh content
+  if (url.pathname === '/' || url.pathname === '/app') {
     event.respondWith(networkFirstStrategy(request));
-  } else if (APP_SHELL.includes(url.pathname) || url.pathname === '/') {
+  } else if (url.pathname.startsWith('/api/')) {
+    event.respondWith(networkFirstStrategy(request));
+  } else if (APP_SHELL.includes(url.pathname)) {
     event.respondWith(cacheFirstStrategy(request));
   } else {
     event.respondWith(networkFirstStrategy(request));
