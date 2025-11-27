@@ -941,6 +941,42 @@ body {
   font-weight: 700;
 }
 
+/* TABS */
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-alt);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: var(--text);
+}
+
+.tab-btn:hover:not(.active) {
+  background: var(--border);
+}
+
 /* LISTS */
 
 .list {

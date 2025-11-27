@@ -2044,7 +2044,122 @@ async function loadClients() {
 
 // INVOICES & ESTIMATES LISTS
 
-async function loadInvoices() {
+let currentInvoiceTab = 'active';
+let currentQuoteTab = 'active';
+
+function switchInvoiceTab(tab) {
+  currentInvoiceTab = tab;
+  document.getElementById('tab-invoices-active').classList.toggle('active', tab === 'active');
+  document.getElementById('tab-invoices-archived').classList.toggle('active', tab === 'archived');
+  loadInvoices(tab === 'archived');
+}
+
+function switchQuoteTab(tab) {
+  currentQuoteTab = tab;
+  document.getElementById('tab-quotes-active').classList.toggle('active', tab === 'active');
+  document.getElementById('tab-quotes-archived').classList.toggle('active', tab === 'archived');
+  loadQuotes(tab === 'archived');
+}
+
+async function archiveInvoice(invoiceId) {
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}/archive`, { method: 'POST' });
+    if (res.ok) {
+      showToast('Invoice archived');
+      loadInvoices(currentInvoiceTab === 'archived');
+      showScreen('invoices');
+    } else {
+      showToast('Failed to archive invoice');
+    }
+  } catch (err) {
+    console.error('Error archiving invoice:', err);
+    showToast('Failed to archive invoice');
+  }
+}
+
+async function unarchiveInvoice(invoiceId) {
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}/unarchive`, { method: 'POST' });
+    if (res.ok) {
+      showToast('Invoice restored');
+      loadInvoices(true);
+    } else {
+      showToast('Failed to restore invoice');
+    }
+  } catch (err) {
+    console.error('Error unarchiving invoice:', err);
+    showToast('Failed to restore invoice');
+  }
+}
+
+async function deleteInvoice(invoiceId) {
+  if (!confirm('Are you sure you want to permanently delete this invoice? This cannot be undone.')) {
+    return;
+  }
+  try {
+    const res = await apiFetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Invoice deleted');
+      loadInvoices(true);
+    } else {
+      showToast('Failed to delete invoice');
+    }
+  } catch (err) {
+    console.error('Error deleting invoice:', err);
+    showToast('Failed to delete invoice');
+  }
+}
+
+async function archiveQuote(quoteId) {
+  try {
+    const res = await apiFetch(`/api/quotes/${quoteId}/archive`, { method: 'POST' });
+    if (res.ok) {
+      showToast('Quote archived');
+      loadQuotes(currentQuoteTab === 'archived');
+      showScreen('quotes');
+    } else {
+      showToast('Failed to archive quote');
+    }
+  } catch (err) {
+    console.error('Error archiving quote:', err);
+    showToast('Failed to archive quote');
+  }
+}
+
+async function unarchiveQuote(quoteId) {
+  try {
+    const res = await apiFetch(`/api/quotes/${quoteId}/unarchive`, { method: 'POST' });
+    if (res.ok) {
+      showToast('Quote restored');
+      loadQuotes(true);
+    } else {
+      showToast('Failed to restore quote');
+    }
+  } catch (err) {
+    console.error('Error unarchiving quote:', err);
+    showToast('Failed to restore quote');
+  }
+}
+
+async function deleteQuote(quoteId) {
+  if (!confirm('Are you sure you want to permanently delete this quote? This cannot be undone.')) {
+    return;
+  }
+  try {
+    const res = await apiFetch(`/api/quotes/${quoteId}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Quote deleted');
+      loadQuotes(true);
+    } else {
+      showToast('Failed to delete quote');
+    }
+  } catch (err) {
+    console.error('Error deleting quote:', err);
+    showToast('Failed to delete quote');
+  }
+}
+
+async function loadInvoices(showArchived = false) {
   if (tourMode) return;
   
   const list = document.getElementById("invoices-list");
@@ -2059,29 +2174,34 @@ async function loadInvoices() {
     }
   }
   
-  if (currentUser) {
+  if (currentUser && !showArchived) {
     const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
     invoices = localInvoices || [];
   }
   
   if (navigator.onLine) {
     try {
-      const res = await apiFetch("/api/invoices");
+      const url = showArchived ? "/api/invoices?archived=true" : "/api/invoices";
+      const res = await apiFetch(url);
       const apiInvoices = await res.json();
       
       if (apiInvoices && Array.isArray(apiInvoices)) {
-        for (const inv of apiInvoices) {
-          await tradebaseDB.saveInvoice(inv);
-        }
-        
-        const mergedMap = new Map();
-        apiInvoices.forEach(inv => mergedMap.set(inv.id, inv));
-        invoices.forEach(inv => {
-          if (!mergedMap.has(inv.id)) {
-            mergedMap.set(inv.id, inv);
+        if (!showArchived) {
+          for (const inv of apiInvoices) {
+            await tradebaseDB.saveInvoice(inv);
           }
-        });
-        invoices = Array.from(mergedMap.values());
+          
+          const mergedMap = new Map();
+          apiInvoices.forEach(inv => mergedMap.set(inv.id, inv));
+          invoices.forEach(inv => {
+            if (!mergedMap.has(inv.id)) {
+              mergedMap.set(inv.id, inv);
+            }
+          });
+          invoices = Array.from(mergedMap.values());
+        } else {
+          invoices = apiInvoices;
+        }
       }
     } catch (error) {
       console.log('Using offline invoices:', error.message);
@@ -2089,6 +2209,14 @@ async function loadInvoices() {
   }
 
   invoices.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  if (!invoices.length) {
+    list.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted);">
+      ${showArchived ? 'No archived invoices' : 'No invoices yet. Create one to get started!'}
+    </div>`;
+    if (!showArchived) renderDashboardStats([]);
+    return;
+  }
 
   invoices.forEach((inv) => {
     const item = document.createElement("div");
@@ -2098,27 +2226,47 @@ async function loadInvoices() {
     const isOffline = isOfflineId(inv.id);
     const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
     
-    item.innerHTML = `
-      <div class="list-item-header">
-        <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
-        <span>${formatCurrency(inv.total || 0)}</span>
-      </div>
-      <div class="list-item-sub">${inv.client_name || ""}</div>
-      <div class="list-item-sub">
-        ${inv.date || ""} • ${inv.status || "draft"}
-      </div>
-    `;
-    
-    item.onclick = () => viewInvoiceDetail(inv.id);
+    if (showArchived) {
+      item.innerHTML = `
+        <div class="list-item-header">
+          <strong>Invoice #${inv.number || inv.id}</strong>
+          <span>${formatCurrency(inv.total || 0)}</span>
+        </div>
+        <div class="list-item-sub">${inv.client_name || ""}</div>
+        <div class="list-item-sub">${inv.date || ""} • ${inv.status || "draft"}</div>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button class="btn-sm" onclick="event.stopPropagation(); unarchiveInvoice('${inv.id}')">
+            <i class="fa-solid fa-box-open"></i> Restore
+          </button>
+          <button class="btn-sm" style="background: var(--danger); color: white;" onclick="event.stopPropagation(); deleteInvoice('${inv.id}')">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
+      `;
+    } else {
+      item.innerHTML = `
+        <div class="list-item-header">
+          <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
+          <span>${formatCurrency(inv.total || 0)}</span>
+        </div>
+        <div class="list-item-sub">${inv.client_name || ""}</div>
+        <div class="list-item-sub">
+          ${inv.date || ""} • ${inv.status || "draft"}
+        </div>
+      `;
+      item.onclick = () => viewInvoiceDetail(inv.id);
+    }
     
     list.appendChild(item);
   });
   
-  renderDashboardStats(invoices);
-  applyLanguage(); // Apply translations to stat labels
+  if (!showArchived) {
+    renderDashboardStats(invoices);
+  }
+  applyLanguage();
 }
 
-async function loadQuotes() {
+async function loadQuotes(showArchived = false) {
   if (tourMode) return;
   
   const list = document.getElementById("quotes-list");
@@ -2129,7 +2277,8 @@ async function loadQuotes() {
   
   if (navigator.onLine) {
     try {
-      const res = await apiFetch("/api/quotes");
+      const url = showArchived ? "/api/quotes?archived=true" : "/api/quotes";
+      const res = await apiFetch(url);
       if (res.ok) {
         quotes = await res.json() || [];
       }
@@ -2139,7 +2288,9 @@ async function loadQuotes() {
   }
 
   if (!quotes.length) {
-    list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">No quotes yet. Create one to get started!</div>';
+    list.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted);">
+      ${showArchived ? 'No archived quotes' : 'No quotes yet. Create one to get started!'}
+    </div>`;
     return;
   }
 
@@ -2150,18 +2301,36 @@ async function loadQuotes() {
     item.className = "list-item clickable";
     item.style.cursor = "pointer";
     
-    item.innerHTML = `
-      <div class="list-item-header">
-        <strong>Quote #${quote.quote_number || quote.id}</strong>
-        <span>${formatCurrency(quote.total || 0)}</span>
-      </div>
-      <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
-      <div class="list-item-sub">
-        ${quote.status || "draft"}
-      </div>
-    `;
-    
-    item.onclick = () => viewQuoteDetail(quote.id);
+    if (showArchived) {
+      item.innerHTML = `
+        <div class="list-item-header">
+          <strong>Quote #${quote.quote_number || quote.id}</strong>
+          <span>${formatCurrency(quote.total || 0)}</span>
+        </div>
+        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
+        <div class="list-item-sub">${quote.status || "draft"}</div>
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button class="btn-sm" onclick="event.stopPropagation(); unarchiveQuote('${quote.id}')">
+            <i class="fa-solid fa-box-open"></i> Restore
+          </button>
+          <button class="btn-sm" style="background: var(--danger); color: white;" onclick="event.stopPropagation(); deleteQuote('${quote.id}')">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
+      `;
+    } else {
+      item.innerHTML = `
+        <div class="list-item-header">
+          <strong>Quote #${quote.quote_number || quote.id}</strong>
+          <span>${formatCurrency(quote.total || 0)}</span>
+        </div>
+        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
+        <div class="list-item-sub">
+          ${quote.status || "draft"}
+        </div>
+      `;
+      item.onclick = () => viewQuoteDetail(quote.id);
+    }
     
     list.appendChild(item);
   });
@@ -2275,6 +2444,9 @@ async function viewInvoiceDetail(invoiceId) {
         </button>
         <button class="btn-sm" id="download-invoice-btn" data-invoice-id="${invoice.id}">
           <i class="fa-solid fa-download"></i> Download
+        </button>
+        <button class="btn-sm" onclick="archiveInvoice('${invoice.id}')" style="background: var(--muted); color: white;">
+          <i class="fa-solid fa-box-archive"></i> Archive
         </button>
         <button class="btn-sm" onclick="showScreen('invoices')">
           <i class="fa-solid fa-arrow-left"></i> Back to List
@@ -2397,6 +2569,9 @@ async function viewQuoteDetail(quoteId) {
         </button>
         <button class="btn-sm" id="download-quote-btn" data-quote-id="${quote.id}">
           <i class="fa-solid fa-download"></i> Download PDF
+        </button>
+        <button class="btn-sm" onclick="archiveQuote('${quote.id}')" style="background: var(--muted); color: white;">
+          <i class="fa-solid fa-box-archive"></i> Archive
         </button>
         <button class="btn-sm" onclick="showScreen('quotes')">
           <i class="fa-solid fa-arrow-left"></i> Back to List

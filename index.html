@@ -445,6 +445,12 @@
             <h2 data-i18n="invoice.invoices">Invoices</h2>
             <button class="btn-primary" id="btn-new-invoice" data-i18n="invoice.new_invoice">+ New Invoice</button>
           </div>
+          <div class="tabs" style="margin: 0 16px 16px;">
+            <button class="tab-btn active" id="tab-invoices-active" onclick="switchInvoiceTab('active')">Active</button>
+            <button class="tab-btn" id="tab-invoices-archived" onclick="switchInvoiceTab('archived')">
+              <i class="fa-solid fa-box-archive"></i> Archived
+            </button>
+          </div>
           <div id="invoices-list" class="list"></div>
         </section>
 
@@ -463,6 +469,12 @@
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="quote.quotes">Quotes</h2>
             <button class="btn-primary" id="btn-new-quote" data-i18n="quote.new_quote">+ New Quote</button>
+          </div>
+          <div class="tabs" style="margin: 0 16px 16px;">
+            <button class="tab-btn active" id="tab-quotes-active" onclick="switchQuoteTab('active')">Active</button>
+            <button class="tab-btn" id="tab-quotes-archived" onclick="switchQuoteTab('archived')">
+              <i class="fa-solid fa-box-archive"></i> Archived
+            </button>
           </div>
           <div id="quotes-list" class="list"></div>
         </section>
