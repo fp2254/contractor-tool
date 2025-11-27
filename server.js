@@ -8,12 +8,22 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
-import { Filter } from "bad-words";
 
 dotenv.config();
 
-// Initialize profanity filter
-const filter = new Filter();
+// Simple profanity filter (replaces bad-words package for ES module compatibility)
+const badWordsList = ['damn', 'hell', 'crap', 'shit', 'fuck', 'ass', 'bitch', 'bastard', 'piss'];
+const filter = {
+  clean: (text) => {
+    if (!text) return text;
+    let result = text;
+    badWordsList.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      result = result.replace(regex, '*'.repeat(word.length));
+    });
+    return result;
+  }
+};
 
 const app = express();
 const port = process.env.PORT || 5000;
