@@ -1514,6 +1514,8 @@ function wireDashboardUI() {
           loadQuotes();
         } else if (screen === "invoices") {
           loadInvoices();
+        } else if (screen === "admin") {
+          loadAdminUsers();
         }
       }
     });
