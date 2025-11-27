@@ -2067,3 +2067,105 @@ body {
     gap: 8px;
   }
 }
+
+/* Modal Overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10002;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--bg-alt);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px var(--shadow);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--tile);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--muted);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--tile-hover);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* Button Danger */
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-danger.disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Button Secondary */
+.btn-secondary {
+  background: var(--tile);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--tile-hover);
+}

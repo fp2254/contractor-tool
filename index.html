@@ -1461,6 +1461,52 @@
     </div>
   </div>
 
+  <!-- Cancel AI Subscription Modal -->
+  <div id="cancel-ai-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2 style="color: #ef4444; margin: 0;">Cancel AI Subscription</h2>
+        <button onclick="closeCancelAIModal()" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 30px 20px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+        <p style="font-size: 16px; margin-bottom: 20px; color: var(--text);">
+          Are you sure you want to cancel your AI subscription?
+        </p>
+        <p style="font-size: 14px; color: var(--muted); margin-bottom: 25px;">
+          You will <strong>immediately lose access</strong> to all AI tools including Voice Quote Creator, Voice Inventory, and Voice Notes.
+        </p>
+        <div style="background: var(--tile); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <label style="display: block; font-weight: 600; margin-bottom: 10px; color: var(--text);">
+            Type "cancel" to confirm:
+          </label>
+          <input 
+            type="text" 
+            id="cancel-ai-confirm-input" 
+            placeholder="Type cancel here"
+            oninput="validateCancelAIInput()"
+            autocomplete="off"
+            style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; text-align: center; background: var(--bg); color: var(--text);"
+          >
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button onclick="closeCancelAIModal()" class="btn-secondary" style="min-width: 120px;">
+            Keep AI
+          </button>
+          <button 
+            id="cancel-ai-confirm-btn" 
+            onclick="confirmCancelAISubscription()" 
+            class="btn-danger disabled"
+            disabled
+            style="min-width: 120px; background: #ef4444; color: white; opacity: 0.5;"
+          >
+            Cancel AI
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SDKs -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://js.stripe.com/v3/"></script>

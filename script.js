@@ -4874,10 +4874,46 @@ async function subscribeToAI(plan) {
   }
 }
 
-async function cancelAISubscription() {
-  if (!confirm("Are you sure you want to cancel your AI subscription? You will immediately lose access to all AI tools.")) {
+function cancelAISubscription() {
+  const modal = document.getElementById("cancel-ai-modal");
+  const input = document.getElementById("cancel-ai-confirm-input");
+  const confirmBtn = document.getElementById("cancel-ai-confirm-btn");
+  
+  if (modal && input && confirmBtn) {
+    input.value = "";
+    confirmBtn.disabled = true;
+    confirmBtn.classList.add("disabled");
+    modal.classList.add("active");
+  }
+}
+
+function closeCancelAIModal() {
+  const modal = document.getElementById("cancel-ai-modal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+function validateCancelAIInput() {
+  const input = document.getElementById("cancel-ai-confirm-input");
+  const confirmBtn = document.getElementById("cancel-ai-confirm-btn");
+  
+  if (input && confirmBtn) {
+    const isValid = input.value.toLowerCase().trim() === "cancel";
+    confirmBtn.disabled = !isValid;
+    confirmBtn.classList.toggle("disabled", !isValid);
+  }
+}
+
+async function confirmCancelAISubscription() {
+  const input = document.getElementById("cancel-ai-confirm-input");
+  
+  if (input.value.toLowerCase().trim() !== "cancel") {
+    showToast("Please type 'cancel' to confirm");
     return;
   }
+  
+  closeCancelAIModal();
 
   try {
     const res = await apiFetch("/api/ai/cancel", {
