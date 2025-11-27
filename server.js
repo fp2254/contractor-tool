@@ -2540,23 +2540,25 @@ app.get("/api/admin/check", requireAuth, async (req, res) => {
   try {
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("is_admin, email")
+      .select("is_admin")
       .eq("id", userId)
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // Check environment variable for admin emails
-    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-    const userEmail = (profile?.email || "").toLowerCase();
-    const isEnvAdmin = adminEmails.includes(userEmail) && userEmail !== "";
+    // Also check environment variable for admin emails
+    let isEnvAdmin = false;
+    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(e => e);
     
-    // If user is in ADMIN_EMAILS but not marked as admin in DB, update them
-    if (isEnvAdmin && !profile?.is_admin) {
-      await supabaseAdmin
-        .from("profiles")
-        .update({ is_admin: true })
-        .eq("id", userId);
+    if (adminEmails.length > 0) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const userEmail = (authUser?.user?.email || "").toLowerCase();
+      isEnvAdmin = adminEmails.includes(userEmail);
+      
+      // Auto-set is_admin in DB if in env list
+      if (isEnvAdmin && !profile?.is_admin) {
+        await supabaseAdmin.from("profiles").update({ is_admin: true }).eq("id", userId);
+      }
     }
 
     res.json({ is_admin: profile?.is_admin || isEnvAdmin });
