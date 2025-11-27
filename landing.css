@@ -94,6 +94,24 @@ body {
   color: var(--accent);
 }
 
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-login {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.nav-login:hover {
+  color: var(--accent);
+}
+
 .nav-cta {
   background: var(--accent);
   color: white;
@@ -145,6 +163,12 @@ body {
   font-size: 16px;
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.mobile-login {
+  color: var(--text) !important;
+  text-align: center;
+  font-weight: 500;
 }
 
 .mobile-cta {
