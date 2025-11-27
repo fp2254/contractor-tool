@@ -8,12 +8,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
-import BadWords from "bad-words";
+import { Filter } from "bad-words";
 
 dotenv.config();
 
 // Initialize profanity filter
-const Filter = BadWords.default || BadWords;
 const filter = new Filter();
 
 const app = express();
@@ -913,6 +912,159 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
   });
 });
 
+// SEND QUOTE EMAIL
+app.post("/api/quotes/:id/send-email", requireSubscription, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { recipientEmail, recipientName } = req.body;
+
+    if (!recipientEmail) {
+      return res.status(400).json({ error: "Recipient email is required" });
+    }
+
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from("quotes")
+      .select(`*, quote_items (*)`)
+      .eq("id", id)
+      .eq("user_id", req.userId)
+      .single();
+
+    if (quoteError || !quote) {
+      return res.status(404).json({ error: "Quote not found" });
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("business_name, business_email, business_phone, business_address, logo_url")
+      .eq("id", req.userId)
+      .single();
+
+    const resendConnection = await getResendClient();
+    if (!resendConnection) {
+      return res.status(503).json({ error: "Email service is not configured" });
+    }
+    const { client: resend, fromEmail } = resendConnection;
+    if (!fromEmail) {
+      return res.status(503).json({ error: "Email sender address not configured. Please check your Resend settings." });
+    }
+
+    const escapeHtml = (text) => {
+      if (!text) return '';
+      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+
+    const businessName = escapeHtml(profile?.business_name || "Business");
+    const quoteNumber = escapeHtml(quote.quote_number || quote.id);
+
+    const itemsHtml = (quote.quote_items || []).map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.unit_price || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.total || 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const emailBody = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .quote-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          th { background: #f3f4f6; padding: 10px; text-align: left; }
+          .total-row { font-weight: bold; font-size: 1.2rem; }
+          .footer { text-align: center; color: #6b7280; font-size: 0.875rem; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Quote from ${businessName}</h1>
+        </div>
+        <div class="content">
+          <p>Hi ${escapeHtml(recipientName || 'there')},</p>
+          <p>Please find your quote details below. A PDF copy is attached for your records.</p>
+          
+          <div class="quote-details">
+            <p><strong>Quote #:</strong> ${quoteNumber}</p>
+            <p><strong>Date:</strong> ${new Date(quote.quote_date || quote.created_at).toLocaleDateString()}</p>
+            ${quote.notes ? `<p><strong>Notes:</strong> ${escapeHtml(quote.notes)}</p>` : ''}
+            
+            <table style="margin-top: 20px;">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th style="text-align: center;">Qty</th>
+                  <th style="text-align: right;">Unit Price</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+              <tfoot>
+                <tr><td colspan="3" style="padding: 10px; text-align: right;">Subtotal:</td><td style="padding: 10px; text-align: right;">$${parseFloat(quote.subtotal || 0).toFixed(2)}</td></tr>
+                <tr><td colspan="3" style="padding: 10px; text-align: right;">Tax:</td><td style="padding: 10px; text-align: right;">$${parseFloat(quote.tax || 0).toFixed(2)}</td></tr>
+                <tr class="total-row"><td colspan="3" style="padding: 10px; text-align: right; color: #10b981;">Total:</td><td style="padding: 10px; text-align: right; color: #10b981;">$${parseFloat(quote.total || 0).toFixed(2)}</td></tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <p>If you have any questions about this quote, please contact us:</p>
+          <p>
+            ${profile?.business_email ? `<strong>Email:</strong> ${escapeHtml(profile.business_email)}<br>` : ''}
+            ${profile?.business_phone ? `<strong>Phone:</strong> ${escapeHtml(profile.business_phone)}` : ''}
+          </p>
+
+          <div class="footer">
+            <p>This is an automated email from ${businessName}.</p>
+            <p>Thank you for your business!</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const pdfBuffer = await generateQuotePDF(quote, profile);
+
+    const emailOptions = {
+      from: fromEmail,
+      to: recipientEmail,
+      subject: `Quote #${quoteNumber} from ${profile?.business_name || 'Business'}`,
+      html: emailBody
+    };
+
+    if (pdfBuffer) {
+      emailOptions.attachments = [{
+        filename: `Quote-${quote.quote_number || quote.id}.pdf`,
+        content: pdfBuffer.toString('base64'),
+        content_type: 'application/pdf'
+      }];
+    }
+
+    const { data: emailResult, error: emailError } = await resend.emails.send(emailOptions);
+
+    if (emailError) {
+      console.error("Quote email send error:", emailError);
+      return res.status(500).json({ error: "Failed to send email" });
+    }
+
+    await supabaseAdmin
+      .from("quotes")
+      .update({ sent_at: new Date().toISOString(), sent_to: recipientEmail, status: 'sent' })
+      .eq("id", id);
+
+    res.json({ success: true, message: "Quote sent successfully", emailId: emailResult.id });
+  } catch (error) {
+    console.error("Send quote error:", error);
+    res.status(500).json({ error: "Failed to send quote email" });
+  }
+});
+
 // JOBS API - Job Folder Management
 
 // Get all jobs
@@ -1675,6 +1827,158 @@ async function generateInvoicePDF(invoice, profile) {
     return pdfBuffer;
   } catch (error) {
     console.error('PDF generation error:', error);
+    return null;
+  }
+}
+
+// QUOTE PDF GENERATION HELPER
+async function generateQuotePDF(quote, profile) {
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const items = quote.quote_items || [];
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.unit_price || 0).toFixed(2)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.total || 0).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  const pdfHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; line-height: 1.5; color: #333; padding: 40px; }
+        .header { border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { max-width: 180px; max-height: 60px; margin-bottom: 10px; }
+        .business-name { font-size: 24px; font-weight: bold; color: #1f2937; }
+        .business-info { font-size: 12px; color: #6b7280; margin-top: 5px; }
+        .quote-title { font-size: 32px; font-weight: bold; color: #10b981; margin: 20px 0; }
+        .meta-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .meta-block { }
+        .meta-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+        .meta-value { font-size: 14px; color: #1f2937; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f3f4f6; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+        .totals { text-align: right; margin-top: 20px; }
+        .totals-row { display: flex; justify-content: flex-end; padding: 8px 0; }
+        .totals-label { width: 150px; color: #6b7280; }
+        .totals-value { width: 100px; text-align: right; font-weight: 500; }
+        .grand-total { font-size: 24px; font-weight: bold; color: #10b981; border-top: 2px solid #10b981; padding-top: 15px; margin-top: 10px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+        .notes { background: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 13px; }
+        .valid-until { background: #ecfdf5; padding: 10px 15px; border-radius: 6px; margin-top: 15px; color: #047857; font-weight: 500; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        ${profile?.logo_url ? `<img src="${profile.logo_url}" class="logo" />` : ''}
+        <div class="business-name">${escapeHtml(profile?.business_name || 'Business')}</div>
+        <div class="business-info">
+          ${profile?.business_address ? escapeHtml(profile.business_address) + '<br>' : ''}
+          ${profile?.business_phone ? escapeHtml(profile.business_phone) + ' | ' : ''}
+          ${profile?.business_email ? escapeHtml(profile.business_email) : ''}
+        </div>
+      </div>
+
+      <div class="quote-title">QUOTE</div>
+
+      <div class="meta-section">
+        <div class="meta-block">
+          <div class="meta-label">Prepared For</div>
+          <div class="meta-value" style="font-size: 16px; font-weight: 600;">${escapeHtml(quote.client_name || 'Client')}</div>
+        </div>
+        <div class="meta-block">
+          <div class="meta-label">Quote Number</div>
+          <div class="meta-value">#${escapeHtml(quote.quote_number || quote.id)}</div>
+          <div class="meta-label" style="margin-top: 10px;">Date</div>
+          <div class="meta-value">${new Date(quote.quote_date || quote.created_at).toLocaleDateString()}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50%;">Description</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Unit Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="totals-row">
+          <span class="totals-label">Subtotal:</span>
+          <span class="totals-value">$${parseFloat(quote.subtotal || 0).toFixed(2)}</span>
+        </div>
+        ${quote.tax > 0 ? `
+        <div class="totals-row">
+          <span class="totals-label">Tax:</span>
+          <span class="totals-value">$${parseFloat(quote.tax || 0).toFixed(2)}</span>
+        </div>
+        ` : ''}
+        <div class="grand-total">
+          <span class="totals-label">Total:</span>
+          <span class="totals-value">$${parseFloat(quote.total || 0).toFixed(2)}</span>
+        </div>
+      </div>
+
+      ${quote.notes ? `
+      <div class="notes">
+        <strong>Notes:</strong><br>
+        ${escapeHtml(quote.notes)}
+      </div>
+      ` : ''}
+
+      ${quote.valid_until ? `
+      <div class="valid-until">
+        Quote valid until: ${new Date(quote.valid_until).toLocaleDateString()}
+      </div>
+      ` : ''}
+
+      <div class="footer">
+        <p>Thank you for considering our services!</p>
+        <p>This is a quote and not an invoice. Prices are subject to change.</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const browser = await puppeteer.launch({
+      executablePath: '/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
+    });
+
+    await browser.close();
+    return pdfBuffer;
+  } catch (error) {
+    console.error('Quote PDF generation error:', error);
     return null;
   }
 }

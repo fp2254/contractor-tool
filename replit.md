@@ -51,11 +51,33 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - Fixed Stripe webhook to properly distinguish AI subscriptions from base subscriptions
 - Added AI subscription section in Settings screen
 - Voice recorder hidden by default, only visible when ai_enabled=true
+- **NEW: AI Voice Quote Creator** - One-button voice-to-quote workflow on dashboard
+- **NEW: Voice Form Helpers** - Mic buttons on quote/invoice screens for voice-assisted form filling
+- **NEW: Profanity Filter** - Bad-words library filters casual language from transcripts
+- **NEW: /api/ai/transcribe** - Whisper transcription endpoint for voice input
+- **NEW: /api/ai/parse-quote** - GPT-4o-mini parsing endpoint for structured data extraction
+- **NEW: /api/ai/create-quote-full** - Complete voice-to-quote-with-job-folder workflow
+- **NEW: /api/quotes/:id/send-email** - Send quotes via email (like invoices)
+- **NEW: AI Usage Logging** - All AI operations logged to ai_usage_logs table
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
 - **Stripe**: Payment processing for subscriptions and one-time invoice payments via Payment Links and webhooks.
-- **Resend (Email Service)**: For sending transactional emails (invoices) via a Replit connector.
+- **Resend (Email Service)**: For sending transactional emails (invoices and quotes) via a Replit connector. Requires `from_email` configuration.
 - **Node.js + Express.js**: Backend framework.
 - **html2canvas**: JavaScript library for generating downloadable PNG images of invoices and quotes.
-- **Puppeteer-core**: For generating PDF attachments for email invoices.
+- **Puppeteer-core**: For generating PDF attachments for emailed invoices and quotes. Uses Chromium in `/nix/store/`.
+- **OpenAI API**: Whisper for voice transcription, GPT-4o-mini for quote parsing. Requires `OPENAI_API_KEY` secret.
+- **bad-words**: Profanity filter library for cleaning transcribed text.
+
+## Setup Instructions
+
+### AI Voice Features
+1. Add `OPENAI_API_KEY` as a secret in your Replit environment
+2. User must have `ai_enabled=true` in their profile (requires AI subscription via Stripe)
+3. AI endpoints are guarded by `requireAI` middleware and log usage to `ai_usage_logs` table
+
+### Email Configuration
+1. Set up Resend integration via Replit connectors
+2. Ensure `from_email` is configured in the Resend connector settings
+3. Emails include PDF attachments for both invoices and quotes
