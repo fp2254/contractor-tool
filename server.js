@@ -397,11 +397,20 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
-  const { data, error } = await supabaseAdmin
+  const showArchived = req.query.archived === 'true';
+  
+  let query = supabaseAdmin
     .from("invoices")
     .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("user_id", userId);
+  
+  if (showArchived) {
+    query = query.eq("archived", true);
+  } else {
+    query = query.or("archived.is.null,archived.eq.false");
+  }
+  
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -544,6 +553,82 @@ app.post(
     res.json({ ok: true });
   }
 );
+
+// ARCHIVE INVOICE
+app.post("/api/invoices/:id/archive", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .update({ archived: true })
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    console.error("Error archiving invoice:", err);
+    res.status(500).json({ error: "Failed to archive invoice" });
+  }
+});
+
+// UNARCHIVE INVOICE
+app.post("/api/invoices/:id/unarchive", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .update({ archived: false })
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    console.error("Error unarchiving invoice:", err);
+    res.status(500).json({ error: "Failed to unarchive invoice" });
+  }
+});
+
+// DELETE INVOICE
+app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    // First delete related items and attachments
+    await supabaseAdmin
+      .from("invoice_items")
+      .delete()
+      .eq("invoice_id", req.params.id);
+    
+    await supabaseAdmin
+      .from("invoice_attachments")
+      .delete()
+      .eq("invoice_id", req.params.id);
+
+    // Then delete the invoice
+    const { error } = await supabaseAdmin
+      .from("invoices")
+      .delete()
+      .eq("id", req.params.id)
+      .eq("user_id", userId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting invoice:", err);
+    res.status(500).json({ error: "Failed to delete invoice" });
+  }
+});
 
 // PAYMENT ENDPOINTS
 
@@ -848,11 +933,20 @@ app.get("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json([]);
 
-  const { data, error } = await supabaseAdmin
+  const showArchived = req.query.archived === 'true';
+  
+  let query = supabaseAdmin
     .from("quotes")
     .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("user_id", userId);
+  
+  if (showArchived) {
+    query = query.eq("archived", true);
+  } else {
+    query = query.or("archived.is.null,archived.eq.false");
+  }
+  
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -1102,6 +1196,77 @@ app.post("/api/quotes/:id/send-email", requireSubscription, async (req, res) => 
   } catch (error) {
     console.error("Send quote error:", error);
     res.status(500).json({ error: "Failed to send quote email" });
+  }
+});
+
+// ARCHIVE QUOTE
+app.post("/api/quotes/:id/archive", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("quotes")
+      .update({ archived: true })
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    console.error("Error archiving quote:", err);
+    res.status(500).json({ error: "Failed to archive quote" });
+  }
+});
+
+// UNARCHIVE QUOTE
+app.post("/api/quotes/:id/unarchive", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("quotes")
+      .update({ archived: false })
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    console.error("Error unarchiving quote:", err);
+    res.status(500).json({ error: "Failed to unarchive quote" });
+  }
+});
+
+// DELETE QUOTE
+app.delete("/api/quotes/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    // First delete related items
+    await supabaseAdmin
+      .from("quote_items")
+      .delete()
+      .eq("quote_id", req.params.id);
+
+    // Then delete the quote
+    const { error } = await supabaseAdmin
+      .from("quotes")
+      .delete()
+      .eq("id", req.params.id)
+      .eq("user_id", userId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting quote:", err);
+    res.status(500).json({ error: "Failed to delete quote" });
   }
 });
 
