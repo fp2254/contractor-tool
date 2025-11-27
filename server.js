@@ -2877,24 +2877,46 @@ app.post("/api/ai/transcribe", requireAI, upload.single("audio"), async (req, re
       return res.status(400).json({ error: "No audio file provided" });
     }
 
-    const openai = new (await import("openai")).default({
+    console.log("Transcribe request - file size:", req.file.size, "bytes, mimetype:", req.file.mimetype);
+
+    const OpenAI = (await import("openai")).default;
+    const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const audioBlob = new (await import("buffer")).Blob([req.file.buffer], { type: "audio/wav" });
+    // Write to temp file for OpenAI SDK
+    const fs = await import("fs");
+    const path = await import("path");
+    const os = await import("os");
+    
+    const tempDir = os.tmpdir();
+    const tempFile = path.join(tempDir, `audio_${Date.now()}.webm`);
+    
+    fs.writeFileSync(tempFile, req.file.buffer);
+    
+    try {
+      const transcription = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(tempFile),
+        model: "whisper-1"
+      });
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioBlob,
-      model: "whisper-1"
-    });
+      // Clean up temp file
+      fs.unlinkSync(tempFile);
 
-    // Filter profanities from transcript to keep it professional
-    const cleanedTranscript = filter.clean(transcription.text);
+      // Filter profanities from transcript to keep it professional
+      const cleanedTranscript = filter.clean(transcription.text);
+      
+      console.log("Transcription success:", cleanedTranscript.substring(0, 100));
 
-    res.json({ transcript: cleanedTranscript });
+      res.json({ transcript: cleanedTranscript });
+    } catch (openaiError) {
+      // Clean up temp file on error
+      try { fs.unlinkSync(tempFile); } catch (e) {}
+      throw openaiError;
+    }
   } catch (error) {
-    console.error("AI transcription error:", error);
-    res.status(500).json({ error: "Failed to transcribe audio" });
+    console.error("AI transcription error:", error.message || error);
+    res.status(500).json({ error: "Failed to transcribe audio: " + (error.message || "Unknown error") });
   }
 });
 
