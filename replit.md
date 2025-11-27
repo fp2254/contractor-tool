@@ -66,6 +66,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **UPDATED: Pricing Page** - Redesigned as professional landing page focused on 14-day free trial with feature grid, trust signals, and hidden plans modal
 - **NEW: Marketing Landing Page** - Dedicated landing page at /landing with hero, features, Talk to Work AI section, pricing cards, FAQ, and footer
 - **NEW: TradeBase Logo** - Added official logo to login page and landing page
+- **NEW: Archive System** - Invoices and quotes can be archived to keep active lists clean. Features Active/Archived tabs, archive button in detail views, unarchive and permanent delete options for archived items
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
