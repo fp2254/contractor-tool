@@ -4985,7 +4985,7 @@ async function loadAdminUsers() {
       const list = document.getElementById("admin-users-list");
       if (list) {
         list.innerHTML = users.map(u => `
-          <div class="list-item">
+          <div class="list-item" onclick="selectAdminUser('${u.id}', '${u.email}')" style="cursor: pointer;">
             <div>${u.email}</div>
             <div style="font-size: 12px; color: var(--muted);">Joined ${new Date(u.created_at).toLocaleDateString()}</div>
           </div>
@@ -5055,6 +5055,10 @@ function selectAdminUser(userId, email) {
   if (selectedDiv) selectedDiv.style.display = "block";
   if (selectedEmail) selectedEmail.textContent = email;
   if (sendBtn) sendBtn.textContent = `Send to ${email}`;
+  
+  // Scroll the selected user panel into view
+  if (selectedDiv) selectedDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`Selected: ${email}`);
 }
 
 function clearSelectedUser() {
