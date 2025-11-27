@@ -1693,11 +1693,14 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     const mode =
       plan === "monthly" || plan === "yearly" ? "subscription" : "payment";
 
+    // Auto-detect frontend URL from request origin (works in both dev and production)
+    const frontendUrl = req.headers.origin || req.headers.referer?.split('/app')[0] || 'https://trade-base.biz';
+    
     const sessionConfig = {
       mode,
       line_items: lineItems,
-      success_url: `${process.env.FRONTEND_URL}?checkout=success`,
-      cancel_url: `${process.env.FRONTEND_URL}?checkout=cancel`,
+      success_url: `${frontendUrl}/app?checkout=success`,
+      cancel_url: `${frontendUrl}/app?checkout=cancel`,
       client_reference_id: userId,
       metadata: {
         user_id: userId,
@@ -2276,8 +2279,8 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
     }
     const { client: resend, fromEmail } = resendConnection;
 
-    // Generate confirmation link
-    const confirmationLink = `${process.env.FRONTEND_URL || 'https://trade-base.biz'}/confirm-signup?userId=${userId}&email=${encodeURIComponent(email)}`;
+    // Generate confirmation link - use production domain for emails
+    const confirmationLink = `https://trade-base.biz/confirm-signup?userId=${userId}&email=${encodeURIComponent(email)}`;
 
     const emailBody = `
       <!DOCTYPE html>
@@ -2751,13 +2754,16 @@ app.post("/api/ai/subscribe", requireAuth, async (req, res) => {
       });
     }
 
+    // Auto-detect frontend URL from request origin (works in both dev and production)
+    const frontendUrl = req.headers.origin || req.headers.referer?.split('/app')[0] || 'https://trade-base.biz';
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       client_reference_id: userId,
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${req.headers.origin || 'https://tradebase.com'}?ai_subscribed=true`,
-      cancel_url: `${req.headers.origin || 'https://tradebase.com'}?ai_canceled=true`,
+      success_url: `${frontendUrl}/app?ai_subscribed=true`,
+      cancel_url: `${frontendUrl}/app?ai_canceled=true`,
       metadata: {
         user_id: userId,
         is_ai_subscription: "true",
@@ -2767,8 +2773,8 @@ app.post("/api/ai/subscribe", requireAuth, async (req, res) => {
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error("Error creating AI checkout:", error);
-    res.status(500).json({ error: "Failed to create AI subscription checkout" });
+    console.error("Error creating AI checkout:", error.message, error);
+    res.status(500).json({ error: "Failed to create AI subscription checkout", details: error.message });
   }
 });
 
