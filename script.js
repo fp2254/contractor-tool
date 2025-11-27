@@ -5750,11 +5750,13 @@ async function completeVoiceQuoteWorkflowWithModal(audioBlob) {
   }
 }
 
-// Create quote from parsed data (fallback if API endpoint doesn't exist)
+// Create quote from parsed data using the standard API
 async function createQuoteFromParsedData(parsed, transcript) {
   try {
     // Find or create client
     let clientId = null;
+    let clientName = parsed.client_name || "Voice Quote Client";
+    
     if (parsed.client_name) {
       const existingClient = clients.find(c => 
         c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
@@ -5762,74 +5764,88 @@ async function createQuoteFromParsedData(parsed, transcript) {
       
       if (existingClient) {
         clientId = existingClient.id;
+        clientName = existingClient.name;
       } else {
-        // Create new client
-        const { data: newClient, error } = await supabase
-          .from("clients")
-          .insert({
-            user_id: currentUser.id,
+        // Create new client via API
+        const clientRes = await apiFetch("/api/clients", {
+          method: "POST",
+          body: JSON.stringify({
             name: parsed.client_name,
-            address: parsed.address || ""
+            address: parsed.address || "",
+            email: "",
+            phone: ""
           })
-          .select()
-          .single();
+        });
         
-        if (newClient) {
+        if (clientRes.ok) {
+          const newClient = await clientRes.json();
           clientId = newClient.id;
           clients.push(newClient);
         }
       }
     }
 
-    // Create the quote
-    const quoteNumber = await generateQuoteNumber();
-    const lineItems = parsed.line_items || [{
-      description: parsed.job_type || transcript,
-      quantity: 1,
-      unit_price: parsed.amount || 0
-    }];
+    // Build line items from parsed data
+    const lineItems = parsed.line_items && parsed.line_items.length > 0 
+      ? parsed.line_items.map(item => ({
+          description: item.description || parsed.job_type || "Service",
+          qty: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          line_total: (item.quantity || 1) * (item.unit_price || 0)
+        }))
+      : [{
+          description: parsed.description || parsed.job_type || transcript,
+          qty: 1,
+          unit_price: parsed.amount || 0,
+          line_total: parsed.amount || 0
+        }];
     
-    const subtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    const subtotal = lineItems.reduce((sum, item) => sum + item.line_total, 0);
+    const quoteNumber = `QT-${Date.now()}`;
     
-    const { data: quote, error } = await supabase
-      .from("quotes")
-      .insert({
-        user_id: currentUser.id,
-        client_id: clientId,
-        quote_number: quoteNumber,
-        date: new Date().toISOString().split("T")[0],
-        subtotal: subtotal,
-        tax: 0,
-        total: subtotal,
-        notes: transcript,
-        status: "draft"
-      })
-      .select()
-      .single();
+    // Create quote via API (same as normal quote creation)
+    const quoteData = {
+      client_id: clientId,
+      client_name: clientName,
+      client_address: parsed.address || "",
+      client_email: "",
+      quote_date: new Date().toISOString().split("T")[0],
+      quote_number: quoteNumber,
+      notes: transcript,
+      template: "basic_clean",
+      subtotal: subtotal,
+      tax: 0,
+      total: subtotal,
+      items: lineItems,
+      status: "draft"
+    };
 
-    if (quote) {
-      // Add line items
-      for (const item of lineItems) {
-        await supabase.from("quote_items").insert({
-          quote_id: quote.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.quantity * item.unit_price
-        });
-      }
+    const res = await apiFetch("/api/quotes", {
+      method: "POST",
+      body: JSON.stringify(quoteData)
+    });
 
+    if (res.ok) {
+      const result = await res.json();
+      
       updateVoiceStatus("success", "Quote Created!", `Quote #${quoteNumber}`);
-      updateVoiceTranscript(`✅ Quote #${quoteNumber}\nClient: ${parsed.client_name || 'New Client'}\nTotal: $${subtotal.toFixed(2)}`);
+      updateVoiceTranscript(`✅ Quote #${quoteNumber}\nClient: ${clientName}\nTotal: $${subtotal.toFixed(2)}`);
+      
+      // Reload quotes list
+      await loadQuotes();
       
       setTimeout(() => {
         hideVoiceTranscriptModal();
         goToScreen("quotes");
       }, 2000);
+    } else {
+      const errData = await res.json();
+      throw new Error(errData.error || "Failed to save quote");
     }
   } catch (err) {
     console.error("Create quote error:", err);
-    updateVoiceStatus("error", "Error", "Could not create quote");
+    updateVoiceStatus("error", "Error", err.message || "Could not create quote");
+    updateVoiceTranscript("Error: " + (err.message || "Could not create quote"));
     setTimeout(() => hideVoiceTranscriptModal(), 3000);
   }
 }
