@@ -2363,14 +2363,17 @@ app.post("/api/admin/send-message", requireAdmin, async (req, res) => {
 
   try {
     const messages = target_users && target_users.length
-      ? target_users.map(uid => ({ user_id: uid, title, content, message_type }))
-      : [{ user_id: null, title, content, message_type }];
+      ? target_users.map(uid => ({ target_user_id: uid, title, content, type: message_type, is_global: false }))
+      : [{ target_user_id: null, title, content, type: message_type, is_global: true }];
 
     const { error } = await supabaseAdmin
       .from("system_messages")
       .insert(messages);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Error inserting system message:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
     res.json({ success: true });
   } catch (error) {
