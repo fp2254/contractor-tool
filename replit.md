@@ -60,6 +60,8 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: /api/quotes/:id/send-email** - Send quotes via email (like invoices)
 - **NEW: AI Usage Logging** - All AI operations logged to ai_usage_logs table
 - **NEW: Demo Mode AI Features** - Tour/demo mode now showcases all AI features with simulated interactions (voice quote creator, form helpers, voice notes)
+- **NEW: AI Assistant Do-All Menu** - Prominent AI button on dashboard with dropdown for Voice Quote Creator, Voice Add to Inventory, Voice Invoice Creator, Voice Add Client
+- **UPDATED: Dashboard Layout** - Create Quote button moved into main tile grid, AI Assistant tile at top with expandable menu
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
