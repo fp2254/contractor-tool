@@ -1693,8 +1693,11 @@ app.post("/api/stripe/create-checkout-session", async (req, res) => {
     const mode =
       plan === "monthly" || plan === "yearly" ? "subscription" : "payment";
 
-    // Auto-detect frontend URL from request origin (works in both dev and production)
-    const frontendUrl = req.headers.origin || req.headers.referer?.split('/app')[0] || 'https://trade-base.biz';
+    // Auto-detect frontend URL - production domain as guaranteed fallback
+    const origin = req.headers.origin;
+    const referer = req.headers.referer?.split('/app')[0];
+    const frontendUrl = origin || referer || 'https://trade-base.biz';
+    console.log('Checkout URL detection:', { origin, referer, frontendUrl });
     
     const sessionConfig = {
       mode,
@@ -2754,8 +2757,11 @@ app.post("/api/ai/subscribe", requireAuth, async (req, res) => {
       });
     }
 
-    // Auto-detect frontend URL from request origin (works in both dev and production)
-    const frontendUrl = req.headers.origin || req.headers.referer?.split('/app')[0] || 'https://trade-base.biz';
+    // Auto-detect frontend URL - production domain as guaranteed fallback
+    const origin = req.headers.origin;
+    const referer = req.headers.referer?.split('/app')[0];
+    const frontendUrl = origin || referer || 'https://trade-base.biz';
+    console.log('AI Checkout URL detection:', { origin, referer, frontendUrl, priceId });
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
