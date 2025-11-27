@@ -5493,7 +5493,7 @@ function showDemoAIVoiceClient() {
   }, 3000);
 }
 
-// AI VOICE QUOTE FLOW - Complete do-it-all feature
+// AI VOICE QUOTE FLOW - Complete do-it-all feature with transcript modal
 async function startAIVoiceQuoteFlow() {
   closeAIDoAllMenu();
   
@@ -5517,30 +5517,114 @@ async function startAIVoiceQuoteFlow() {
     const mediaRecorder = new MediaRecorder(stream);
     const chunks = [];
 
+    // Show the transcript modal
+    showVoiceTranscriptModal();
+
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
     mediaRecorder.onstop = async () => {
       const blob = new Blob(chunks, { type: "audio/wav" });
       stream.getTracks().forEach(track => track.stop());
-      await completeVoiceQuoteWorkflow(blob);
+      await completeVoiceQuoteWorkflowWithModal(blob);
     };
 
     mediaRecorder.start();
     isRecording = true;
-    showToast("🎤 Recording... Say: 'Quote for [client name] doing [job] at [address] for [amount]'");
-
-    setTimeout(() => {
-      if (isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
-        showToast("Processing your voice command...");
-      }
-    }, 30000);
-
     window.currentMediaRecorder = mediaRecorder;
+    window.currentVoiceStream = stream;
+
+    // Auto-stop after 60 seconds (increased from 30)
+    window.voiceTimeout = setTimeout(() => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 60000);
+
   } catch (err) {
     console.error("Microphone error:", err);
-    showToast("Microphone access denied");
+    showToast("Microphone access denied. Please allow microphone access.");
+    hideVoiceTranscriptModal();
   }
+}
+
+// Voice Transcript Modal Functions
+function showVoiceTranscriptModal() {
+  const modal = document.getElementById("voice-transcript-modal");
+  if (modal) {
+    modal.classList.add("active");
+    updateVoiceStatus("recording", "Recording...", "Say: 'Quote for [client] doing [job] at [address] for [amount]'");
+    document.getElementById("voice-transcript-text").textContent = "Listening...";
+    document.getElementById("btn-stop-voice").style.display = "inline-block";
+    document.getElementById("btn-cancel-voice").style.display = "inline-block";
+  }
+}
+
+function hideVoiceTranscriptModal() {
+  const modal = document.getElementById("voice-transcript-modal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+function updateVoiceStatus(status, statusText, instructions) {
+  const pulse = document.getElementById("voice-pulse");
+  const statusTextEl = document.getElementById("voice-status-text");
+  const instructionsEl = document.getElementById("voice-instructions");
+  
+  if (pulse) {
+    pulse.className = "voice-pulse " + status;
+  }
+  if (statusTextEl) {
+    statusTextEl.textContent = statusText;
+  }
+  if (instructionsEl && instructions) {
+    instructionsEl.textContent = instructions;
+  }
+}
+
+function updateVoiceTranscript(text) {
+  const transcriptEl = document.getElementById("voice-transcript-text");
+  if (transcriptEl) {
+    transcriptEl.style.fontStyle = "normal";
+    transcriptEl.textContent = text;
+  }
+}
+
+function stopVoiceRecording() {
+  if (window.voiceTimeout) {
+    clearTimeout(window.voiceTimeout);
+  }
+  
+  if (window.currentMediaRecorder && isRecording) {
+    isRecording = false;
+    window.currentMediaRecorder.stop();
+    updateVoiceStatus("processing", "Processing...", "Transcribing your voice...");
+    document.getElementById("btn-stop-voice").style.display = "none";
+  }
+}
+
+function cancelVoiceRecording() {
+  if (window.voiceTimeout) {
+    clearTimeout(window.voiceTimeout);
+  }
+  
+  isRecording = false;
+  
+  if (window.currentMediaRecorder) {
+    try {
+      window.currentMediaRecorder.stop();
+    } catch (e) {}
+  }
+  
+  if (window.currentVoiceStream) {
+    window.currentVoiceStream.getTracks().forEach(track => track.stop());
+  }
+  
+  hideVoiceTranscriptModal();
+  showToast("Voice recording cancelled");
+}
+
+function stopVoiceAndCloseModal() {
+  cancelVoiceRecording();
 }
 
 async function completeVoiceQuoteWorkflow(audioBlob) {
@@ -5573,6 +5657,180 @@ async function completeVoiceQuoteWorkflow(audioBlob) {
   } catch (err) {
     console.error("Voice quote workflow error:", err);
     showToast("Failed to create quote from voice");
+  }
+}
+
+// New workflow with modal updates
+async function completeVoiceQuoteWorkflowWithModal(audioBlob) {
+  try {
+    updateVoiceStatus("processing", "Transcribing...", "Converting your voice to text...");
+
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+
+    // First, just transcribe to show the text
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!transcribeRes.ok) {
+      const err = await transcribeRes.json();
+      updateVoiceStatus("error", "Transcription Failed", err.error || "Could not understand audio");
+      updateVoiceTranscript("Error: " + (err.error || "Failed to transcribe audio"));
+      setTimeout(() => hideVoiceTranscriptModal(), 3000);
+      return;
+    }
+
+    const { transcript } = await transcribeRes.json();
+    
+    // Show the transcript to user
+    updateVoiceTranscript('"' + transcript + '"');
+    updateVoiceStatus("processing", "Parsing...", "Extracting quote details...");
+
+    // Now parse the transcript
+    const parseRes = await apiFetch("/api/ai/parse-quote", {
+      method: "POST",
+      body: JSON.stringify({ transcript })
+    });
+
+    if (!parseRes.ok) {
+      const err = await parseRes.json();
+      updateVoiceStatus("error", "Parsing Failed", err.error || "Could not parse quote details");
+      setTimeout(() => hideVoiceTranscriptModal(), 3000);
+      return;
+    }
+
+    const parsed = await parseRes.json();
+    
+    // Show what was extracted
+    let extractedInfo = `Client: ${parsed.client_name || 'Not found'}\n`;
+    extractedInfo += `Job: ${parsed.job_type || 'Not specified'}\n`;
+    extractedInfo += `Address: ${parsed.address || 'Not specified'}\n`;
+    if (parsed.line_items && parsed.line_items.length > 0) {
+      extractedInfo += `Items: ${parsed.line_items.length} line item(s)\n`;
+      const total = parsed.line_items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+      extractedInfo += `Total: $${total.toFixed(2)}`;
+    }
+    
+    updateVoiceTranscript(extractedInfo);
+    updateVoiceStatus("processing", "Creating Quote...", "Saving to your quotes...");
+
+    // Create the quote
+    const quoteData = {
+      transcript,
+      parsed
+    };
+
+    const createRes = await apiFetch("/api/ai/create-quote-from-parsed", {
+      method: "POST",
+      body: JSON.stringify(quoteData)
+    });
+
+    if (!createRes.ok) {
+      // Fall back to creating quote manually
+      await createQuoteFromParsedData(parsed, transcript);
+    } else {
+      const result = await createRes.json();
+      updateVoiceStatus("success", "Quote Created!", `Quote #${result.quote_number} - $${result.total.toFixed(2)}`);
+      updateVoiceTranscript(`✅ Quote #${result.quote_number}\nClient: ${result.client_name}\nTotal: $${result.total.toFixed(2)}`);
+      
+      setTimeout(() => {
+        hideVoiceTranscriptModal();
+        goToScreen("quotes");
+      }, 2000);
+      return;
+    }
+    
+  } catch (err) {
+    console.error("Voice quote workflow error:", err);
+    updateVoiceStatus("error", "Error", "Something went wrong");
+    updateVoiceTranscript("Error: " + err.message);
+    setTimeout(() => hideVoiceTranscriptModal(), 3000);
+  }
+}
+
+// Create quote from parsed data (fallback if API endpoint doesn't exist)
+async function createQuoteFromParsedData(parsed, transcript) {
+  try {
+    // Find or create client
+    let clientId = null;
+    if (parsed.client_name) {
+      const existingClient = clients.find(c => 
+        c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
+      );
+      
+      if (existingClient) {
+        clientId = existingClient.id;
+      } else {
+        // Create new client
+        const { data: newClient, error } = await supabase
+          .from("clients")
+          .insert({
+            user_id: currentUser.id,
+            name: parsed.client_name,
+            address: parsed.address || ""
+          })
+          .select()
+          .single();
+        
+        if (newClient) {
+          clientId = newClient.id;
+          clients.push(newClient);
+        }
+      }
+    }
+
+    // Create the quote
+    const quoteNumber = await generateQuoteNumber();
+    const lineItems = parsed.line_items || [{
+      description: parsed.job_type || transcript,
+      quantity: 1,
+      unit_price: parsed.amount || 0
+    }];
+    
+    const subtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    
+    const { data: quote, error } = await supabase
+      .from("quotes")
+      .insert({
+        user_id: currentUser.id,
+        client_id: clientId,
+        quote_number: quoteNumber,
+        date: new Date().toISOString().split("T")[0],
+        subtotal: subtotal,
+        tax: 0,
+        total: subtotal,
+        notes: transcript,
+        status: "draft"
+      })
+      .select()
+      .single();
+
+    if (quote) {
+      // Add line items
+      for (const item of lineItems) {
+        await supabase.from("quote_items").insert({
+          quote_id: quote.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.quantity * item.unit_price
+        });
+      }
+
+      updateVoiceStatus("success", "Quote Created!", `Quote #${quoteNumber}`);
+      updateVoiceTranscript(`✅ Quote #${quoteNumber}\nClient: ${parsed.client_name || 'New Client'}\nTotal: $${subtotal.toFixed(2)}`);
+      
+      setTimeout(() => {
+        hideVoiceTranscriptModal();
+        goToScreen("quotes");
+      }, 2000);
+    }
+  } catch (err) {
+    console.error("Create quote error:", err);
+    updateVoiceStatus("error", "Error", "Could not create quote");
+    setTimeout(() => hideVoiceTranscriptModal(), 3000);
   }
 }
 

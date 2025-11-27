@@ -1511,6 +1511,45 @@
     </div>
   </div>
 
+  <!-- AI Voice Transcript Modal -->
+  <div id="voice-transcript-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="color: var(--primary); margin: 0;">🎤 AI Voice Assistant</h2>
+        <button onclick="stopVoiceAndCloseModal()" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 20px;">
+        <!-- Recording Status Indicator -->
+        <div id="voice-status-indicator" style="margin-bottom: 20px;">
+          <div id="voice-pulse" class="voice-pulse recording"></div>
+          <p id="voice-status-text" style="font-size: 18px; font-weight: 600; color: var(--primary); margin: 10px 0;">Recording...</p>
+        </div>
+        
+        <!-- Instructions -->
+        <p id="voice-instructions" style="font-size: 14px; color: var(--muted); margin-bottom: 20px;">
+          Say: "Quote for [client] doing [job] at [address] for [amount]"
+        </p>
+        
+        <!-- Transcript Box -->
+        <div id="voice-transcript-box" style="background: var(--tile); border: 1px solid var(--border); border-radius: 8px; padding: 15px; min-height: 100px; max-height: 200px; overflow-y: auto; text-align: left; margin-bottom: 20px;">
+          <p id="voice-transcript-text" style="color: var(--text); font-size: 14px; margin: 0; font-style: italic;">
+            Waiting for transcript...
+          </p>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="btn-stop-voice" onclick="stopVoiceRecording()" class="btn-danger" style="min-width: 140px; background: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+            ⏹ Stop Recording
+          </button>
+          <button id="btn-cancel-voice" onclick="cancelVoiceRecording()" class="btn-secondary" style="min-width: 100px; padding: 12px 20px; border-radius: 8px; font-size: 16px;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Cancel AI Subscription Modal -->
   <div id="cancel-ai-modal" class="modal-overlay">
     <div class="modal-content" style="max-width: 450px;">
