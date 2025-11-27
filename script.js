@@ -4809,6 +4809,8 @@ async function sendAdminMessage() {
 async function checkAdminStatus() {
   if (!currentUser) {
     isAdminUser = false;
+    const adminTile = document.getElementById("admin-tile-dashboard");
+    if (adminTile) adminTile.style.display = "none";
     return;
   }
 
@@ -4817,9 +4819,15 @@ async function checkAdminStatus() {
     if (res.ok) {
       const data = await res.json();
       isAdminUser = data.is_admin;
+      const adminTile = document.getElementById("admin-tile-dashboard");
+      if (adminTile) {
+        adminTile.style.display = isAdminUser ? "flex" : "none";
+      }
     }
   } catch (err) {
     isAdminUser = false;
+    const adminTile = document.getElementById("admin-tile-dashboard");
+    if (adminTile) adminTile.style.display = "none";
   }
 }
 
