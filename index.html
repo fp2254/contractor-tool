@@ -990,13 +990,13 @@
               </div>
               <div class="form-row">
                 <label>Send To</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap;">
-                    <input type="radio" name="admin-recipient" value="all" checked onchange="toggleUserSearch(false)" />
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px;">
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="admin-recipient" value="all" checked onchange="toggleUserSearch(false)" style="width: 20px; height: 20px;" />
                     <span>All Users</span>
                   </label>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap;">
-                    <input type="radio" name="admin-recipient" value="specific" onchange="toggleUserSearch(true)" />
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="admin-recipient" value="specific" onchange="toggleUserSearch(true)" style="width: 20px; height: 20px;" />
                     <span>Specific User</span>
                   </label>
                 </div>
