@@ -1491,14 +1491,10 @@ async function handleLogout() {
 async function checkSession() {
   const { data } = await sb.auth.getUser();
   if (data && data.user) {
-    // Only auto-login if email is confirmed or if there's no email_confirmed field (legacy)
-    if (data.user.user_metadata?.email_verified || !data.user.email_confirmed_at) {
-      // If email_confirmed_at is null, they haven't confirmed yet
-      if (data.user.email_confirmed_at) {
-        currentUser = data.user;
-        await onLoggedIn();
-      }
-    }
+    // User has a valid session - log them in
+    // email_confirmed_at being set means they confirmed their email
+    currentUser = data.user;
+    await onLoggedIn();
   }
 }
 
@@ -1525,14 +1521,14 @@ async function onLoggedIn() {
   // Update language picker to show current language
   updateLanguagePickerValue();
   
+  // Check admin and AI status BEFORE loading data (so tiles render correctly)
+  await checkAdminStatus();
+  await checkAIStatus();
+  
   await loadInitialData();
   await updateTrialBanner();
   wireSubscriptionUI();
   applyLanguage();
-  
-  // Check admin and AI status
-  await checkAdminStatus();
-  await checkAIStatus();
 }
 
 // DASHBOARD / NAV
