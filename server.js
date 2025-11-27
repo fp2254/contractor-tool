@@ -2601,6 +2601,33 @@ app.post("/api/admin/send-message", requireAdmin, async (req, res) => {
   }
 });
 
+app.post("/api/admin/enable-ai", requireAdmin, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { target_user_id, enabled } = req.body;
+
+  try {
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ 
+        ai_enabled: enabled !== false, 
+        ai_plan: enabled !== false ? 'admin_granted' : null 
+      })
+      .eq("id", target_user_id);
+
+    if (error) {
+      console.error("Error updating AI status:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true, ai_enabled: enabled !== false });
+  } catch (error) {
+    console.error("Error enabling AI:", error);
+    res.status(500).json({ error: "Failed to enable AI" });
+  }
+});
+
 // AI SUBSCRIPTION ENDPOINTS
 
 // Check AI subscription status

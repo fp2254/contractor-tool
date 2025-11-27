@@ -5043,6 +5043,32 @@ function clearSelectedUser() {
   }
 }
 
+async function enableAIForUser() {
+  if (!selectedAdminUser) {
+    showToast("Please select a user first");
+    return;
+  }
+  
+  try {
+    const res = await apiFetch("/api/admin/enable-ai", {
+      method: "POST",
+      body: JSON.stringify({ 
+        target_user_id: selectedAdminUser.id, 
+        enabled: true 
+      })
+    });
+    
+    if (res.ok) {
+      showToast(`AI enabled for ${selectedAdminUser.email}!`);
+    } else {
+      showToast("Failed to enable AI - check admin access");
+    }
+  } catch (err) {
+    console.error("Error enabling AI:", err);
+    showToast("Failed to enable AI");
+  }
+}
+
 async function sendAdminMessage() {
   const titleEl = document.getElementById("admin-message-title");
   const contentEl = document.getElementById("admin-message-content");
