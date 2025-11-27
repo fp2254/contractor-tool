@@ -32,6 +32,11 @@ app.use(express.static(__dirname, {
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+// Landing page route
+app.get("/landing", (req, res) => {
+  res.sendFile(path.join(__dirname, "landing.html"));
+});
+
 // FILE UPLOADS
 const upload = multer({ storage: multer.memoryStorage() });
 

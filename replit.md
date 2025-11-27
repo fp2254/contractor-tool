@@ -64,6 +64,8 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **UPDATED: Dashboard Layout** - Create Quote button moved into main tile grid, AI Assistant tile at top with expandable menu
 - **UPDATED: AI Cancellation Flow** - Requires typing "cancel" to confirm AI subscription cancellation (prevents accidental cancels)
 - **UPDATED: Pricing Page** - Redesigned as professional landing page focused on 14-day free trial with feature grid, trust signals, and hidden plans modal
+- **NEW: Marketing Landing Page** - Dedicated landing page at /landing with hero, features, Talk to Work AI section, pricing cards, FAQ, and footer
+- **NEW: TradeBase Logo** - Added official logo to login page and landing page
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.

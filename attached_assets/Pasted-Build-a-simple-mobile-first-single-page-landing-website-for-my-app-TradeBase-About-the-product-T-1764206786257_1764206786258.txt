@@ -1,0 +1,208 @@
+Build a simple, mobile-first single-page landing website for my app TradeBase.
+
+About the product:
+TradeBase is a dead-simple invoicing and quoting web app built for contractors and tradesmen (plumbers, electricians, handymen, HVAC, etc.). It has:
+
+Big buttons, easy on mobile
+
+Professional invoices and quotes
+
+Stripe payment links
+
+Offline mode (PWA)
+
+Job folders and client tracking
+
+An optional AI add-on called Talk to Work that lets users press one button, talk, and have the app create quotes, jobs, and PDFs from their voice.
+
+Overall style:
+
+Clean, modern, but blue-collar friendly, not techy
+
+Big fonts, big buttons, clear sections
+
+Dark text on light background, with a strong accent color for CTAs
+
+Optimized for mobile first (600px breakpoint), but looks good on desktop too
+
+Page structure:
+
+Sticky Nav Bar
+
+Logo text: “TradeBase”
+
+Links: “Features”, “Pricing”, “How It Works”, “FAQ”
+
+A small button on the right: “Start Free”
+
+Hero Section (above the fold)
+
+Big headline:
+“Stop doing paperwork at night.”
+
+Subheadline:
+“Create quotes, invoices, and job folders from your phone in minutes — or just talk and let TradeBase handle it.”
+
+Two buttons:
+
+Primary: “Start 14-Day Free Trial”
+
+Secondary (outline): “See Pricing”
+
+Small trust text under buttons:
+“No credit card needed. Built for contractors.”
+
+“Built for Trades” Features Section
+A three-column (stacked on mobile) feature row with icons:
+
+Card 1:
+Title: “Quotes & invoices in minutes”
+Text: “4 clean templates, line items, tax, and Stripe payment links — all from your phone.”
+
+Card 2:
+Title: “Works where you work”
+Text: “Offline-first. Use it on the job, in basements, and in bad service areas. Syncs when you’re online.”
+
+Card 3:
+Title: “Organized jobs, not chaos”
+Text: “Every quote and invoice gets a job folder with client, address, photos, and notes.”
+
+“Talk to Work” AI Section
+This is the special feature. Make this section stand out visually.
+
+Section title: “Talk to Work: Your Hands-Free Mode”
+
+Short paragraph:
+“Hit one button, talk like you’re on the job, and TradeBase turns your words into a complete quote, job folder, and PDF — without you typing a thing.”
+
+A simple 3-step horizontal (or stacked) layout:
+
+“Press the Talk to Work button”
+
+“Describe the job in your own words”
+
+“TradeBase auto-creates the client, job folder, and quote”
+
+Add a badge-style line:
+“Available as an optional AI add-on.”
+
+How It Works Section
+Title: “How TradeBase Fits Your Day”
+Make a simple 3-step vertical flow:
+
+Step 1: “Add or pick a client”
+
+Step 2: “Create a quote or invoice in a few taps”
+
+Step 3: “Send it with Stripe payment link and track status”
+Add a small line under it:
+“Or skip the typing and use Talk to Work to do it all by voice.”
+
+Pricing Section
+Create 3 pricing cards side by side (stack on mobile):
+
+Card 1 – TradeBase Core
+
+Title: “TradeBase Core”
+
+Price: “$9.99 / month”
+Subtext: “or $99 / year”
+
+Bullet list:
+
+Invoices & quotes
+
+Job folders & clients
+
+Stripe payments
+
+Offline mode
+
+Referral program (20% for life)
+
+Button: “Start Free Trial”
+
+Card 2 – Lifetime Access (highlight this one lightly)
+
+Small label at top: “Limited Availability”
+
+Title: “Lifetime Core Access”
+
+Price: “$149 one-time”
+
+Bullet list:
+
+All TradeBase Core features
+
+No monthly fees
+
+Priority access to new features
+
+Small note at bottom:
+“Lifetime access opens only during special release windows and may close without notice.”
+
+Button: “Get Lifetime (If Available)”
+
+Card 3 – Talk to Work (AI Add-On)
+
+Title: “Talk to Work (AI Add-On)”
+
+Price: “+ $9.99 / month”
+
+Bullet list:
+
+Voice-to-quote creation
+
+Auto job folder creation
+
+Smart autofill & cleanup
+
+Profanity filtering
+
+Small note: “AI is billed separately and not included in lifetime plans.”
+
+Button: “Add Talk to Work”
+
+FAQ Section
+Include at least 4 FAQs:
+
+“Do I need a credit card for the free trial?”
+Answer: “No. You can start your 14-day free trial with just an email.”
+
+“Can I use TradeBase offline?”
+Answer: “Yes. TradeBase is a PWA that works offline and syncs when you’re online again.”
+
+“Is Talk to Work required?”
+Answer: “No. TradeBase Core works great without AI. Talk to Work is an optional add-on for hands-free voice workflows.”
+
+“Who is TradeBase for?”
+Answer: “Contractors, handymen, HVAC, plumbers, electricians, and any trade pro who’s tired of doing paperwork at night.”
+
+Final Call-To-Action Section
+Simple, centered section near the bottom:
+
+Headline: “Ready to stop doing paperwork after hours?”
+
+Subtext: “Start your 14-day free trial and send your first quote in minutes.”
+
+Button: “Start Free Trial”
+
+Footer
+
+Simple footer with:
+
+“© TradeBase”
+
+Links: “Privacy Policy”, “Terms of Service”, “Contact”
+
+Technical requirements:
+
+Use simple HTML/CSS and minimal JavaScript (no heavy frameworks).
+
+Make the layout responsive.
+
+Style buttons big enough for thumbs on mobile.
+
+Keep colors clean and professional, not flashy.
+
+Write clean, semantic HTML and CSS I can easily tweak later.
