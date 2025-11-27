@@ -3106,8 +3106,52 @@ app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (
   }
 });
 
-// START
+// INITIALIZE STORAGE BUCKETS
+async function initializeStorageBuckets() {
+  try {
+    const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+    
+    if (listError) {
+      console.error("Error listing buckets:", listError);
+      return;
+    }
+    
+    const bucketNames = buckets.map(b => b.name);
+    
+    // Create logos bucket if it doesn't exist
+    if (!bucketNames.includes("logos")) {
+      const { error: createError } = await supabaseAdmin.storage.createBucket("logos", {
+        public: true,
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"]
+      });
+      
+      if (createError) {
+        console.error("Error creating logos bucket:", createError);
+      } else {
+        console.log("Created logos storage bucket");
+      }
+    }
+    
+    // Create invoice-photos bucket if it doesn't exist
+    if (!bucketNames.includes("invoice-photos")) {
+      const { error: createError } = await supabaseAdmin.storage.createBucket("invoice-photos", {
+        public: true,
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"]
+      });
+      
+      if (createError) {
+        console.error("Error creating invoice-photos bucket:", createError);
+      } else {
+        console.log("Created invoice-photos storage bucket");
+      }
+    }
+  } catch (err) {
+    console.error("Error initializing storage buckets:", err);
+  }
+}
 
-app.listen(port, '0.0.0.0', () => {
+// START
+app.listen(port, '0.0.0.0', async () => {
   console.log(`TradeBase server running on http://0.0.0.0:${port}`);
+  await initializeStorageBuckets();
 });
