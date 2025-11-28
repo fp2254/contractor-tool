@@ -67,6 +67,9 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: Marketing Landing Page** - Dedicated landing page at /landing with hero, features, Talk to Work AI section, pricing cards, FAQ, and footer
 - **NEW: TradeBase Logo** - Added official logo to login page and landing page
 - **NEW: Archive System** - Invoices and quotes can be archived to keep active lists clean. Features Active/Archived tabs, archive button in detail views, unarchive and permanent delete options for archived items
+- **NEW: Voice Add to Inventory** - Speak to add inventory items with name, quantity, price, and category. Uses Whisper transcription + GPT-4o-mini parsing via /api/ai/parse-inventory endpoint
+- **NEW: Voice Invoice Creator** - Speak to create invoices just like Voice Quote Creator. Extracts client, items, prices and creates invoice with job folder
+- **NEW: Voice Add Client** - Speak to add new clients with name, phone, email, and address. Uses /api/ai/parse-client endpoint for structured extraction
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
