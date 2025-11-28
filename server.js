@@ -2992,6 +2992,128 @@ RULES:
   }
 });
 
+// AI PARSE INVENTORY - Extract inventory item data from transcript
+app.post("/api/ai/parse-inventory", requireAI, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "inventory_parsing");
+
+  let { transcript } = req.body;
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Parsing service not configured" });
+    }
+
+    transcript = filter.clean(transcript);
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const systemPrompt = `You are a contractor inventory assistant. Parse the user's voice transcription and extract inventory item data. Return ONLY valid JSON with these fields:
+{
+  "name": "item name (e.g., '1/4 inch copper fittings')",
+  "quantity": number,
+  "unit_price": number,
+  "category": "category (Electrical, Plumbing, HVAC, Tools, Materials, Other)",
+  "notes": "any additional notes"
+}
+
+RULES:
+- Extract item NAME clearly and professionally
+- Parse QUANTITY as a number (e.g., "50 pieces" = 50)
+- Parse UNIT PRICE as a number (e.g., "$2.50 each" = 2.50)
+- Guess CATEGORY based on item type
+- Return ONLY valid JSON`;
+
+    const message = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Parse this into inventory data: "${transcript}"` }
+      ],
+      temperature: 0
+    });
+
+    let parsedData = {};
+    try {
+      const content = message.choices[0].message.content;
+      parsedData = JSON.parse(content);
+    } catch (e) {
+      console.error("Failed to parse GPT response:", e);
+      parsedData = { name: transcript, quantity: 1, unit_price: 0, category: "Other" };
+    }
+
+    res.json(parsedData);
+  } catch (error) {
+    console.error("AI inventory parsing error:", error);
+    res.status(500).json({ error: "Failed to parse transcript" });
+  }
+});
+
+// AI PARSE CLIENT - Extract client data from transcript
+app.post("/api/ai/parse-client", requireAI, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "client_parsing");
+
+  let { transcript } = req.body;
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Parsing service not configured" });
+    }
+
+    transcript = filter.clean(transcript);
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const systemPrompt = `You are a contractor assistant. Parse the user's voice transcription and extract client/customer data. Return ONLY valid JSON with these fields:
+{
+  "name": "full name (first and last)",
+  "email": "email address or empty string",
+  "phone": "phone number or empty string",
+  "address": "street address or empty string",
+  "notes": "any additional notes"
+}
+
+RULES:
+- Extract FULL NAME (first and last name)
+- Format PHONE as digits with dashes (e.g., 555-123-4567)
+- Extract EMAIL if mentioned
+- Extract ADDRESS if mentioned
+- Return ONLY valid JSON`;
+
+    const message = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Parse this into client data: "${transcript}"` }
+      ],
+      temperature: 0
+    });
+
+    let parsedData = {};
+    try {
+      const content = message.choices[0].message.content;
+      parsedData = JSON.parse(content);
+    } catch (e) {
+      console.error("Failed to parse GPT response:", e);
+      parsedData = { name: transcript, email: "", phone: "", address: "" };
+    }
+
+    res.json(parsedData);
+  } catch (error) {
+    console.error("AI client parsing error:", error);
+    res.status(500).json({ error: "Failed to parse transcript" });
+  }
+});
+
 // AI CREATE QUOTE FULL WORKFLOW - Complete voice-to-quote-PDF pipeline
 app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (req, res) => {
   const userId = req.userId;

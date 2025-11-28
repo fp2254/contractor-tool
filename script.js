@@ -5457,19 +5457,115 @@ async function startAIVoiceInventory() {
     return;
   }
   
-  showToast("🎤 Voice Inventory coming soon! For now, use manual entry.");
-  goToScreen("inventory");
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    showVoiceTranscriptModal("inventory");
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await completeVoiceInventoryWorkflow(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    window.currentMediaRecorder = mediaRecorder;
+    window.currentVoiceStream = stream;
+
+    window.voiceTimeout = setTimeout(() => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 60000);
+
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied. Please allow microphone access.");
+    hideVoiceTranscriptModal();
+  }
+}
+
+async function completeVoiceInventoryWorkflow(audioBlob) {
+  try {
+    updateVoiceModalStatus("Transcribing audio...");
+    
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+    
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!transcribeRes.ok) {
+      throw new Error("Failed to transcribe audio");
+    }
+    
+    const { transcript } = await transcribeRes.json();
+    updateVoiceModalTranscript(transcript);
+    updateVoiceModalStatus("Parsing inventory item...");
+    
+    const parseRes = await apiFetch("/api/ai/parse-inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript })
+    });
+    
+    if (!parseRes.ok) {
+      throw new Error("Failed to parse inventory data");
+    }
+    
+    const parsed = await parseRes.json();
+    updateVoiceModalStatus("Creating inventory item...");
+    
+    const itemData = {
+      name: parsed.name || "Voice Item",
+      quantity: parsed.quantity || 1,
+      unit_price: parsed.unit_price || 0,
+      category: parsed.category || "Other",
+      notes: parsed.notes || ""
+    };
+    
+    const saveRes = await apiFetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemData)
+    });
+    
+    if (!saveRes.ok) {
+      throw new Error("Failed to save inventory item");
+    }
+    
+    hideVoiceTranscriptModal();
+    showToast(`Added: ${itemData.quantity}x ${itemData.name} @ ${formatCurrency(itemData.unit_price)}`);
+    await loadInventory();
+    showScreen("inventory");
+    
+  } catch (error) {
+    console.error("Voice inventory error:", error);
+    hideVoiceTranscriptModal();
+    showToast("Failed to add inventory item: " + error.message);
+  }
 }
 
 function showDemoAIVoiceInventory() {
-  showToast("🎤 Demo: Voice Add to Inventory");
+  showToast("Demo: Voice Add to Inventory");
   
   setTimeout(() => {
-    showToast("🎧 Recording: '50 copper fittings, quarter inch, 2 dollars each'");
+    showToast("Recording: '50 copper fittings, quarter inch, 2 dollars each'");
   }, 1000);
   
   setTimeout(() => {
-    showToast("✅ Demo: Added 50x 1/4\" Copper Fittings @ $2.00 each");
+    showToast("Demo: Added 50x 1/4\" Copper Fittings @ $2.00 each");
   }, 3000);
 }
 
@@ -5487,19 +5583,160 @@ async function startAIVoiceInvoice() {
     return;
   }
   
-  showToast("🎤 Voice Invoice coming soon! For now, use manual entry.");
-  goToScreen("new-invoice");
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    showVoiceTranscriptModal("invoice");
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await completeVoiceInvoiceWorkflow(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    window.currentMediaRecorder = mediaRecorder;
+    window.currentVoiceStream = stream;
+
+    window.voiceTimeout = setTimeout(() => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 60000);
+
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied. Please allow microphone access.");
+    hideVoiceTranscriptModal();
+  }
+}
+
+async function completeVoiceInvoiceWorkflow(audioBlob) {
+  try {
+    updateVoiceModalStatus("Transcribing audio...");
+    
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+    
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!transcribeRes.ok) {
+      throw new Error("Failed to transcribe audio");
+    }
+    
+    const { transcript } = await transcribeRes.json();
+    updateVoiceModalTranscript(transcript);
+    updateVoiceModalStatus("Parsing invoice details...");
+    
+    const parseRes = await apiFetch("/api/ai/parse-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript })
+    });
+    
+    if (!parseRes.ok) {
+      throw new Error("Failed to parse invoice data");
+    }
+    
+    const parsed = await parseRes.json();
+    updateVoiceModalStatus("Creating invoice...");
+    
+    let clientName = parsed.client_name || "";
+    let clientId = null;
+    
+    if (clientName) {
+      const clientRes = await apiFetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: clientName,
+          address: parsed.address || "",
+          email: "",
+          phone: ""
+        })
+      });
+      
+      if (clientRes.ok) {
+        const clientData = await clientRes.json();
+        clientId = clientData.id;
+      }
+    }
+    
+    if (!clientName) {
+      clientName = "Voice Invoice Client";
+    }
+    
+    const lineItems = parsed.line_items && parsed.line_items.length > 0 
+      ? parsed.line_items.map(item => ({
+          description: item.description || parsed.job_type || "Service",
+          qty: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          line_total: (item.quantity || 1) * (item.unit_price || 0)
+        }))
+      : [{
+          description: parsed.job_type || "Service",
+          qty: 1,
+          unit_price: 0,
+          line_total: 0
+        }];
+    
+    const subtotal = lineItems.reduce((sum, item) => sum + item.line_total, 0);
+    
+    const invoiceData = {
+      client_id: clientId,
+      client_name: clientName,
+      date: new Date().toISOString().split("T")[0],
+      notes: parsed.notes || "",
+      template: "basic_clean",
+      subtotal: subtotal,
+      tax: 0,
+      total: subtotal,
+      items: lineItems,
+      status: "draft"
+    };
+    
+    const res = await apiFetch("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify(invoiceData)
+    });
+    
+    if (!res.ok) {
+      throw new Error("Failed to create invoice");
+    }
+    
+    hideVoiceTranscriptModal();
+    showToast(`Invoice created for ${clientName} - ${formatCurrency(subtotal)}`);
+    await loadInvoices();
+    showScreen("invoices");
+    
+  } catch (error) {
+    console.error("Voice invoice error:", error);
+    hideVoiceTranscriptModal();
+    showToast("Failed to create invoice: " + error.message);
+  }
 }
 
 function showDemoAIVoiceInvoice() {
-  showToast("🎤 Demo: Voice Invoice Creator");
+  showToast("Demo: Voice Invoice Creator");
   
   setTimeout(() => {
-    showToast("🎧 Recording: 'Invoice for Smith residence, water heater install, 850 dollars'");
+    showToast("Recording: 'Invoice for Smith residence, water heater install, 850 dollars'");
   }, 1000);
   
   setTimeout(() => {
-    showToast("✅ Demo: Created invoice #INV-1001 for $850.00");
+    showToast("Demo: Created invoice #INV-1001 for $850.00");
   }, 3000);
 }
 
@@ -5517,19 +5754,119 @@ async function startAIVoiceClient() {
     return;
   }
   
-  showToast("🎤 Voice Client coming soon! For now, use manual entry.");
-  goToScreen("new-client");
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    showVoiceTranscriptModal("client");
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await completeVoiceClientWorkflow(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    window.currentMediaRecorder = mediaRecorder;
+    window.currentVoiceStream = stream;
+
+    window.voiceTimeout = setTimeout(() => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 60000);
+
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied. Please allow microphone access.");
+    hideVoiceTranscriptModal();
+  }
+}
+
+async function completeVoiceClientWorkflow(audioBlob) {
+  try {
+    updateVoiceModalStatus("Transcribing audio...");
+    
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+    
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!transcribeRes.ok) {
+      throw new Error("Failed to transcribe audio");
+    }
+    
+    const { transcript } = await transcribeRes.json();
+    updateVoiceModalTranscript(transcript);
+    updateVoiceModalStatus("Parsing client info...");
+    
+    const parseRes = await apiFetch("/api/ai/parse-client", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript })
+    });
+    
+    if (!parseRes.ok) {
+      throw new Error("Failed to parse client data");
+    }
+    
+    const parsed = await parseRes.json();
+    updateVoiceModalStatus("Creating client...");
+    
+    if (!parsed.name) {
+      throw new Error("Could not extract client name from voice");
+    }
+    
+    const clientData = {
+      name: parsed.name,
+      email: parsed.email || "",
+      phone: parsed.phone || "",
+      address: parsed.address || "",
+      notes: parsed.notes || ""
+    };
+    
+    const saveRes = await apiFetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(clientData)
+    });
+    
+    if (!saveRes.ok) {
+      throw new Error("Failed to save client");
+    }
+    
+    hideVoiceTranscriptModal();
+    showToast(`Added client: ${clientData.name}`);
+    await loadClients();
+    showScreen("clients");
+    
+  } catch (error) {
+    console.error("Voice client error:", error);
+    hideVoiceTranscriptModal();
+    showToast("Failed to add client: " + error.message);
+  }
 }
 
 function showDemoAIVoiceClient() {
-  showToast("🎤 Demo: Voice Add Client");
+  showToast("Demo: Voice Add Client");
   
   setTimeout(() => {
-    showToast("🎧 Recording: 'New client John Smith, phone 555-123-4567, email john@example.com'");
+    showToast("Recording: 'New client John Smith, phone 555-123-4567, email john@example.com'");
   }, 1000);
   
   setTimeout(() => {
-    showToast("✅ Demo: Added client John Smith to your list");
+    showToast("Demo: Added client John Smith to your list");
   }, 3000);
 }
 
@@ -5587,11 +5924,27 @@ async function startAIVoiceQuoteFlow() {
 }
 
 // Voice Transcript Modal Functions
-function showVoiceTranscriptModal() {
+function showVoiceTranscriptModal(type = "quote") {
   const modal = document.getElementById("voice-transcript-modal");
   if (modal) {
     modal.classList.add("active");
-    updateVoiceStatus("recording", "Recording...", "Say: 'Quote for [client] doing [job] at [address] for [amount]'");
+    
+    let instructions = "";
+    switch (type) {
+      case "inventory":
+        instructions = "Say: '50 copper fittings, quarter inch, 2 dollars each'";
+        break;
+      case "invoice":
+        instructions = "Say: 'Invoice for [client] doing [job] for [amount]'";
+        break;
+      case "client":
+        instructions = "Say: 'New client John Smith, phone 555-1234, email john@example.com'";
+        break;
+      default:
+        instructions = "Say: 'Quote for [client] doing [job] at [address] for [amount]'";
+    }
+    
+    updateVoiceStatus("recording", "Recording...", instructions);
     document.getElementById("voice-transcript-text").textContent = "Listening...";
     document.getElementById("btn-stop-voice").style.display = "inline-block";
     document.getElementById("btn-cancel-voice").style.display = "inline-block";
