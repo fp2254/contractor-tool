@@ -2473,6 +2473,9 @@ async function viewInvoiceDetail(invoiceId) {
         <button class="btn-sm" id="send-email-invoice-btn" data-invoice-id="${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
           <i class="fa-solid fa-envelope"></i> <span data-i18n="invoice.send_email">Send Email</span>
         </button>
+        <button class="btn-sm" id="send-text-invoice-btn" data-invoice-id="${invoice.id}" data-client-phone="${invoice.client?.phone || ''}" data-total="${invoice.total || 0}" style="background: #22c55e; color: white;">
+          <i class="fa-solid fa-comment-sms"></i> Send Text
+        </button>
         <button class="btn-sm" id="download-invoice-btn" data-invoice-id="${invoice.id}">
           <i class="fa-solid fa-download"></i> Download
         </button>
@@ -2499,6 +2502,14 @@ async function viewInvoiceDetail(invoiceId) {
     if (sendEmailBtn) {
       sendEmailBtn.addEventListener('click', () => {
         openEmailInvoiceModal(invoice);
+      });
+    }
+    
+    // Wire up send text button
+    const sendTextBtn = document.getElementById('send-text-invoice-btn');
+    if (sendTextBtn) {
+      sendTextBtn.addEventListener('click', () => {
+        sendInvoiceSMS(invoice);
       });
     }
     
@@ -2790,6 +2801,71 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
     console.error("Failed to copy:", err);
     showToast("Failed to copy to clipboard");
   });
+}
+
+// Send Invoice via SMS (opens native Messages app)
+async function sendInvoiceSMS(invoice) {
+  try {
+    let paymentLink = invoice.payment_link;
+    
+    // Generate payment link if not exists
+    if (!paymentLink && invoice.payment_status !== 'paid') {
+      showToast("Generating payment link...");
+      const res = await apiFetch(`/api/invoices/${invoice.id}/payment-link`, {
+        method: 'POST',
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        paymentLink = data.payment_link;
+      } else {
+        showToast("Could not generate payment link, sending without it");
+      }
+    }
+    
+    // Build message
+    const businessName = userProfile?.business_name || "Your business";
+    const total = formatCurrency(invoice.total || 0);
+    const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
+    
+    let message = `Invoice from ${businessName} for ${total}.`;
+    message += `\n\nView invoice: ${invoiceViewLink}`;
+    
+    if (paymentLink && invoice.payment_status !== 'paid') {
+      message += `\n\nPay now: ${paymentLink}`;
+    }
+    
+    // Get client phone (cleaned)
+    const clientPhone = (invoice.client?.phone || '').replace(/[^0-9+]/g, '');
+    
+    // Encode message for URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Build SMS URL - format differs for iOS vs Android
+    // iOS requires sms:phone?&body= format, Android uses sms:phone?body=
+    let smsUrl;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (clientPhone) {
+      if (isIOS) {
+        // iOS format: sms:phone?&body=message (needs the ?& before body)
+        smsUrl = `sms:${clientPhone}?&body=${encodedMessage}`;
+      } else {
+        // Android format: sms:phone?body=message
+        smsUrl = `sms:${clientPhone}?body=${encodedMessage}`;
+      }
+    } else {
+      // No phone number - let user choose recipient
+      smsUrl = `sms:?body=${encodedMessage}`;
+    }
+    
+    // Open native SMS app
+    window.location.href = smsUrl;
+    
+  } catch (error) {
+    console.error("Error sending invoice SMS:", error);
+    showToast("Failed to open messaging app");
+  }
 }
 
 async function loadPaymentStats() {

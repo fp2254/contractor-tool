@@ -3331,6 +3331,154 @@ async function initializeStorageBuckets() {
   }
 }
 
+// PUBLIC INVOICE VIEW (no auth required - for clients to view their invoices)
+app.get("/view/invoice/:id", async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    
+    // Get invoice with items
+    const { data: invoice, error: invoiceError } = await supabaseAdmin
+      .from("invoices")
+      .select("*")
+      .eq("id", invoiceId)
+      .single();
+    
+    if (invoiceError || !invoice) {
+      return res.status(404).send("<h1>Invoice not found</h1>");
+    }
+    
+    // Get invoice items
+    const { data: items } = await supabaseAdmin
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", invoiceId);
+    
+    // Get business profile
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("business_name, email, phone, address, logo_url")
+      .eq("id", invoice.user_id)
+      .single();
+    
+    // Get client info
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("name, email, phone, address")
+      .eq("id", invoice.client_id)
+      .single();
+    
+    const businessName = profile?.business_name || "Business";
+    const total = items?.reduce((sum, item) => sum + (parseFloat(item.line_total) || parseFloat(item.total) || 0), 0) || 0;
+    
+    // Generate HTML page
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice #${invoice.invoice_number || invoiceId} - ${businessName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a56db, #3b82f6); color: white; padding: 30px; }
+    .header h1 { font-size: 24px; margin-bottom: 5px; }
+    .header p { opacity: 0.9; }
+    .content { padding: 30px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .info-box h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+    .info-box p { color: #333; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #666; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    .total-row { background: #f8f9fa; font-weight: bold; font-size: 18px; }
+    .total-row td { padding: 20px 12px; }
+    .actions { display: flex; gap: 10px; justify-content: center; padding: 20px; background: #f8f9fa; }
+    .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block; }
+    .btn-primary { background: #1a56db; color: white; }
+    .btn-secondary { background: #e5e7eb; color: #333; }
+    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-paid { background: #dcfce7; color: #166534; }
+    .status-unpaid { background: #fee2e2; color: #991b1b; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>${businessName}</h1>
+      <p>Invoice #${invoice.invoice_number || invoiceId}</p>
+    </div>
+    <div class="content">
+      <div class="info-grid">
+        <div class="info-box">
+          <h3>Bill To</h3>
+          <p><strong>${client?.name || 'Client'}</strong></p>
+          ${client?.address ? `<p>${client.address}</p>` : ''}
+          ${client?.email ? `<p>${client.email}</p>` : ''}
+          ${client?.phone ? `<p>${client.phone}</p>` : ''}
+        </div>
+        <div class="info-box" style="text-align: right;">
+          <h3>Invoice Details</h3>
+          <p>Date: ${invoice.date || new Date().toLocaleDateString()}</p>
+          <p>Status: <span class="status ${invoice.payment_status === 'paid' ? 'status-paid' : invoice.payment_status === 'pending' ? 'status-pending' : 'status-unpaid'}">${(invoice.payment_status || 'unpaid').toUpperCase()}</span></p>
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(items || []).map(item => `
+            <tr>
+              <td>${item.description || ''}</td>
+              <td style="text-align: center;">${item.qty || item.quantity || 1}</td>
+              <td style="text-align: right;">$${(parseFloat(item.unit_price) || parseFloat(item.price) || 0).toFixed(2)}</td>
+              <td style="text-align: right;">$${(parseFloat(item.line_total) || parseFloat(item.total) || 0).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row">
+            <td colspan="3" style="text-align: right;">Total:</td>
+            <td style="text-align: right;">$${total.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      ${invoice.notes ? `<p style="color: #666; font-style: italic; margin-top: 20px;">${invoice.notes}</p>` : ''}
+    </div>
+    
+    <div class="actions">
+      ${invoice.payment_link && invoice.payment_status !== 'paid' ? `<a href="${invoice.payment_link}" class="btn btn-primary">Pay Now</a>` : ''}
+      <a href="javascript:window.print()" class="btn btn-secondary">Print / Save PDF</a>
+    </div>
+    
+    <div class="footer">
+      <p>Powered by <a href="https://trade-base.biz" style="color: #1a56db;">TradeBase</a></p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    
+    res.send(html);
+  } catch (err) {
+    console.error("Error rendering public invoice:", err);
+    res.status(500).send("<h1>Error loading invoice</h1>");
+  }
+});
+
 // START
 app.listen(port, '0.0.0.0', async () => {
   console.log(`TradeBase server running on http://0.0.0.0:${port}`);
