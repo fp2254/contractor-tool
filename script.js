@@ -2428,9 +2428,9 @@ async function viewInvoiceDetail(invoiceId) {
             ${(invoice.items || []).map(item => `
               <tr>
                 <td>${item.description || ''}</td>
-                <td style="text-align: center;">${item.qty || 1}</td>
-                <td style="text-align: right;">${formatCurrency(item.price || 0)}</td>
-                <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
+                <td style="text-align: center;">${item.qty || item.quantity || 1}</td>
+                <td style="text-align: right;">${formatCurrency(item.unit_price || item.price || 0)}</td>
+                <td style="text-align: right;">${formatCurrency(item.line_total || item.total || 0)}</td>
               </tr>
             `).join('')}
           </tbody>
