@@ -4143,10 +4143,10 @@ async function shareQuote(quote) {
       profile: profile
     };
     
-    // Create off-screen template
+    // Create off-screen template (use renderInvoiceTemplate with isQuote=true)
     const template = document.createElement("div");
     template.className = "quote-template-print";
-    template.innerHTML = renderQuoteTemplate(quoteData, quote.template || profile.preferred_template || "basic_clean");
+    template.innerHTML = renderInvoiceTemplate(quoteData, true);
     template.style.position = "absolute";
     template.style.left = "-9999px";
     template.style.width = "800px";
