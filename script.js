@@ -5579,7 +5579,7 @@ async function startAIVoiceInventory() {
 
 async function completeVoiceInventoryWorkflow(audioBlob) {
   try {
-    updateVoiceModalStatus("Transcribing audio...");
+    updateVoiceStatus("processing", "Transcribing audio...", "Converting speech to text...");
     
     const formData = new FormData();
     formData.append("audio", audioBlob, "recording.wav");
@@ -5594,8 +5594,8 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
     }
     
     const { transcript } = await transcribeRes.json();
-    updateVoiceModalTranscript(transcript);
-    updateVoiceModalStatus("Parsing inventory item...");
+    updateVoiceTranscript(transcript);
+    updateVoiceStatus("processing", "Parsing inventory...", "Extracting item details...");
     
     const parseRes = await apiFetch("/api/ai/parse-inventory", {
       method: "POST",
@@ -5608,7 +5608,7 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
     }
     
     const parsed = await parseRes.json();
-    updateVoiceModalStatus("Creating inventory item...");
+    updateVoiceStatus("processing", "Creating item...", "Saving to inventory...");
     
     const itemData = {
       name: parsed.name || "Voice Item",
@@ -5705,7 +5705,7 @@ async function startAIVoiceInvoice() {
 
 async function completeVoiceInvoiceWorkflow(audioBlob) {
   try {
-    updateVoiceModalStatus("Transcribing audio...");
+    updateVoiceStatus("processing", "Transcribing audio...", "Converting speech to text...");
     
     const formData = new FormData();
     formData.append("audio", audioBlob, "recording.wav");
@@ -5720,8 +5720,8 @@ async function completeVoiceInvoiceWorkflow(audioBlob) {
     }
     
     const { transcript } = await transcribeRes.json();
-    updateVoiceModalTranscript(transcript);
-    updateVoiceModalStatus("Parsing invoice details...");
+    updateVoiceTranscript(transcript);
+    updateVoiceStatus("processing", "Parsing invoice...", "Extracting details...");
     
     const parseRes = await apiFetch("/api/ai/parse-quote", {
       method: "POST",
@@ -5734,7 +5734,7 @@ async function completeVoiceInvoiceWorkflow(audioBlob) {
     }
     
     const parsed = await parseRes.json();
-    updateVoiceModalStatus("Creating invoice...");
+    updateVoiceStatus("processing", "Creating invoice...", "Saving...");
     
     let clientName = parsed.client_name || "";
     let clientId = null;
@@ -5876,7 +5876,7 @@ async function startAIVoiceClient() {
 
 async function completeVoiceClientWorkflow(audioBlob) {
   try {
-    updateVoiceModalStatus("Transcribing audio...");
+    updateVoiceStatus("processing", "Transcribing audio...", "Converting speech to text...");
     
     const formData = new FormData();
     formData.append("audio", audioBlob, "recording.wav");
@@ -5891,8 +5891,8 @@ async function completeVoiceClientWorkflow(audioBlob) {
     }
     
     const { transcript } = await transcribeRes.json();
-    updateVoiceModalTranscript(transcript);
-    updateVoiceModalStatus("Parsing client info...");
+    updateVoiceTranscript(transcript);
+    updateVoiceStatus("processing", "Parsing client info...", "Extracting details...");
     
     const parseRes = await apiFetch("/api/ai/parse-client", {
       method: "POST",
@@ -5905,7 +5905,7 @@ async function completeVoiceClientWorkflow(audioBlob) {
     }
     
     const parsed = await parseRes.json();
-    updateVoiceModalStatus("Creating client...");
+    updateVoiceStatus("processing", "Creating client...", "Saving...");
     
     if (!parsed.name) {
       throw new Error("Could not extract client name from voice");
