@@ -70,6 +70,8 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: Voice Add to Inventory** - Speak to add inventory items with name, quantity, price, and category. Uses Whisper transcription + GPT-4o-mini parsing via /api/ai/parse-inventory endpoint
 - **NEW: Voice Invoice Creator** - Speak to create invoices just like Voice Quote Creator. Extracts client, items, prices and creates invoice with job folder
 - **NEW: Voice Add Client** - Speak to add new clients with name, phone, email, and address. Uses /api/ai/parse-client endpoint for structured extraction
+- **NEW: Send Text Button** - Invoice detail view now has "Send Text" button that opens native SMS app with pre-filled message including invoice view link and Stripe payment link. Works on both iOS and Android.
+- **NEW: Public Invoice View** - Clients can view invoices at /view/invoice/:id without login. Page shows business info, line items, totals, and includes Pay Now button if payment link exists.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
