@@ -60,7 +60,16 @@ class TradeBaseDB {
     });
   }
 
+  async ensureDB() {
+    if (!this.db) {
+      await this.init();
+    }
+    return this.db;
+  }
+
   async add(storeName, data) {
+    await this.ensureDB();
+    if (!this.db) return null;
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {
@@ -71,6 +80,8 @@ class TradeBaseDB {
   }
 
   async put(storeName, data) {
+    await this.ensureDB();
+    if (!this.db) return null;
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {
@@ -81,6 +92,8 @@ class TradeBaseDB {
   }
 
   async get(storeName, key) {
+    await this.ensureDB();
+    if (!this.db) return null;
     const transaction = this.db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {
@@ -91,6 +104,8 @@ class TradeBaseDB {
   }
 
   async getAll(storeName, indexName = null, indexValue = null) {
+    await this.ensureDB();
+    if (!this.db) return [];
     const transaction = this.db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
     
@@ -110,6 +125,8 @@ class TradeBaseDB {
   }
 
   async delete(storeName, key) {
+    await this.ensureDB();
+    if (!this.db) return null;
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {
@@ -120,6 +137,8 @@ class TradeBaseDB {
   }
 
   async clear(storeName) {
+    await this.ensureDB();
+    if (!this.db) return null;
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {

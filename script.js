@@ -4119,48 +4119,88 @@ async function downloadQuote(quote) {
 
 async function shareQuote(quote) {
   try {
+    showToast("Generating quote image...");
+    
     const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'N/A');
     const clientName = quote.client_name || (quote.client ? quote.client.name : 'N/A');
-    const quoteDate = quote.quote_date || new Date().toLocaleDateString();
-    const total = formatCurrency(quote.total || 0);
     
-    const itemsList = (quote.items || []).map(item => 
-      `• ${item.description} - Qty: ${item.quantity} - ${formatCurrency(item.total || 0)}`
-    ).join('\n');
+    // Get user's profile for business info
+    let profile = {};
+    try {
+      const profileRes = await apiFetch('/api/profile');
+      if (profileRes.ok) {
+        profile = await profileRes.json();
+      }
+    } catch (e) {
+      console.log("Could not load profile for share");
+    }
     
-    const shareText = `📋 Quote #${quoteNumber}
-
-Client: ${clientName}
-Date: ${quoteDate}
-${quote.notes ? `Notes: ${quote.notes}\n` : ''}
-Items:
-${itemsList}
-
-Total: ${total}
-
-Generated with TradeBase`;
+    // Generate a professional quote image using the template system
+    const quoteData = {
+      ...quote,
+      quote_number: quoteNumber,
+      client_name: clientName,
+      profile: profile
+    };
     
-    if (navigator.share) {
+    // Create off-screen template
+    const template = document.createElement("div");
+    template.className = "quote-template-print";
+    template.innerHTML = renderQuoteTemplate(quoteData, quote.template || profile.preferred_template || "basic_clean");
+    template.style.position = "absolute";
+    template.style.left = "-9999px";
+    template.style.width = "800px";
+    template.style.backgroundColor = "#ffffff";
+    document.body.appendChild(template);
+    
+    // Wait for rendering
+    await new Promise(r => setTimeout(r, 100));
+    
+    // Generate canvas
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    document.body.removeChild(template);
+    
+    // Convert to blob for sharing
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const file = new File([blob], `Quote-${quoteNumber}.png`, { type: 'image/png' });
+    
+    // Check if we can share files
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
+        files: [file],
         title: `Quote #${quoteNumber}`,
-        text: shareText
+        text: `Quote for ${clientName}`
       });
       showToast("Quote shared!");
+    } else if (navigator.share) {
+      // Fallback: download the image first, then offer to share text
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quote-${quoteNumber}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote image downloaded! You can attach it to your message.");
     } else {
-      await navigator.clipboard.writeText(shareText);
-      showToast("Quote copied to clipboard!");
+      // Desktop fallback - just download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quote-${quoteNumber}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote image downloaded!");
     }
   } catch (err) {
-    if (err.name !== 'AbortError') {
-      console.error("Share error:", err);
-      try {
-        const fallbackText = `Quote #${quote.quote_number || 'N/A'} for ${quote.client_name || 'N/A'} - Total: ${formatCurrency(quote.total || 0)}`;
-        await navigator.clipboard.writeText(fallbackText);
-        showToast("Quote summary copied to clipboard!");
-      } catch (clipErr) {
-        showToast("Failed to share quote");
-      }
-    }
+    console.error("Share error:", err);
+    showToast("Failed to generate quote image");
   }
 }
 
