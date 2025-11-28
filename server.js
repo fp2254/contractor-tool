@@ -414,6 +414,33 @@ app.post("/api/stripe-connect/enable", async (req, res) => {
   }
 });
 
+// DATABASE TEST ENDPOINT (temporary for debugging)
+app.get("/api/test-db", async (req, res) => {
+  try {
+    // Test 1: Check if we can query clients table
+    const { data: clientsTest, error: clientsErr } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .limit(1);
+    
+    // Test 2: Check if we can query profiles table  
+    const { data: profilesTest, error: profilesErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .limit(1);
+
+    res.json({
+      status: "ok",
+      clients_table: clientsErr ? { error: clientsErr.message, hint: clientsErr.hint } : "working",
+      profiles_table: profilesErr ? { error: profilesErr.message, hint: profilesErr.hint } : "working",
+      supabase_url: process.env.SUPABASE_URL ? "set" : "MISSING",
+      service_key: process.env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "MISSING"
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // CLIENTS
 
 app.get("/api/clients", requireSubscription, async (req, res) => {
