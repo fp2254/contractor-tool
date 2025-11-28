@@ -170,7 +170,7 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
-// AI ACCESS MIDDLEWARE - Checks ai_enabled flag (NO EXCEPTIONS for lifetime users)
+// AI ACCESS MIDDLEWARE - Checks ai_enabled flag AND usage limits
 async function requireAI(req, res, next) {
   const userId = req.userId;
   if (!userId) {
@@ -179,7 +179,7 @@ async function requireAI(req, res, next) {
 
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")
-    .select("ai_enabled")
+    .select("ai_enabled, ai_actions_used, ai_actions_limit, ai_billing_cycle_start")
     .eq("id", userId)
     .single();
 
@@ -187,17 +187,72 @@ async function requireAI(req, res, next) {
     return res.status(403).json({ error: "AI subscription required", needsAI: true });
   }
 
+  // Check if billing cycle needs to be reset (monthly)
+  const cycleStart = new Date(profile.ai_billing_cycle_start || Date.now());
+  const now = new Date();
+  const monthsPassed = (now.getFullYear() - cycleStart.getFullYear()) * 12 + (now.getMonth() - cycleStart.getMonth());
+  
+  if (monthsPassed >= 1) {
+    // Reset the billing cycle
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        ai_actions_used: 0,
+        ai_billing_cycle_start: now.toISOString()
+      })
+      .eq("id", userId);
+    
+    req.aiActionsUsed = 0;
+    req.aiActionsLimit = profile.ai_actions_limit || 300;
+  } else {
+    req.aiActionsUsed = profile.ai_actions_used || 0;
+    req.aiActionsLimit = profile.ai_actions_limit || 300;
+  }
+
+  // Check if user has exceeded their limit
+  if (req.aiActionsUsed >= req.aiActionsLimit) {
+    const resetDate = new Date(cycleStart);
+    resetDate.setMonth(resetDate.getMonth() + 1);
+    return res.status(429).json({ 
+      error: "AI action limit reached", 
+      needsUpgrade: true,
+      actionsUsed: req.aiActionsUsed,
+      actionsLimit: req.aiActionsLimit,
+      resetDate: resetDate.toISOString(),
+      message: `You've used ${req.aiActionsUsed}/${req.aiActionsLimit} AI actions this month. Resets on ${resetDate.toLocaleDateString()}.`
+    });
+  }
+
   next();
 }
 
-// Log AI usage for tracking
+// Log AI usage and increment counter
 async function logAIUsage(userId, toolType) {
   try {
+    // Log the usage
     await supabaseAdmin
       .from("ai_usage_logs")
       .insert({ user_id: userId, tool_type: toolType });
+    
+    // Increment the counter
+    await supabaseAdmin.rpc('increment_ai_actions', { user_id_param: userId });
   } catch (err) {
     console.error("Failed to log AI usage:", err);
+    // Fallback: try direct increment if RPC doesn't exist
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("ai_actions_used")
+        .eq("id", userId)
+        .single();
+      
+      await supabaseAdmin
+        .from("profiles")
+        .update({ ai_actions_used: (profile?.ai_actions_used || 0) + 1 })
+        .eq("id", userId);
+    } catch (fallbackErr) {
+      console.error("Fallback increment failed:", fallbackErr);
+    }
   }
 }
 
@@ -1442,6 +1497,166 @@ app.delete("/api/jobs/:id", requireAuth, async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
+});
+
+// CALENDAR EVENTS API
+
+// Get calendar events for a date range
+app.get("/api/calendar-events", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { start_date, end_date } = req.query;
+    
+    let query = supabaseAdmin
+      .from("calendar_events")
+      .select(`
+        *,
+        clients (id, name),
+        jobs (id, folder_name, client_name),
+        quotes (id, quote_number, client_name),
+        invoices (id, invoice_number, client_name)
+      `)
+      .eq("user_id", userId)
+      .order("event_datetime", { ascending: true });
+
+    if (start_date) {
+      query = query.gte("event_datetime", start_date);
+    }
+    if (end_date) {
+      query = query.lte("event_datetime", end_date);
+    }
+
+    const { data, error } = await query;
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+  } catch (err) {
+    console.error("Error fetching calendar events:", err);
+    res.status(500).json({ error: "Failed to fetch calendar events" });
+  }
+});
+
+// Get single calendar event
+app.get("/api/calendar-events/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("calendar_events")
+      .select(`
+        *,
+        clients (id, name),
+        jobs (id, folder_name, client_name),
+        quotes (id, quote_number, client_name),
+        invoices (id, invoice_number, client_name)
+      `)
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching calendar event:", err);
+    res.status(500).json({ error: "Failed to fetch calendar event" });
+  }
+});
+
+// Create calendar event
+app.post("/api/calendar-events", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { 
+      title, 
+      event_datetime, 
+      client_id, 
+      related_job_id, 
+      related_quote_id, 
+      related_invoice_id,
+      reminder_datetime,
+      notes 
+    } = req.body;
+
+    if (!title || !event_datetime) {
+      return res.status(400).json({ error: "Title and event datetime are required" });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("calendar_events")
+      .insert({
+        user_id: userId,
+        title,
+        event_datetime,
+        client_id: client_id || null,
+        related_job_id: related_job_id || null,
+        related_quote_id: related_quote_id || null,
+        related_invoice_id: related_invoice_id || null,
+        reminder_datetime: reminder_datetime || null,
+        notes: notes || null
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error("Error creating calendar event:", err);
+    res.status(500).json({ error: "Failed to create calendar event" });
+  }
+});
+
+// Update calendar event
+app.patch("/api/calendar-events/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const updates = req.body;
+    
+    const { data, error } = await supabaseAdmin
+      .from("calendar_events")
+      .update(updates)
+      .eq("id", req.params.id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    console.error("Error updating calendar event:", err);
+    res.status(500).json({ error: "Failed to update calendar event" });
+  }
+});
+
+// Delete calendar event
+app.delete("/api/calendar-events/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { error } = await supabaseAdmin
+      .from("calendar_events")
+      .delete()
+      .eq("id", req.params.id)
+      .eq("user_id", userId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting calendar event:", err);
+    res.status(500).json({ error: "Failed to delete calendar event" });
+  }
 });
 
 // SYSTEM MESSAGES API
@@ -2693,7 +2908,7 @@ app.post("/api/admin/grant-lifetime", requireAdmin, async (req, res) => {
 
 // AI SUBSCRIPTION ENDPOINTS
 
-// Check AI subscription status
+// Check AI subscription status with usage info
 app.get("/api/ai/status", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -2701,16 +2916,48 @@ app.get("/api/ai/status", requireAuth, async (req, res) => {
   try {
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("ai_enabled, ai_plan, ai_subscription_id")
+      .select("ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start")
       .eq("id", userId)
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
 
+    // Calculate billing cycle reset date
+    const cycleStart = new Date(profile?.ai_billing_cycle_start || Date.now());
+    const now = new Date();
+    const monthsPassed = (now.getFullYear() - cycleStart.getFullYear()) * 12 + (now.getMonth() - cycleStart.getMonth());
+    
+    let actionsUsed = profile?.ai_actions_used || 0;
+    let billingCycleStart = cycleStart;
+    
+    // Reset if billing cycle has passed
+    if (monthsPassed >= 1 && profile?.ai_enabled) {
+      actionsUsed = 0;
+      billingCycleStart = now;
+      await supabaseAdmin
+        .from("profiles")
+        .update({
+          ai_actions_used: 0,
+          ai_billing_cycle_start: now.toISOString()
+        })
+        .eq("id", userId);
+    }
+
+    const resetDate = new Date(billingCycleStart);
+    resetDate.setMonth(resetDate.getMonth() + 1);
+
     res.json({
       ai_enabled: profile?.ai_enabled || false,
       ai_plan: profile?.ai_plan || null,
-      has_subscription: !!profile?.ai_subscription_id
+      has_subscription: !!profile?.ai_subscription_id,
+      usage: {
+        actions_used: actionsUsed,
+        actions_limit: profile?.ai_actions_limit || 300,
+        reset_date: resetDate.toISOString(),
+        warning_threshold: 250,
+        is_at_limit: actionsUsed >= (profile?.ai_actions_limit || 300),
+        is_warning: actionsUsed >= 250 && actionsUsed < (profile?.ai_actions_limit || 300)
+      }
     });
   } catch (error) {
     console.error("Error checking AI status:", error);
@@ -3111,6 +3358,200 @@ RULES:
   } catch (error) {
     console.error("AI client parsing error:", error);
     res.status(500).json({ error: "Failed to parse transcript" });
+  }
+});
+
+// AI PARSE CALENDAR EVENT - Extract calendar event data from transcript
+app.post("/api/ai/parse-calendar", requireAI, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "calendar_parsing");
+
+  let { transcript } = req.body;
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Parsing service not configured" });
+    }
+
+    transcript = filter.clean(transcript);
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    const systemPrompt = `You are a contractor assistant. Parse the user's voice transcription and extract calendar event data. Today's date is ${today}. Return ONLY valid JSON with these fields:
+{
+  "intent": "create_calendar_event",
+  "title": "short event title describing the job/task",
+  "client_name": "client name if mentioned or empty string",
+  "date": "YYYY-MM-DD format (interpret relative dates like 'next Tuesday', 'tomorrow', 'Friday' based on today being ${today})",
+  "time": "HH:MM in 24-hour format (interpret times like '9am' as '09:00', '3pm' as '15:00')",
+  "notes": "any additional notes or context",
+  "reminder": {
+    "enabled": true or false,
+    "offset_minutes_before": number (e.g., 60 for 1 hour before, 15 for 15 minutes)
+  }
+}
+
+RULES:
+- Extract DATE and TIME from the transcript (interpret relative dates/times)
+- Extract CLIENT NAME if mentioned
+- Create a concise TITLE for the event (e.g., "Radon job at Smith", "Plumbing repair")
+- If user mentions "remind me X before", set reminder.enabled=true and appropriate offset
+- Common offsets: "15 minutes before"=15, "30 minutes before"=30, "1 hour before"=60, "day before"=1440
+- Return ONLY valid JSON`;
+
+    const message = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Parse this into calendar event data: "${transcript}"` }
+      ],
+      temperature: 0
+    });
+
+    let parsedData = {};
+    try {
+      const content = message.choices[0].message.content;
+      parsedData = JSON.parse(content);
+    } catch (e) {
+      console.error("Failed to parse GPT response:", e);
+      parsedData = { 
+        intent: "create_calendar_event",
+        title: transcript, 
+        client_name: "", 
+        date: today, 
+        time: "09:00",
+        notes: "",
+        reminder: { enabled: false, offset_minutes_before: 0 }
+      };
+    }
+
+    res.json(parsedData);
+  } catch (error) {
+    console.error("AI calendar parsing error:", error);
+    res.status(500).json({ error: "Failed to parse transcript" });
+  }
+});
+
+// AI CREATE CALENDAR EVENT - Full voice-to-calendar workflow
+app.post("/api/ai/create-calendar-event", requireAI, upload.single("audio"), async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  await logAIUsage(userId, "calendar_creation");
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "OpenAI not configured" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+
+    const openai = new (await import("openai")).default({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    // STEP 1: Transcribe
+    const audioBlob = new (await import("buffer")).Blob([req.file.buffer], { type: "audio/wav" });
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioBlob,
+      model: "whisper-1"
+    });
+
+    let cleanedTranscript = filter.clean(transcription.text);
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    // STEP 2: Parse with GPT
+    const parseSystemPrompt = `You are a contractor assistant. Parse this voice note into a calendar event. Today is ${today}. Return ONLY valid JSON:
+{
+  "title": "short event title",
+  "client_name": "client name or empty",
+  "date": "YYYY-MM-DD",
+  "time": "HH:MM (24-hour)",
+  "notes": "any notes",
+  "reminder_minutes_before": number or null
+}`;
+
+    const parseMessage = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: parseSystemPrompt },
+        { role: "user", content: `Parse into calendar event: "${cleanedTranscript}"` }
+      ],
+      temperature: 0
+    });
+
+    let eventData = {};
+    try {
+      eventData = JSON.parse(parseMessage.choices[0].message.content);
+    } catch (e) {
+      return res.status(400).json({ error: "Failed to parse voice command" });
+    }
+
+    if (!eventData.title || !eventData.date || !eventData.time) {
+      return res.status(400).json({ error: "Could not extract event details from voice" });
+    }
+
+    // STEP 3: Try to match client
+    let clientId = null;
+    if (eventData.client_name) {
+      const { data: clients } = await supabaseAdmin
+        .from("clients")
+        .select("id, name")
+        .eq("user_id", userId)
+        .ilike("name", `%${eventData.client_name}%`)
+        .limit(1);
+      
+      if (clients && clients.length > 0) {
+        clientId = clients[0].id;
+      }
+    }
+
+    // STEP 4: Create the calendar event
+    const eventDatetime = new Date(`${eventData.date}T${eventData.time}:00`).toISOString();
+    let reminderDatetime = null;
+    
+    if (eventData.reminder_minutes_before) {
+      const reminderDate = new Date(eventDatetime);
+      reminderDate.setMinutes(reminderDate.getMinutes() - eventData.reminder_minutes_before);
+      reminderDatetime = reminderDate.toISOString();
+    }
+
+    const { data: createdEvent, error: eventError } = await supabaseAdmin
+      .from("calendar_events")
+      .insert({
+        user_id: userId,
+        title: eventData.title,
+        event_datetime: eventDatetime,
+        client_id: clientId,
+        reminder_datetime: reminderDatetime,
+        notes: eventData.notes || null
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      console.error("Error creating calendar event:", eventError);
+      return res.status(500).json({ error: "Failed to create calendar event" });
+    }
+
+    res.json({
+      success: true,
+      transcript: cleanedTranscript,
+      event: createdEvent,
+      message: `Event scheduled for ${eventData.date} at ${eventData.time}`
+    });
+  } catch (error) {
+    console.error("AI calendar creation error:", error);
+    res.status(500).json({ error: "Failed to create calendar event" });
   }
 });
 

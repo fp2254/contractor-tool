@@ -474,6 +474,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wirePlansModal();
   wireAIDoAllMenu();
   wireAdminPanel();
+  initCalendar();
   
   // Check tour mode and session - these will update language if needed
   checkTourMode();
@@ -568,6 +569,21 @@ async function apiFetch(path, options = {}) {
   if (response.status === 402) {
     showScreen("subscription");
     throw new Error("Subscription required");
+  }
+  
+  // Handle AI usage limit reached
+  if (response.status === 429) {
+    try {
+      const errData = await response.clone().json();
+      if (errData.needsUpgrade) {
+        showToast(`AI limit reached! ${errData.actionsUsed}/${errData.actionsLimit} actions used. Resets ${new Date(errData.resetDate).toLocaleDateString()}.`);
+        throw new Error(errData.message || "AI action limit reached");
+      }
+    } catch (e) {
+      // If it's not our AI limit error, just throw generic
+      showToast("Too many requests. Please try again later.");
+      throw new Error("Rate limit exceeded");
+    }
   }
 
   return response;
@@ -1602,6 +1618,11 @@ function showScreen(screenId) {
   
   // Apply translations when switching screens to ensure all text is in correct language
   applyLanguage();
+  
+  // Load calendar events when navigating to calendar screen
+  if (screenId === "calendar") {
+    loadCalendarEvents();
+  }
 }
 
 // INITIAL LOAD
@@ -1914,6 +1935,12 @@ function wireCalculatorUI() {
       document
         .getElementById("calc-results")
         .classList.remove("hidden");
+      
+      // Show "Add as Line Item" button if we came from quote context
+      const useInQuoteBtn = document.getElementById("btn-calc-use-in-quote");
+      if (useInQuoteBtn && calendarFromContext === 'quote') {
+        useInQuoteBtn.style.display = "block";
+      }
     });
 }
 
@@ -2476,6 +2503,9 @@ async function viewInvoiceDetail(invoiceId) {
         <button class="btn-sm" id="send-text-invoice-btn" data-invoice-id="${invoice.id}" data-client-phone="${invoice.client?.phone || ''}" data-total="${invoice.total || 0}" style="background: #22c55e; color: white;">
           <i class="fa-solid fa-comment-sms"></i> Send Text
         </button>
+        <button class="btn-sm" id="schedule-invoice-btn-${invoice.id}">
+          <i class="fa-solid fa-calendar-plus"></i> Set Reminder
+        </button>
         <button class="btn-sm" id="download-invoice-btn" data-invoice-id="${invoice.id}">
           <i class="fa-solid fa-download"></i> Download
         </button>
@@ -2512,6 +2542,11 @@ async function viewInvoiceDetail(invoiceId) {
         sendInvoiceSMS(invoice);
       });
     }
+    
+    // Wire up schedule button
+    document.getElementById(`schedule-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
+      scheduleEventFromInvoice(invoice.id, invoice.client_name || invoice.client?.name || 'Unknown');
+    });
     
     // Re-apply translations to dynamically added buttons
     applyLanguage();
@@ -2609,6 +2644,9 @@ async function viewQuoteDetail(quoteId) {
         <button class="btn-sm" id="share-quote-btn-${quote.id}">
           <i class="fa-solid fa-share-nodes"></i> Send Quote
         </button>
+        <button class="btn-sm" id="schedule-quote-btn-${quote.id}">
+          <i class="fa-solid fa-calendar-plus"></i> Schedule Follow-Up
+        </button>
         <button class="btn-sm" id="download-quote-btn" data-quote-id="${quote.id}">
           <i class="fa-solid fa-download"></i> Download PDF
         </button>
@@ -2640,6 +2678,11 @@ async function viewQuoteDetail(quoteId) {
     }
     
     document.getElementById(`share-quote-btn-${quote.id}`)?.addEventListener('click', () => shareQuote(quote));
+    
+    // Wire up schedule button
+    document.getElementById(`schedule-quote-btn-${quote.id}`)?.addEventListener('click', () => {
+      scheduleEventFromQuote(quote.id, quote.client_name || quote.client?.name || 'Unknown');
+    });
     
     // Re-apply translations
     applyLanguage();
@@ -4357,6 +4400,14 @@ function wireJobsUI() {
   if (btnDeleteJob) {
     btnDeleteJob.addEventListener("click", handleJobDelete);
   }
+  
+  const btnScheduleJob = document.getElementById("btn-schedule-job");
+  if (btnScheduleJob) {
+    btnScheduleJob.addEventListener("click", () => {
+      if (!currentJob) return;
+      scheduleEventFromJob(currentJob.id, currentJob.client_name || 'Unknown');
+    });
+  }
 }
 
 async function loadJobs() {
@@ -5382,10 +5433,75 @@ function updateAIUI(data = {}) {
     if (planDisplay && data.ai_plan) {
       planDisplay.textContent = data.ai_plan === "yearly" ? "Yearly" : "Monthly";
     }
+    
+    // Update usage indicator
+    if (data.usage) {
+      updateAIUsageDisplay(data.usage);
+    }
   } else {
     inactiveSection?.classList.remove("hidden");
     activeSection?.classList.add("hidden");
     voiceRecorder?.classList.add("hidden");
+  }
+}
+
+function updateAIUsageDisplay(usage) {
+  const usedEl = document.getElementById("ai-actions-used");
+  const limitEl = document.getElementById("ai-actions-limit");
+  const fillEl = document.getElementById("ai-usage-fill");
+  const resetDateEl = document.getElementById("ai-reset-date");
+  const warningEl = document.getElementById("ai-usage-warning");
+  const remainingEl = document.getElementById("ai-actions-remaining");
+  const limitReachedEl = document.getElementById("ai-usage-limit-reached");
+  const limitResetDateEl = document.getElementById("ai-limit-reset-date");
+  
+  if (!usage) return;
+  
+  const used = usage.actions_used || 0;
+  const limit = usage.actions_limit || 300;
+  const remaining = limit - used;
+  const percentage = Math.min((used / limit) * 100, 100);
+  
+  if (usedEl) usedEl.textContent = used;
+  if (limitEl) limitEl.textContent = limit;
+  
+  if (fillEl) {
+    fillEl.style.width = `${percentage}%`;
+    
+    // Color the bar based on usage
+    if (used >= limit) {
+      fillEl.style.background = '#EF4444'; // Red - at limit
+    } else if (used >= 250) {
+      fillEl.style.background = '#F59E0B'; // Orange - warning
+    } else {
+      fillEl.style.background = 'var(--accent)'; // Default accent
+    }
+  }
+  
+  if (resetDateEl && usage.reset_date) {
+    const resetDate = new Date(usage.reset_date);
+    resetDateEl.textContent = resetDate.toLocaleDateString();
+  }
+  
+  // Show warning if approaching limit
+  if (warningEl && remainingEl) {
+    if (usage.is_warning) {
+      warningEl.style.display = 'block';
+      remainingEl.textContent = remaining;
+    } else {
+      warningEl.style.display = 'none';
+    }
+  }
+  
+  // Show limit reached message
+  if (limitReachedEl && limitResetDateEl) {
+    if (usage.is_at_limit) {
+      limitReachedEl.style.display = 'block';
+      const resetDate = new Date(usage.reset_date);
+      limitResetDateEl.textContent = resetDate.toLocaleDateString();
+    } else {
+      limitReachedEl.style.display = 'none';
+    }
   }
 }
 
@@ -5953,6 +6069,167 @@ function showDemoAIVoiceClient() {
   }, 3000);
 }
 
+// AI VOICE CALENDAR EVENT
+async function startAIVoiceCalendarEvent() {
+  closeAIDoAllMenu();
+  
+  if (tourMode) {
+    showDemoAIVoiceCalendarEvent();
+    return;
+  }
+  
+  if (!aiEnabled) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+  
+  if (isRecording) {
+    showToast("Already recording");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    const chunks = [];
+
+    showVoiceTranscriptModal("calendar");
+
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/wav" });
+      stream.getTracks().forEach(track => track.stop());
+      await completeVoiceCalendarWorkflow(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    window.currentMediaRecorder = mediaRecorder;
+    window.currentVoiceStream = stream;
+
+    window.voiceTimeout = setTimeout(() => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    }, 60000);
+
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied. Please allow microphone access.");
+    hideVoiceTranscriptModal();
+  }
+}
+
+async function completeVoiceCalendarWorkflow(audioBlob) {
+  try {
+    updateVoiceStatus("processing", "Transcribing audio...", "Converting speech to text...");
+    
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.wav");
+    
+    const transcribeRes = await apiFetch("/api/ai/transcribe", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!transcribeRes.ok) {
+      throw new Error("Failed to transcribe audio");
+    }
+    
+    const { transcript } = await transcribeRes.json();
+    updateVoiceTranscript(transcript);
+    updateVoiceStatus("processing", "Parsing event details...", "Extracting date, time, and client...");
+    
+    const parseRes = await apiFetch("/api/ai/parse-calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript })
+    });
+    
+    if (!parseRes.ok) {
+      throw new Error("Failed to parse calendar data");
+    }
+    
+    const parsed = await parseRes.json();
+    updateVoiceStatus("processing", "Creating event...", "Saving to calendar...");
+    
+    if (!parsed.title || !parsed.date || !parsed.time) {
+      throw new Error("Could not extract event details from voice");
+    }
+    
+    let clientId = null;
+    if (parsed.client_name) {
+      const matchingClient = allClients.find(c => 
+        c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
+      );
+      if (matchingClient) {
+        clientId = matchingClient.id;
+      }
+    }
+    
+    const eventDatetime = new Date(`${parsed.date}T${parsed.time}:00`).toISOString();
+    let reminderDatetime = null;
+    
+    if (parsed.reminder && parsed.reminder.enabled && parsed.reminder.offset_minutes_before) {
+      const reminderDate = new Date(eventDatetime);
+      reminderDate.setMinutes(reminderDate.getMinutes() - parsed.reminder.offset_minutes_before);
+      reminderDatetime = reminderDate.toISOString();
+    }
+    
+    const eventData = {
+      title: parsed.title,
+      event_datetime: eventDatetime,
+      client_id: clientId,
+      reminder_datetime: reminderDatetime,
+      notes: parsed.notes || ""
+    };
+    
+    const saveRes = await apiFetch("/api/calendar-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(eventData)
+    });
+    
+    if (!saveRes.ok) {
+      throw new Error("Failed to save calendar event");
+    }
+    
+    hideVoiceTranscriptModal();
+    
+    const formattedDate = new Date(parsed.date).toLocaleDateString();
+    const formattedTime = formatTime24to12(parsed.time);
+    showToast(`Scheduled: ${parsed.title} on ${formattedDate} at ${formattedTime}`);
+    
+    await loadCalendarEvents();
+    showScreen("calendar");
+    
+  } catch (error) {
+    console.error("Voice calendar error:", error);
+    hideVoiceTranscriptModal();
+    showToast("Failed to create event: " + error.message);
+  }
+}
+
+function formatTime24to12(time24) {
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+}
+
+function showDemoAIVoiceCalendarEvent() {
+  showToast("Demo: Voice Schedule Event");
+  
+  setTimeout(() => {
+    showToast("Recording: 'Schedule a plumbing job at Johnson's house next Tuesday at 2pm'");
+  }, 1000);
+  
+  setTimeout(() => {
+    showToast("Demo: Event 'Plumbing job at Johnson' scheduled for Dec 3, 2024 at 2:00 PM");
+  }, 3000);
+}
+
 // AI VOICE QUOTE FLOW - Complete do-it-all feature with transcript modal
 async function startAIVoiceQuoteFlow() {
   closeAIDoAllMenu();
@@ -6022,6 +6299,9 @@ function showVoiceTranscriptModal(type = "quote") {
         break;
       case "client":
         instructions = "Say: 'New client John Smith, phone 555-1234, email john@example.com'";
+        break;
+      case "calendar":
+        instructions = "Say: 'Schedule plumbing job at Johnson house next Tuesday at 2pm'";
         break;
       default:
         instructions = "Say: 'Quote for [client] doing [job] at [address] for [amount]'";
@@ -6866,5 +7146,539 @@ function updateCategoryDisplay(items) {
     badge.innerHTML = `<i class="fa-solid fa-tag"></i> ${category}`;
     badge.addEventListener("click", () => filterInventoryByCategory(category));
     categoriesList.appendChild(badge);
+  });
+}
+
+// ============================================
+// CALENDAR FUNCTIONS
+// ============================================
+
+let calendarCurrentDate = new Date();
+let calendarSelectedDate = null;
+let calendarEvents = [];
+let calendarFromContext = null;
+
+const monthNames = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+function initCalendar() {
+  const prevBtn = document.getElementById("btn-prev-month");
+  const nextBtn = document.getElementById("btn-next-month");
+  const newEventBtn = document.getElementById("btn-new-event");
+  const eventForm = document.getElementById("calendar-event-form");
+  const linkTypeSelect = document.getElementById("event-link-type");
+  const deleteEventBtn = document.getElementById("btn-delete-event");
+  const calcBackBtn = document.getElementById("btn-calc-back");
+  const useInQuoteBtn = document.getElementById("btn-calc-use-in-quote");
+
+  if (prevBtn) prevBtn.addEventListener("click", () => navigateCalendar(-1));
+  if (nextBtn) nextBtn.addEventListener("click", () => navigateCalendar(1));
+  if (newEventBtn) newEventBtn.addEventListener("click", () => showCalendarEventModal());
+  if (eventForm) eventForm.addEventListener("submit", handleCalendarEventSubmit);
+  if (linkTypeSelect) linkTypeSelect.addEventListener("change", handleLinkTypeChange);
+  if (deleteEventBtn) deleteEventBtn.addEventListener("click", handleDeleteCalendarEvent);
+  
+  if (calcBackBtn) {
+    calcBackBtn.addEventListener("click", () => {
+      if (calendarFromContext === 'quote') {
+        showScreen("new-quote");
+      } else {
+        showScreen("dashboard");
+      }
+      calendarFromContext = null;
+    });
+  }
+  
+  if (useInQuoteBtn) {
+    useInQuoteBtn.addEventListener("click", useCalculatorResultInQuote);
+  }
+}
+
+function navigateCalendar(direction) {
+  calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + direction);
+  renderCalendar();
+}
+
+async function loadCalendarEvents() {
+  const year = calendarCurrentDate.getFullYear();
+  const month = calendarCurrentDate.getMonth();
+  const startDate = new Date(year, month, 1).toISOString();
+  const endDate = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+  try {
+    const res = await apiFetch(`/api/calendar-events?start_date=${startDate}&end_date=${endDate}`);
+    if (res.ok) {
+      calendarEvents = await res.json();
+    } else {
+      calendarEvents = [];
+    }
+  } catch (err) {
+    console.error("Error loading calendar events:", err);
+    calendarEvents = [];
+  }
+  
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = calendarCurrentDate.getFullYear();
+  const month = calendarCurrentDate.getMonth();
+  
+  document.getElementById("calendar-month-year").textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const todayDate = today.getDate();
+  
+  const daysContainer = document.getElementById("calendar-days");
+  daysContainer.innerHTML = "";
+  
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const day = daysInPrevMonth - i;
+    const dayEl = createCalendarDayElement(day, true, false, year, month - 1);
+    daysContainer.appendChild(dayEl);
+  }
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = isCurrentMonth && day === todayDate;
+    const dayEl = createCalendarDayElement(day, false, isToday, year, month);
+    daysContainer.appendChild(dayEl);
+  }
+  
+  const totalCells = firstDay + daysInMonth;
+  const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let day = 1; day <= remainingCells; day++) {
+    const dayEl = createCalendarDayElement(day, true, false, year, month + 1);
+    daysContainer.appendChild(dayEl);
+  }
+  
+  if (calendarSelectedDate) {
+    showEventsForDate(calendarSelectedDate);
+  } else {
+    document.getElementById("calendar-selected-date").textContent = "Select a day";
+    document.getElementById("calendar-events-list").innerHTML = 
+      '<div class="calendar-no-events">Tap a day to see events</div>';
+  }
+}
+
+function createCalendarDayElement(day, isOtherMonth, isToday, year, month) {
+  const dayEl = document.createElement("div");
+  dayEl.className = "calendar-day";
+  if (isOtherMonth) dayEl.classList.add("other-month");
+  if (isToday) dayEl.classList.add("today");
+  
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  if (calendarSelectedDate === dateStr) {
+    dayEl.classList.add("selected");
+  }
+  
+  dayEl.innerHTML = `<span class="day-number">${day}</span>`;
+  
+  if (!isOtherMonth) {
+    const dayEvents = calendarEvents.filter(e => {
+      const eventDate = new Date(e.event_datetime).toISOString().split('T')[0];
+      return eventDate === dateStr;
+    });
+    
+    if (dayEvents.length > 0) {
+      const dotsHtml = dayEvents.slice(0, 3).map(() => '<span class="event-dot"></span>').join('');
+      dayEl.innerHTML += `<div class="event-dots">${dotsHtml}</div>`;
+    }
+    
+    dayEl.addEventListener("click", () => selectCalendarDay(dateStr));
+  }
+  
+  return dayEl;
+}
+
+function selectCalendarDay(dateStr) {
+  calendarSelectedDate = dateStr;
+  renderCalendar();
+  showEventsForDate(dateStr);
+}
+
+function showEventsForDate(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00');
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById("calendar-selected-date").textContent = date.toLocaleDateString('en-US', options);
+  
+  const dayEvents = calendarEvents.filter(e => {
+    const eventDate = new Date(e.event_datetime).toISOString().split('T')[0];
+    return eventDate === dateStr;
+  }).sort((a, b) => new Date(a.event_datetime) - new Date(b.event_datetime));
+  
+  const listEl = document.getElementById("calendar-events-list");
+  
+  if (dayEvents.length === 0) {
+    listEl.innerHTML = `
+      <div class="calendar-no-events">
+        No events scheduled<br>
+        <button class="btn-outline-sm" style="margin-top: 12px;" onclick="showCalendarEventModal('${dateStr}')">
+          <i class="fa-solid fa-plus"></i> Add Event
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  listEl.innerHTML = dayEvents.map(event => {
+    const time = new Date(event.event_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    let linkInfo = "";
+    if (event.related_job_id && event.jobs) {
+      linkInfo = `<div class="calendar-event-link"><i class="fa-solid fa-folder"></i> ${event.jobs.folder_name || 'Job'}</div>`;
+    } else if (event.related_quote_id && event.quotes) {
+      linkInfo = `<div class="calendar-event-link"><i class="fa-solid fa-file-lines"></i> Quote #${event.quotes.quote_number || event.related_quote_id}</div>`;
+    } else if (event.related_invoice_id && event.invoices) {
+      linkInfo = `<div class="calendar-event-link"><i class="fa-solid fa-file-invoice"></i> Invoice #${event.invoices.invoice_number || event.related_invoice_id}</div>`;
+    }
+    
+    const clientName = event.clients?.name || '';
+    
+    return `
+      <div class="calendar-event-item" onclick="editCalendarEvent(${event.id})">
+        <div class="calendar-event-time">${time}</div>
+        <div class="calendar-event-info">
+          <div class="calendar-event-title">${event.title}</div>
+          ${clientName ? `<div class="calendar-event-client">${clientName}</div>` : ''}
+          ${linkInfo}
+        </div>
+        <i class="fa-solid fa-chevron-right" style="color: var(--muted);"></i>
+      </div>
+    `;
+  }).join('');
+}
+
+function showCalendarEventModal(presetDate = null, context = null) {
+  const modal = document.getElementById("calendar-event-modal");
+  const form = document.getElementById("calendar-event-form");
+  const titleEl = document.getElementById("calendar-event-modal-title");
+  const deleteBtn = document.getElementById("btn-delete-event");
+  
+  form.reset();
+  document.getElementById("event-id").value = "";
+  document.getElementById("event-related-job-id").value = "";
+  document.getElementById("event-related-quote-id").value = "";
+  document.getElementById("event-related-invoice-id").value = "";
+  document.getElementById("event-link-id").style.display = "none";
+  deleteBtn.style.display = "none";
+  titleEl.textContent = "New Event";
+  
+  if (presetDate) {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(Math.ceil(now.getMinutes() / 15) * 15).padStart(2, '0');
+    document.getElementById("event-datetime").value = `${presetDate}T${hours}:${mins}`;
+  }
+  
+  if (context) {
+    document.getElementById("event-title").value = context.title || "";
+    if (context.client_id) {
+      document.getElementById("event-client").value = context.client_id;
+    }
+    if (context.job_id) {
+      document.getElementById("event-related-job-id").value = context.job_id;
+      document.getElementById("event-link-type").value = "job";
+    } else if (context.quote_id) {
+      document.getElementById("event-related-quote-id").value = context.quote_id;
+      document.getElementById("event-link-type").value = "quote";
+    } else if (context.invoice_id) {
+      document.getElementById("event-related-invoice-id").value = context.invoice_id;
+      document.getElementById("event-link-type").value = "invoice";
+    }
+  }
+  
+  populateEventClientDropdown();
+  modal.classList.remove("hidden");
+}
+
+function hideCalendarEventModal() {
+  document.getElementById("calendar-event-modal").classList.add("hidden");
+}
+
+async function populateEventClientDropdown() {
+  const select = document.getElementById("event-client");
+  select.innerHTML = '<option value="">-- Select Client --</option>';
+  
+  try {
+    const res = await apiFetch("/api/clients");
+    if (res.ok) {
+      const clients = await res.json();
+      clients.forEach(client => {
+        const opt = document.createElement("option");
+        opt.value = client.id;
+        opt.textContent = client.name;
+        select.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("Error loading clients for event:", err);
+  }
+}
+
+async function handleLinkTypeChange() {
+  const linkType = document.getElementById("event-link-type").value;
+  const linkIdSelect = document.getElementById("event-link-id");
+  
+  if (!linkType) {
+    linkIdSelect.style.display = "none";
+    linkIdSelect.innerHTML = '<option value="">-- Select --</option>';
+    return;
+  }
+  
+  linkIdSelect.style.display = "block";
+  linkIdSelect.innerHTML = '<option value="">Loading...</option>';
+  
+  try {
+    let endpoint = "";
+    if (linkType === "job") endpoint = "/api/jobs";
+    else if (linkType === "quote") endpoint = "/api/quotes";
+    else if (linkType === "invoice") endpoint = "/api/invoices";
+    
+    const res = await apiFetch(endpoint);
+    if (res.ok) {
+      const items = await res.json();
+      linkIdSelect.innerHTML = '<option value="">-- Select --</option>';
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        if (linkType === "job") {
+          opt.textContent = item.folder_name || `${item.client_name} - ${item.job_type}`;
+        } else if (linkType === "quote") {
+          opt.textContent = `Quote #${item.quote_number || item.id} - ${item.client_name || 'No client'}`;
+        } else {
+          opt.textContent = `Invoice #${item.invoice_number || item.id} - ${item.client_name || 'No client'}`;
+        }
+        linkIdSelect.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    console.error("Error loading link items:", err);
+    linkIdSelect.innerHTML = '<option value="">Error loading</option>';
+  }
+}
+
+async function handleCalendarEventSubmit(e) {
+  e.preventDefault();
+  
+  const eventId = document.getElementById("event-id").value;
+  const title = document.getElementById("event-title").value.trim();
+  const eventDatetime = document.getElementById("event-datetime").value;
+  const clientId = document.getElementById("event-client").value || null;
+  const notes = document.getElementById("event-notes").value.trim();
+  const reminderOffset = document.getElementById("event-reminder").value;
+  
+  const linkType = document.getElementById("event-link-type").value;
+  const linkId = document.getElementById("event-link-id").value;
+  
+  let relatedJobId = document.getElementById("event-related-job-id").value || null;
+  let relatedQuoteId = document.getElementById("event-related-quote-id").value || null;
+  let relatedInvoiceId = document.getElementById("event-related-invoice-id").value || null;
+  
+  if (linkType === "job" && linkId) relatedJobId = linkId;
+  if (linkType === "quote" && linkId) relatedQuoteId = linkId;
+  if (linkType === "invoice" && linkId) relatedInvoiceId = linkId;
+  
+  let reminderDatetime = null;
+  if (reminderOffset) {
+    const eventDate = new Date(eventDatetime);
+    eventDate.setMinutes(eventDate.getMinutes() - parseInt(reminderOffset));
+    reminderDatetime = eventDate.toISOString();
+  }
+  
+  const payload = {
+    title,
+    event_datetime: new Date(eventDatetime).toISOString(),
+    client_id: clientId,
+    related_job_id: relatedJobId,
+    related_quote_id: relatedQuoteId,
+    related_invoice_id: relatedInvoiceId,
+    reminder_datetime: reminderDatetime,
+    notes
+  };
+  
+  try {
+    const method = eventId ? "PATCH" : "POST";
+    const url = eventId ? `/api/calendar-events/${eventId}` : "/api/calendar-events";
+    
+    const res = await apiFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || "Failed to save event");
+      return;
+    }
+    
+    hideCalendarEventModal();
+    showToast(eventId ? "Event updated!" : "Event created!");
+    loadCalendarEvents();
+  } catch (err) {
+    console.error("Error saving event:", err);
+    showToast("Failed to save event");
+  }
+}
+
+async function editCalendarEvent(eventId) {
+  try {
+    const res = await apiFetch(`/api/calendar-events/${eventId}`);
+    if (!res.ok) {
+      showToast("Failed to load event");
+      return;
+    }
+    
+    const event = await res.json();
+    
+    document.getElementById("event-id").value = event.id;
+    document.getElementById("event-title").value = event.title;
+    
+    const eventDate = new Date(event.event_datetime);
+    const localDatetime = new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 16);
+    document.getElementById("event-datetime").value = localDatetime;
+    
+    document.getElementById("event-notes").value = event.notes || "";
+    
+    await populateEventClientDropdown();
+    if (event.client_id) {
+      document.getElementById("event-client").value = event.client_id;
+    }
+    
+    document.getElementById("event-related-job-id").value = event.related_job_id || "";
+    document.getElementById("event-related-quote-id").value = event.related_quote_id || "";
+    document.getElementById("event-related-invoice-id").value = event.related_invoice_id || "";
+    
+    if (event.related_job_id) {
+      document.getElementById("event-link-type").value = "job";
+    } else if (event.related_quote_id) {
+      document.getElementById("event-link-type").value = "quote";
+    } else if (event.related_invoice_id) {
+      document.getElementById("event-link-type").value = "invoice";
+    }
+    
+    if (event.reminder_datetime) {
+      const eventTime = new Date(event.event_datetime).getTime();
+      const reminderTime = new Date(event.reminder_datetime).getTime();
+      const diffMinutes = Math.round((eventTime - reminderTime) / 60000);
+      
+      const reminderSelect = document.getElementById("event-reminder");
+      for (let opt of reminderSelect.options) {
+        if (parseInt(opt.value) === diffMinutes) {
+          reminderSelect.value = opt.value;
+          break;
+        }
+      }
+    }
+    
+    document.getElementById("calendar-event-modal-title").textContent = "Edit Event";
+    document.getElementById("btn-delete-event").style.display = "block";
+    document.getElementById("calendar-event-modal").classList.remove("hidden");
+  } catch (err) {
+    console.error("Error loading event:", err);
+    showToast("Failed to load event");
+  }
+}
+
+async function handleDeleteCalendarEvent() {
+  const eventId = document.getElementById("event-id").value;
+  if (!eventId) return;
+  
+  if (!confirm("Delete this event?")) return;
+  
+  try {
+    const res = await apiFetch(`/api/calendar-events/${eventId}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("Failed to delete event");
+      return;
+    }
+    
+    hideCalendarEventModal();
+    showToast("Event deleted!");
+    loadCalendarEvents();
+  } catch (err) {
+    console.error("Error deleting event:", err);
+    showToast("Failed to delete event");
+  }
+}
+
+function openCalculatorFromQuote() {
+  calendarFromContext = 'quote';
+  showScreen("calculator");
+  const useBtn = document.getElementById("btn-calc-use-in-quote");
+  if (useBtn) useBtn.style.display = "none";
+}
+
+function useCalculatorResultInQuote() {
+  const totalText = document.getElementById("calc-total")?.textContent || "";
+  const total = parseFloat(totalText.replace(/[^0-9.-]/g, '')) || 0;
+  
+  if (total <= 0) {
+    showToast("Calculate a total first");
+    return;
+  }
+  
+  showScreen("new-quote");
+  calendarFromContext = null;
+  
+  setTimeout(() => {
+    addQuoteLineItemWithValue("Calculated Job Cost", 1, total);
+  }, 100);
+}
+
+function addQuoteLineItemWithValue(description, qty, unitPrice) {
+  const container = document.getElementById("quote-line-items");
+  if (!container) return;
+  
+  const itemDiv = document.createElement("div");
+  itemDiv.className = "line-item";
+  itemDiv.innerHTML = `
+    <input type="text" placeholder="Description" class="line-desc" value="${description}" />
+    <input type="number" placeholder="Qty" class="line-qty" min="1" value="${qty}" />
+    <input type="number" placeholder="Unit $" class="line-price" min="0" step="0.01" value="${unitPrice.toFixed(2)}" />
+    <button type="button" class="btn-remove-line" onclick="this.parentNode.remove(); calculateQuoteTotals();">×</button>
+  `;
+  container.appendChild(itemDiv);
+  
+  itemDiv.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("input", calculateQuoteTotals);
+  });
+  
+  calculateQuoteTotals();
+  showToast(`Added line item: $${unitPrice.toFixed(2)}`);
+}
+
+function scheduleEventFromJob(jobId, clientName) {
+  showScreen("calendar");
+  loadCalendarEvents().then(() => {
+    showCalendarEventModal(null, {
+      title: `Job - ${clientName}`,
+      job_id: jobId
+    });
+  });
+}
+
+function scheduleEventFromQuote(quoteId, clientName) {
+  showScreen("calendar");
+  loadCalendarEvents().then(() => {
+    showCalendarEventModal(null, {
+      title: `Quote Follow-Up - ${clientName}`,
+      quote_id: quoteId
+    });
+  });
+}
+
+function scheduleEventFromInvoice(invoiceId, clientName) {
+  showScreen("calendar");
+  loadCalendarEvents().then(() => {
+    showCalendarEventModal(null, {
+      title: `Invoice Due - ${clientName}`,
+      invoice_id: invoiceId
+    });
   });
 }

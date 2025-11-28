@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
   
-  <link rel="stylesheet" href="style.css?v=20251127b" />
+  <link rel="stylesheet" href="style.css?v=20251128j" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <!-- Icons -->
@@ -202,6 +202,13 @@
                   <span class="ai-menu-desc">Add new clients by speaking</span>
                 </div>
               </button>
+              <button class="ai-menu-item" onclick="startAIVoiceCalendarEvent()">
+                <i class="fa-solid fa-calendar-plus"></i>
+                <div class="ai-menu-text">
+                  <span class="ai-menu-title">Voice Schedule Event</span>
+                  <span class="ai-menu-desc">Schedule jobs with your voice</span>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -288,11 +295,11 @@
               </div>
             </button>
 
-            <button class="tile" data-screen="calculator">
-              <div class="tile-icon"><i class="fa-solid fa-calculator"></i></div>
+            <button class="tile" data-screen="calendar">
+              <div class="tile-icon"><i class="fa-solid fa-calendar-days"></i></div>
               <div class="tile-text">
-                <h3 data-i18n="dashboard.calculator">Cost Calculator</h3>
-                <p data-i18n="dashboard.calculator_desc">Materials, hours, markup – done.</p>
+                <h3 data-i18n="dashboard.calendar">Calendar</h3>
+                <p data-i18n="dashboard.calendar_desc">Schedule jobs and reminders.</p>
               </div>
             </button>
 
@@ -529,9 +536,14 @@
 
             <h3 data-i18n="quote.line_items">Line Items</h3>
             <div id="quote-line-items"></div>
-            <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm" data-i18n="quote.add_item">
-              + Add Line Item
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm" data-i18n="quote.add_item">
+                + Add Line Item
+              </button>
+              <button type="button" id="btn-open-calculator-quote" class="btn-outline-sm" onclick="openCalculatorFromQuote()">
+                <i class="fa-solid fa-calculator"></i> Cost Calculator
+              </button>
+            </div>
 
             <div class="form-row">
               <label data-i18n="invoice.tax_label">Tax %</label>
@@ -739,7 +751,7 @@
         <!-- CALCULATOR -->
         <section id="screen-calculator" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <button class="btn-back" id="btn-calc-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
             <h2>Cost Calculator</h2>
           </div>
           <div class="helper-card">
@@ -771,9 +783,103 @@
             <div id="calc-results" class="helper-results hidden">
               <p>Recommended total: <span id="calc-total"></span></p>
               <p>Profit: <span id="calc-profit"></span> (<span id="calc-margin"></span>% margin)</p>
+              <button type="button" id="btn-calc-use-in-quote" class="btn-primary" style="margin-top: 12px; display: none;">
+                <i class="fa-solid fa-plus"></i> Add as Line Item
+              </button>
             </div>
           </div>
         </section>
+
+        <!-- CALENDAR -->
+        <section id="screen-calendar" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 data-i18n="calendar.title">Calendar</h2>
+            <button class="btn-primary" id="btn-new-event">+ New Event</button>
+          </div>
+          
+          <div class="calendar-container">
+            <div class="calendar-nav">
+              <button class="btn-outline-sm" id="btn-prev-month"><i class="fa-solid fa-chevron-left"></i></button>
+              <h3 id="calendar-month-year">January 2025</h3>
+              <button class="btn-outline-sm" id="btn-next-month"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            
+            <div class="calendar-grid">
+              <div class="calendar-weekdays">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="calendar-days" id="calendar-days"></div>
+            </div>
+            
+            <div class="calendar-day-events" id="calendar-day-events">
+              <h4 id="calendar-selected-date">Select a day</h4>
+              <div id="calendar-events-list"></div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- CALENDAR EVENT FORM MODAL -->
+        <div id="calendar-event-modal" class="modal hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 id="calendar-event-modal-title">New Event</h3>
+              <button class="modal-close" onclick="hideCalendarEventModal()">&times;</button>
+            </div>
+            <form id="calendar-event-form">
+              <div class="form-row">
+                <label>Title *</label>
+                <input type="text" id="event-title" required placeholder="e.g., Job at Smith residence" />
+              </div>
+              <div class="form-row">
+                <label>Date & Time *</label>
+                <input type="datetime-local" id="event-datetime" required />
+              </div>
+              <div class="form-row">
+                <label>Client (optional)</label>
+                <select id="event-client">
+                  <option value="">-- Select Client --</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Link to (optional)</label>
+                <select id="event-link-type">
+                  <option value="">-- None --</option>
+                  <option value="job">Job</option>
+                  <option value="quote">Quote</option>
+                  <option value="invoice">Invoice</option>
+                </select>
+                <select id="event-link-id" style="margin-top: 8px; display: none;">
+                  <option value="">-- Select --</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Reminder</label>
+                <select id="event-reminder">
+                  <option value="">No reminder</option>
+                  <option value="15">15 minutes before</option>
+                  <option value="30">30 minutes before</option>
+                  <option value="60">1 hour before</option>
+                  <option value="1440">1 day before</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Notes</label>
+                <textarea id="event-notes" rows="3" placeholder="Optional notes..."></textarea>
+              </div>
+              <input type="hidden" id="event-id" />
+              <input type="hidden" id="event-related-job-id" />
+              <input type="hidden" id="event-related-quote-id" />
+              <input type="hidden" id="event-related-invoice-id" />
+              <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Save Event</button>
+                <button type="button" class="btn-outline-sm" id="btn-delete-event" style="display: none; color: #F44336;">
+                  <i class="fa-solid fa-trash"></i> Delete
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
         <!-- SETTINGS -->
         <section id="screen-settings" class="screen">
@@ -904,6 +1010,21 @@
                 </div>
                 <p style="color: var(--muted); margin-bottom: 12px;">Your AI subscription is active. You have access to all AI tools.</p>
                 <p style="font-size: 13px; color: var(--muted);">Plan: <strong id="ai-plan-display">-</strong></p>
+                
+                <!-- AI Usage Indicator -->
+                <div id="ai-usage-container" class="ai-usage-indicator" style="margin-top: 16px; padding: 12px; border-radius: 8px; background: var(--bg-secondary);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: var(--muted);">AI Actions This Month</span>
+                    <span id="ai-usage-count" style="font-weight: 600;"><span id="ai-actions-used">0</span> / <span id="ai-actions-limit">300</span></span>
+                  </div>
+                  <div class="ai-usage-bar" style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                    <div id="ai-usage-fill" style="height: 100%; width: 0%; background: var(--accent); transition: width 0.3s, background-color 0.3s;"></div>
+                  </div>
+                  <p id="ai-usage-reset" style="font-size: 11px; color: var(--muted); margin-top: 6px;">Resets on <span id="ai-reset-date">-</span></p>
+                  <p id="ai-usage-warning" style="display: none; font-size: 12px; color: #F59E0B; margin-top: 6px;"><i class="fa-solid fa-exclamation-triangle"></i> Approaching limit - <span id="ai-actions-remaining">50</span> actions remaining</p>
+                  <p id="ai-usage-limit-reached" style="display: none; font-size: 12px; color: #EF4444; margin-top: 6px;"><i class="fa-solid fa-ban"></i> Monthly limit reached. Resets <span id="ai-limit-reset-date">-</span></p>
+                </div>
+                
                 <button type="button" class="btn-danger" onclick="cancelAISubscription()" style="margin-top: 12px;">
                   <i class="fa-solid fa-times"></i> Cancel AI Subscription
                 </button>
@@ -1154,6 +1275,7 @@
 
           <div class="screen-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button id="btn-edit-job" class="btn-secondary"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button id="btn-schedule-job" class="btn-secondary"><i class="fa-solid fa-calendar-plus"></i> Schedule</button>
             <button id="btn-close-job" class="btn-secondary"><i class="fa-solid fa-check"></i> Mark Closed</button>
             <button id="btn-archive-job" class="btn-secondary"><i class="fa-solid fa-box-archive"></i> Archive</button>
             <button id="btn-delete-job" class="btn-danger"><i class="fa-solid fa-trash"></i> Delete</button>
@@ -1604,6 +1726,6 @@
   <script src="languages.js?v=20251127"></script>
   <script src="templates.js?v=20251127"></script>
   <script src="db.js?v=20251128a"></script>
-  <script src="script.js?v=20251128i"></script>
+  <script src="script.js?v=20251128m"></script>
 </body>
 </html>

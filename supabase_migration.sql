@@ -172,7 +172,10 @@ ADD COLUMN IF NOT EXISTS referral_bonus_days INTEGER DEFAULT 0;
 ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS ai_plan TEXT,
-ADD COLUMN IF NOT EXISTS ai_subscription_id TEXT;
+ADD COLUMN IF NOT EXISTS ai_subscription_id TEXT,
+ADD COLUMN IF NOT EXISTS ai_actions_used INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS ai_actions_limit INTEGER DEFAULT 300,
+ADD COLUMN IF NOT EXISTS ai_billing_cycle_start TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- AI Usage Logs for tracking and future limits
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
@@ -294,6 +297,56 @@ CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_voice_notes_job_id ON voice_notes(job_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_trade_type ON profiles(trade_type);
+
+-- ============================================
+-- CALENDAR EVENTS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
+  related_job_id BIGINT REFERENCES jobs(id) ON DELETE SET NULL,
+  related_quote_id BIGINT REFERENCES quotes(id) ON DELETE SET NULL,
+  related_invoice_id BIGINT REFERENCES invoices(id) ON DELETE SET NULL,
+  event_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  reminder_datetime TIMESTAMP WITH TIME ZONE,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for calendar_events
+ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own calendar events"
+  ON calendar_events FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own calendar events"
+  ON calendar_events FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own calendar events"
+  ON calendar_events FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own calendar events"
+  ON calendar_events FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Indexes for calendar events
+CREATE INDEX IF NOT EXISTS idx_calendar_events_user_id ON calendar_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_datetime ON calendar_events(event_datetime);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_reminder ON calendar_events(reminder_datetime);
+
+-- ============================================
+-- AI USAGE LIMITS
+-- ============================================
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS ai_actions_used INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS ai_actions_limit INTEGER DEFAULT 300,
+ADD COLUMN IF NOT EXISTS ai_billing_cycle_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS ai_bonus_actions INTEGER DEFAULT 0;
 
 -- ============================================
 -- IMPORTANT: REFRESH SCHEMA CACHE

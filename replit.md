@@ -72,6 +72,10 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: Voice Add Client** - Speak to add new clients with name, phone, email, and address. Uses /api/ai/parse-client endpoint for structured extraction
 - **NEW: Send Text Button** - Invoice detail view now has "Send Text" button that opens native SMS app with pre-filled message including invoice view link and Stripe payment link. Works on both iOS and Android.
 - **NEW: Public Invoice View** - Clients can view invoices at /view/invoice/:id without login. Page shows business info, line items, totals, and includes Pay Now button if payment link exists.
+- **NEW: Calendar Feature** - Full calendar with month view for scheduling jobs, quotes, invoices. Includes calendar_events table with links to clients, jobs, quotes, invoices. Schedule buttons on Job/Quote/Invoice detail views.
+- **NEW: Voice Schedule Event** - AI voice command to create calendar events. Say "Schedule plumbing job at Johnson house next Tuesday at 2pm" to create events with automatic date/time parsing.
+- **NEW: AI Usage Limits** - 300 AI actions per month limit with usage tracking. Visual progress bar in Settings, warning at 250 actions, hard stop at 300 with reset date message. Monthly billing cycle resets automatically.
+- **UPDATED: Dashboard Layout** - Cost Calculator tile replaced with Calendar tile. Calculator now accessible via "Open Calculator" button in Quote creation flow.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
@@ -112,6 +116,28 @@ ALTER TABLE invoices ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS template TEXT DEFAULT 'basic_clean';
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
 ALTER TABLE quotes ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE;
+
+-- Calendar events table
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  event_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
+  client_id BIGINT REFERENCES clients(id) ON DELETE SET NULL,
+  related_job_id BIGINT REFERENCES jobs(id) ON DELETE SET NULL,
+  related_quote_id BIGINT REFERENCES quotes(id) ON DELETE SET NULL,
+  related_invoice_id BIGINT REFERENCES invoices(id) ON DELETE SET NULL,
+  reminder_datetime TIMESTAMP WITH TIME ZONE,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- AI usage tracking columns
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS ai_actions_used INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS ai_actions_limit INTEGER DEFAULT 300,
+ADD COLUMN IF NOT EXISTS ai_billing_cycle_start TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
 -- Refresh schema cache
 SELECT pg_notify('pgrst', 'reload schema');
 ```
