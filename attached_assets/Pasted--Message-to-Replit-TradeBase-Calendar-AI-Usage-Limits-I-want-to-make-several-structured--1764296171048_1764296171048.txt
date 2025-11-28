@@ -1,0 +1,194 @@
+
+⸻
+
+✅ Message to Replit – TradeBase Calendar + AI + Usage Limits
+
+I want to make several structured updates to TradeBase. This is a requirements breakdown, not code.
+
+⸻
+
+1) Dashboard Change – Remove Cost Calculator Tile, Add Calendar Tile
+
+Goal: Clean up the main dashboard and introduce a Calendar feature.
+	•	On the main dashboard:
+	•	Remove the “Cost Calculator” tile from the grid.
+	•	Add a new tile labeled “Calendar” with a calendar icon.
+	•	Tapping the Calendar tile should open a new Calendar screen (see section 2).
+	•	Important:
+	•	Do not delete/remove the cost calculator feature from the app.
+	•	Instead, move the Cost Calculator so it is accessible from inside the Create Quote flow.
+	•	Example: a button like “Open Cost Calculator” when creating/editing a quote.
+
+⸻
+
+2) Calendar Feature (v1)
+
+Goal: Simple in-app calendar to schedule jobs/tasks/reminders. No Google/Apple sync needed for now.
+
+2.1 Calendar UI
+	•	Default view: Month view.
+	•	User can:
+	•	Tap a day to see a list of events for that date.
+	•	Add a new event for that date.
+	•	Edit existing events.
+	•	Delete events.
+
+2.2 Calendar Event Fields
+
+Each event should support at least:
+	•	Title (string)
+	•	Date & time (single combined datetime)
+	•	Client (optional – link to existing client)
+	•	Notes (text)
+	•	Reminder datetime (optional)
+	•	Optional link to:
+	•	Job
+	•	Quote
+	•	Invoice
+
+2.3 Linking from Other Screens (basic v1)
+	•	From a Job / Quote / Invoice screen, there should be an option like:
+	•	“Schedule Job Date”
+	•	“Set Follow-Up Reminder”
+	•	When used:
+	•	Pre-fill the calendar event title (e.g. “Job – [Client Name]”, “Quote Follow-Up – [Client Name]”, “Invoice Due – [Client Name]”).
+	•	Auto-link the event back to the corresponding job/quote/invoice record.
+
+⸻
+
+3) Data Model for Calendar Events
+
+Please create a calendar_events table (or equivalent) in Supabase with roughly:
+	•	id
+	•	user_id (FK to profiles/auth user)
+	•	title
+	•	client_id (nullable FK to clients)
+	•	related_job_id (nullable FK to jobs)
+	•	related_quote_id (nullable FK to quotes)
+	•	related_invoice_id (nullable FK to invoices)
+	•	event_datetime (timestamp with timezone)
+	•	reminder_datetime (nullable timestamp with timezone)
+	•	notes (text)
+	•	created_at (timestamp)
+
+Use the existing ID types so it’s consistent with how jobs/quotes/invoices are already defined.
+
+⸻
+
+4) AI Voice Assistant – New “create_calendar_event” Intent
+
+Goal: Let the AI assistant create calendar events using natural language.
+
+Right now, the AI can already create things like quotes/clients from voice. I want to extend the intent system so it supports:
+	•	create_quote
+	•	create_client
+	•	create_calendar_event
+
+4.1 Example Voice Commands
+
+Users might say things like:
+	•	“Schedule a radon job for John Smith next Tuesday at 9am, remind me one hour before.”
+	•	“Add a follow-up visit for Bill Jones on Friday at 3pm.”
+	•	“Set a reminder tomorrow at 7pm to send the invoice for the Brookside job.”
+
+The AI should parse these into structured data for a calendar event.
+
+4.2 Expected JSON Shape from AI
+
+When the app sends the transcription to OpenAI, instruct the model to return strict JSON with an intent field. For calendar events, something like:
+	•	intent: "create_calendar_event"
+	•	title: string
+	•	client_name: string (used to resolve client_id if possible)
+	•	date: YYYY-MM-DD
+	•	time: HH:MM (24-hr or clearly parseable)
+	•	notes: string
+	•	reminder:
+	•	enabled: boolean
+	•	offset_minutes_before: number (e.g. 60 for 1 hour before)
+
+The backend should:
+	•	Resolve client_name to an existing client if there is a match, otherwise leave client_id null for now.
+	•	Combine date + time into event_datetime.
+	•	If reminder.enabled is true, set reminder_datetime to event_datetime - offset_minutes_before.
+	•	Create a new record in calendar_events with these values.
+	•	After saving, show a simple confirmation message in the UI (e.g. “Event created for [date/time]”).
+
+For other intents, the AI can return:
+	•	{ "intent": "create_quote", ... }
+	•	{ "intent": "create_client", ... }
+etc. The existing logic can handle those as it does now.
+
+⸻
+
+5) AI Usage Limits & Counting Rules
+
+I am charging a separate $9.99/month for AI usage, so I need a fair but safe usage cap.
+
+5.1 Monthly Limit
+	•	Per user, per month:
+	•	AI limit: 300 successful AI actions
+
+5.2 What Counts as an “AI Action”
+
+Count one AI action only when the AI successfully creates or updates something in the system, such as:
+	•	A quote created or updated by AI
+	•	A client created
+	•	A calendar event created
+	•	A job note saved
+	•	Any other successful write operation triggered by an AI command
+
+Do NOT count:
+	•	Failed transcriptions
+	•	“I didn’t understand” responses
+	•	Cases where the user cancels and nothing is created/updated
+	•	Clarifying follow-up questions from the AI where no record is saved yet
+	•	Preview screens where the user presses “Cancel”
+
+In other words:
+Only decrement the user’s AI usage when the app actually writes something to the database as a result of the AI.
+
+5.3 Tracking Usage
+
+I need a simple way to track and display AI usage:
+	•	Track fields per user, something like:
+	•	ai_actions_used_this_cycle
+	•	ai_actions_limit (set to 300)
+	•	billing_cycle_start or billing_cycle_end
+	•	Reset the counter at the start of each new billing cycle.
+
+5.4 In-App Display
+
+On the AI or settings screen, show a small indicator, for example:
+	•	“AI usage: 47 / 300 this month”
+
+This is to make it transparent and avoid confusion.
+
+5.5 Warnings & Hard Stop
+	•	At around 250 actions, show a friendly warning:
+	•	“You’re nearing your AI usage limit for this month (250/300).”
+	•	At 300 actions, stop further AI writes for that billing cycle:
+	•	Show a message like:
+	•	“You’ve reached your AI action limit for this month. Your AI access will reset on [date].”
+	•	The user should still be able to use the rest of the app normally; only AI-driven actions should be blocked after the limit.
+
+5.6 Optional “Forgiveness” Buffer (If Easy to Add)
+
+If it’s straightforward, I’d like:
+	•	A one-time small bonus buffer per cycle (e.g. +25 actions) that I can trigger manually from the admin side or that is auto-granted once if they hit the limit early.
+	•	This is not critical for the first version, but if you can structure the logic so a small manual override per user is possible, that’s ideal.
+
+⸻
+
+6) Order of Implementation
+
+If this is easier to handle in phases, please implement in this order:
+	1.	Remove Cost Calculator tile from dashboard and add Calendar tile.
+	2.	Build Calendar UI + calendar_events data model + basic create/edit/delete and linking from jobs/quotes/invoices.
+	3.	Add AI support for create_calendar_event intent.
+	4.	Implement AI usage tracking (300 successful AI actions/month/user), including:
+	•	counting rules
+	•	UI indicator
+	•	warnings
+	•	hard stop at limit
+
+Let me know if you need details on the existing jobs/quotes/invoices schema so foreign keys and linking behavior are consistent with the current structure.
