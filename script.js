@@ -6198,7 +6198,10 @@ async function completeVoiceCalendarWorkflow(audioBlob) {
     });
     
     if (!saveRes.ok) {
-      throw new Error("Failed to save calendar event");
+      const errData = await saveRes.json();
+      console.error("Calendar save error details:", errData);
+      const errMsg = errData.hint || errData.details || errData.error || "Unknown error";
+      throw new Error(errMsg);
     }
     
     hideVoiceTranscriptModal();
@@ -6213,7 +6216,7 @@ async function completeVoiceCalendarWorkflow(audioBlob) {
   } catch (error) {
     console.error("Voice calendar error:", error);
     hideVoiceTranscriptModal();
-    showToast("Failed to create event: " + error.message);
+    showToast("Error: " + error.message);
   }
 }
 

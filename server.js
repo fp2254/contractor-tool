@@ -414,63 +414,6 @@ app.post("/api/stripe-connect/enable", async (req, res) => {
   }
 });
 
-// DATABASE TEST ENDPOINT (temporary for debugging)
-app.get("/api/test-db", async (req, res) => {
-  const userId = req.userId;
-  
-  try {
-    // Test 1: Check if we can query clients table
-    const { data: clientsTest, error: clientsErr } = await supabaseAdmin
-      .from("clients")
-      .select("id")
-      .limit(1);
-    
-    // Test 2: Check if we can query profiles table  
-    const { data: profilesTest, error: profilesErr } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .limit(1);
-    
-    // Test 3: Check user subscription status
-    let subStatus = "no user";
-    if (userId) {
-      const hasAccess = await hasActiveSubscription(userId);
-      subStatus = hasAccess ? "active" : "INACTIVE - this is why save fails!";
-    }
-    
-    // Test 4: Try inserting a test client (then delete it)
-    let insertTest = "skipped (no user)";
-    if (userId) {
-      const { data: testInsert, error: insertErr } = await supabaseAdmin
-        .from("clients")
-        .insert({ user_id: userId, name: "TEST_DELETE_ME" })
-        .select()
-        .single();
-      
-      if (insertErr) {
-        insertTest = { error: insertErr.message, hint: insertErr.hint, code: insertErr.code };
-      } else {
-        // Clean up test record
-        await supabaseAdmin.from("clients").delete().eq("id", testInsert.id);
-        insertTest = "working - insert succeeded";
-      }
-    }
-
-    res.json({
-      status: "ok",
-      user_id: userId || "NOT LOGGED IN",
-      subscription: subStatus,
-      clients_table: clientsErr ? { error: clientsErr.message, hint: clientsErr.hint } : "working",
-      profiles_table: profilesErr ? { error: profilesErr.message, hint: profilesErr.hint } : "working",
-      insert_test: insertTest,
-      supabase_url: process.env.SUPABASE_URL ? "set" : "MISSING",
-      service_key: process.env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "MISSING"
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // CLIENTS
 
 app.get("/api/clients", requireSubscription, async (req, res) => {
@@ -1657,6 +1600,8 @@ app.post("/api/calendar-events", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Title and event datetime are required" });
     }
 
+    console.log("Creating calendar event:", { userId, title, event_datetime, client_id });
+    
     const { data, error } = await supabaseAdmin
       .from("calendar_events")
       .insert({
@@ -1673,7 +1618,15 @@ app.post("/api/calendar-events", requireAuth, async (req, res) => {
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Calendar event creation error:", error);
+      return res.status(500).json({ 
+        error: error.message,
+        details: error.details || null,
+        hint: error.hint || null,
+        code: error.code || null
+      });
+    }
     res.status(201).json(data);
   } catch (err) {
     console.error("Error creating calendar event:", err);
