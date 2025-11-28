@@ -2805,12 +2805,12 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
 
 // Send Invoice via SMS (opens native Messages app)
 async function sendInvoiceSMS(invoice) {
-  try {
-    let paymentLink = invoice.payment_link;
-    
-    // Generate payment link if not exists
-    if (!paymentLink && invoice.payment_status !== 'paid') {
-      showToast("Generating payment link...");
+  let paymentLink = invoice.payment_link;
+  
+  // Generate payment link if not exists
+  if (!paymentLink && invoice.payment_status !== 'paid') {
+    showToast("Generating payment link...");
+    try {
       const res = await apiFetch(`/api/invoices/${invoice.id}/payment-link`, {
         method: 'POST',
       });
@@ -2818,53 +2818,60 @@ async function sendInvoiceSMS(invoice) {
       if (res.ok) {
         const data = await res.json();
         paymentLink = data.payment_link;
-      } else {
-        showToast("Could not generate payment link, sending without it");
       }
+    } catch (e) {
+      console.log("Could not generate payment link:", e);
     }
-    
-    // Build message
-    const businessName = userProfile?.business_name || "Your business";
-    const total = formatCurrency(invoice.total || 0);
-    const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
-    
-    let message = `Invoice from ${businessName} for ${total}.`;
-    message += `\n\nView invoice: ${invoiceViewLink}`;
-    
-    if (paymentLink && invoice.payment_status !== 'paid') {
-      message += `\n\nPay now: ${paymentLink}`;
-    }
-    
-    // Get client phone (cleaned)
-    const clientPhone = (invoice.client?.phone || '').replace(/[^0-9+]/g, '');
-    
-    // Encode message for URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Build SMS URL - format differs for iOS vs Android
-    // iOS requires sms:phone?&body= format, Android uses sms:phone?body=
-    let smsUrl;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    if (clientPhone) {
-      if (isIOS) {
-        // iOS format: sms:phone?&body=message (needs the ?& before body)
-        smsUrl = `sms:${clientPhone}?&body=${encodedMessage}`;
-      } else {
-        // Android format: sms:phone?body=message
-        smsUrl = `sms:${clientPhone}?body=${encodedMessage}`;
-      }
+  }
+  
+  // Build message
+  const businessName = userProfile?.business_name || "Your business";
+  const total = formatCurrency(invoice.total || 0);
+  const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
+  
+  let message = `Invoice from ${businessName} for ${total}.`;
+  message += `\n\nView invoice: ${invoiceViewLink}`;
+  
+  if (paymentLink && invoice.payment_status !== 'paid') {
+    message += `\n\nPay now: ${paymentLink}`;
+  }
+  
+  // Get client phone (cleaned)
+  const clientPhone = (invoice.client?.phone || '').replace(/[^0-9+]/g, '');
+  
+  // Encode message for URL
+  const encodedMessage = encodeURIComponent(message);
+  
+  // Build SMS URL - format differs for iOS vs Android
+  let smsUrl;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  if (clientPhone) {
+    if (isIOS) {
+      smsUrl = `sms:${clientPhone}?&body=${encodedMessage}`;
     } else {
-      // No phone number - let user choose recipient
-      smsUrl = `sms:?body=${encodedMessage}`;
+      smsUrl = `sms:${clientPhone}?body=${encodedMessage}`;
     }
-    
-    // Open native SMS app
+  } else {
+    smsUrl = `sms:?body=${encodedMessage}`;
+  }
+  
+  // Try to open SMS app
+  // On mobile, this will open Messages app
+  // On desktop, copy message to clipboard instead
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (isMobile) {
     window.location.href = smsUrl;
-    
-  } catch (error) {
-    console.error("Error sending invoice SMS:", error);
-    showToast("Failed to open messaging app");
+  } else {
+    // Desktop fallback - copy message to clipboard
+    try {
+      await navigator.clipboard.writeText(message);
+      showToast("Message copied! Paste it in your messaging app.");
+    } catch (e) {
+      // Show the message in an alert if clipboard fails
+      alert("Copy this message to send:\n\n" + message);
+    }
   }
 }
 
