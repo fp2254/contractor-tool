@@ -104,3 +104,4 @@ externalPort = 5173
 
 [deployment]
 deploymentTarget = "autoscale"
+run = ["npm"]
