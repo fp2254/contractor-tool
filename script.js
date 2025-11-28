@@ -1860,8 +1860,8 @@ async function handleInvoiceSubmit(e) {
     await loadInvoices();
     showScreen("invoices");
   } catch (err) {
-    console.error(err);
-    errorEl.textContent = "Error saving invoice.";
+    console.error("Invoice save error:", err);
+    errorEl.textContent = "Error saving invoice: " + (err.message || err);
   }
 }
 
