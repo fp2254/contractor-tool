@@ -3413,14 +3413,22 @@ app.post("/api/ai/parse-calendar", requireAI, async (req, res) => {
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getDay()];
     
-    const systemPrompt = `You are a contractor assistant. Parse the user's voice transcription and extract calendar event data. Today's date is ${today}. Return ONLY valid JSON with these fields:
+    const systemPrompt = `You are a contractor assistant. Parse the user's voice transcription and extract calendar event data.
+
+CURRENT DATE INFO:
+- Today is ${dayOfWeek}, ${today}
+- Use this to calculate relative dates accurately
+
+Return ONLY valid JSON with these fields:
 {
   "intent": "create_calendar_event",
   "title": "short event title describing the job/task",
   "client_name": "client name if mentioned or empty string",
-  "date": "YYYY-MM-DD format (interpret relative dates like 'next Tuesday', 'tomorrow', 'Friday' based on today being ${today})",
+  "date": "YYYY-MM-DD format",
   "time": "HH:MM in 24-hour format (interpret times like '9am' as '09:00', '3pm' as '15:00')",
   "notes": "any additional notes or context",
   "reminder": {
@@ -3429,8 +3437,13 @@ app.post("/api/ai/parse-calendar", requireAI, async (req, res) => {
   }
 }
 
-RULES:
-- Extract DATE and TIME from the transcript (interpret relative dates/times)
+DATE CALCULATION RULES:
+- "tomorrow" = add 1 day to today
+- "Monday/Tuesday/etc" = the NEXT occurrence of that day (if today is Friday and user says Tuesday, that's 4 days from now)
+- "next Monday" = the Monday of next week
+- Calculate the exact YYYY-MM-DD date, don't guess
+
+OTHER RULES:
 - Extract CLIENT NAME if mentioned
 - Create a concise TITLE for the event (e.g., "Radon job at Smith", "Plumbing repair")
 - If user mentions "remind me X before", set reminder.enabled=true and appropriate offset
@@ -3449,7 +3462,9 @@ RULES:
     let parsedData = {};
     try {
       const content = message.choices[0].message.content;
+      console.log("Calendar AI response:", content);
       parsedData = JSON.parse(content);
+      console.log("Parsed calendar data:", parsedData);
     } catch (e) {
       console.error("Failed to parse GPT response:", e);
       parsedData = { 
