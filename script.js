@@ -6046,7 +6046,10 @@ async function completeVoiceClientWorkflow(audioBlob) {
     });
     
     if (!saveRes.ok) {
-      throw new Error("Failed to save client");
+      const errData = await saveRes.json();
+      console.error("Client save error details:", errData);
+      const errMsg = errData.hint || errData.details || errData.error || "Unknown error";
+      throw new Error(errMsg);
     }
     
     hideVoiceTranscriptModal();
@@ -6057,7 +6060,7 @@ async function completeVoiceClientWorkflow(audioBlob) {
   } catch (error) {
     console.error("Voice client error:", error);
     hideVoiceTranscriptModal();
-    showToast("Failed to add client: " + error.message);
+    showToast("Error: " + error.message);
   }
 }
 
