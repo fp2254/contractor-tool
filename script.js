@@ -6164,14 +6164,10 @@ async function completeVoiceCalendarWorkflow(audioBlob) {
       throw new Error("Could not extract event details from voice");
     }
     
-    let clientId = null;
-    if (parsed.client_name) {
-      const matchingClient = allClients.find(c => 
-        c.name.toLowerCase().includes(parsed.client_name.toLowerCase())
-      );
-      if (matchingClient) {
-        clientId = matchingClient.id;
-      }
+    // Build title - include client name if mentioned (no need to have them as saved client)
+    let eventTitle = parsed.title;
+    if (parsed.client_name && !eventTitle.toLowerCase().includes(parsed.client_name.toLowerCase())) {
+      eventTitle = `${parsed.title} - ${parsed.client_name}`;
     }
     
     const eventDatetime = new Date(`${parsed.date}T${parsed.time}:00`).toISOString();
@@ -6184,9 +6180,9 @@ async function completeVoiceCalendarWorkflow(audioBlob) {
     }
     
     const eventData = {
-      title: parsed.title,
+      title: eventTitle,
       event_datetime: eventDatetime,
-      client_id: clientId,
+      client_id: null,  // No client lookup needed - just use the name in title
       reminder_datetime: reminderDatetime,
       notes: parsed.notes || ""
     };
