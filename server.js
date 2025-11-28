@@ -1518,6 +1518,8 @@ app.get("/api/calendar-events", requireAuth, async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
     
+    console.log("Loading calendar events:", { userId, start_date, end_date });
+    
     let query = supabaseAdmin
       .from("calendar_events")
       .select(`
@@ -1538,6 +1540,8 @@ app.get("/api/calendar-events", requireAuth, async (req, res) => {
     }
 
     const { data, error } = await query;
+    
+    console.log("Calendar events result:", { count: data?.length || 0, error: error?.message });
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data || []);
@@ -1627,6 +1631,7 @@ app.post("/api/calendar-events", requireAuth, async (req, res) => {
         code: error.code || null
       });
     }
+    console.log("Calendar event created successfully:", { id: data?.id, title: data?.title, event_datetime: data?.event_datetime });
     res.status(201).json(data);
   } catch (err) {
     console.error("Error creating calendar event:", err);

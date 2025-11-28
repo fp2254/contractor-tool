@@ -58,6 +58,8 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Track supplies, materials & stock.",
     "dashboard.jobs": "Job Folders",
     "dashboard.jobs_desc": "Organize all your work by job.",
+    "dashboard.calendar": "Calendar",
+    "dashboard.calendar_desc": "Schedule jobs and reminders.",
     "dashboard.calculator": "Cost Calculator",
     "dashboard.calculator_desc": "Materials, hours, markup – done.",
     "dashboard.settings": "Settings",
@@ -151,6 +153,9 @@ const TRANSLATIONS = {
     
     // Settings
     "settings.title": "Settings & Business Info",
+    
+    // Calendar
+    "calendar.title": "Calendar",
     "settings.settings": "Settings & Business Info",
     "settings.business_name": "Business Name",
     "settings.phone": "Phone",
@@ -320,6 +325,8 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Realiza un seguimiento de suministros, materiales y existencias.",
     "dashboard.jobs": "Carpetas de Trabajo",
     "dashboard.jobs_desc": "Organiza todo tu trabajo por proyecto.",
+    "dashboard.calendar": "Calendario",
+    "dashboard.calendar_desc": "Programa trabajos y recordatorios.",
     "dashboard.calculator": "Calculadora",
     "dashboard.calculator_desc": "Materiales, horas, margen – hecho.",
     "dashboard.settings": "Configuración",
@@ -401,6 +408,9 @@ const TRANSLATIONS = {
     "client.address_placeholder": "Dirección",
     
     "settings.title": "Configuración e información comercial",
+    
+    // Calendar
+    "calendar.title": "Calendario",
     "settings.settings": "Configuración e información comercial",
     "settings.business_name": "Nombre del negocio",
     "settings.phone": "Teléfono",
@@ -562,6 +572,8 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Suivez les fournitures, matériaux et stock.",
     "dashboard.jobs": "Dossiers de Travaux",
     "dashboard.jobs_desc": "Organisez tout votre travail par projet.",
+    "dashboard.calendar": "Calendrier",
+    "dashboard.calendar_desc": "Planifiez travaux et rappels.",
     "dashboard.calculator": "Calculatrice",
     "dashboard.calculator_desc": "Matériaux, heures, marge – terminé.",
     "dashboard.settings": "Paramètres",
@@ -650,6 +662,9 @@ const TRANSLATIONS = {
     "client.address_placeholder": "Adresse",
     
     "settings.title": "Paramètres et informations commerciales",
+    
+    // Calendar
+    "calendar.title": "Calendrier",
     "settings.settings": "Paramètres et informations commerciales",
     "settings.business_name": "Nom de l'entreprise",
     "settings.phone": "Téléphone",
@@ -807,6 +822,8 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Verfolgen Sie Vorräte, Materialien und Bestände.",
     "dashboard.jobs": "Auftragsordner",
     "dashboard.jobs_desc": "Organisieren Sie Ihre Arbeit nach Auftrag.",
+    "dashboard.calendar": "Kalender",
+    "dashboard.calendar_desc": "Planen Sie Aufträge und Erinnerungen.",
     "dashboard.calculator": "Kalkulator",
     "dashboard.calculator_desc": "Materialien, Stunden, Aufschlag – erledigt.",
     "dashboard.settings": "Einstellungen",
@@ -895,6 +912,9 @@ const TRANSLATIONS = {
     "client.address_placeholder": "Adresse",
     
     "settings.title": "Einstellungen und Geschäftsinformationen",
+    
+    // Calendar
+    "calendar.title": "Kalender",
     "settings.settings": "Einstellungen und Geschäftsinformationen",
     "settings.business_name": "Geschäftsname",
     "settings.phone": "Telefon",
@@ -1052,6 +1072,8 @@ const TRANSLATIONS = {
     "dashboard.inventory_desc": "Acompanhe suprimentos, materiais e estoque.",
     "dashboard.jobs": "Pastas de Trabalho",
     "dashboard.jobs_desc": "Organize todo o seu trabalho por projeto.",
+    "dashboard.calendar": "Calendário",
+    "dashboard.calendar_desc": "Agende trabalhos e lembretes.",
     "dashboard.calculator": "Calculadora",
     "dashboard.calculator_desc": "Materiais, horas, margem – pronto.",
     "dashboard.settings": "Configurações",
@@ -1140,6 +1162,9 @@ const TRANSLATIONS = {
     "client.address_placeholder": "Endereço",
     
     "settings.title": "Configurações e Informações Comerciais",
+    
+    // Calendar
+    "calendar.title": "Calendário",
     "settings.settings": "Configurações e Informações Comerciais",
     "settings.business_name": "Nome da Empresa",
     "settings.phone": "Telefone",
