@@ -439,7 +439,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     .select()
     .single();
 
-  if (errInv) return res.status(500).json({ error: errInv.message });
+  if (errInv) {
+    console.error("Invoice creation error:", errInv);
+    return res.status(500).json({ error: errInv.message });
+  }
 
   if (Array.isArray(items) && items.length) {
     const itemsPayload = items.map((i) => ({
