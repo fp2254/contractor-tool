@@ -2010,13 +2010,17 @@ async function handleAddClient(e) {
       clientData.id = data.id;
       await tradebaseDB.saveClient(clientData);
       showToast("Client added!");
+      document.getElementById("client-form").reset();
+      await loadClients();
+    } else {
+      const errData = await res.json();
+      console.error('Client save error:', errData);
+      const errMsg = errData.hint || errData.details || errData.error || 'Unknown error';
+      showToast(`Failed: ${errMsg}`, 'error');
     }
-
-    document.getElementById("client-form").reset();
-    await loadClients();
   } catch (error) {
     console.error('Error adding client:', error);
-    showToast('Error adding client', 'error');
+    showToast('Error adding client: ' + error.message, 'error');
   }
 }
 

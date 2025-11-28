@@ -435,6 +435,7 @@ app.post("/api/clients", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const payload = { ...req.body, user_id: userId };
+  console.log("Creating client with payload:", JSON.stringify(payload));
 
   const { data, error } = await supabaseAdmin
     .from("clients")
@@ -442,7 +443,15 @@ app.post("/api/clients", requireSubscription, async (req, res) => {
     .select()
     .single();
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) {
+    console.error("Client creation error:", error);
+    return res.status(500).json({ 
+      error: error.message,
+      details: error.details || null,
+      hint: error.hint || null,
+      code: error.code || null
+    });
+  }
   res.json(data);
 });
 
