@@ -6202,9 +6202,14 @@ async function completeVoiceCalendarWorkflow(audioBlob) {
     
     hideVoiceTranscriptModal();
     
-    const formattedDate = new Date(parsed.date).toLocaleDateString();
+    const eventDate = new Date(parsed.date);
+    const formattedDate = eventDate.toLocaleDateString();
     const formattedTime = formatTime24to12(parsed.time);
-    showToast(`Scheduled: ${parsed.title} on ${formattedDate} at ${formattedTime}`);
+    showToast(`Scheduled: ${eventTitle} on ${formattedDate} at ${formattedTime}`);
+    
+    // Navigate calendar to the event's month so it's visible
+    calendarCurrentDate = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+    calendarSelectedDate = parsed.date; // Select the day with the new event
     
     await loadCalendarEvents();
     showScreen("calendar");
