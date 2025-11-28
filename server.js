@@ -3278,21 +3278,30 @@ app.post("/api/ai/parse-inventory", requireAI, async (req, res) => {
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const systemPrompt = `You are a contractor inventory assistant. Parse the user's voice transcription and extract inventory item data. Return ONLY valid JSON with these fields:
+    const systemPrompt = `You are a contractor inventory assistant. Parse the user's voice transcription and extract inventory item data. The user may list ONE or MULTIPLE items. Return ONLY valid JSON as an ARRAY of items:
 {
-  "name": "item name (e.g., '1/4 inch copper fittings')",
-  "quantity": number,
-  "unit_price": number,
-  "category": "category (Electrical, Plumbing, HVAC, Tools, Materials, Other)",
-  "notes": "any additional notes"
+  "items": [
+    {
+      "name": "item name (e.g., '1/4 inch copper fittings')",
+      "quantity": number,
+      "unit_price": number,
+      "category": "category (Electrical, Plumbing, HVAC, Tools, Materials, Other)",
+      "notes": "any additional notes"
+    }
+  ]
 }
 
 RULES:
+- If user mentions MULTIPLE items, create a separate entry for EACH item
 - Extract item NAME clearly and professionally
-- Parse QUANTITY as a number (e.g., "50 pieces" = 50)
-- Parse UNIT PRICE as a number (e.g., "$2.50 each" = 2.50)
+- Parse QUANTITY as a number (e.g., "50 pieces" = 50, default to 1 if not specified)
+- Parse UNIT PRICE as a number (e.g., "$2.50 each" = 2.50, default to 0 if not specified)
 - Guess CATEGORY based on item type
-- Return ONLY valid JSON`;
+- Return ONLY valid JSON with "items" array
+
+EXAMPLES:
+"10 copper fittings at 2 dollars and 5 PVC pipes at 3 bucks" = 2 items
+"add screwdriver" = 1 item`;
 
     const message = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -3303,13 +3312,17 @@ RULES:
       temperature: 0
     });
 
-    let parsedData = {};
+    let parsedData = { items: [] };
     try {
       const content = message.choices[0].message.content;
       parsedData = JSON.parse(content);
+      // Handle legacy single-item format just in case
+      if (!parsedData.items && parsedData.name) {
+        parsedData = { items: [parsedData] };
+      }
     } catch (e) {
       console.error("Failed to parse GPT response:", e);
-      parsedData = { name: transcript, quantity: 1, unit_price: 0, category: "Other" };
+      parsedData = { items: [{ name: transcript, quantity: 1, unit_price: 0, category: "Other" }] };
     }
 
     res.json(parsedData);

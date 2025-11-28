@@ -5728,28 +5728,52 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
     }
     
     const parsed = await parseRes.json();
-    updateVoiceStatus("processing", "Creating item...", "Saving to inventory...");
     
-    const itemData = {
-      name: parsed.name || "Voice Item",
-      quantity: parsed.quantity || 1,
-      unit_price: parsed.unit_price || 0,
-      category: parsed.category || "Other",
-      notes: parsed.notes || ""
-    };
+    // Handle array of items (new format) or single item (legacy)
+    const items = parsed.items || [parsed];
     
-    const saveRes = await apiFetch("/api/inventory", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(itemData)
-    });
+    if (items.length === 0) {
+      throw new Error("Could not extract any items from voice");
+    }
     
-    if (!saveRes.ok) {
-      throw new Error("Failed to save inventory item");
+    updateVoiceStatus("processing", `Adding ${items.length} item${items.length > 1 ? 's' : ''}...`, "Saving to inventory...");
+    
+    let savedCount = 0;
+    const savedNames = [];
+    
+    for (const item of items) {
+      const itemData = {
+        name: item.name || "Voice Item",
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        category: item.category || "Other",
+        notes: item.notes || ""
+      };
+      
+      const saveRes = await apiFetch("/api/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(itemData)
+      });
+      
+      if (saveRes.ok) {
+        savedCount++;
+        savedNames.push(`${itemData.quantity}x ${itemData.name}`);
+      }
+    }
+    
+    if (savedCount === 0) {
+      throw new Error("Failed to save inventory items");
     }
     
     hideVoiceTranscriptModal();
-    showToast(`Added: ${itemData.quantity}x ${itemData.name} @ ${formatCurrency(itemData.unit_price)}`);
+    
+    if (savedCount === 1) {
+      showToast(`Added: ${savedNames[0]}`);
+    } else {
+      showToast(`Added ${savedCount} items to inventory`);
+    }
+    
     await loadInventory();
     showScreen("inventory");
     
