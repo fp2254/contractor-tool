@@ -8058,10 +8058,14 @@ async function bulkDeleteSelected() {
         case "job": endpoint = `/api/jobs/${item.id}`; break;
         case "inventory": endpoint = `/api/inventory/${item.id}`; break;
         case "event": endpoint = `/api/calendar/${item.id}`; break;
-        default: continue;
+        default: 
+          console.log('Unknown item type:', item.type);
+          continue;
       }
       
+      console.log('Deleting:', endpoint, 'item:', item);
       const res = await apiFetch(endpoint, { method: "DELETE" });
+      console.log('Delete response:', res.status, res.ok);
       
       if (res.ok) {
         // Delete from IndexedDB too
@@ -8071,6 +8075,8 @@ async function bulkDeleteSelected() {
         }
         successCount++;
       } else {
+        const errorText = await res.text();
+        console.error('Delete failed:', res.status, errorText);
         failCount++;
       }
     } catch (err) {
