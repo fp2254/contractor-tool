@@ -77,6 +77,11 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: AI Usage Limits** - 300 AI actions per month limit with usage tracking. Visual progress bar in Settings, warning at 250 actions, hard stop at 300 with reset date message. Monthly billing cycle resets automatically.
 - **UPDATED: Dashboard Layout** - Cost Calculator tile replaced with Calendar tile. Calculator now accessible via "Open Calculator" button in Quote creation flow.
 - **NEW: Multi-Select Mode** - Long-press (hold 500ms) any list item to enter multi-select mode. Tap additional items to select/deselect. Floating action bar at bottom with bulk Delete and Archive (invoices/quotes only) actions. Checkboxes appear next to items. Works on all lists: Invoices, Quotes, Clients, Jobs, Inventory, Calendar Events. Exit by tapping X or navigating away.
+- **NEW: Unified Voice Command System** - Single `/api/voice-command` endpoint using OpenAI function calling for all voice operations. Supports chained commands (e.g., "Add John Smith and create a quote for 2 fans at 450" creates both client and quote). Returns `{ status, actions: [...] }` for multi-toast confirmations.
+- **NEW: Config-Based AI Models** - `config.js` file with AI_CONFIG for transcription and chat models, allowing model swaps without code changes. Environment variable overrides supported via `AI_TRANSCRIPTION_MODEL` and `AI_CHAT_MODEL`.
+- **NEW: Global Command Mic** - Prominent mic button on dashboard with full-screen recording overlay, real-time status, and transcript display. Handles all voice commands through the unified endpoint.
+- **NEW: Per-Screen Mic Buttons** - Small mic buttons on Clients, Inventory, and New Quote screens for quick voice input (uses same unified endpoint).
+- **DEPRECATED: Legacy Parse Endpoints** - `/api/ai/parse-client`, `/api/ai/parse-inventory`, `/api/ai/parse-quote` marked deprecated in favor of unified `/api/voice-command`.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
