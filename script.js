@@ -2161,14 +2161,11 @@ async function unarchiveInvoice(invoiceId) {
 }
 
 async function deleteInvoice(invoiceId) {
-  if (!confirm('Are you sure you want to permanently delete this invoice? This cannot be undone.')) {
-    return;
-  }
   try {
     const res = await apiFetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Invoice deleted');
-      loadInvoices(true);
+      loadInvoices(currentInvoiceTab === 'archived');
     } else {
       showToast('Failed to delete invoice');
     }
@@ -2210,14 +2207,11 @@ async function unarchiveQuote(quoteId) {
 }
 
 async function deleteQuote(quoteId) {
-  if (!confirm('Are you sure you want to permanently delete this quote? This cannot be undone.')) {
-    return;
-  }
   try {
     const res = await apiFetch(`/api/quotes/${quoteId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Quote deleted');
-      loadQuotes(true);
+      loadQuotes(currentQuoteTab === 'archived');
     } else {
       showToast('Failed to delete quote');
     }
@@ -7721,6 +7715,11 @@ async function handleDeleteCalendarEvent() {
   
   if (!confirm("Delete this event?")) return;
   
+  await deleteCalendarEvent(eventId);
+  hideCalendarEventModal();
+}
+
+async function deleteCalendarEvent(eventId) {
   try {
     const res = await apiFetch(`/api/calendar-events/${eventId}`, { method: "DELETE" });
     if (!res.ok) {
@@ -7728,7 +7727,6 @@ async function handleDeleteCalendarEvent() {
       return;
     }
     
-    hideCalendarEventModal();
     showToast("Event deleted!");
     loadCalendarEvents();
   } catch (err) {
