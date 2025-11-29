@@ -2748,24 +2748,36 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
       return res.status(400).json({ error: "Recipient email is required" });
     }
 
-    // Get invoice with all related data
+    // Get invoice (without joins - fetch items separately for compatibility)
     const { data: invoice, error: invoiceError } = await supabaseAdmin
       .from("invoices")
-      .select(`
-        *,
-        invoice_items (*),
-        invoice_attachments (*)
-      `)
+      .select("*")
       .eq("id", id)
       .eq("user_id", req.userId)
       .single();
 
-    console.log(`[SEND EMAIL] Invoice query result:`, invoiceError ? invoiceError.message : 'Found');
-
     if (invoiceError || !invoice) {
-      console.log(`[SEND EMAIL] Invoice not found. Error: ${invoiceError?.message}, Invoice: ${invoice}`);
+      console.log(`[SEND EMAIL] Invoice not found. Error: ${invoiceError?.message}`);
       return res.status(404).json({ error: "Invoice not found" });
     }
+
+    // Fetch invoice items separately
+    const { data: invoiceItems } = await supabaseAdmin
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", id);
+    
+    invoice.invoice_items = invoiceItems || [];
+
+    // Fetch attachments separately
+    const { data: invoiceAttachments } = await supabaseAdmin
+      .from("invoice_attachments")
+      .select("*")
+      .eq("invoice_id", id);
+    
+    invoice.invoice_attachments = invoiceAttachments || [];
+
+    console.log(`[SEND EMAIL] Invoice found with ${invoice.invoice_items.length} items`);
 
     // Get user profile for business info and template preference
     const { data: profile } = await supabaseAdmin
