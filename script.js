@@ -3102,9 +3102,15 @@ async function sendInvoiceSMS(invoice) {
       if (res.ok) {
         const data = await res.json();
         paymentLink = data.payment_link;
+        showToast("Payment link created!");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("Payment link error:", errData);
+        showToast("Continuing without payment link...");
       }
     } catch (e) {
       console.log("Could not generate payment link:", e);
+      showToast("Continuing without payment link...");
     }
   }
   
@@ -3147,22 +3153,18 @@ async function sendInvoiceSMS(invoice) {
     }
   }
   
+  console.log("SMS URL:", smsUrl);
+  
   // Try to open SMS app
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
   if (isMobile) {
-    console.log("Opening SMS URL:", smsUrl);
+    showToast("Opening Messages...");
     
-    // Try window.open first (works better in some PWAs)
-    const opened = window.open(smsUrl, '_system');
-    
-    // If window.open didn't work, try direct location change
-    if (!opened) {
-      console.log("window.open failed, trying location.href");
+    // Small delay to let toast show, then open SMS
+    setTimeout(() => {
       window.location.href = smsUrl;
-    }
-    
-    showToast("Opening Messages app...");
+    }, 300);
   } else {
     // Desktop fallback - copy message to clipboard
     try {
