@@ -3088,39 +3088,14 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
 }
 
 // Send Invoice via SMS (opens native Messages app)
-async function sendInvoiceSMS(invoice) {
+function sendInvoiceSMS(invoice) {
   console.log("sendInvoiceSMS called with invoice:", invoice);
-  alert("Send Text clicked!"); // Debug - remove later
-  
-  let paymentLink = invoice.payment_link;
-  
-  // Generate payment link if not exists
-  if (!paymentLink && invoice.payment_status !== 'paid') {
-    showToast("Generating payment link...");
-    try {
-      const res = await apiFetch(`/api/invoices/${invoice.id}/payment-link`, {
-        method: 'POST',
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        paymentLink = data.payment_link;
-        showToast("Payment link created!");
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        console.error("Payment link error:", errData);
-        showToast("Continuing without payment link...");
-      }
-    } catch (e) {
-      console.log("Could not generate payment link:", e);
-      showToast("Continuing without payment link...");
-    }
-  }
   
   // Build message
   const businessName = userProfile?.business_name || "Your business";
   const total = formatCurrency(invoice.total || 0);
   const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
+  const paymentLink = invoice.payment_link;
   
   let message = `Invoice from ${businessName} for ${total}.`;
   message += `\n\nView invoice: ${invoiceViewLink}`;
@@ -3136,49 +3111,28 @@ async function sendInvoiceSMS(invoice) {
   const encodedMessage = encodeURIComponent(message);
   
   // Build SMS URL - format differs for iOS vs Android
-  let smsUrl;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  let smsUrl;
   
   if (clientPhone) {
-    if (isIOS) {
-      // iOS uses &body= format
-      smsUrl = `sms:${clientPhone}&body=${encodedMessage}`;
-    } else {
-      // Android uses ?body= format
-      smsUrl = `sms:${clientPhone}?body=${encodedMessage}`;
-    }
+    smsUrl = isIOS ? `sms:${clientPhone}&body=${encodedMessage}` : `sms:${clientPhone}?body=${encodedMessage}`;
   } else {
-    // No phone number - just open SMS with message
-    if (isIOS) {
-      smsUrl = `sms:&body=${encodedMessage}`;
-    } else {
-      smsUrl = `sms:?body=${encodedMessage}`;
-    }
+    smsUrl = isIOS ? `sms:&body=${encodedMessage}` : `sms:?body=${encodedMessage}`;
   }
   
   console.log("SMS URL:", smsUrl);
-  console.log("Message:", message);
   
-  // Check if running in iframe (dev preview) - sms: links won't work there
+  // Check if running in iframe (dev preview)
   const isInIframe = window.self !== window.top;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
-  console.log("isInIframe:", isInIframe, "isMobile:", isMobile);
-  
-  if (isInIframe) {
-    // Dev mode - can't open sms: links from iframe
-    // Show message in alert so user can copy it
-    alert("Copy this message to text your client:\n\n" + message);
-  } else if (isMobile) {
-    showToast("Opening Messages...");
-    
-    // Small delay to let toast show, then open SMS
-    setTimeout(() => {
-      window.location.href = smsUrl;
-    }, 300);
+  if (isInIframe || !isMobile) {
+    // Dev mode or desktop - show message to copy
+    alert("TEXT MESSAGE:\n\n" + message);
   } else {
-    // Desktop - show message in alert
-    alert("Copy this message to text your client:\n\n" + message);
+    // Real mobile app - open SMS
+    showToast("Opening Messages...");
+    window.location.href = smsUrl;
   }
 }
 
