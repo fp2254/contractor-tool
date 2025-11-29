@@ -580,6 +580,81 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   res.json({ id: inv.id });
 });
 
+// Update invoice
+app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const invoiceId = req.params.id;
+  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
+
+  // Verify invoice belongs to user
+  const { data: existing, error: errCheck } = await supabaseAdmin
+    .from("invoices")
+    .select("id, user_id")
+    .eq("id", invoiceId)
+    .eq("user_id", userId)
+    .single();
+
+  if (errCheck || !existing) {
+    return res.status(404).json({ error: "Invoice not found" });
+  }
+
+  // Update invoice
+  const { data: inv, error: errInv } = await supabaseAdmin
+    .from("invoices")
+    .update({
+      client_id,
+      client_name,
+      date,
+      notes,
+      template: template || "basic_clean",
+      subtotal,
+      tax,
+      total
+    })
+    .eq("id", invoiceId)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (errInv) {
+    console.error("Invoice update error:", errInv);
+    return res.status(500).json({ error: errInv.message });
+  }
+
+  // Delete old items and insert new ones
+  const { error: errDeleteItems } = await supabaseAdmin
+    .from("invoice_items")
+    .delete()
+    .eq("invoice_id", invoiceId);
+
+  if (errDeleteItems) {
+    console.error("Invoice items delete error:", errDeleteItems);
+  }
+
+  if (Array.isArray(items) && items.length) {
+    const itemsPayload = items.map((i) => ({
+      invoice_id: inv.id,
+      description: i.description,
+      qty: i.qty,
+      unit_price: i.unit_price,
+      line_total: i.line_total,
+    }));
+
+    const { error: errItems } = await supabaseAdmin
+      .from("invoice_items")
+      .insert(itemsPayload);
+
+    if (errItems) {
+      console.error("Invoice items insert error:", errItems);
+      return res.status(500).json({ error: errItems.message });
+    }
+  }
+
+  res.json({ id: inv.id, number: inv.number });
+});
+
 app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1188,6 +1263,81 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   }
 
   res.json({ id: quote.id });
+});
+
+// Update quote
+app.put("/api/quotes/:id", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const quoteId = req.params.id;
+  const { client_id, client_name, quote_date, notes, template, subtotal, tax, total, items } = req.body;
+
+  // Verify quote belongs to user
+  const { data: existing, error: errCheck } = await supabaseAdmin
+    .from("quotes")
+    .select("id, user_id")
+    .eq("id", quoteId)
+    .eq("user_id", userId)
+    .single();
+
+  if (errCheck || !existing) {
+    return res.status(404).json({ error: "Quote not found" });
+  }
+
+  // Update quote
+  const { data: quote, error: errQuote } = await supabaseAdmin
+    .from("quotes")
+    .update({
+      client_id,
+      client_name,
+      quote_date: quote_date || null,
+      subtotal,
+      tax,
+      total,
+      notes,
+      template: template || "basic_clean"
+    })
+    .eq("id", quoteId)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (errQuote) {
+    console.error("Quote update error:", errQuote);
+    return res.status(500).json({ error: errQuote.message });
+  }
+
+  // Delete old items and insert new ones
+  const { error: errDeleteItems } = await supabaseAdmin
+    .from("quote_items")
+    .delete()
+    .eq("quote_id", quoteId);
+
+  if (errDeleteItems) {
+    console.error("Quote items delete error:", errDeleteItems);
+  }
+
+  if (items && items.length) {
+    const itemRows = items.map((it) => ({
+      quote_id: quote.id,
+      description: it.description,
+      quantity: it.qty || it.quantity,
+      unit_price: it.unit_price,
+      total: it.line_total || it.total,
+    }));
+
+    const { error: errItems } = await supabaseAdmin
+      .from("quote_items")
+      .insert(itemRows);
+
+    if (errItems) {
+      console.error("Quote items insert error:", errItems);
+      return res.status(500).json({ error: errItems.message });
+    }
+  }
+
+  res.json({ id: quote.id, quote_number: quote.quote_number });
 });
 
 app.get("/api/quotes/:id", requireAuth, async (req, res) => {

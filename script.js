@@ -4203,6 +4203,7 @@ function wireSubscriptionUI() {
   const newQuoteBtn = document.getElementById("btn-new-quote");
   if (newQuoteBtn) {
     newQuoteBtn.addEventListener("click", () => {
+      resetQuoteForm();
       showScreen("new-quote");
     });
   }
@@ -4210,6 +4211,7 @@ function wireSubscriptionUI() {
   const newInvoiceBtn = document.getElementById("btn-new-invoice");
   if (newInvoiceBtn) {
     newInvoiceBtn.addEventListener("click", () => {
+      resetInvoiceForm();
       showScreen("new-invoice");
     });
   }
