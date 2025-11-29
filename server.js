@@ -667,16 +667,27 @@ app.post("/api/invoices/:id/unarchive", requireSubscription, async (req, res) =>
 
 // DELETE INVOICE
 app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
+  console.log("=== DELETE INVOICE REQUEST ===");
+  console.log("Invoice ID param:", req.params.id);
+  console.log("User ID:", req.userId);
+  
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  if (!userId) {
+    console.log("ERROR: No user ID");
+    return res.status(401).json({ error: "Not authenticated" });
+  }
 
   const invoiceId = parseInt(req.params.id, 10);
+  console.log("Parsed invoice ID:", invoiceId);
+  
   if (isNaN(invoiceId)) {
+    console.log("ERROR: Invalid invoice ID");
     return res.status(400).json({ error: "Invalid invoice ID" });
   }
 
   try {
     // First verify the invoice exists and belongs to this user
+    console.log("Looking up invoice...");
     const { data: invoice, error: findError } = await supabaseAdmin
       .from("invoices")
       .select("id")
@@ -684,8 +695,10 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
       .eq("user_id", userId)
       .single();
 
+    console.log("Find result:", { invoice, findError });
+
     if (findError || !invoice) {
-      console.log("Invoice not found for delete:", invoiceId, "user:", userId);
+      console.log("Invoice not found for delete:", invoiceId, "user:", userId, "error:", findError);
       return res.status(404).json({ error: "Invoice not found" });
     }
 

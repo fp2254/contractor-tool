@@ -2165,6 +2165,8 @@ async function deleteInvoice(invoiceId) {
     console.log('Deleting invoice:', invoiceId);
     const res = await apiFetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
     if (res.ok) {
+      // Also delete from local IndexedDB storage
+      await tradebaseDB.deleteInvoice(invoiceId);
       showToast('Invoice deleted');
       loadInvoices(currentInvoiceTab === 'archived');
     } else {
@@ -2213,10 +2215,13 @@ async function deleteQuote(quoteId) {
   try {
     const res = await apiFetch(`/api/quotes/${quoteId}`, { method: 'DELETE' });
     if (res.ok) {
+      // Also delete from local IndexedDB storage
+      await tradebaseDB.deleteQuote(quoteId);
       showToast('Quote deleted');
       loadQuotes(currentQuoteTab === 'archived');
     } else {
-      showToast('Failed to delete quote');
+      const errorData = await res.json().catch(() => ({}));
+      showToast(errorData.error || 'Failed to delete quote');
     }
   } catch (err) {
     console.error('Error deleting quote:', err);

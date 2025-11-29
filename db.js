@@ -157,6 +157,10 @@ class TradeBaseDB {
     return this.getAll(STORES.INVOICES, 'user_id', userId);
   }
 
+  async deleteInvoice(invoiceId) {
+    return this.delete(STORES.INVOICES, invoiceId);
+  }
+
   async saveQuote(quote) {
     quote.updated_at = new Date().toISOString();
     return this.put(STORES.QUOTES, quote);
@@ -164,6 +168,10 @@ class TradeBaseDB {
 
   async getQuotes(userId) {
     return this.getAll(STORES.QUOTES, 'user_id', userId);
+  }
+
+  async deleteQuote(quoteId) {
+    return this.delete(STORES.QUOTES, quoteId);
   }
 
   async saveClient(client) {
