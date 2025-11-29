@@ -183,6 +183,10 @@ class TradeBaseDB {
     return this.getAll(STORES.CLIENTS, 'user_id', userId);
   }
 
+  async deleteClient(clientId) {
+    return this.delete(STORES.CLIENTS, clientId);
+  }
+
   async saveInventory(item) {
     item.updated_at = new Date().toISOString();
     return this.put(STORES.INVENTORY, item);
