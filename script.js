@@ -2932,7 +2932,14 @@ async function sendInvoiceSMS(invoice) {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
   if (isMobile) {
-    window.location.href = smsUrl;
+    // Create a temporary link and click it - more reliable than window.location in PWAs
+    const link = document.createElement('a');
+    link.href = smsUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } else {
     // Desktop fallback - copy message to clipboard
     try {
