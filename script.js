@@ -533,9 +533,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       const invoiceId = emailInvoiceForm.getAttribute('data-invoice-id');
       const recipientEmail = document.getElementById('email-recipient-email').value;
       const recipientName = document.getElementById('email-recipient-name').value;
+      const submitBtn = emailInvoiceForm.querySelector('button[type="submit"]');
       
       if (invoiceId && recipientEmail && recipientName) {
-        await sendInvoiceEmail(invoiceId, recipientEmail, recipientName);
+        // Show sending state
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-small"></span> Sending...';
+        }
+        
+        await sendInvoiceEmail(invoiceId, recipientEmail, recipientName, submitBtn);
       }
     });
   }
@@ -3551,15 +3558,24 @@ function closeEmailInvoiceModal() {
   }
 }
 
-async function sendInvoiceEmail(invoiceId, recipientEmail, recipientName) {
+async function sendInvoiceEmail(invoiceId, recipientEmail, recipientName, submitBtn) {
+  const resetButton = () => {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = t('invoice.send_email') || 'Send Email';
+    }
+  };
+  
   if (!recipientEmail || !recipientEmail.trim()) {
     showToast(t('invoice.email_required'), 'error');
+    resetButton();
     return;
   }
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(recipientEmail.trim())) {
     showToast(t('invoice.email_invalid'), 'error');
+    resetButton();
     return;
   }
   
@@ -3573,15 +3589,28 @@ async function sendInvoiceEmail(invoiceId, recipientEmail, recipientName) {
     });
     
     if (res.ok) {
+      // Show sent state briefly
+      if (submitBtn) {
+        submitBtn.innerHTML = '✓ Sent!';
+        submitBtn.style.background = '#22c55e';
+      }
       showToast(t('invoice.email_sent_success'));
-      closeEmailInvoiceModal();
+      
+      // Close modal after a brief delay to show success
+      setTimeout(() => {
+        resetButton();
+        if (submitBtn) submitBtn.style.background = '';
+        closeEmailInvoiceModal();
+      }, 1000);
     } else {
       const error = await res.json();
       showToast(error.error || t('invoice.email_sent_error'), 'error');
+      resetButton();
     }
   } catch (error) {
     console.error('Error sending invoice email:', error);
     showToast(t('invoice.email_sent_error'), 'error');
+    resetButton();
   }
 }
 
