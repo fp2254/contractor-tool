@@ -3091,8 +3091,9 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
 function sendInvoiceSMS(invoice) {
   console.log("sendInvoiceSMS called with invoice:", invoice);
   
-  // Build message
-  const businessName = userProfile?.business_name || "Your business";
+  // Build message - get business name from settings input field
+  const businessNameEl = document.getElementById("business-name");
+  const businessName = businessNameEl?.value || "Your business";
   const total = formatCurrency(invoice.total || 0);
   const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
   const paymentLink = invoice.payment_link;
