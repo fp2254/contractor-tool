@@ -3089,6 +3089,9 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
 
 // Send Invoice via SMS (opens native Messages app)
 async function sendInvoiceSMS(invoice) {
+  console.log("sendInvoiceSMS called with invoice:", invoice);
+  alert("Send Text clicked!"); // Debug - remove later
+  
   let paymentLink = invoice.payment_link;
   
   // Generate payment link if not exists
@@ -3154,20 +3157,18 @@ async function sendInvoiceSMS(invoice) {
   }
   
   console.log("SMS URL:", smsUrl);
+  console.log("Message:", message);
   
   // Check if running in iframe (dev preview) - sms: links won't work there
   const isInIframe = window.self !== window.top;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
+  console.log("isInIframe:", isInIframe, "isMobile:", isMobile);
+  
   if (isInIframe) {
-    // Dev mode - can't open sms: links from iframe, copy message instead
-    try {
-      await navigator.clipboard.writeText(message);
-      showToast("Message copied! Open your Messages app and paste it.");
-    } catch (e) {
-      // Show in alert if clipboard fails
-      alert("Copy this message to text your client:\n\n" + message);
-    }
+    // Dev mode - can't open sms: links from iframe
+    // Show message in alert so user can copy it
+    alert("Copy this message to text your client:\n\n" + message);
   } else if (isMobile) {
     showToast("Opening Messages...");
     
@@ -3176,14 +3177,8 @@ async function sendInvoiceSMS(invoice) {
       window.location.href = smsUrl;
     }, 300);
   } else {
-    // Desktop fallback - copy message to clipboard
-    try {
-      await navigator.clipboard.writeText(message);
-      showToast("Message copied! Paste it in your messaging app.");
-    } catch (e) {
-      // Show the message in a prompt if clipboard fails
-      prompt("Copy this message to send:", message);
-    }
+    // Desktop - show message in alert
+    alert("Copy this message to text your client:\n\n" + message);
   }
 }
 
