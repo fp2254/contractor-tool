@@ -7942,22 +7942,43 @@ function showSelectionBar(itemType) {
   
   bar.innerHTML = `
     <div class="selection-bar-left">
-      <button class="selection-cancel" onclick="window.exitMultiSelectMode()">
+      <button class="selection-cancel" id="btn-cancel-select">
         <i class="fas fa-times"></i>
       </button>
       <span class="selection-count">1 selected</span>
     </div>
     <div class="selection-bar-actions">
       ${supportsArchive ? `
-        <button class="selection-action archive-action" onclick="window.bulkArchiveSelected()">
+        <button class="selection-action archive-action" id="btn-bulk-archive">
           <i class="fas fa-archive"></i>
         </button>
       ` : ''}
-      <button class="selection-action delete-action" onclick="window.bulkDeleteSelected()">
+      <button class="selection-action delete-action" id="btn-bulk-delete">
         <i class="fas fa-trash"></i>
       </button>
     </div>
   `;
+  
+  // Attach event listeners directly (more reliable than inline onclick on mobile)
+  document.getElementById("btn-cancel-select").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    exitMultiSelectMode();
+  });
+  
+  document.getElementById("btn-bulk-delete").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    bulkDeleteSelected();
+  });
+  
+  if (supportsArchive) {
+    document.getElementById("btn-bulk-archive").addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      bulkArchiveSelected();
+    });
+  }
   
   bar.dataset.itemType = itemType;
   bar.classList.add("visible");
