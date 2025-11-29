@@ -2162,16 +2162,19 @@ async function unarchiveInvoice(invoiceId) {
 
 async function deleteInvoice(invoiceId) {
   try {
+    console.log('Deleting invoice:', invoiceId);
     const res = await apiFetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('Invoice deleted');
       loadInvoices(currentInvoiceTab === 'archived');
     } else {
-      showToast('Failed to delete invoice');
+      const errorData = await res.json().catch(() => ({}));
+      console.error('Delete failed:', res.status, errorData);
+      showToast(errorData.error || 'Failed to delete invoice');
     }
   } catch (err) {
     console.error('Error deleting invoice:', err);
-    showToast('Failed to delete invoice');
+    showToast('Network error - check connection');
   }
 }
 
