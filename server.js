@@ -4573,6 +4573,8 @@ app.get("/view/invoice/:id", async (req, res) => {
       .single();
     
     const businessName = profile?.business_name || "Business";
+    const logoUrl = profile?.logo_url || null;
+    const clientName = client?.name || invoice.client_name || "Client";
     const total = items?.reduce((sum, item) => sum + (parseFloat(item.line_total) || parseFloat(item.total) || 0), 0) || 0;
     
     // Generate HTML page
@@ -4617,6 +4619,7 @@ app.get("/view/invoice/:id", async (req, res) => {
 <body>
   <div class="container">
     <div class="header">
+      ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; max-width: 150px; margin-bottom: 10px; border-radius: 8px;">` : ''}
       <h1>${businessName}</h1>
       <p>Invoice #${invoice.invoice_number || invoiceId}</p>
     </div>
@@ -4624,7 +4627,7 @@ app.get("/view/invoice/:id", async (req, res) => {
       <div class="info-grid">
         <div class="info-box">
           <h3>Bill To</h3>
-          <p><strong>${client?.name || 'Client'}</strong></p>
+          <p><strong>${clientName}</strong></p>
           ${client?.address ? `<p>${client.address}</p>` : ''}
           ${client?.email ? `<p>${client.email}</p>` : ''}
           ${client?.phone ? `<p>${client.phone}</p>` : ''}
