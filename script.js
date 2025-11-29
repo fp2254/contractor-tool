@@ -1933,7 +1933,11 @@ async function uploadInvoicePhotos(invoiceId, files) {
 function editInvoice(invoice) {
   editingInvoiceId = invoice.id;
   
-  // Populate form fields
+  // IMPORTANT: Call showScreen FIRST because it calls applyLanguage() 
+  // which would overwrite our custom title/button text
+  showScreen('new-invoice');
+  
+  // Populate form fields AFTER showScreen
   document.getElementById("invoice-client-name").value = invoice.client_name || (invoice.client ? invoice.client.name : '');
   document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = invoice.notes || '';
@@ -1964,19 +1968,17 @@ function editInvoice(invoice) {
   // Update totals
   updateInvoiceTotals();
   
-  // Update form title to show we're editing
+  // Update form title AFTER showScreen (so applyLanguage doesn't overwrite it)
   const formTitle = document.querySelector('#new-invoice .screen-title');
   if (formTitle) {
     formTitle.textContent = `Edit Invoice #${invoice.number || invoice.id}`;
   }
   
-  // Update submit button text
+  // Update submit button text AFTER showScreen
   const submitBtn = document.querySelector('#invoice-form button[type="submit"]');
   if (submitBtn) {
     submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> Update Invoice';
   }
-  
-  showScreen('new-invoice');
 }
 
 // Reset invoice form to create mode
@@ -2007,7 +2009,11 @@ function resetInvoiceForm() {
 function editQuote(quote) {
   editingQuoteId = quote.id;
   
-  // Populate form fields
+  // IMPORTANT: Call showScreen FIRST because it calls applyLanguage() 
+  // which would overwrite our custom title/button text
+  showScreen('new-quote');
+  
+  // Populate form fields AFTER showScreen
   document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
   document.getElementById("quote-date").value = quote.quote_date || new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = quote.notes || '';
@@ -2044,19 +2050,17 @@ function editQuote(quote) {
   // Update totals
   updateQuoteTotals();
   
-  // Update form title to show we're editing
+  // Update form title AFTER showScreen (so applyLanguage doesn't overwrite it)
   const formTitle = document.querySelector('#new-quote .screen-title');
   if (formTitle) {
     formTitle.textContent = `Edit Quote #${quote.quote_number || quote.id}`;
   }
   
-  // Update submit button text
+  // Update submit button text AFTER showScreen
   const submitBtn = document.querySelector('#quote-form button[type="submit"]');
   if (submitBtn) {
     submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> Update Quote';
   }
-  
-  showScreen('new-quote');
 }
 
 // Reset quote form to create mode
