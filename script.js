@@ -2516,6 +2516,9 @@ async function viewInvoiceDetail(invoiceId) {
       </div>
       
       <div class="detail-actions">
+        <button class="btn-sm" id="edit-invoice-btn-${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
+          <i class="fa-solid fa-pen"></i> Edit Invoice
+        </button>
         <select id="invoice-payment-status-select" class="btn-sm" style="cursor: pointer;" onchange="updateInvoicePaymentStatus('${invoice.id}', this.value)">
           <option value="">Change Status...</option>
           <option value="unpaid" ${paymentStatus === 'unpaid' ? 'disabled' : ''}>Mark Unpaid</option>
@@ -2531,7 +2534,7 @@ async function viewInvoiceDetail(invoiceId) {
             <i class="fa-solid fa-link"></i> Generate Payment Link
           </button>
         `}
-        <button class="btn-sm" id="send-email-invoice-btn" data-invoice-id="${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
+        <button class="btn-sm" id="send-email-invoice-btn" data-invoice-id="${invoice.id}" style="background: #3b82f6; color: white;">
           <i class="fa-solid fa-envelope"></i> <span data-i18n="invoice.send_email">Send Email</span>
         </button>
         <button class="btn-sm" id="send-text-invoice-btn" data-invoice-id="${invoice.id}" data-client-phone="${invoice.client?.phone || ''}" data-total="${invoice.total || 0}" style="background: #22c55e; color: white;">
@@ -2580,6 +2583,11 @@ async function viewInvoiceDetail(invoiceId) {
     // Wire up schedule button
     document.getElementById(`schedule-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
       scheduleEventFromInvoice(invoice.id, invoice.client_name || invoice.client?.name || 'Unknown');
+    });
+    
+    // Wire up edit button
+    document.getElementById(`edit-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
+      editInvoice(invoice);
     });
     
     // Re-apply translations to dynamically added buttons
@@ -2672,6 +2680,9 @@ async function viewQuoteDetail(quoteId) {
       </div>
       
       <div class="detail-actions">
+        <button class="btn-sm" id="edit-quote-btn-${quote.id}" style="background: var(--accent); color: var(--text-inverse);">
+          <i class="fa-solid fa-pen"></i> Edit Quote
+        </button>
         <button class="btn-convert-quote" id="convert-quote-btn-${quote.id}" data-quote-id="${quote.id}" ${tourMode ? 'disabled style="opacity: 0.6;"' : ''}>
           <i class="fa-solid fa-file-invoice"></i> <span data-i18n="quote.convert_to_invoice">Convert to Invoice</span>
         </button>
@@ -2716,6 +2727,11 @@ async function viewQuoteDetail(quoteId) {
     // Wire up schedule button
     document.getElementById(`schedule-quote-btn-${quote.id}`)?.addEventListener('click', () => {
       scheduleEventFromQuote(quote.id, quote.client_name || quote.client?.name || 'Unknown');
+    });
+    
+    // Wire up edit button
+    document.getElementById(`edit-quote-btn-${quote.id}`)?.addEventListener('click', () => {
+      editQuote(quote);
     });
     
     // Re-apply translations
