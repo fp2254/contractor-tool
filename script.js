@@ -8044,22 +8044,20 @@ async function bulkDeleteSelected() {
         default: continue;
       }
       
-      const res = await fetch(endpoint, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const res = await apiFetch(endpoint, { method: "DELETE" });
       
       if (res.ok) {
         // Delete from IndexedDB too
         switch (item.type) {
-          case "invoice": await db.deleteInvoice(item.id); break;
-          case "quote": await db.deleteQuote(item.id); break;
+          case "invoice": await tradebaseDB.deleteInvoice(item.id); break;
+          case "quote": await tradebaseDB.deleteQuote(item.id); break;
         }
         successCount++;
       } else {
         failCount++;
       }
     } catch (err) {
+      console.error('Bulk delete error:', err);
       failCount++;
     }
   }
@@ -8076,7 +8074,9 @@ async function bulkDeleteSelected() {
   else if (currentScreen === "calendar") loadCalendarEvents();
   
   if (failCount > 0) {
-    alert(`Deleted ${successCount}, failed ${failCount}`);
+    showToast(`Deleted ${successCount}, failed ${failCount}`);
+  } else if (successCount > 0) {
+    showToast(`Deleted ${successCount} item(s)`);
   }
 }
 
@@ -8096,17 +8096,17 @@ async function bulkArchiveSelected() {
         default: continue; // Only invoices and quotes support archive
       }
       
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const res = await apiFetch(endpoint, { method: "POST" });
       
       if (res.ok) {
         successCount++;
       } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Archive failed:', errData);
         failCount++;
       }
     } catch (err) {
+      console.error('Bulk archive error:', err);
       failCount++;
     }
   }
@@ -8119,7 +8119,7 @@ async function bulkArchiveSelected() {
   else if (currentScreen === "quotes") loadQuotes();
   
   if (failCount > 0) {
-    alert(`Archived ${successCount}, failed ${failCount}`);
+    showToast(`Archived ${successCount}, failed ${failCount}`);
   }
 }
 
