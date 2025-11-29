@@ -8354,6 +8354,7 @@ async function bulkDeleteSelected() {
           case "invoice": await tradebaseDB.deleteInvoice(item.id); break;
           case "quote": await tradebaseDB.deleteQuote(item.id); break;
           case "client": await tradebaseDB.deleteClient(item.id); break;
+          case "inventory": await tradebaseDB.deleteInventory(item.id); break;
         }
         successCount++;
       } else {

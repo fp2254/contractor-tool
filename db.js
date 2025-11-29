@@ -196,6 +196,10 @@ class TradeBaseDB {
     return this.getAll(STORES.INVENTORY, 'user_id', userId);
   }
 
+  async deleteInventory(itemId) {
+    return this.delete(STORES.INVENTORY, itemId);
+  }
+
   async addToSyncQueue(operation) {
     const queueItem = {
       ...operation,
