@@ -3025,3 +3025,171 @@ body {
     min-width: unset;
   }
 }
+
+/* ===== SWIPE TO REVEAL ACTIONS ===== */
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.swipe-content {
+  position: relative;
+  z-index: 2;
+  background: var(--tile);
+  border-radius: 12px;
+  transition: transform 0.2s ease-out;
+  touch-action: pan-y pinch-zoom;
+  will-change: transform;
+}
+
+.swipe-content.dragging {
+  transition: none;
+}
+
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  z-index: 1;
+}
+
+.swipe-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.swipe-action i {
+  font-size: 16px;
+}
+
+.swipe-action.edit-action {
+  background: var(--accent);
+}
+
+.swipe-action.archive-action {
+  background: #f59e0b;
+}
+
+.swipe-action.delete-action {
+  background: var(--danger);
+}
+
+.swipe-action.unarchive-action {
+  background: var(--success);
+}
+
+.swipe-hint {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.6;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
+.swipe-hint i {
+  animation: swipeHint 1.5s ease-in-out infinite;
+}
+
+@keyframes swipeHint {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-5px); }
+}
+
+/* Delete confirmation modal */
+.delete-confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.delete-confirm-modal.hidden {
+  display: none;
+}
+
+.delete-confirm-content {
+  background: var(--bg-alt);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 340px;
+  text-align: center;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px var(--shadow);
+}
+
+.delete-confirm-content h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: var(--danger);
+}
+
+.delete-confirm-content p {
+  margin: 0 0 20px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.delete-confirm-buttons button {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.delete-confirm-buttons .btn-cancel {
+  background: var(--tile);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.delete-confirm-buttons .btn-delete {
+  background: var(--danger);
+  color: white;
+}
+
+/* Swipeable calendar events */
+.calendar-event-item-swipe .swipe-content {
+  padding: 0;
+}
+
+.calendar-event-item-swipe .swipe-content .list-item {
+  background: transparent;
+  border: none;
+  margin: 0;
+}

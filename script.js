@@ -2074,13 +2074,10 @@ async function loadClients() {
   }
 
   clients.forEach((c) => {
-    const item = document.createElement("div");
-    item.className = "list-item";
-    
     const isOffline = isOfflineId(c.id);
     const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning);">📱</span>' : '';
     
-    item.innerHTML = `
+    const content = `
       <div class="list-item-header">
         <strong>${c.name}${offlineBadge}</strong>
         <span>${c.phone || ""}</span>
@@ -2088,6 +2085,15 @@ async function loadClients() {
       <div class="list-item-sub">${c.email || ""}</div>
       <div class="list-item-sub">${c.address || ""}</div>
     `;
+    
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => editClient(c.id) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("client", c.name, () => deleteClient(c.id));
+      }}
+    ];
+    
+    const item = createSwipeableItem(content, actions, () => editClient(c.id));
     list.appendChild(item);
     
     // Add to datalists for invoice and quote forms
@@ -2281,45 +2287,42 @@ async function loadInvoices(showArchived = false) {
   }
 
   invoices.forEach((inv) => {
-    const item = document.createElement("div");
-    item.className = "list-item clickable";
-    item.style.cursor = "pointer";
-    
     const isOffline = isOfflineId(inv.id);
     const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
     
-    if (showArchived) {
-      item.innerHTML = `
-        <div class="list-item-header">
-          <strong>Invoice #${inv.number || inv.id}</strong>
-          <span>${formatCurrency(inv.total || 0)}</span>
-        </div>
-        <div class="list-item-sub">${inv.client_name || ""}</div>
-        <div class="list-item-sub">${inv.date || ""} • ${inv.status || "draft"}</div>
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button class="btn-sm" onclick="event.stopPropagation(); unarchiveInvoice('${inv.id}')">
-            <i class="fa-solid fa-box-open"></i> Restore
-          </button>
-          <button class="btn-sm" style="background: var(--danger); color: white;" onclick="event.stopPropagation(); deleteInvoice('${inv.id}')">
-            <i class="fa-solid fa-trash"></i> Delete
-          </button>
-        </div>
-      `;
-    } else {
-      item.innerHTML = `
-        <div class="list-item-header">
-          <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
-          <span>${formatCurrency(inv.total || 0)}</span>
-        </div>
-        <div class="list-item-sub">${inv.client_name || ""}</div>
-        <div class="list-item-sub">
-          ${inv.date || ""} • ${inv.status || "draft"}
-        </div>
-      `;
-      item.onclick = () => viewInvoiceDetail(inv.id);
-    }
+    const content = `
+      <div class="list-item-header">
+        <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
+        <span>${formatCurrency(inv.total || 0)}</span>
+      </div>
+      <div class="list-item-sub">${inv.client_name || ""}</div>
+      <div class="list-item-sub">
+        ${inv.date || ""} • ${inv.status || "draft"}
+      </div>
+    `;
     
-    list.appendChild(item);
+    if (showArchived) {
+      // Archived items get restore/delete actions
+      const actions = [
+        { icon: "fa-solid fa-box-open", label: "Restore", class: "unarchive-action", handler: () => unarchiveInvoice(inv.id) },
+        { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+          showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
+        }}
+      ];
+      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id));
+      list.appendChild(item);
+    } else {
+      // Active items get edit/archive/delete actions
+      const actions = [
+        { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewInvoiceDetail(inv.id) },
+        { icon: "fa-solid fa-box-archive", label: "Archive", class: "archive-action", handler: () => archiveInvoice(inv.id) },
+        { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+          showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
+        }}
+      ];
+      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id));
+      list.appendChild(item);
+    }
   });
   
   if (!showArchived) {
@@ -2359,42 +2362,35 @@ async function loadQuotes(showArchived = false) {
   quotes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   quotes.forEach((quote) => {
-    const item = document.createElement("div");
-    item.className = "list-item clickable";
-    item.style.cursor = "pointer";
+    const content = `
+      <div class="list-item-header">
+        <strong>Quote #${quote.quote_number || quote.id}</strong>
+        <span>${formatCurrency(quote.total || 0)}</span>
+      </div>
+      <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
+      <div class="list-item-sub">${quote.status || "draft"}</div>
+    `;
     
     if (showArchived) {
-      item.innerHTML = `
-        <div class="list-item-header">
-          <strong>Quote #${quote.quote_number || quote.id}</strong>
-          <span>${formatCurrency(quote.total || 0)}</span>
-        </div>
-        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
-        <div class="list-item-sub">${quote.status || "draft"}</div>
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button class="btn-sm" onclick="event.stopPropagation(); unarchiveQuote('${quote.id}')">
-            <i class="fa-solid fa-box-open"></i> Restore
-          </button>
-          <button class="btn-sm" style="background: var(--danger); color: white;" onclick="event.stopPropagation(); deleteQuote('${quote.id}')">
-            <i class="fa-solid fa-trash"></i> Delete
-          </button>
-        </div>
-      `;
+      const actions = [
+        { icon: "fa-solid fa-box-open", label: "Restore", class: "unarchive-action", handler: () => unarchiveQuote(quote.id) },
+        { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+          showDeleteConfirmModal("quote", quote.quote_number || quote.id, () => deleteQuote(quote.id));
+        }}
+      ];
+      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id));
+      list.appendChild(item);
     } else {
-      item.innerHTML = `
-        <div class="list-item-header">
-          <strong>Quote #${quote.quote_number || quote.id}</strong>
-          <span>${formatCurrency(quote.total || 0)}</span>
-        </div>
-        <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
-        <div class="list-item-sub">
-          ${quote.status || "draft"}
-        </div>
-      `;
-      item.onclick = () => viewQuoteDetail(quote.id);
+      const actions = [
+        { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewQuoteDetail(quote.id) },
+        { icon: "fa-solid fa-box-archive", label: "Archive", class: "archive-action", handler: () => archiveQuote(quote.id) },
+        { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+          showDeleteConfirmModal("quote", quote.quote_number || quote.id, () => deleteQuote(quote.id));
+        }}
+      ];
+      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id));
+      list.appendChild(item);
     }
-    
-    list.appendChild(item);
   });
 }
 
@@ -4474,37 +4470,43 @@ function renderJobsList(jobs) {
   }
 
   if (emptyState) emptyState.style.display = "none";
+  list.innerHTML = "";
 
-  list.innerHTML = jobs.map(job => {
+  jobs.forEach(job => {
     const statusColor = job.status === "open" ? "var(--primary)" :
                         job.status === "closed" ? "#4CAF50" : "var(--muted)";
     const statusIcon = job.status === "open" ? "fa-folder-open" :
                        job.status === "closed" ? "fa-check-circle" : "fa-box-archive";
     const dateStr = job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
 
-    return `
-      <div class="list-item" data-job-id="${job.id}">
-        <div class="list-item-info" style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid ${statusIcon}" style="color: ${statusColor}; font-size: 18px;"></i>
-            <div>
-              <strong>${job.client_name || "Unnamed Job"}</strong>
-              <div style="font-size: 13px; color: var(--muted);">
-                ${job.address ? `<i class="fa-solid fa-map-marker-alt"></i> ${job.address}` : ""}
-                ${job.job_type ? `<span style="margin-left: 10px;"><i class="fa-solid fa-wrench"></i> ${job.job_type}</span>` : ""}
-              </div>
-              <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
-                <i class="fa-solid fa-calendar"></i> ${dateStr}
-              </div>
+    const content = `
+      <div class="list-item-info" style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid ${statusIcon}" style="color: ${statusColor}; font-size: 18px;"></i>
+          <div>
+            <strong>${job.client_name || "Unnamed Job"}</strong>
+            <div style="font-size: 13px; color: var(--muted);">
+              ${job.address ? `<i class="fa-solid fa-map-marker-alt"></i> ${job.address}` : ""}
+              ${job.job_type ? `<span style="margin-left: 10px;"><i class="fa-solid fa-wrench"></i> ${job.job_type}</span>` : ""}
+            </div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+              <i class="fa-solid fa-calendar"></i> ${dateStr}
             </div>
           </div>
         </div>
-        <button class="btn-icon" onclick="viewJobDetail(${job.id})">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
       </div>
     `;
-  }).join("");
+    
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewJobDetail(job.id) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("job", job.client_name || job.id, () => deleteJob(job.id));
+      }}
+    ];
+    
+    const item = createSwipeableItem(content, actions, () => viewJobDetail(job.id));
+    list.appendChild(item);
+  });
 }
 
 function updateJobStats() {
@@ -5739,7 +5741,8 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
     updateVoiceStatus("processing", `Adding ${items.length} item${items.length > 1 ? 's' : ''}...`, "Saving to inventory...");
     
     let savedCount = 0;
-    const savedNames = [];
+    let stackedCount = 0;
+    const messages = [];
     
     for (const item of items) {
       const itemData = {
@@ -5747,7 +5750,8 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
         quantity: item.quantity || 1,
         unit_price: item.unit_price || 0,
         category: item.category || "Other",
-        notes: item.notes || ""
+        notes: item.notes || "",
+        smart_stack: true
       };
       
       const saveRes = await apiFetch("/api/inventory", {
@@ -5757,8 +5761,15 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
       });
       
       if (saveRes.ok) {
+        const result = await saveRes.json();
         savedCount++;
-        savedNames.push(`${itemData.quantity}x ${itemData.name}`);
+        
+        if (result.stacked) {
+          stackedCount++;
+          messages.push(`+${itemData.quantity} ${itemData.name} (now ${result.quantity})`);
+        } else {
+          messages.push(`${itemData.quantity}x ${itemData.name}`);
+        }
       }
     }
     
@@ -5769,9 +5780,14 @@ async function completeVoiceInventoryWorkflow(audioBlob) {
     hideVoiceTranscriptModal();
     
     if (savedCount === 1) {
-      showToast(`Added: ${savedNames[0]}`);
+      if (stackedCount === 1) {
+        showToast(`Added to existing: ${messages[0]}`);
+      } else {
+        showToast(`Added: ${messages[0]}`);
+      }
     } else {
-      showToast(`Added ${savedCount} items to inventory`);
+      const stackedMsg = stackedCount > 0 ? ` (${stackedCount} stacked)` : '';
+      showToast(`Added ${savedCount} items${stackedMsg}`);
     }
     
     await loadInventory();
@@ -6987,10 +7003,7 @@ function renderInventoryList(items) {
     const threshold = parseFloat(item.low_stock_threshold) || 0;
     const isLowStock = threshold > 0 && quantity <= threshold;
 
-    const card = document.createElement("div");
-    card.className = "list-item";
-    card.style.cursor = "pointer";
-    card.innerHTML = `
+    const content = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
         <div style="flex: 1;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -7011,7 +7024,14 @@ function renderInventoryList(items) {
       </div>
     `;
 
-    card.addEventListener("click", () => editInventoryItem(item));
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => editInventoryItem(item) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("item", item.name, () => deleteInventoryItem(item.id));
+      }}
+    ];
+    
+    const card = createSwipeableItem(content, actions, () => editInventoryItem(item));
     listContainer.appendChild(card);
   });
 
@@ -7115,6 +7135,10 @@ async function handleInventoryDelete() {
 
   if (!confirm("Delete this inventory item?")) return;
 
+  await deleteInventoryItem(itemId);
+}
+
+async function deleteInventoryItem(itemId) {
   try {
     const res = await apiFetch(`/api/inventory/${itemId}`, {
       method: "DELETE",
@@ -7131,6 +7155,65 @@ async function handleInventoryDelete() {
   } catch (err) {
     console.error("Error deleting inventory item:", err);
     showToast("Failed to delete item");
+  }
+}
+
+// Edit client function
+function editClient(clientId) {
+  // Load client data and switch to edit form
+  apiFetch(`/api/clients/${clientId}`).then(res => res.json()).then(client => {
+    document.getElementById("client-name").value = client.name || "";
+    document.getElementById("client-phone").value = client.phone || "";
+    document.getElementById("client-email").value = client.email || "";
+    document.getElementById("client-address").value = client.address || "";
+    
+    // Store client ID for updating
+    const form = document.getElementById("client-form");
+    if (form) form.dataset.editId = clientId;
+    
+    document.getElementById("client-form-title").textContent = "Edit Client";
+    showScreen("new-client");
+  }).catch(err => {
+    console.error("Error loading client:", err);
+    showToast("Failed to load client");
+  });
+}
+
+async function deleteClient(clientId) {
+  try {
+    const res = await apiFetch(`/api/clients/${clientId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      showToast("Failed to delete client");
+      return;
+    }
+
+    showToast("Client deleted!");
+    loadClients();
+  } catch (err) {
+    console.error("Error deleting client:", err);
+    showToast("Failed to delete client");
+  }
+}
+
+async function deleteJob(jobId) {
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      showToast("Failed to delete job");
+      return;
+    }
+
+    showToast("Job deleted!");
+    loadJobs();
+  } catch (err) {
+    console.error("Error deleting job:", err);
+    showToast("Failed to delete job");
   }
 }
 
@@ -7360,7 +7443,9 @@ function showEventsForDate(dateStr) {
     return;
   }
   
-  listEl.innerHTML = dayEvents.map(event => {
+  listEl.innerHTML = "";
+  
+  dayEvents.forEach(event => {
     const time = new Date(event.event_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     let linkInfo = "";
     if (event.related_job_id && event.jobs) {
@@ -7373,18 +7458,28 @@ function showEventsForDate(dateStr) {
     
     const clientName = event.clients?.name || '';
     
-    return `
-      <div class="calendar-event-item" onclick="editCalendarEvent(${event.id})">
+    const content = `
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px;">
         <div class="calendar-event-time">${time}</div>
-        <div class="calendar-event-info">
+        <div class="calendar-event-info" style="flex: 1;">
           <div class="calendar-event-title">${event.title}</div>
           ${clientName ? `<div class="calendar-event-client">${clientName}</div>` : ''}
           ${linkInfo}
         </div>
-        <i class="fa-solid fa-chevron-right" style="color: var(--muted);"></i>
       </div>
     `;
-  }).join('');
+    
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => editCalendarEvent(event.id) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("event", event.title, () => deleteCalendarEvent(event.id));
+      }}
+    ];
+    
+    const item = createSwipeableItem(content, actions, () => editCalendarEvent(event.id));
+    item.classList.add("calendar-event-item-swipe");
+    listEl.appendChild(item);
+  });
 }
 
 function showCalendarEventModal(presetDate = null, context = null) {
@@ -7716,4 +7811,193 @@ function scheduleEventFromInvoice(invoiceId, clientName) {
       invoice_id: invoiceId
     });
   });
+}
+
+// ===== SWIPE TO REVEAL ACTIONS =====
+let activeSwipeItem = null;
+let swipeStartX = 0;
+let swipeCurrentX = 0;
+let swipeDragging = false;
+
+function createSwipeableItem(content, actions, onClick) {
+  const container = document.createElement("div");
+  container.className = "swipe-container";
+  
+  // Actions panel (behind the content)
+  const actionsDiv = document.createElement("div");
+  actionsDiv.className = "swipe-actions";
+  
+  actions.forEach(action => {
+    const btn = document.createElement("button");
+    btn.className = `swipe-action ${action.class}`;
+    btn.innerHTML = `<i class="${action.icon}"></i><span>${action.label}</span>`;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      closeSwipeItem();
+      action.handler();
+    };
+    actionsDiv.appendChild(btn);
+  });
+  
+  container.appendChild(actionsDiv);
+  
+  // Content panel (swipeable)
+  const contentDiv = document.createElement("div");
+  contentDiv.className = "swipe-content list-item";
+  contentDiv.innerHTML = content;
+  
+  // Touch/pointer events for swiping
+  contentDiv.addEventListener("pointerdown", handleSwipeStart);
+  contentDiv.addEventListener("pointermove", handleSwipeMove);
+  contentDiv.addEventListener("pointerup", handleSwipeEnd);
+  contentDiv.addEventListener("pointercancel", handleSwipeEnd);
+  
+  // Click to view item (only if not swiping)
+  contentDiv.addEventListener("click", (e) => {
+    if (!swipeDragging && onClick) {
+      const content = e.currentTarget.closest('.swipe-container').querySelector('.swipe-content');
+      const translateX = getTranslateX(content);
+      if (Math.abs(translateX) < 10) {
+        onClick(e);
+      }
+    }
+  });
+  
+  container.appendChild(contentDiv);
+  
+  return container;
+}
+
+function handleSwipeStart(e) {
+  if (e.button !== 0) return; // Only left click/touch
+  
+  const content = e.currentTarget;
+  content.setPointerCapture(e.pointerId);
+  
+  swipeStartX = e.clientX;
+  swipeCurrentX = swipeStartX;
+  swipeDragging = false;
+  
+  const translateX = getTranslateX(content);
+  content.dataset.startTranslate = translateX;
+  content.classList.add("dragging");
+}
+
+function handleSwipeMove(e) {
+  if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+  
+  const content = e.currentTarget;
+  swipeCurrentX = e.clientX;
+  const deltaX = swipeCurrentX - swipeStartX;
+  const startTranslate = parseFloat(content.dataset.startTranslate) || 0;
+  
+  // Only start dragging if moved more than 10px horizontally
+  if (Math.abs(deltaX) > 10) {
+    swipeDragging = true;
+  }
+  
+  if (!swipeDragging) return;
+  
+  e.preventDefault();
+  
+  let newTranslate = startTranslate + deltaX;
+  
+  // Get actions width
+  const actionsWidth = content.parentElement.querySelector('.swipe-actions')?.offsetWidth || 210;
+  
+  // Clamp: can't swipe right past 0, can't swipe left more than actions width
+  newTranslate = Math.max(-actionsWidth, Math.min(0, newTranslate));
+  
+  content.style.transform = `translateX(${newTranslate}px)`;
+}
+
+function handleSwipeEnd(e) {
+  const content = e.currentTarget;
+  content.classList.remove("dragging");
+  
+  if (!content.hasPointerCapture(e.pointerId)) return;
+  content.releasePointerCapture(e.pointerId);
+  
+  const translateX = getTranslateX(content);
+  const actionsWidth = content.parentElement.querySelector('.swipe-actions')?.offsetWidth || 210;
+  
+  // If swiped more than 40% of actions width, snap open; otherwise close
+  if (Math.abs(translateX) > actionsWidth * 0.4) {
+    // Snap open
+    content.style.transform = `translateX(-${actionsWidth}px)`;
+    
+    // Close any previously open item
+    if (activeSwipeItem && activeSwipeItem !== content) {
+      activeSwipeItem.style.transform = 'translateX(0)';
+    }
+    activeSwipeItem = content;
+  } else {
+    // Snap closed
+    content.style.transform = 'translateX(0)';
+    if (activeSwipeItem === content) {
+      activeSwipeItem = null;
+    }
+  }
+  
+  // Reset dragging state after a short delay
+  setTimeout(() => { swipeDragging = false; }, 50);
+}
+
+function getTranslateX(element) {
+  const transform = window.getComputedStyle(element).transform;
+  if (transform === 'none') return 0;
+  const matrix = new DOMMatrix(transform);
+  return matrix.m41;
+}
+
+function closeSwipeItem() {
+  if (activeSwipeItem) {
+    activeSwipeItem.style.transform = 'translateX(0)';
+    activeSwipeItem = null;
+  }
+}
+
+// Close swipe when clicking outside
+document.addEventListener("click", (e) => {
+  if (activeSwipeItem && !e.target.closest('.swipe-container')) {
+    closeSwipeItem();
+  }
+});
+
+// Delete confirmation modal
+function showDeleteConfirmModal(itemType, itemName, onConfirm) {
+  let modal = document.getElementById("delete-confirm-modal");
+  
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "delete-confirm-modal";
+    modal.className = "delete-confirm-modal hidden";
+    modal.innerHTML = `
+      <div class="delete-confirm-content">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete?</h3>
+        <p id="delete-confirm-message">Are you sure?</p>
+        <div class="delete-confirm-buttons">
+          <button class="btn-cancel" onclick="hideDeleteConfirmModal()">Cancel</button>
+          <button class="btn-delete" id="delete-confirm-btn">Delete</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  document.getElementById("delete-confirm-message").textContent = 
+    `Delete ${itemType} "${itemName}"? This cannot be undone.`;
+  
+  const confirmBtn = document.getElementById("delete-confirm-btn");
+  confirmBtn.onclick = () => {
+    hideDeleteConfirmModal();
+    onConfirm();
+  };
+  
+  modal.classList.remove("hidden");
+}
+
+function hideDeleteConfirmModal() {
+  const modal = document.getElementById("delete-confirm-modal");
+  if (modal) modal.classList.add("hidden");
 }

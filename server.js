@@ -887,24 +887,75 @@ app.get("/api/inventory", requireSubscription, async (req, res) => {
 });
 
 // Create new inventory item
+// Helper function to normalize inventory item names for matching
+function normalizeInventoryName(name) {
+  if (!name) return '';
+  return name.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
 app.post("/api/inventory", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const { name, description, quantity, unit_price, category, unit_type, low_stock_threshold } = req.body;
+    const { name, description, quantity, unit_price, category, unit_type, low_stock_threshold, smart_stack } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: "Name is required" });
     }
 
+    const normalizedName = normalizeInventoryName(name);
+    const newQuantity = parseFloat(quantity) || 0;
+    
+    // If smart_stack is enabled, check for existing item with similar name
+    if (smart_stack) {
+      const { data: existingItems, error: searchError } = await supabaseAdmin
+        .from("inventory_items")
+        .select("*")
+        .eq("user_id", userId);
+      
+      if (!searchError && existingItems) {
+        // Find item with matching normalized name
+        const matchingItem = existingItems.find(item => 
+          normalizeInventoryName(item.name) === normalizedName
+        );
+        
+        if (matchingItem) {
+          // Add to existing item's quantity
+          const existingQty = parseFloat(matchingItem.quantity) || 0;
+          const updatedQty = existingQty + newQuantity;
+          
+          const { data: updatedItem, error: updateError } = await supabaseAdmin
+            .from("inventory_items")
+            .update({ quantity: updatedQty })
+            .eq("id", matchingItem.id)
+            .eq("user_id", userId)
+            .select()
+            .single();
+          
+          if (updateError) {
+            return res.status(500).json({ error: updateError.message });
+          }
+          
+          // Return with stacked flag so frontend knows it was merged
+          return res.json({
+            ...updatedItem,
+            stacked: true,
+            previous_quantity: existingQty,
+            added_quantity: newQuantity
+          });
+        }
+      }
+    }
+    
+    // No existing item found or smart_stack disabled - create new
     const { data, error } = await supabaseAdmin
       .from("inventory_items")
       .insert({
         user_id: userId,
         name,
         description: description || null,
-        quantity: quantity || 0,
+        quantity: newQuantity,
         unit_price: unit_price || 0,
         category: category || null,
         unit_type: unit_type || 'each',
@@ -917,7 +968,7 @@ app.post("/api/inventory", requireSubscription, async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    res.json(data);
+    res.json({ ...data, stacked: false });
   } catch (error) {
     console.error("Error creating inventory item:", error);
     res.status(500).json({ error: "Failed to create inventory item" });
