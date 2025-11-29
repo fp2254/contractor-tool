@@ -7960,22 +7960,47 @@ function showSelectionBar(itemType) {
   `;
   
   // Attach event listeners directly (more reliable than inline onclick on mobile)
-  document.getElementById("btn-cancel-select").addEventListener("click", (e) => {
+  const cancelBtn = document.getElementById("btn-cancel-select");
+  const deleteBtn = document.getElementById("btn-bulk-delete");
+  const archiveBtn = supportsArchive ? document.getElementById("btn-bulk-archive") : null;
+  
+  cancelBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Cancel button clicked');
     exitMultiSelectMode();
   });
   
-  document.getElementById("btn-bulk-delete").addEventListener("click", (e) => {
+  cancelBtn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    console.log('Cancel button touched');
+    exitMultiSelectMode();
+  });
+  
+  deleteBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Delete button clicked');
     bulkDeleteSelected();
   });
   
-  if (supportsArchive) {
-    document.getElementById("btn-bulk-archive").addEventListener("click", (e) => {
+  deleteBtn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    console.log('Delete button touched');
+    bulkDeleteSelected();
+  });
+  
+  if (archiveBtn) {
+    archiveBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      console.log('Archive button clicked');
+      bulkArchiveSelected();
+    });
+    
+    archiveBtn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      console.log('Archive button touched');
       bulkArchiveSelected();
     });
   }
@@ -8005,12 +8030,17 @@ function updateSelectionBar() {
 }
 
 async function bulkDeleteSelected() {
-  if (selectedItems.size === 0) return;
+  console.log('bulkDeleteSelected called, selectedItems.size:', selectedItems.size);
+  
+  if (selectedItems.size === 0) {
+    showToast('No items selected');
+    return;
+  }
   
   const count = selectedItems.size;
   const itemType = document.getElementById("selection-bar")?.dataset.itemType || "items";
   
-  if (!confirm(applyLang("deleteConfirm") || `Delete ${count} ${itemType}(s)?`)) {
+  if (!confirm(`Delete ${count} ${itemType}(s)?`)) {
     return;
   }
   
