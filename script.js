@@ -8290,8 +8290,15 @@ function updateSelectionBar() {
   }
 }
 
+let isDeleting = false;
+
 async function bulkDeleteSelected() {
   console.log('bulkDeleteSelected called, selectedItems.size:', selectedItems.size);
+  
+  if (isDeleting) {
+    console.log('Already deleting, ignoring duplicate call');
+    return;
+  }
   
   if (selectedItems.size === 0) {
     showToast('No items selected');
@@ -8304,6 +8311,8 @@ async function bulkDeleteSelected() {
   if (!confirm(`Delete ${count} ${itemType}(s)?`)) {
     return;
   }
+  
+  isDeleting = true;
   
   const itemsToDelete = Array.from(selectedItems.values());
   let successCount = 0;
@@ -8356,6 +8365,8 @@ async function bulkDeleteSelected() {
   else if (currentScreen === "screen-jobs") loadJobs();
   else if (currentScreen === "screen-inventory") loadInventory();
   else if (currentScreen === "screen-calendar") loadCalendarEvents();
+  
+  isDeleting = false;
   
   if (failCount > 0) {
     showToast(`Deleted ${successCount}, failed ${failCount}`);
