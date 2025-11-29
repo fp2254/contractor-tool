@@ -3132,36 +3132,45 @@ async function sendInvoiceSMS(invoice) {
   
   if (clientPhone) {
     if (isIOS) {
-      smsUrl = `sms:${clientPhone}?&body=${encodedMessage}`;
+      // iOS uses &body= format
+      smsUrl = `sms:${clientPhone}&body=${encodedMessage}`;
     } else {
+      // Android uses ?body= format
       smsUrl = `sms:${clientPhone}?body=${encodedMessage}`;
     }
   } else {
-    smsUrl = `sms:?body=${encodedMessage}`;
+    // No phone number - just open SMS with message
+    if (isIOS) {
+      smsUrl = `sms:&body=${encodedMessage}`;
+    } else {
+      smsUrl = `sms:?body=${encodedMessage}`;
+    }
   }
   
   // Try to open SMS app
-  // On mobile, this will open Messages app
-  // On desktop, copy message to clipboard instead
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
   if (isMobile) {
-    // Create a temporary link and click it - more reliable than window.location in PWAs
-    const link = document.createElement('a');
-    link.href = smsUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.log("Opening SMS URL:", smsUrl);
+    
+    // Try window.open first (works better in some PWAs)
+    const opened = window.open(smsUrl, '_system');
+    
+    // If window.open didn't work, try direct location change
+    if (!opened) {
+      console.log("window.open failed, trying location.href");
+      window.location.href = smsUrl;
+    }
+    
+    showToast("Opening Messages app...");
   } else {
     // Desktop fallback - copy message to clipboard
     try {
       await navigator.clipboard.writeText(message);
       showToast("Message copied! Paste it in your messaging app.");
     } catch (e) {
-      // Show the message in an alert if clipboard fails
-      alert("Copy this message to send:\n\n" + message);
+      // Show the message in a prompt if clipboard fails
+      prompt("Copy this message to send:", message);
     }
   }
 }
