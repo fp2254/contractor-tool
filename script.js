@@ -3155,10 +3155,20 @@ async function sendInvoiceSMS(invoice) {
   
   console.log("SMS URL:", smsUrl);
   
-  // Try to open SMS app
+  // Check if running in iframe (dev preview) - sms: links won't work there
+  const isInIframe = window.self !== window.top;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
-  if (isMobile) {
+  if (isInIframe) {
+    // Dev mode - can't open sms: links from iframe, copy message instead
+    try {
+      await navigator.clipboard.writeText(message);
+      showToast("Message copied! Open your Messages app and paste it.");
+    } catch (e) {
+      // Show in alert if clipboard fails
+      alert("Copy this message to text your client:\n\n" + message);
+    }
+  } else if (isMobile) {
     showToast("Opening Messages...");
     
     // Small delay to let toast show, then open SMS
