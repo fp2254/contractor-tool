@@ -35,3 +35,19 @@ const STRIPE_ADDON_PRICE_IDS = {
 
 // Same-origin API (Express serves this front-end)
 const API_BASE_URL = "";
+
+// AI MODEL CONFIGURATION
+// Change these to swap models without code changes
+const AI_CONFIG = {
+  // Speech-to-text model (OpenAI transcription)
+  transcriptionModel: "whisper-1",
+  
+  // Chat model for function calling / intent parsing
+  chatModel: "gpt-4o-mini",
+  
+  // Temperature for chat completions (0 = deterministic, 1 = creative)
+  temperature: 0,
+  
+  // Max tokens for responses
+  maxTokens: 1024
+};

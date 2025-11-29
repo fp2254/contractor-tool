@@ -1,0 +1,78 @@
+SUBJECT: Add Voice Command Button (AI) to TradeBase
+
+I want to add an AI “Voice Command” feature on top of the app we already have.
+
+Main idea:
+I press one mic button, talk naturally, and the app figures out what I want (add client, add inventory, create quote) and then runs the existing logic for those things.
+
+Phase 1 – Use Existing Flows (no rebuild)
+
+We already have separate screens and buttons to:
+	•	Create a new client
+	•	Add/update inventory
+	•	Create a quote
+
+I want a voice layer on top of these, not brand new logic.
+
+Option A (Simple): Per-Screen Voice Buttons
+	1.	New Client screen
+	•	Add a small mic button.
+	•	Flow:
+	•	I tap mic → app listens → turns speech into text (transcript).
+	•	Send transcript + userId to a new backend route:
+POST /api/voice-client
+	•	In /api/voice-client:
+	•	Use OpenAI with a single tool/function called create_client with fields: name, phone, email, address.
+	•	The AI turns the transcript into a JSON object for create_client.
+	•	Then call my existing “create client” logic (Supabase insert) with that data.
+	•	Result:
+	•	Either auto-fill the form fields on the frontend or just create the client immediately and return a message like:
+"New client John Smith created."
+	2.	Inventory screen
+	•	Same pattern:
+	•	Mic button → transcript → POST /api/voice-inventory
+	•	In /api/voice-inventory:
+	•	Use OpenAI with a tool/function add_inventory_item with fields: name, quantity, unit_price.
+	•	AI parses something like:
+“Add 5 radon fans to inventory at 450 each.”
+	•	Then call the existing inventory insert/update logic.
+	3.	New Quote screen
+	•	Mic button → transcript → POST /api/voice-quote
+	•	In /api/voice-quote:
+	•	Use OpenAI with a tool/function create_quote with fields:
+	•	client_name
+	•	address (optional)
+	•	line_items[] (description, quantity, unit_price)
+	•	notes (optional)
+	•	send_email (boolean)
+	•	Then call the existing quote creation logic and (if send_email is true) send it.
+	4.	Frontend behavior for all three:
+	•	After the backend does its thing, return:
+	•	{ status: "ok", message: "New quote created for John Smith for $1350." }
+	•	Show that message in a toast/banner.
+
+Option B (Later): One Global “Command Mic”
+
+Later on, I want one global mic button on the main dashboard that can:
+	•	Add a client
+	•	Add inventory
+	•	Create a quote
+
+For that, make a new route: POST /api/voice-command that uses multiple tools in OpenAI:
+	•	create_client
+	•	add_inventory_item
+	•	create_quote
+
+The AI decides which tool to call based on the transcript, and we then run the existing logic for that tool.
+
+⸻
+
+Key points:
+	•	Don’t change the existing Supabase tables or core logic.
+	•	Just:
+	1.	Add mic buttons on the UI.
+	2.	Add /api/voice-client, /api/voice-inventory, /api/voice-quote (and later /api/voice-command).
+	3.	Use OpenAI “function calling” / “tool calling” to turn transcripts into structured JSON for those functions.
+	4.	Call the existing create/save functions and return a simple success message.
+
+If you need examples of the tool/function JSON for OpenAI, I can provide that too.

@@ -5665,6 +5665,267 @@ function closeAIDoAllMenu() {
   }
 }
 
+// ============================================================================
+// COMMAND MIC - Unified Voice Command System
+// One button to do it all: add clients, inventory, create quotes
+// ============================================================================
+
+let commandMicRecorder = null;
+let commandMicStream = null;
+let commandMicChunks = [];
+
+async function startCommandMic() {
+  // Check AI subscription
+  if (!aiEnabled && !tourMode) {
+    showToast("AI subscription required. Enable in Settings.");
+    return;
+  }
+  
+  // Demo mode
+  if (tourMode) {
+    showDemoCommandMic();
+    return;
+  }
+  
+  // Check usage limits
+  const usageCheck = await checkAIUsageLimit();
+  if (usageCheck.is_at_limit) {
+    showToast(`AI limit reached (${usageCheck.actions_used}/${usageCheck.actions_limit}). Resets ${new Date(usageCheck.reset_date).toLocaleDateString()}`);
+    return;
+  }
+  
+  try {
+    // Request microphone
+    commandMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    commandMicRecorder = new MediaRecorder(commandMicStream);
+    commandMicChunks = [];
+    
+    // Show recording overlay
+    const overlay = document.getElementById("command-mic-overlay");
+    const status = document.getElementById("command-mic-status");
+    const transcript = document.getElementById("command-mic-transcript");
+    
+    overlay.classList.remove("hidden");
+    status.textContent = "Listening...";
+    transcript.textContent = "";
+    
+    // Collect audio chunks
+    commandMicRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        commandMicChunks.push(e.data);
+      }
+    };
+    
+    // Handle recording stop
+    commandMicRecorder.onstop = async () => {
+      await processCommandMicAudio();
+    };
+    
+    // Start recording
+    commandMicRecorder.start();
+    
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+    
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showToast("Microphone access denied. Please allow microphone access.");
+  }
+}
+
+function stopCommandMic() {
+  if (commandMicRecorder && commandMicRecorder.state === "recording") {
+    commandMicRecorder.stop();
+    
+    // Update UI to processing state
+    const status = document.getElementById("command-mic-status");
+    const modal = document.querySelector(".command-mic-modal");
+    const stopBtn = document.getElementById("btn-command-mic-stop");
+    
+    status.textContent = "Processing...";
+    modal.classList.add("processing");
+    stopBtn.disabled = true;
+    stopBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+  }
+}
+
+function cancelCommandMic() {
+  if (commandMicRecorder && commandMicRecorder.state === "recording") {
+    commandMicRecorder.stop();
+  }
+  
+  // Stop stream
+  if (commandMicStream) {
+    commandMicStream.getTracks().forEach(track => track.stop());
+    commandMicStream = null;
+  }
+  
+  // Hide overlay
+  hideCommandMicOverlay();
+  commandMicChunks = [];
+}
+
+function hideCommandMicOverlay() {
+  const overlay = document.getElementById("command-mic-overlay");
+  const modal = document.querySelector(".command-mic-modal");
+  const stopBtn = document.getElementById("btn-command-mic-stop");
+  
+  overlay.classList.add("hidden");
+  modal.classList.remove("processing");
+  stopBtn.disabled = false;
+  stopBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Done Speaking';
+}
+
+async function processCommandMicAudio() {
+  try {
+    // Stop stream
+    if (commandMicStream) {
+      commandMicStream.getTracks().forEach(track => track.stop());
+      commandMicStream = null;
+    }
+    
+    if (commandMicChunks.length === 0) {
+      hideCommandMicOverlay();
+      showToast("No audio recorded");
+      return;
+    }
+    
+    // Create audio blob
+    const audioBlob = new Blob(commandMicChunks, { type: "audio/webm" });
+    commandMicChunks = [];
+    
+    // Update status
+    const status = document.getElementById("command-mic-status");
+    const transcript = document.getElementById("command-mic-transcript");
+    status.textContent = "Transcribing...";
+    
+    // Send to unified voice command endpoint
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "command.webm");
+    
+    const res = await apiFetch("/api/voice-command", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to process command");
+    }
+    
+    const result = await res.json();
+    console.log("Voice command result:", result);
+    
+    // Show transcript
+    if (result.transcript) {
+      transcript.textContent = `"${result.transcript}"`;
+    }
+    
+    // Hide overlay
+    hideCommandMicOverlay();
+    
+    // Handle result
+    if (result.status === "no_action") {
+      showToast(result.message || "I didn't understand. Try again.");
+      return;
+    }
+    
+    // Show toast for each action
+    if (result.actions && result.actions.length > 0) {
+      for (const action of result.actions) {
+        if (action.success) {
+          showToast(action.summary, "success");
+        } else {
+          showToast(`Failed: ${action.summary}`, "error");
+        }
+        
+        // Small delay between toasts
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      // Refresh relevant screens
+      refreshAfterVoiceCommand(result.actions);
+    }
+    
+  } catch (err) {
+    console.error("Command mic error:", err);
+    hideCommandMicOverlay();
+    showToast(err.message || "Failed to process voice command");
+  }
+}
+
+function refreshAfterVoiceCommand(actions) {
+  const currentScreen = document.querySelector(".screen.active")?.id;
+  
+  for (const action of actions) {
+    if (!action.success) continue;
+    
+    switch (action.type) {
+      case "create_client":
+        if (currentScreen === "screen-clients") loadClients();
+        break;
+      case "add_inventory_item":
+        if (currentScreen === "screen-inventory") loadInventory();
+        break;
+      case "create_quote":
+        if (currentScreen === "screen-quotes") loadQuotes();
+        if (currentScreen === "screen-jobs") loadJobs();
+        break;
+    }
+  }
+  
+  // Always refresh dashboard stats
+  if (currentScreen === "screen-dashboard") {
+    loadDashboardStats();
+  }
+}
+
+async function checkAIUsageLimit() {
+  try {
+    const res = await apiFetch("/api/ai/status");
+    if (res.ok) {
+      const data = await res.json();
+      return data.usage || { is_at_limit: false, actions_used: 0, actions_limit: 300 };
+    }
+  } catch (e) {
+    console.error("Failed to check AI usage:", e);
+  }
+  return { is_at_limit: false, actions_used: 0, actions_limit: 300 };
+}
+
+function showDemoCommandMic() {
+  // Demo mode simulation
+  const overlay = document.getElementById("command-mic-overlay");
+  const status = document.getElementById("command-mic-status");
+  const transcript = document.getElementById("command-mic-transcript");
+  
+  overlay.classList.remove("hidden");
+  status.textContent = "Listening...";
+  transcript.textContent = "";
+  
+  // Simulate recording for 2 seconds
+  setTimeout(() => {
+    status.textContent = "Processing...";
+    document.querySelector(".command-mic-modal").classList.add("processing");
+  }, 2000);
+  
+  // Show simulated result
+  setTimeout(() => {
+    hideCommandMicOverlay();
+    transcript.textContent = '"Add John Smith and create a quote for 2 radon fans at 450 dollars"';
+    
+    showToast('Created client "John Smith"', "success");
+    setTimeout(() => {
+      showToast('Created quote QT-DEMO for John Smith - $900.00', "success");
+    }, 800);
+  }, 3500);
+}
+
+// Make functions globally accessible
+window.startCommandMic = startCommandMic;
+window.stopCommandMic = stopCommandMic;
+window.cancelCommandMic = cancelCommandMic;
+
 // AI VOICE INVENTORY
 async function startAIVoiceInventory() {
   closeAIDoAllMenu();

@@ -3224,6 +3224,398 @@ app.post("/api/ai/cancel", requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================================
+// UNIFIED VOICE COMMAND ENDPOINT
+// One brain, one system - handles all voice commands with function calling
+// ============================================================================
+
+// AI Model Configuration (server-side)
+const AI_MODELS = {
+  transcription: process.env.AI_TRANSCRIPTION_MODEL || "whisper-1",
+  chat: process.env.AI_CHAT_MODEL || "gpt-4o-mini",
+  temperature: parseFloat(process.env.AI_TEMPERATURE) || 0,
+  maxTokens: parseInt(process.env.AI_MAX_TOKENS) || 1024
+};
+
+// Tool definitions for function calling
+const VOICE_COMMAND_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "create_client",
+      description: "Create a new client/customer in the system",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Full name of the client (first and last name)" },
+          phone: { type: "string", description: "Phone number (optional)" },
+          email: { type: "string", description: "Email address (optional)" },
+          address: { type: "string", description: "Street address (optional)" },
+          notes: { type: "string", description: "Additional notes (optional)" }
+        },
+        required: ["name"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "add_inventory_item",
+      description: "Add an item to inventory",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name of the inventory item" },
+          quantity: { type: "number", description: "Quantity to add (default 1)" },
+          unit_price: { type: "number", description: "Price per unit in dollars" },
+          category: { 
+            type: "string", 
+            description: "Category of the item",
+            enum: ["Electrical", "Plumbing", "HVAC", "Tools", "Materials", "Other"]
+          },
+          notes: { type: "string", description: "Additional notes (optional)" }
+        },
+        required: ["name"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_quote",
+      description: "Create a quote/estimate for a client",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Name of the client" },
+          address: { type: "string", description: "Job address (optional)" },
+          job_type: { type: "string", description: "Type of job (e.g., 'Electrical work', 'Plumbing repair')" },
+          line_items: {
+            type: "array",
+            description: "List of items/services in the quote",
+            items: {
+              type: "object",
+              properties: {
+                description: { type: "string", description: "Brief service/item description" },
+                quantity: { type: "number", description: "Quantity (default 1)" },
+                unit_price: { type: "number", description: "Price per unit in dollars" }
+              },
+              required: ["description", "unit_price"]
+            }
+          },
+          notes: { type: "string", description: "Additional notes (optional)" }
+        },
+        required: ["client_name", "line_items"]
+      }
+    }
+  }
+];
+
+// Execute a single tool call
+async function executeVoiceToolCall(toolName, args, userId) {
+  switch (toolName) {
+    case "create_client": {
+      const { name, phone = "", email = "", address = "", notes = "" } = args;
+      
+      const { data, error } = await supabaseAdmin
+        .from("clients")
+        .insert({
+          user_id: userId,
+          name,
+          phone,
+          email,
+          address,
+          notes
+        })
+        .select()
+        .single();
+      
+      if (error) throw new Error(`Failed to create client: ${error.message}`);
+      
+      return {
+        type: "create_client",
+        success: true,
+        data: data,
+        summary: `Created client "${name}"${phone ? ` (${phone})` : ""}`
+      };
+    }
+    
+    case "add_inventory_item": {
+      const { name, quantity = 1, unit_price = 0, category = "Other", notes = "" } = args;
+      
+      // Check if item already exists to potentially stack
+      const { data: existing } = await supabaseAdmin
+        .from("inventory_items")
+        .select("*")
+        .eq("user_id", userId)
+        .ilike("name", name)
+        .single();
+      
+      let data;
+      if (existing) {
+        // Stack onto existing item
+        const newQuantity = (existing.quantity || 0) + quantity;
+        const { data: updated, error } = await supabaseAdmin
+          .from("inventory_items")
+          .update({ 
+            quantity: newQuantity,
+            unit_price: unit_price || existing.unit_price
+          })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        
+        if (error) throw new Error(`Failed to update inventory: ${error.message}`);
+        data = updated;
+        
+        return {
+          type: "add_inventory_item",
+          success: true,
+          data: data,
+          summary: `Added ${quantity} "${name}" to inventory (now ${newQuantity} total)`
+        };
+      } else {
+        // Create new item
+        const { data: created, error } = await supabaseAdmin
+          .from("inventory_items")
+          .insert({
+            user_id: userId,
+            name,
+            quantity,
+            unit_price,
+            category,
+            notes
+          })
+          .select()
+          .single();
+        
+        if (error) throw new Error(`Failed to add inventory: ${error.message}`);
+        data = created;
+        
+        return {
+          type: "add_inventory_item",
+          success: true,
+          data: data,
+          summary: `Added ${quantity} "${name}" to inventory at $${unit_price} each`
+        };
+      }
+    }
+    
+    case "create_quote": {
+      const { client_name, address = "", job_type = "", line_items = [], notes = "" } = args;
+      
+      // First, find or create the client
+      let clientId = null;
+      const { data: existingClient } = await supabaseAdmin
+        .from("clients")
+        .select("id")
+        .eq("user_id", userId)
+        .ilike("name", client_name)
+        .single();
+      
+      if (existingClient) {
+        clientId = existingClient.id;
+      } else {
+        // Create the client
+        const { data: newClient, error: clientError } = await supabaseAdmin
+          .from("clients")
+          .insert({
+            user_id: userId,
+            name: client_name,
+            address: address
+          })
+          .select()
+          .single();
+        
+        if (clientError) throw new Error(`Failed to create client: ${clientError.message}`);
+        clientId = newClient.id;
+      }
+      
+      // Calculate totals
+      const subtotal = line_items.reduce((sum, item) => {
+        return sum + (item.quantity || 1) * (item.unit_price || 0);
+      }, 0);
+      const tax = 0;
+      const total = subtotal + tax;
+      
+      // Create the quote
+      const quoteNumber = `QT-${Date.now()}`;
+      const { data: quote, error: quoteError } = await supabaseAdmin
+        .from("quotes")
+        .insert({
+          user_id: userId,
+          client_id: clientId,
+          client_name: client_name,
+          quote_number: quoteNumber,
+          date: new Date().toISOString().split("T")[0],
+          notes,
+          subtotal,
+          tax,
+          total,
+          status: "draft",
+          template: "basic_clean"
+        })
+        .select()
+        .single();
+      
+      if (quoteError) throw new Error(`Failed to create quote: ${quoteError.message}`);
+      
+      // Add line items
+      if (line_items.length > 0) {
+        const items = line_items.map(item => ({
+          quote_id: quote.id,
+          description: item.description,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0
+        }));
+        
+        await supabaseAdmin.from("quote_items").insert(items);
+      }
+      
+      // Create job folder
+      const folderName = `${client_name}_${address || "NoAddress"}_${new Date().toISOString().split("T")[0]}_${job_type || "Quote"}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+      await supabaseAdmin.from("jobs").insert({
+        user_id: userId,
+        client_name,
+        address,
+        job_type: job_type || "Quote",
+        folder_name: folderName,
+        status: "pending"
+      });
+      
+      return {
+        type: "create_quote",
+        success: true,
+        data: quote,
+        summary: `Created quote ${quoteNumber} for ${client_name} - $${total.toFixed(2)}`
+      };
+    }
+    
+    default:
+      throw new Error(`Unknown tool: ${toolName}`);
+  }
+}
+
+// Main voice command endpoint
+app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "AI service not configured" });
+    }
+
+    const OpenAI = (await import("openai")).default;
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    let transcript = req.body.transcript;
+    
+    // If audio file provided, transcribe it first
+    if (req.file && !transcript) {
+      await logAIUsage(userId, "voice_transcription");
+      
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+      
+      const tempDir = os.tmpdir();
+      const tempFile = path.join(tempDir, `voice_cmd_${Date.now()}.webm`);
+      fs.writeFileSync(tempFile, req.file.buffer);
+      
+      try {
+        const transcription = await openai.audio.transcriptions.create({
+          file: fs.createReadStream(tempFile),
+          model: AI_MODELS.transcription
+        });
+        transcript = filter.clean(transcription.text);
+        fs.unlinkSync(tempFile);
+      } catch (transcribeError) {
+        try { fs.unlinkSync(tempFile); } catch (e) {}
+        throw transcribeError;
+      }
+    }
+    
+    if (!transcript) {
+      return res.status(400).json({ error: "No audio or transcript provided" });
+    }
+
+    console.log("Voice command transcript:", transcript);
+    
+    // Log AI usage for intent parsing
+    await logAIUsage(userId, "voice_command");
+
+    // Use function calling to determine intent and extract data
+    const systemPrompt = `You are a voice command assistant for a contractor/tradesperson app. Parse the user's spoken command and call the appropriate function(s).
+
+IMPORTANT RULES:
+1. If the user mentions MULTIPLE actions, call MULTIPLE functions (e.g., "add John Smith and create a quote" = create_client + create_quote)
+2. Extract names, amounts, quantities accurately
+3. For prices, convert spoken amounts to numbers (e.g., "four fifty" = 450, "two dollars" = 2)
+4. If creating a quote for a new client, call create_client FIRST, then create_quote
+5. Be smart about context - "2 fans at 450" means quantity=2, unit_price=450
+
+Today's date is: ${new Date().toISOString().split("T")[0]}`;
+
+    const completion = await openai.chat.completions.create({
+      model: AI_MODELS.chat,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: transcript }
+      ],
+      tools: VOICE_COMMAND_TOOLS,
+      tool_choice: "auto",
+      temperature: AI_MODELS.temperature,
+      max_tokens: AI_MODELS.maxTokens
+    });
+
+    const message = completion.choices[0].message;
+    const toolCalls = message.tool_calls || [];
+    
+    if (toolCalls.length === 0) {
+      return res.json({
+        status: "no_action",
+        transcript,
+        message: "I didn't understand what you wanted to do. Try saying something like 'Add client John Smith' or 'Create quote for 2 fans at 450'.",
+        actions: []
+      });
+    }
+
+    // Execute all tool calls
+    const actions = [];
+    for (const toolCall of toolCalls) {
+      try {
+        const args = JSON.parse(toolCall.function.arguments);
+        console.log(`Executing ${toolCall.function.name}:`, args);
+        
+        const result = await executeVoiceToolCall(toolCall.function.name, args, userId);
+        actions.push(result);
+      } catch (execError) {
+        console.error(`Tool execution error for ${toolCall.function.name}:`, execError);
+        actions.push({
+          type: toolCall.function.name,
+          success: false,
+          error: execError.message,
+          summary: `Failed: ${execError.message}`
+        });
+      }
+    }
+
+    res.json({
+      status: "ok",
+      transcript,
+      actions
+    });
+
+  } catch (error) {
+    console.error("Voice command error:", error);
+    res.status(500).json({ 
+      error: "Failed to process voice command",
+      details: error.message 
+    });
+  }
+});
+
 // VOICE TRANSCRIPTION - Convert audio to text using OpenAI (REQUIRES AI SUBSCRIPTION)
 app.post("/api/voice-transcribe", requireAI, async (req, res) => {
   const userId = req.userId;
@@ -3324,6 +3716,7 @@ app.post("/api/ai/transcribe", requireAI, upload.single("audio"), async (req, re
   }
 });
 
+// DEPRECATED: Use /api/voice-command instead for unified voice commands
 // AI PARSE QUOTE/INVOICE - Extract structured data from transcript using GPT
 app.post("/api/ai/parse-quote", requireAI, async (req, res) => {
   const userId = req.userId;
@@ -3393,6 +3786,7 @@ RULES:
   }
 });
 
+// DEPRECATED: Use /api/voice-command instead for unified voice commands
 // AI PARSE INVENTORY - Extract inventory item data from transcript
 app.post("/api/ai/parse-inventory", requireAI, async (req, res) => {
   const userId = req.userId;
@@ -3467,6 +3861,7 @@ EXAMPLES:
   }
 });
 
+// DEPRECATED: Use /api/voice-command instead for unified voice commands
 // AI PARSE CLIENT - Extract client data from transcript
 app.post("/api/ai/parse-client", requireAI, async (req, res) => {
   const userId = req.userId;

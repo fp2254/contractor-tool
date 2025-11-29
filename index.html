@@ -161,54 +161,38 @@
       <main id="screen-container">
         <!-- DASHBOARD -->
         <section id="screen-dashboard" class="screen active">
-          <!-- AI DO-ALL BUTTON - Main AI Hub -->
-          <div id="ai-do-all-container" class="ai-do-all-container">
-            <button id="btn-ai-do-all" class="tile ai-do-all-tile" title="AI-powered actions">
-              <div class="tile-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-              <div class="tile-text">
-                <h3>AI Assistant</h3>
-                <p>Voice-powered tools for your business</p>
+          <!-- COMMAND MIC - One Button to Do It All -->
+          <div id="command-mic-container" class="command-mic-container">
+            <button id="btn-command-mic" class="command-mic-btn" onclick="startCommandMic()">
+              <div class="command-mic-icon">
+                <i class="fa-solid fa-microphone"></i>
               </div>
-              <div class="tile-arrow"><i class="fa-solid fa-chevron-down"></i></div>
+              <div class="command-mic-text">
+                <h3>Command Mic</h3>
+                <p>Talk to add clients, inventory, or create quotes</p>
+              </div>
             </button>
             
-            <!-- AI Actions Dropdown Menu -->
-            <div id="ai-do-all-menu" class="ai-do-all-menu hidden">
-              <button class="ai-menu-item" onclick="startAIVoiceQuoteFlow()">
-                <i class="fa-solid fa-microphone"></i>
-                <div class="ai-menu-text">
-                  <span class="ai-menu-title">Voice Quote Creator</span>
-                  <span class="ai-menu-desc">Talk to create a quote instantly</span>
+            <!-- Recording Overlay -->
+            <div id="command-mic-overlay" class="command-mic-overlay hidden">
+              <div class="command-mic-modal">
+                <div class="command-mic-recording">
+                  <div class="pulse-ring"></div>
+                  <div class="mic-icon-large">
+                    <i class="fa-solid fa-microphone"></i>
+                  </div>
                 </div>
-              </button>
-              <button class="ai-menu-item" onclick="startAIVoiceInventory()">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                <div class="ai-menu-text">
-                  <span class="ai-menu-title">Voice Add to Inventory</span>
-                  <span class="ai-menu-desc">Add items by speaking</span>
+                <p id="command-mic-status">Listening...</p>
+                <p id="command-mic-transcript" class="command-mic-transcript"></p>
+                <div class="command-mic-actions">
+                  <button id="btn-command-mic-stop" class="btn btn-primary" onclick="stopCommandMic()">
+                    <i class="fa-solid fa-stop"></i> Done Speaking
+                  </button>
+                  <button id="btn-command-mic-cancel" class="btn btn-secondary" onclick="cancelCommandMic()">
+                    Cancel
+                  </button>
                 </div>
-              </button>
-              <button class="ai-menu-item" onclick="startAIVoiceInvoice()">
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-                <div class="ai-menu-text">
-                  <span class="ai-menu-title">Voice Invoice Creator</span>
-                  <span class="ai-menu-desc">Create invoices with your voice</span>
-                </div>
-              </button>
-              <button class="ai-menu-item" onclick="startAIVoiceClient()">
-                <i class="fa-solid fa-user-plus"></i>
-                <div class="ai-menu-text">
-                  <span class="ai-menu-title">Voice Add Client</span>
-                  <span class="ai-menu-desc">Add new clients by speaking</span>
-                </div>
-              </button>
-              <button class="ai-menu-item" onclick="startAIVoiceCalendarEvent()">
-                <i class="fa-solid fa-calendar-plus"></i>
-                <div class="ai-menu-text">
-                  <span class="ai-menu-title">Voice Schedule Event</span>
-                  <span class="ai-menu-desc">Schedule jobs with your voice</span>
-                </div>
-              </button>
+              </div>
             </div>
           </div>
 
@@ -500,6 +484,9 @@
           <div class="screen-header">
             <button class="btn-back" data-back="quotes"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="quote.new_quote">New Quote</h2>
+            <button class="btn-voice-mic" onclick="startCommandMic()" title="Voice create quote">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
           </div>
 
           <form id="quote-form" class="form">
@@ -728,6 +715,9 @@
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="client.clients">Clients</h2>
+            <button class="btn-voice-mic" onclick="startCommandMic()" title="Voice add client">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
           </div>
           <form id="client-form" class="form-inline">
             <input type="text" id="client-name" data-i18n-placeholder="client.name_placeholder" placeholder="Client name" required />
@@ -1368,6 +1358,9 @@
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="inventory.title">Inventory Management</h2>
+            <button class="btn-voice-mic" onclick="startCommandMic()" title="Voice add inventory">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
           </div>
 
           <div class="screen-actions">
