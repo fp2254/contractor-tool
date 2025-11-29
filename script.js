@@ -8089,12 +8089,12 @@ async function bulkDeleteSelected() {
   
   // Reload the current list
   const currentScreen = document.querySelector(".screen.active")?.id;
-  if (currentScreen === "invoices") loadInvoices();
-  else if (currentScreen === "quotes") loadQuotes();
-  else if (currentScreen === "clients") loadClients();
-  else if (currentScreen === "jobs") loadJobs();
-  else if (currentScreen === "inventory") loadInventory();
-  else if (currentScreen === "calendar") loadCalendarEvents();
+  if (currentScreen === "screen-invoices") loadInvoices();
+  else if (currentScreen === "screen-quotes") loadQuotes();
+  else if (currentScreen === "screen-clients") loadClients();
+  else if (currentScreen === "screen-jobs") loadJobs();
+  else if (currentScreen === "screen-inventory") loadInventory();
+  else if (currentScreen === "screen-calendar") loadCalendarEvents();
   
   if (failCount > 0) {
     showToast(`Deleted ${successCount}, failed ${failCount}`);
@@ -8143,8 +8143,8 @@ async function bulkArchiveSelected() {
   
   // Reload the current list
   const currentScreen = document.querySelector(".screen.active")?.id;
-  if (currentScreen === "invoices") loadInvoices();
-  else if (currentScreen === "quotes") loadQuotes();
+  if (currentScreen === "screen-invoices") loadInvoices();
+  else if (currentScreen === "screen-quotes") loadQuotes();
   
   if (failCount > 0) {
     showToast(`Archived ${successCount}, failed ${failCount}`);
