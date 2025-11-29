@@ -3461,11 +3461,12 @@ async function executeVoiceToolCall(toolName, args, userId) {
         .insert({
           user_id: userId,
           client_id: clientId,
+          client_name: client_name,
           quote_number: quoteNumber,
-          issue_date: new Date().toISOString().split("T")[0],
+          quote_date: new Date().toISOString().split("T")[0],
           notes,
           subtotal,
-          tax_amount: tax,
+          tax,
           total,
           status: "draft",
           template: "basic_clean"
