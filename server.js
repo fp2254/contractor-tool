@@ -2893,7 +2893,9 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
     `;
 
     // Generate PDF attachment
+    console.log('[SEND EMAIL] Generating PDF...');
     const pdfBuffer = await generateInvoicePDF(invoice, profile);
+    console.log('[SEND EMAIL] PDF generated:', pdfBuffer ? `${pdfBuffer.length} bytes` : 'FAILED');
     
     // Prepare email options
     const emailOptions = {
@@ -2906,10 +2908,12 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
     // Add PDF attachment if generated successfully
     if (pdfBuffer) {
       emailOptions.attachments = [{
-        filename: `Invoice-${invoice.invoice_number}.pdf`,
-        content: pdfBuffer.toString('base64'),
-        content_type: 'application/pdf'
+        filename: `Invoice-${invoice.invoice_number || invoice.id}.pdf`,
+        content: pdfBuffer
       }];
+      console.log('[SEND EMAIL] PDF attachment added');
+    } else {
+      console.log('[SEND EMAIL] No PDF attachment - generation failed');
     }
 
     // Send email via Resend
