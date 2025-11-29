@@ -76,6 +76,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: Voice Schedule Event** - AI voice command to create calendar events. Say "Schedule plumbing job at Johnson house next Tuesday at 2pm" to create events with automatic date/time parsing.
 - **NEW: AI Usage Limits** - 300 AI actions per month limit with usage tracking. Visual progress bar in Settings, warning at 250 actions, hard stop at 300 with reset date message. Monthly billing cycle resets automatically.
 - **UPDATED: Dashboard Layout** - Cost Calculator tile replaced with Calendar tile. Calculator now accessible via "Open Calculator" button in Quote creation flow.
+- **NEW: Multi-Select Mode** - Long-press (hold 500ms) any list item to enter multi-select mode. Tap additional items to select/deselect. Floating action bar at bottom with bulk Delete and Archive (invoices/quotes only) actions. Checkboxes appear next to items. Works on all lists: Invoices, Quotes, Clients, Jobs, Inventory, Calendar Events. Exit by tapping X or navigating away.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
