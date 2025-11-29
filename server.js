@@ -455,6 +455,43 @@ app.post("/api/clients", requireSubscription, async (req, res) => {
   res.json(data);
 });
 
+app.put("/api/clients/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+  const updates = { ...req.body };
+  delete updates.id;
+  delete updates.user_id;
+
+  const { data, error } = await supabaseAdmin
+    .from("clients")
+    .update(updates)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.delete("/api/clients/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+
+  const { error } = await supabaseAdmin
+    .from("clients")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
 // INVOICES
 
 app.get("/api/invoices", requireSubscription, async (req, res) => {
