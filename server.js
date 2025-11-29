@@ -2742,6 +2742,8 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
     const { id } = req.params;
     const { recipientEmail, recipientName } = req.body;
 
+    console.log(`[SEND EMAIL] Invoice ID: ${id}, User ID: ${req.userId}, Email: ${recipientEmail}`);
+
     if (!recipientEmail) {
       return res.status(400).json({ error: "Recipient email is required" });
     }
@@ -2758,7 +2760,10 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
       .eq("user_id", req.userId)
       .single();
 
+    console.log(`[SEND EMAIL] Invoice query result:`, invoiceError ? invoiceError.message : 'Found');
+
     if (invoiceError || !invoice) {
+      console.log(`[SEND EMAIL] Invoice not found. Error: ${invoiceError?.message}, Invoice: ${invoice}`);
       return res.status(404).json({ error: "Invoice not found" });
     }
 
