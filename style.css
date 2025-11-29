@@ -565,7 +565,7 @@ body {
   color: var(--muted);
 }
 
-/* COMMAND MIC - One Button AI */
+/* TALK TO WORK - Voice Command Button */
 .command-mic-container {
   position: relative;
   margin-bottom: 16px;
@@ -584,6 +584,25 @@ body {
   text-align: left;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.talk-to-work-btn {
+  min-height: 100px;
+  padding: 24px 28px;
+}
+
+.talk-to-work-btn .command-mic-icon {
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
+}
+
+.talk-to-work-btn .command-mic-text h3 {
+  font-size: 22px;
+}
+
+.talk-to-work-btn .command-mic-text p {
+  font-size: 14px;
 }
 
 .command-mic-btn:hover {
