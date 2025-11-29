@@ -6409,44 +6409,6 @@ function updateVoiceTranscript(text) {
   }
 }
 
-function stopVoiceRecording() {
-  if (window.voiceTimeout) {
-    clearTimeout(window.voiceTimeout);
-  }
-  
-  if (window.currentMediaRecorder && isRecording) {
-    isRecording = false;
-    window.currentMediaRecorder.stop();
-    updateVoiceStatus("processing", "Processing...", "Transcribing your voice...");
-    document.getElementById("btn-stop-voice").style.display = "none";
-  }
-}
-
-function cancelVoiceRecording() {
-  if (window.voiceTimeout) {
-    clearTimeout(window.voiceTimeout);
-  }
-  
-  isRecording = false;
-  
-  if (window.currentMediaRecorder) {
-    try {
-      window.currentMediaRecorder.stop();
-    } catch (e) {}
-  }
-  
-  if (window.currentVoiceStream) {
-    window.currentVoiceStream.getTracks().forEach(track => track.stop());
-  }
-  
-  hideVoiceTranscriptModal();
-  showToast("Voice recording cancelled");
-}
-
-function stopVoiceAndCloseModal() {
-  cancelVoiceRecording();
-}
-
 async function completeVoiceQuoteWorkflow(audioBlob) {
   if (!isRecording) return;
   isRecording = false;
