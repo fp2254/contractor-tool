@@ -7942,18 +7942,18 @@ function showSelectionBar(itemType) {
   
   bar.innerHTML = `
     <div class="selection-bar-left">
-      <button class="selection-cancel" onclick="exitMultiSelectMode()">
+      <button class="selection-cancel" onclick="window.exitMultiSelectMode()">
         <i class="fas fa-times"></i>
       </button>
       <span class="selection-count">1 selected</span>
     </div>
     <div class="selection-bar-actions">
       ${supportsArchive ? `
-        <button class="selection-action archive-action" onclick="bulkArchiveSelected()">
+        <button class="selection-action archive-action" onclick="window.bulkArchiveSelected()">
           <i class="fas fa-archive"></i>
         </button>
       ` : ''}
-      <button class="selection-action delete-action" onclick="bulkDeleteSelected()">
+      <button class="selection-action delete-action" onclick="window.bulkDeleteSelected()">
         <i class="fas fa-trash"></i>
       </button>
     </div>
