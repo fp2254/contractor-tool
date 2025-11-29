@@ -34,6 +34,8 @@ let isOnline = navigator.onLine;
 let isSyncing = false;
 let isAdminUser = false;
 let aiEnabled = false;
+let editingInvoiceId = null;
+let editingQuoteId = null;
 
 // TEMPLATE INIT
 document.addEventListener('DOMContentLoaded', () => {
@@ -1842,21 +1844,23 @@ async function handleInvoiceSubmit(e) {
     subtotal,
     tax,
     total,
-    items,
-    status: 'draft',
-    payment_status: 'unpaid',
-    created_at: new Date().toISOString()
+    items
   };
 
+  const isEditing = editingInvoiceId !== null;
+
   try {
-    if (!navigator.onLine) {
+    if (!navigator.onLine && !isEditing) {
       const offlineId = generateOfflineId();
       invoiceData.id = offlineId;
       invoiceData.number = `INV-${Date.now()}`;
+      invoiceData.status = 'draft';
+      invoiceData.payment_status = 'unpaid';
+      invoiceData.created_at = new Date().toISOString();
       
       await saveOffline('invoices', invoiceData, '/api/invoices', 'POST');
       
-      showToast("📱 Invoice saved offline. Will sync when online.");
+      showToast("Invoice saved offline. Will sync when online.");
       await loadInvoices();
       showScreen("invoices");
       
@@ -1866,20 +1870,32 @@ async function handleInvoiceSubmit(e) {
       return;
     }
 
-    const res = await apiFetch("/api/invoices", {
-      method: "POST",
-      body: JSON.stringify(invoiceData),
-    });
+    let res;
+    if (isEditing) {
+      res = await apiFetch(`/api/invoices/${editingInvoiceId}`, {
+        method: "PUT",
+        body: JSON.stringify(invoiceData),
+      });
+    } else {
+      invoiceData.status = 'draft';
+      invoiceData.payment_status = 'unpaid';
+      invoiceData.created_at = new Date().toISOString();
+      res = await apiFetch("/api/invoices", {
+        method: "POST",
+        body: JSON.stringify(invoiceData),
+      });
+    }
+    
     const data = await res.json();
     if (!res.ok) {
       errorEl.textContent = data.error || "Failed to save invoice.";
       return;
     }
 
-    const invoiceId = data.id;
+    const invoiceId = isEditing ? editingInvoiceId : data.id;
     
     invoiceData.id = invoiceId;
-    invoiceData.number = data.number;
+    invoiceData.number = data.number || data.invoice_number;
     await tradebaseDB.saveInvoice(invoiceData);
 
     if (pendingPhotos.length) {
@@ -1889,7 +1905,8 @@ async function handleInvoiceSubmit(e) {
       document.getElementById("invoice-photos").value = "";
     }
 
-    showToast("Invoice saved.");
+    showToast(isEditing ? "Invoice updated." : "Invoice saved.");
+    resetInvoiceForm();
     await loadInvoices();
     showScreen("invoices");
   } catch (err) {
@@ -1910,6 +1927,163 @@ async function uploadInvoicePhotos(invoiceId, files) {
   if (!res.ok) {
     console.error("Photo upload failed");
   }
+}
+
+// EDIT INVOICE
+function editInvoice(invoice) {
+  editingInvoiceId = invoice.id;
+  
+  // Populate form fields
+  document.getElementById("invoice-client-name").value = invoice.client_name || (invoice.client ? invoice.client.name : '');
+  document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
+  document.getElementById("invoice-notes").value = invoice.notes || '';
+  
+  // Set template if exists
+  const templateSelect = document.getElementById("invoice-template-select");
+  if (templateSelect && invoice.template) {
+    templateSelect.value = invoice.template;
+  }
+  
+  // Clear existing line items and add invoice items
+  const container = document.getElementById("line-items");
+  container.innerHTML = "";
+  
+  const items = invoice.items || [];
+  if (items.length > 0) {
+    items.forEach(item => {
+      addLineItemRow({
+        description: item.description || '',
+        qty: item.qty || item.quantity || 1,
+        price: item.unit_price || item.price || 0
+      });
+    });
+  } else {
+    addLineItemRow();
+  }
+  
+  // Update totals
+  updateInvoiceTotals();
+  
+  // Update form title to show we're editing
+  const formTitle = document.querySelector('#new-invoice .screen-title');
+  if (formTitle) {
+    formTitle.textContent = `Edit Invoice #${invoice.number || invoice.id}`;
+  }
+  
+  // Update submit button text
+  const submitBtn = document.querySelector('#invoice-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> Update Invoice';
+  }
+  
+  showScreen('new-invoice');
+}
+
+// Reset invoice form to create mode
+function resetInvoiceForm() {
+  editingInvoiceId = null;
+  document.getElementById("invoice-client-name").value = '';
+  document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
+  document.getElementById("invoice-notes").value = '';
+  
+  const container = document.getElementById("line-items");
+  container.innerHTML = "";
+  addLineItemRow();
+  
+  const formTitle = document.querySelector('#new-invoice .screen-title');
+  if (formTitle) {
+    formTitle.textContent = t('invoice.new_invoice') || 'New Invoice';
+  }
+  
+  const submitBtn = document.querySelector('#invoice-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> ' + (t('invoice.save') || 'Save Invoice');
+  }
+  
+  updateInvoiceTotals();
+}
+
+// EDIT QUOTE
+function editQuote(quote) {
+  editingQuoteId = quote.id;
+  
+  // Populate form fields
+  document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
+  document.getElementById("quote-date").value = quote.quote_date || new Date().toISOString().split('T')[0];
+  document.getElementById("quote-notes").value = quote.notes || '';
+  
+  // Set valid until date if exists
+  const validUntilEl = document.getElementById("quote-valid-until");
+  if (validUntilEl && quote.due_date) {
+    validUntilEl.value = quote.due_date;
+  }
+  
+  // Set template if exists
+  const templateSelect = document.getElementById("quote-template-select");
+  if (templateSelect && quote.template) {
+    templateSelect.value = quote.template;
+  }
+  
+  // Clear existing line items and add quote items
+  const container = document.getElementById("quote-line-items");
+  container.innerHTML = "";
+  
+  const items = quote.items || [];
+  if (items.length > 0) {
+    items.forEach(item => {
+      addQuoteLineItemRow({
+        description: item.description || '',
+        qty: item.quantity || item.qty || 1,
+        price: item.unit_price || item.price || 0
+      });
+    });
+  } else {
+    addQuoteLineItemRow();
+  }
+  
+  // Update totals
+  updateQuoteTotals();
+  
+  // Update form title to show we're editing
+  const formTitle = document.querySelector('#new-quote .screen-title');
+  if (formTitle) {
+    formTitle.textContent = `Edit Quote #${quote.quote_number || quote.id}`;
+  }
+  
+  // Update submit button text
+  const submitBtn = document.querySelector('#quote-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> Update Quote';
+  }
+  
+  showScreen('new-quote');
+}
+
+// Reset quote form to create mode
+function resetQuoteForm() {
+  editingQuoteId = null;
+  document.getElementById("quote-client-name").value = '';
+  document.getElementById("quote-date").value = new Date().toISOString().split('T')[0];
+  document.getElementById("quote-notes").value = '';
+  
+  const validUntilEl = document.getElementById("quote-valid-until");
+  if (validUntilEl) validUntilEl.value = '';
+  
+  const container = document.getElementById("quote-line-items");
+  container.innerHTML = "";
+  addQuoteLineItemRow();
+  
+  const formTitle = document.querySelector('#new-quote .screen-title');
+  if (formTitle) {
+    formTitle.textContent = t('quote.new_quote') || 'New Quote';
+  }
+  
+  const submitBtn = document.querySelector('#quote-form button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> ' + (t('quote.save') || 'Save Quote');
+  }
+  
+  updateQuoteTotals();
 }
 
 // CALCULATOR SCREEN
@@ -4098,25 +4272,27 @@ async function handleQuoteSubmit(e) {
   const quoteData = {
     client_name: clientName,
     quote_date: quoteDate,
-    quote_number: `QT-${Date.now()}`,
     notes,
     template,
     subtotal,
     tax,
     total,
-    items,
-    status: "draft",
-    created_at: new Date().toISOString()
+    items
   };
 
+  const isEditing = editingQuoteId !== null;
+
   try {
-    if (!navigator.onLine) {
+    if (!navigator.onLine && !isEditing) {
       const offlineId = generateOfflineId();
       quoteData.id = offlineId;
+      quoteData.quote_number = `QT-${Date.now()}`;
+      quoteData.status = "draft";
+      quoteData.created_at = new Date().toISOString();
       
       await saveOffline('quotes', quoteData, '/api/quotes', 'POST');
       
-      showToast("📱 Quote saved offline. Will sync when online.");
+      showToast("Quote saved offline. Will sync when online.");
       document.getElementById("quote-form").reset();
       clearQuoteLineItems();
       showScreen("quotes");
@@ -4124,14 +4300,25 @@ async function handleQuoteSubmit(e) {
       return;
     }
 
-    const res = await apiFetch("/api/quotes", {
-      method: "POST",
-      body: JSON.stringify(quoteData),
-    });
+    let res;
+    if (isEditing) {
+      res = await apiFetch(`/api/quotes/${editingQuoteId}`, {
+        method: "PUT",
+        body: JSON.stringify(quoteData),
+      });
+    } else {
+      quoteData.quote_number = `QT-${Date.now()}`;
+      quoteData.status = "draft";
+      quoteData.created_at = new Date().toISOString();
+      res = await apiFetch("/api/quotes", {
+        method: "POST",
+        body: JSON.stringify(quoteData),
+      });
+    }
 
     if (res.ok) {
       const data = await res.json();
-      quoteData.id = data.id;
+      quoteData.id = isEditing ? editingQuoteId : data.id;
       
       try {
         await tradebaseDB.saveQuote(quoteData);
@@ -4139,14 +4326,13 @@ async function handleQuoteSubmit(e) {
         console.warn("IndexedDB save failed (non-critical):", dbErr);
       }
       
-      showToast("Quote created!");
-      document.getElementById("quote-form").reset();
-      clearQuoteLineItems();
+      showToast(isEditing ? "Quote updated!" : "Quote created!");
+      resetQuoteForm();
       showScreen("quotes");
       await loadQuotes();
     } else {
       const data = await res.json();
-      errorEl.textContent = data.error || "Failed to create quote.";
+      errorEl.textContent = data.error || "Failed to save quote.";
     }
   } catch (err) {
     console.error("Quote submit error:", err);
