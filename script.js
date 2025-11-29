@@ -1610,6 +1610,11 @@ async function saveLanguagePreference(lang) {
 }
 
 function showScreen(screenId) {
+  // Exit multi-select mode when changing screens
+  if (typeof exitMultiSelectMode === 'function' && typeof multiSelectMode !== 'undefined' && multiSelectMode) {
+    exitMultiSelectMode();
+  }
+  
   document.querySelectorAll(".screen").forEach((s) =>
     s.classList.remove("active")
   );
@@ -2093,7 +2098,8 @@ async function loadClients() {
       }}
     ];
     
-    const item = createSwipeableItem(content, actions, () => editClient(c.id));
+    const itemMeta = { type: "client", id: c.id, data: c };
+    const item = createSwipeableItem(content, actions, () => editClient(c.id), itemMeta);
     list.appendChild(item);
     
     // Add to datalists for invoice and quote forms
@@ -2303,6 +2309,8 @@ async function loadInvoices(showArchived = false) {
       </div>
     `;
     
+    const itemMeta = { type: "invoice", id: inv.id, data: inv };
+    
     if (showArchived) {
       // Archived items get restore/delete actions
       const actions = [
@@ -2311,7 +2319,7 @@ async function loadInvoices(showArchived = false) {
           showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
         }}
       ];
-      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id));
+      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
       list.appendChild(item);
     } else {
       // Active items get edit/archive/delete actions
@@ -2322,7 +2330,7 @@ async function loadInvoices(showArchived = false) {
           showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
         }}
       ];
-      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id));
+      const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
       list.appendChild(item);
     }
   });
@@ -2373,6 +2381,8 @@ async function loadQuotes(showArchived = false) {
       <div class="list-item-sub">${quote.status || "draft"}</div>
     `;
     
+    const itemMeta = { type: "quote", id: quote.id, data: quote };
+    
     if (showArchived) {
       const actions = [
         { icon: "fa-solid fa-box-open", label: "Restore", class: "unarchive-action", handler: () => unarchiveQuote(quote.id) },
@@ -2380,7 +2390,7 @@ async function loadQuotes(showArchived = false) {
           showDeleteConfirmModal("quote", quote.quote_number || quote.id, () => deleteQuote(quote.id));
         }}
       ];
-      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id));
+      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id), itemMeta);
       list.appendChild(item);
     } else {
       const actions = [
@@ -2390,7 +2400,7 @@ async function loadQuotes(showArchived = false) {
           showDeleteConfirmModal("quote", quote.quote_number || quote.id, () => deleteQuote(quote.id));
         }}
       ];
-      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id));
+      const item = createSwipeableItem(content, actions, () => viewQuoteDetail(quote.id), itemMeta);
       list.appendChild(item);
     }
   });
@@ -4506,7 +4516,8 @@ function renderJobsList(jobs) {
       }}
     ];
     
-    const item = createSwipeableItem(content, actions, () => viewJobDetail(job.id));
+    const itemMeta = { type: "job", id: job.id, data: job };
+    const item = createSwipeableItem(content, actions, () => viewJobDetail(job.id), itemMeta);
     list.appendChild(item);
   });
 }
@@ -7033,7 +7044,8 @@ function renderInventoryList(items) {
       }}
     ];
     
-    const card = createSwipeableItem(content, actions, () => editInventoryItem(item));
+    const itemMeta = { type: "inventory", id: item.id, data: item };
+    const card = createSwipeableItem(content, actions, () => editInventoryItem(item), itemMeta);
     listContainer.appendChild(card);
   });
 
@@ -7478,7 +7490,8 @@ function showEventsForDate(dateStr) {
       }}
     ];
     
-    const item = createSwipeableItem(content, actions, () => editCalendarEvent(event.id));
+    const itemMeta = { type: "event", id: event.id, data: event };
+    const item = createSwipeableItem(content, actions, () => editCalendarEvent(event.id), itemMeta);
     item.classList.add("calendar-event-item-swipe");
     listEl.appendChild(item);
   });
@@ -7825,9 +7838,27 @@ let swipeStartX = 0;
 let swipeCurrentX = 0;
 let swipeDragging = false;
 
-function createSwipeableItem(content, actions, onClick) {
+// ===== MULTI-SELECT STATE =====
+let multiSelectMode = false;
+let selectedItems = new Map(); // Map of itemId -> {type, container, data}
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 500; // ms
+
+function createSwipeableItem(content, actions, onClick, itemMeta = null) {
   const container = document.createElement("div");
   container.className = "swipe-container";
+  
+  // Store item metadata for multi-select
+  if (itemMeta) {
+    container.dataset.itemId = itemMeta.id;
+    container.dataset.itemType = itemMeta.type;
+  }
+  
+  // Checkbox for selection mode (hidden by default)
+  const checkbox = document.createElement("div");
+  checkbox.className = "select-checkbox";
+  checkbox.innerHTML = '<i class="fas fa-check"></i>';
+  container.appendChild(checkbox);
   
   // Actions panel (behind the content)
   const actionsDiv = document.createElement("div");
@@ -7853,13 +7884,20 @@ function createSwipeableItem(content, actions, onClick) {
   contentDiv.innerHTML = content;
   
   // Touch/pointer events for swiping
-  contentDiv.addEventListener("pointerdown", handleSwipeStart);
+  contentDiv.addEventListener("pointerdown", (e) => handleSwipeStart(e, container, itemMeta));
   contentDiv.addEventListener("pointermove", handleSwipeMove);
-  contentDiv.addEventListener("pointerup", handleSwipeEnd);
-  contentDiv.addEventListener("pointercancel", handleSwipeEnd);
+  contentDiv.addEventListener("pointerup", (e) => handleSwipeEnd(e, container));
+  contentDiv.addEventListener("pointercancel", (e) => handleSwipeEnd(e, container));
   
-  // Click to view item (only if not swiping)
+  // Click to view item or toggle selection
   contentDiv.addEventListener("click", (e) => {
+    if (multiSelectMode && itemMeta) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleItemSelection(container, itemMeta);
+      return;
+    }
+    
     if (!swipeDragging && onClick) {
       const content = e.currentTarget.closest('.swipe-container').querySelector('.swipe-content');
       const translateX = getTranslateX(content);
@@ -7874,7 +7912,218 @@ function createSwipeableItem(content, actions, onClick) {
   return container;
 }
 
-function handleSwipeStart(e) {
+function toggleItemSelection(container, itemMeta) {
+  const itemKey = `${itemMeta.type}-${itemMeta.id}`;
+  
+  if (selectedItems.has(itemKey)) {
+    selectedItems.delete(itemKey);
+    container.classList.remove("selected");
+  } else {
+    selectedItems.set(itemKey, { 
+      type: itemMeta.type, 
+      id: itemMeta.id,
+      container: container,
+      data: itemMeta.data 
+    });
+    container.classList.add("selected");
+  }
+  
+  updateSelectionBar();
+}
+
+function enterMultiSelectMode(container, itemMeta) {
+  if (multiSelectMode) return;
+  
+  multiSelectMode = true;
+  document.body.classList.add("multi-select-mode");
+  
+  // Add the initial item to selection
+  toggleItemSelection(container, itemMeta);
+  
+  // Show selection bar
+  showSelectionBar(itemMeta.type);
+  
+  // Haptic feedback if available
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+}
+
+function exitMultiSelectMode() {
+  multiSelectMode = false;
+  document.body.classList.remove("multi-select-mode");
+  
+  // Clear all selections
+  selectedItems.forEach(item => {
+    item.container?.classList.remove("selected");
+  });
+  selectedItems.clear();
+  
+  // Hide selection bar
+  hideSelectionBar();
+}
+
+function showSelectionBar(itemType) {
+  let bar = document.getElementById("selection-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "selection-bar";
+    document.body.appendChild(bar);
+  }
+  
+  // Only invoices and quotes support archiving
+  const supportsArchive = itemType === "invoice" || itemType === "quote";
+  
+  bar.innerHTML = `
+    <div class="selection-bar-left">
+      <button class="selection-cancel" onclick="exitMultiSelectMode()">
+        <i class="fas fa-times"></i>
+      </button>
+      <span class="selection-count">1 selected</span>
+    </div>
+    <div class="selection-bar-actions">
+      ${supportsArchive ? `
+        <button class="selection-action archive-action" onclick="bulkArchiveSelected()">
+          <i class="fas fa-archive"></i>
+        </button>
+      ` : ''}
+      <button class="selection-action delete-action" onclick="bulkDeleteSelected()">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  
+  bar.dataset.itemType = itemType;
+  bar.classList.add("visible");
+}
+
+function hideSelectionBar() {
+  const bar = document.getElementById("selection-bar");
+  if (bar) {
+    bar.classList.remove("visible");
+  }
+}
+
+function updateSelectionBar() {
+  const countEl = document.querySelector(".selection-count");
+  if (countEl) {
+    const count = selectedItems.size;
+    countEl.textContent = `${count} selected`;
+  }
+  
+  // Exit multi-select if nothing selected
+  if (selectedItems.size === 0) {
+    exitMultiSelectMode();
+  }
+}
+
+async function bulkDeleteSelected() {
+  if (selectedItems.size === 0) return;
+  
+  const count = selectedItems.size;
+  const itemType = document.getElementById("selection-bar")?.dataset.itemType || "items";
+  
+  if (!confirm(applyLang("deleteConfirm") || `Delete ${count} ${itemType}(s)?`)) {
+    return;
+  }
+  
+  const itemsToDelete = Array.from(selectedItems.values());
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const item of itemsToDelete) {
+    try {
+      let endpoint = "";
+      switch (item.type) {
+        case "invoice": endpoint = `/api/invoices/${item.id}`; break;
+        case "quote": endpoint = `/api/quotes/${item.id}`; break;
+        case "client": endpoint = `/api/clients/${item.id}`; break;
+        case "job": endpoint = `/api/jobs/${item.id}`; break;
+        case "inventory": endpoint = `/api/inventory/${item.id}`; break;
+        case "event": endpoint = `/api/calendar/${item.id}`; break;
+        default: continue;
+      }
+      
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      if (res.ok) {
+        // Delete from IndexedDB too
+        switch (item.type) {
+          case "invoice": await db.deleteInvoice(item.id); break;
+          case "quote": await db.deleteQuote(item.id); break;
+        }
+        successCount++;
+      } else {
+        failCount++;
+      }
+    } catch (err) {
+      failCount++;
+    }
+  }
+  
+  exitMultiSelectMode();
+  
+  // Reload the current list
+  const currentScreen = document.querySelector(".screen.active")?.id;
+  if (currentScreen === "invoices") loadInvoices();
+  else if (currentScreen === "quotes") loadQuotes();
+  else if (currentScreen === "clients") loadClients();
+  else if (currentScreen === "jobs") loadJobs();
+  else if (currentScreen === "inventory") loadInventory();
+  else if (currentScreen === "calendar") loadCalendarEvents();
+  
+  if (failCount > 0) {
+    alert(`Deleted ${successCount}, failed ${failCount}`);
+  }
+}
+
+async function bulkArchiveSelected() {
+  if (selectedItems.size === 0) return;
+  
+  const itemsToArchive = Array.from(selectedItems.values());
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const item of itemsToArchive) {
+    try {
+      let endpoint = "";
+      switch (item.type) {
+        case "invoice": endpoint = `/api/invoices/${item.id}/archive`; break;
+        case "quote": endpoint = `/api/quotes/${item.id}/archive`; break;
+        default: continue; // Only invoices and quotes support archive
+      }
+      
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      if (res.ok) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    } catch (err) {
+      failCount++;
+    }
+  }
+  
+  exitMultiSelectMode();
+  
+  // Reload the current list
+  const currentScreen = document.querySelector(".screen.active")?.id;
+  if (currentScreen === "invoices") loadInvoices();
+  else if (currentScreen === "quotes") loadQuotes();
+  
+  if (failCount > 0) {
+    alert(`Archived ${successCount}, failed ${failCount}`);
+  }
+}
+
+function handleSwipeStart(e, container, itemMeta) {
   if (e.button !== 0) return; // Only left click/touch
   
   const content = e.currentTarget;
@@ -7887,6 +8136,16 @@ function handleSwipeStart(e) {
   const translateX = getTranslateX(content);
   content.dataset.startTranslate = translateX;
   content.classList.add("dragging");
+  
+  // Start long-press timer for multi-select (only if we have item metadata)
+  if (itemMeta && !multiSelectMode) {
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      if (!swipeDragging) {
+        enterMultiSelectMode(container, itemMeta);
+      }
+    }, LONG_PRESS_DURATION);
+  }
 }
 
 function handleSwipeMove(e) {
@@ -7900,9 +8159,14 @@ function handleSwipeMove(e) {
   // Only start dragging if moved more than 10px horizontally
   if (Math.abs(deltaX) > 10) {
     swipeDragging = true;
+    // Cancel long-press if user starts swiping
+    clearTimeout(longPressTimer);
   }
   
   if (!swipeDragging) return;
+  
+  // Don't allow swipe in multi-select mode
+  if (multiSelectMode) return;
   
   e.preventDefault();
   
@@ -7917,12 +8181,21 @@ function handleSwipeMove(e) {
   content.style.transform = `translateX(${newTranslate}px)`;
 }
 
-function handleSwipeEnd(e) {
+function handleSwipeEnd(e, container) {
   const content = e.currentTarget;
   content.classList.remove("dragging");
   
+  // Cancel any pending long-press
+  clearTimeout(longPressTimer);
+  
   if (!content.hasPointerCapture(e.pointerId)) return;
   content.releasePointerCapture(e.pointerId);
+  
+  // Don't snap in multi-select mode
+  if (multiSelectMode) {
+    setTimeout(() => { swipeDragging = false; }, 50);
+    return;
+  }
   
   const translateX = getTranslateX(content);
   const actionsWidth = content.parentElement.querySelector('.swipe-actions')?.offsetWidth || 210;

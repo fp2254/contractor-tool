@@ -3193,3 +3193,146 @@ body {
   border: none;
   margin: 0;
 }
+
+/* ===== MULTI-SELECT MODE ===== */
+
+/* Selection checkbox */
+.select-checkbox {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 28px;
+  height: 28px;
+  background: var(--bg-alt);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.select-checkbox i {
+  color: white;
+  font-size: 12px;
+  opacity: 0;
+}
+
+/* Show checkboxes in multi-select mode */
+body.multi-select-mode .select-checkbox {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.multi-select-mode .swipe-container {
+  padding-left: 40px;
+}
+
+body.multi-select-mode .swipe-content {
+  transform: none !important;
+}
+
+/* Selected state */
+.swipe-container.selected .select-checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.swipe-container.selected .select-checkbox i {
+  opacity: 1;
+}
+
+.swipe-container.selected .swipe-content {
+  background: var(--accent-alpha, rgba(37, 99, 235, 0.1));
+}
+
+/* Selection bar at bottom */
+#selection-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10001;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  box-shadow: 0 -4px 20px var(--shadow);
+}
+
+#selection-bar.visible {
+  transform: translateY(0);
+}
+
+.selection-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-cancel {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--tile);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.selection-count {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.selection-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.selection-action {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: white;
+}
+
+.selection-action.archive-action {
+  background: #f59e0b;
+}
+
+.selection-action.delete-action {
+  background: var(--danger);
+}
+
+/* Hide bottom nav when selection bar is visible */
+body.multi-select-mode .bottom-nav {
+  transform: translateY(100%);
+}
+
+/* Prevent text selection during long-press */
+.swipe-content {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
