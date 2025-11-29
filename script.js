@@ -8309,3 +8309,36 @@ function hideDeleteConfirmModal() {
   const modal = document.getElementById("delete-confirm-modal");
   if (modal) modal.classList.add("hidden");
 }
+
+// Global event delegation for selection bar buttons (more reliable on mobile)
+document.addEventListener("click", (e) => {
+  const target = e.target.closest("#btn-cancel-select, #btn-bulk-delete, #btn-bulk-archive");
+  if (!target) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if (target.id === "btn-cancel-select") {
+    exitMultiSelectMode();
+  } else if (target.id === "btn-bulk-delete") {
+    bulkDeleteSelected();
+  } else if (target.id === "btn-bulk-archive") {
+    bulkArchiveSelected();
+  }
+}, true); // Use capture phase
+
+// Also handle touchend for iOS
+document.addEventListener("touchend", (e) => {
+  const target = e.target.closest("#btn-cancel-select, #btn-bulk-delete, #btn-bulk-archive");
+  if (!target) return;
+  
+  e.preventDefault();
+  
+  if (target.id === "btn-cancel-select") {
+    exitMultiSelectMode();
+  } else if (target.id === "btn-bulk-delete") {
+    bulkDeleteSelected();
+  } else if (target.id === "btn-bulk-archive") {
+    bulkArchiveSelected();
+  }
+}, true); // Use capture phase
