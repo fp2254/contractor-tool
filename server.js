@@ -430,6 +430,22 @@ app.get("/api/clients", requireSubscription, async (req, res) => {
   res.json(data);
 });
 
+app.get("/api/clients/:id", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+  const { data, error } = await supabaseAdmin
+    .from("clients")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 app.post("/api/clients", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
