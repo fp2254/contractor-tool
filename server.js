@@ -670,26 +670,49 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
+  const invoiceId = parseInt(req.params.id, 10);
+  if (isNaN(invoiceId)) {
+    return res.status(400).json({ error: "Invalid invoice ID" });
+  }
+
   try {
-    // First delete related items and attachments
+    // First verify the invoice exists and belongs to this user
+    const { data: invoice, error: findError } = await supabaseAdmin
+      .from("invoices")
+      .select("id")
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .single();
+
+    if (findError || !invoice) {
+      console.log("Invoice not found for delete:", invoiceId, "user:", userId);
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Delete related items and attachments
     await supabaseAdmin
       .from("invoice_items")
       .delete()
-      .eq("invoice_id", req.params.id);
+      .eq("invoice_id", invoiceId);
     
     await supabaseAdmin
       .from("invoice_attachments")
       .delete()
-      .eq("invoice_id", req.params.id);
+      .eq("invoice_id", invoiceId);
 
     // Then delete the invoice
     const { error } = await supabaseAdmin
       .from("invoices")
       .delete()
-      .eq("id", req.params.id)
+      .eq("id", invoiceId)
       .eq("user_id", userId);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Error deleting invoice from DB:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log("Invoice deleted successfully:", invoiceId);
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting invoice:", err);
@@ -1366,21 +1389,44 @@ app.delete("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
+  const quoteId = parseInt(req.params.id, 10);
+  if (isNaN(quoteId)) {
+    return res.status(400).json({ error: "Invalid quote ID" });
+  }
+
   try {
-    // First delete related items
+    // First verify the quote exists and belongs to this user
+    const { data: quote, error: findError } = await supabaseAdmin
+      .from("quotes")
+      .select("id")
+      .eq("id", quoteId)
+      .eq("user_id", userId)
+      .single();
+
+    if (findError || !quote) {
+      console.log("Quote not found for delete:", quoteId, "user:", userId);
+      return res.status(404).json({ error: "Quote not found" });
+    }
+
+    // Delete related items
     await supabaseAdmin
       .from("quote_items")
       .delete()
-      .eq("quote_id", req.params.id);
+      .eq("quote_id", quoteId);
 
     // Then delete the quote
     const { error } = await supabaseAdmin
       .from("quotes")
       .delete()
-      .eq("id", req.params.id)
+      .eq("id", quoteId)
       .eq("user_id", userId);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Error deleting quote from DB:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log("Quote deleted successfully:", quoteId);
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting quote:", err);
