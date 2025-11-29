@@ -2139,6 +2139,8 @@ async function archiveInvoice(invoiceId) {
   try {
     const res = await apiFetch(`/api/invoices/${invoiceId}/archive`, { method: 'POST' });
     if (res.ok) {
+      // Remove from local IndexedDB cache so it doesn't show in active list
+      await tradebaseDB.deleteInvoice(invoiceId);
       showToast('Invoice archived');
       loadInvoices(currentInvoiceTab === 'archived');
       showScreen('invoices');
@@ -2190,6 +2192,8 @@ async function archiveQuote(quoteId) {
   try {
     const res = await apiFetch(`/api/quotes/${quoteId}/archive`, { method: 'POST' });
     if (res.ok) {
+      // Remove from local IndexedDB cache so it doesn't show in active list
+      await tradebaseDB.deleteQuote(quoteId);
       showToast('Quote archived');
       loadQuotes(currentQuoteTab === 'archived');
       showScreen('quotes');
@@ -8061,6 +8065,11 @@ async function bulkArchiveSelected() {
       const res = await apiFetch(endpoint, { method: "POST" });
       
       if (res.ok) {
+        // Remove from local cache so it doesn't show in active list
+        switch (item.type) {
+          case "invoice": await tradebaseDB.deleteInvoice(item.id); break;
+          case "quote": await tradebaseDB.deleteQuote(item.id); break;
+        }
         successCount++;
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -8082,8 +8091,15 @@ async function bulkArchiveSelected() {
   
   if (failCount > 0) {
     showToast(`Archived ${successCount}, failed ${failCount}`);
+  } else if (successCount > 0) {
+    showToast(`Archived ${successCount} item(s)`);
   }
 }
+
+// Make multi-select functions globally accessible
+window.bulkDeleteSelected = bulkDeleteSelected;
+window.bulkArchiveSelected = bulkArchiveSelected;
+window.exitMultiSelectMode = exitMultiSelectMode;
 
 function handleSwipeStart(e, container, itemMeta) {
   if (e.button !== 0) return; // Only left click/touch
