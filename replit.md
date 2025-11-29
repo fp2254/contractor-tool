@@ -82,6 +82,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **NEW: Global Command Mic** - Prominent mic button on dashboard with full-screen recording overlay, real-time status, and transcript display. Handles all voice commands through the unified endpoint.
 - **NEW: Per-Screen Mic Buttons** - Small mic buttons on Clients, Inventory, and New Quote screens for quick voice input (uses same unified endpoint).
 - **DEPRECATED: Legacy Parse Endpoints** - `/api/ai/parse-client`, `/api/ai/parse-inventory`, `/api/ai/parse-quote` marked deprecated in favor of unified `/api/voice-command`.
+- **NEW: Invoice & Quote Edit Functionality** - Edit button in invoice/quote detail views opens form pre-populated with existing data. Includes editInvoice(), editQuote(), resetInvoiceForm(), resetQuoteForm() functions. PUT endpoints at `/api/invoices/:id` and `/api/quotes/:id` update existing records. Edit mode tracked via editingInvoiceId/editingQuoteId variables.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
