@@ -2941,6 +2941,9 @@ async function convertQuoteToInvoice(quoteId) {
     
     const quote = data;
     
+    // Reset edit mode so we create a NEW invoice, not update an existing one
+    editingInvoiceId = null;
+    
     // Switch to invoice form
     console.log("Switching to new-invoice screen...");
     showScreen('new-invoice');
@@ -2998,6 +3001,16 @@ async function convertQuoteToInvoice(quoteId) {
     // Update totals - recalculate to ensure accuracy
     console.log("Updating totals...");
     updateInvoiceTotals();
+    
+    // Ensure form shows "New Invoice" title and button (not "Edit Invoice")
+    const formTitle = document.querySelector('#new-invoice .screen-title');
+    if (formTitle) {
+      formTitle.textContent = t('invoice.new_invoice') || 'New Invoice';
+    }
+    const submitBtn = document.querySelector('#invoice-form button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> ' + (t('invoice.save') || 'Save Invoice');
+    }
     
     // Focus on first input
     if (clientNameEl) {
