@@ -1296,18 +1296,24 @@
           </div>
 
           <div class="feature-status-card" style="margin-top: 20px;">
-            <div class="feature-status-header">
-              <i class="fa-solid fa-file-invoice-dollar"></i>
-              <h3>Linked Invoices</h3>
+            <div class="feature-status-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <h3>Linked Invoices</h3>
+              </div>
+              <button id="btn-link-invoice" class="btn-sm" style="background: var(--accent); color: white;"><i class="fa-solid fa-plus"></i> Link Invoice</button>
             </div>
             <div id="job-invoices-list" class="list" style="padding: 8px;"></div>
             <div id="job-invoices-empty" style="padding: 20px; text-align: center; color: var(--muted);">No invoices linked to this job</div>
           </div>
 
           <div class="feature-status-card" style="margin-top: 20px;">
-            <div class="feature-status-header">
-              <i class="fa-solid fa-clipboard-list"></i>
-              <h3>Linked Quotes</h3>
+            <div class="feature-status-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <h3>Linked Quotes</h3>
+              </div>
+              <button id="btn-link-quote" class="btn-sm" style="background: var(--accent); color: white;"><i class="fa-solid fa-plus"></i> Link Quote</button>
             </div>
             <div id="job-quotes-list" class="list" style="padding: 8px;"></div>
             <div id="job-quotes-empty" style="padding: 20px; text-align: center; color: var(--muted);">No quotes linked to this job</div>
@@ -1730,6 +1736,23 @@
           >
             Cancel AI
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Link to Job Picker Modal -->
+  <div id="link-to-job-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h2 id="link-modal-title">Link Invoice to Job</h2>
+        <button onclick="closeLinkToJobModal()" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px; flex: 1; overflow-y: auto;">
+        <div id="link-items-list" class="list" style="max-height: 50vh; overflow-y: auto;"></div>
+        <div id="link-items-empty" style="padding: 40px 20px; text-align: center; color: var(--muted);">
+          <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+          <p>No unlinked items available</p>
         </div>
       </div>
     </div>

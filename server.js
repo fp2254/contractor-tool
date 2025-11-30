@@ -1340,6 +1340,100 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   res.json({ id: quote.id, quote_number: quote.quote_number });
 });
 
+// Link/unlink invoice to job
+app.patch("/api/invoices/:id/job", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const invoiceId = req.params.id;
+  const { job_id } = req.body;
+
+  // Verify invoice belongs to user
+  const { data: existing, error: errCheck } = await supabaseAdmin
+    .from("invoices")
+    .select("id, user_id")
+    .eq("id", invoiceId)
+    .single();
+
+  if (errCheck || !existing || existing.user_id !== userId) {
+    return res.status(404).json({ error: "Invoice not found" });
+  }
+
+  // If job_id provided, verify it belongs to user
+  if (job_id) {
+    const { data: job, error: errJob } = await supabaseAdmin
+      .from("jobs")
+      .select("id, user_id")
+      .eq("id", job_id)
+      .single();
+
+    if (errJob || !job || job.user_id !== userId) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+  }
+
+  // Update invoice job_id
+  const { data, error } = await supabaseAdmin
+    .from("invoices")
+    .update({ job_id: job_id || null })
+    .eq("id", invoiceId)
+    .select()
+    .single();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data);
+});
+
+// Link/unlink quote to job
+app.patch("/api/quotes/:id/job", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const quoteId = req.params.id;
+  const { job_id } = req.body;
+
+  // Verify quote belongs to user
+  const { data: existing, error: errCheck } = await supabaseAdmin
+    .from("quotes")
+    .select("id, user_id")
+    .eq("id", quoteId)
+    .single();
+
+  if (errCheck || !existing || existing.user_id !== userId) {
+    return res.status(404).json({ error: "Quote not found" });
+  }
+
+  // If job_id provided, verify it belongs to user
+  if (job_id) {
+    const { data: job, error: errJob } = await supabaseAdmin
+      .from("jobs")
+      .select("id, user_id")
+      .eq("id", job_id)
+      .single();
+
+    if (errJob || !job || job.user_id !== userId) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+  }
+
+  // Update quote job_id
+  const { data, error } = await supabaseAdmin
+    .from("quotes")
+    .update({ job_id: job_id || null })
+    .eq("id", quoteId)
+    .select()
+    .single();
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(data);
+});
+
 app.get("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });

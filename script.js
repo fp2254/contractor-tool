@@ -4663,6 +4663,22 @@ function wireJobsUI() {
       scheduleEventFromJob(currentJob.id, currentJob.client_name || 'Unknown');
     });
   }
+  
+  const btnLinkInvoice = document.getElementById("btn-link-invoice");
+  if (btnLinkInvoice) {
+    btnLinkInvoice.addEventListener("click", () => {
+      if (!currentJob) return;
+      openLinkToJobModal("invoice", currentJob.id);
+    });
+  }
+  
+  const btnLinkQuote = document.getElementById("btn-link-quote");
+  if (btnLinkQuote) {
+    btnLinkQuote.addEventListener("click", () => {
+      if (!currentJob) return;
+      openLinkToJobModal("quote", currentJob.id);
+    });
+  }
 }
 
 async function loadJobs() {
@@ -4880,6 +4896,110 @@ function renderJobLinkedItems(job) {
   } else {
     if (voiceNotesList) voiceNotesList.innerHTML = "";
     if (voiceNotesEmpty) voiceNotesEmpty.style.display = "block";
+  }
+}
+
+// Link to Job Modal Functions
+let linkToJobType = null;
+let linkToJobId = null;
+
+async function openLinkToJobModal(type, jobId) {
+  linkToJobType = type;
+  linkToJobId = jobId;
+  
+  const modal = document.getElementById("link-to-job-modal");
+  const title = document.getElementById("link-modal-title");
+  const list = document.getElementById("link-items-list");
+  const empty = document.getElementById("link-items-empty");
+  
+  title.textContent = type === "invoice" ? "Link Invoice to Job" : "Link Quote to Job";
+  list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">Loading...</div>';
+  empty.style.display = "none";
+  
+  modal.classList.add("active");
+  
+  try {
+    const endpoint = type === "invoice" ? "/api/invoices" : "/api/quotes";
+    const res = await apiFetch(endpoint);
+    
+    if (!res.ok) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--danger);">Failed to load items</div>';
+      return;
+    }
+    
+    const items = await res.json();
+    const unlinked = items.filter(item => !item.job_id);
+    
+    if (unlinked.length === 0) {
+      list.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    
+    empty.style.display = "none";
+    
+    if (type === "invoice") {
+      list.innerHTML = unlinked.map(inv => `
+        <div class="list-item" onclick="linkItemToJob('invoice', ${inv.id})" style="cursor: pointer;">
+          <div>
+            <strong>${inv.invoice_number || 'Invoice #' + inv.id}</strong>
+            <br><span style="color: var(--muted); font-size: 13px;">${inv.client_name || 'No client'} - ${inv.date || ''}</span>
+          </div>
+          <span style="font-weight: 600;">${formatCurrency(inv.total || 0)}</span>
+        </div>
+      `).join("");
+    } else {
+      list.innerHTML = unlinked.map(q => `
+        <div class="list-item" onclick="linkItemToJob('quote', ${q.id})" style="cursor: pointer;">
+          <div>
+            <strong>${q.quote_number || 'Quote #' + q.id}</strong>
+            <br><span style="color: var(--muted); font-size: 13px;">${q.client_name || 'No client'} - ${q.quote_date || ''}</span>
+          </div>
+          <span style="font-weight: 600;">${formatCurrency(q.total || 0)}</span>
+        </div>
+      `).join("");
+    }
+  } catch (err) {
+    console.error("Error loading items for link modal:", err);
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--danger);">Error loading items</div>';
+  }
+}
+
+function closeLinkToJobModal() {
+  const modal = document.getElementById("link-to-job-modal");
+  modal.classList.remove("active");
+  linkToJobType = null;
+  linkToJobId = null;
+}
+
+async function linkItemToJob(type, itemId) {
+  if (!linkToJobId) {
+    showToast("No job selected");
+    return;
+  }
+  
+  try {
+    const endpoint = type === "invoice" 
+      ? `/api/invoices/${itemId}/job`
+      : `/api/quotes/${itemId}/job`;
+    
+    const res = await apiFetch(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: linkToJobId })
+    });
+    
+    if (res.ok) {
+      showToast(type === "invoice" ? "Invoice linked to job!" : "Quote linked to job!");
+      closeLinkToJobModal();
+      await viewJobDetail(linkToJobId);
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to link item");
+    }
+  } catch (err) {
+    console.error("Error linking item to job:", err);
+    showToast("Error linking item to job");
   }
 }
 

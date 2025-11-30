@@ -257,11 +257,12 @@ CREATE POLICY "Users can delete their own jobs"
   USING (auth.uid() = user_id);
 
 -- Add job_id to invoices and quotes for job folder linking
+-- Note: Use UUID if your jobs.id is UUID, or BIGINT if jobs.id is BIGINT
 ALTER TABLE invoices
-ADD COLUMN IF NOT EXISTS job_id BIGINT REFERENCES jobs(id) ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS job_id UUID REFERENCES jobs(id) ON DELETE SET NULL;
 
 ALTER TABLE quotes
-ADD COLUMN IF NOT EXISTS job_id BIGINT REFERENCES jobs(id) ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS job_id UUID REFERENCES jobs(id) ON DELETE SET NULL;
 
 -- Create voice_notes table for voice memo feature
 CREATE TABLE IF NOT EXISTS voice_notes (
