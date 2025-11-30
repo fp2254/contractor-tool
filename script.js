@@ -2693,6 +2693,30 @@ async function viewInvoiceDetail(invoiceId) {
         </div>
       </div>
       
+      <!-- Job Folder Link Section -->
+      <div class="detail-section" style="margin-bottom: 16px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <i class="fa-solid fa-folder" style="color: var(--accent); margin-right: 8px;"></i>
+            <strong>Job Folder:</strong>
+            ${invoice.job_id ? `
+              <span id="invoice-job-name" style="margin-left: 8px; color: var(--accent);">${invoice.job?.client_name || 'Loading...'}</span>
+            ` : `
+              <span style="margin-left: 8px; color: var(--muted);">Not linked</span>
+            `}
+          </div>
+          ${invoice.job_id ? `
+            <button class="btn-sm" id="unlink-invoice-job-btn" data-invoice-id="${invoice.id}" style="background: var(--danger); color: white;">
+              <i class="fa-solid fa-link-slash"></i> Unlink
+            </button>
+          ` : `
+            <button class="btn-sm" id="link-invoice-to-job-btn" data-invoice-id="${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
+              <i class="fa-solid fa-folder-plus"></i> Add to Job
+            </button>
+          `}
+        </div>
+      </div>
+
       <div class="detail-actions">
         <button class="btn-sm" id="edit-invoice-btn-${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
           <i class="fa-solid fa-pen"></i> Edit Invoice
@@ -2767,6 +2791,21 @@ async function viewInvoiceDetail(invoiceId) {
     document.getElementById(`edit-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
       editInvoice(invoice);
     });
+    
+    // Wire up job link/unlink buttons
+    const linkToJobBtn = document.getElementById('link-invoice-to-job-btn');
+    if (linkToJobBtn) {
+      linkToJobBtn.addEventListener('click', () => {
+        openJobFolderPicker('invoice', invoice.id);
+      });
+    }
+    
+    const unlinkJobBtn = document.getElementById('unlink-invoice-job-btn');
+    if (unlinkJobBtn) {
+      unlinkJobBtn.addEventListener('click', () => {
+        unlinkFromJob('invoice', invoice.id);
+      });
+    }
     
     // Re-apply translations to dynamically added buttons
     applyLanguage();

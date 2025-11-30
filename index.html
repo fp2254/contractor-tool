@@ -1741,7 +1741,7 @@
     </div>
   </div>
 
-  <!-- Link to Job Picker Modal -->
+  <!-- Link to Job Picker Modal (from Job Folder view) -->
   <div id="link-to-job-modal" class="modal-overlay">
     <div class="modal-content" style="max-width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
       <div class="modal-header">
@@ -1753,6 +1753,26 @@
         <div id="link-items-empty" style="padding: 40px 20px; text-align: center; color: var(--muted);">
           <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
           <p>No unlinked items available</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job Folder Picker Modal (from Invoice/Quote detail view) -->
+  <div id="job-folder-picker-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h2 id="job-folder-picker-title">Add to Job Folder</h2>
+        <button onclick="closeJobFolderPicker()" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px; flex: 1; overflow-y: auto;">
+        <div id="job-folder-picker-list" class="list" style="max-height: 50vh; overflow-y: auto;"></div>
+        <div id="job-folder-picker-empty" style="padding: 40px 20px; text-align: center; color: var(--muted);">
+          <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+          <p>No job folders available</p>
+          <button class="btn-primary" onclick="closeJobFolderPicker(); showScreen('new-job');" style="margin-top: 16px;">
+            <i class="fa-solid fa-plus"></i> Create Job Folder
+          </button>
         </div>
       </div>
     </div>
