@@ -2896,6 +2896,30 @@ async function viewQuoteDetail(quoteId) {
         </div>
       </div>
       
+      <!-- Job Folder Link Section -->
+      <div class="detail-section" style="margin-bottom: 16px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <i class="fa-solid fa-folder" style="color: var(--accent); margin-right: 8px;"></i>
+            <strong>Job Folder:</strong>
+            ${quote.job_id ? `
+              <span id="quote-job-name" style="margin-left: 8px; color: var(--accent);">${quote.job?.client_name || 'Loading...'}</span>
+            ` : `
+              <span style="margin-left: 8px; color: var(--muted);">Not linked</span>
+            `}
+          </div>
+          ${quote.job_id ? `
+            <button class="btn-sm" id="unlink-quote-job-btn" data-quote-id="${quote.id}" style="background: var(--danger); color: white;">
+              <i class="fa-solid fa-link-slash"></i> Unlink
+            </button>
+          ` : `
+            <button class="btn-sm" id="link-quote-to-job-btn" data-quote-id="${quote.id}" style="background: var(--accent); color: var(--text-inverse);">
+              <i class="fa-solid fa-folder-plus"></i> Add to Job
+            </button>
+          `}
+        </div>
+      </div>
+
       <div class="detail-actions">
         <button class="btn-sm" id="edit-quote-btn-${quote.id}" style="background: var(--accent); color: var(--text-inverse);">
           <i class="fa-solid fa-pen"></i> Edit Quote
@@ -2950,6 +2974,21 @@ async function viewQuoteDetail(quoteId) {
     document.getElementById(`edit-quote-btn-${quote.id}`)?.addEventListener('click', () => {
       editQuote(quote);
     });
+    
+    // Wire up job link/unlink buttons
+    const linkToJobBtn = document.getElementById('link-quote-to-job-btn');
+    if (linkToJobBtn) {
+      linkToJobBtn.addEventListener('click', () => {
+        openJobFolderPicker('quote', quote.id);
+      });
+    }
+    
+    const unlinkJobBtn = document.getElementById('unlink-quote-job-btn');
+    if (unlinkJobBtn) {
+      unlinkJobBtn.addEventListener('click', () => {
+        unlinkFromJob('quote', quote.id);
+      });
+    }
     
     // Re-apply translations
     applyLanguage();
@@ -5039,6 +5078,141 @@ async function linkItemToJob(type, itemId) {
   } catch (err) {
     console.error("Error linking item to job:", err);
     showToast("Error linking item to job");
+  }
+}
+
+// Job Folder Picker - for linking FROM invoice/quote detail view
+let jobPickerType = null;
+let jobPickerItemId = null;
+
+async function openJobFolderPicker(type, itemId) {
+  jobPickerType = type;
+  jobPickerItemId = itemId;
+  
+  const modal = document.getElementById("job-folder-picker-modal");
+  const title = document.getElementById("job-folder-picker-title");
+  const list = document.getElementById("job-folder-picker-list");
+  const empty = document.getElementById("job-folder-picker-empty");
+  
+  title.textContent = type === "invoice" ? "Add Invoice to Job Folder" : "Add Quote to Job Folder";
+  list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">Loading job folders...</div>';
+  empty.style.display = "none";
+  
+  modal.classList.add("active");
+  
+  try {
+    const res = await apiFetch("/api/jobs");
+    
+    if (!res.ok) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--danger);">Failed to load job folders</div>';
+      return;
+    }
+    
+    const jobs = await res.json();
+    const activeJobs = jobs.filter(job => job.status !== 'closed');
+    
+    if (activeJobs.length === 0) {
+      list.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    
+    empty.style.display = "none";
+    
+    list.innerHTML = activeJobs.map(job => `
+      <div class="list-item" onclick="selectJobFolder('${job.id}')" style="cursor: pointer; padding: 12px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-folder" style="color: var(--accent);"></i>
+            <strong>${job.client_name || 'Unnamed Job'}</strong>
+          </div>
+          <div style="color: var(--muted); font-size: 13px; margin-top: 4px;">
+            ${job.address || 'No address'} | ${job.job_type || 'General'}
+          </div>
+        </div>
+        <span class="status-badge ${job.status === 'open' ? 'success' : ''}">${job.status || 'open'}</span>
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error("Error loading jobs for picker:", err);
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--danger);">Error loading job folders</div>';
+  }
+}
+
+function closeJobFolderPicker() {
+  const modal = document.getElementById("job-folder-picker-modal");
+  modal.classList.remove("active");
+  jobPickerType = null;
+  jobPickerItemId = null;
+}
+
+async function selectJobFolder(jobId) {
+  if (!jobPickerItemId || !jobPickerType) {
+    showToast("No item selected");
+    return;
+  }
+  
+  try {
+    const endpoint = jobPickerType === "invoice" 
+      ? `/api/invoices/${jobPickerItemId}/job`
+      : `/api/quotes/${jobPickerItemId}/job`;
+    
+    const res = await apiFetch(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId })
+    });
+    
+    if (res.ok) {
+      showToast(jobPickerType === "invoice" ? "Invoice added to job folder!" : "Quote added to job folder!");
+      closeJobFolderPicker();
+      // Refresh the detail view to show the linked job
+      if (jobPickerType === "invoice") {
+        await viewInvoiceDetail(jobPickerItemId);
+      } else {
+        await viewQuoteDetail(jobPickerItemId);
+      }
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to add to job folder");
+    }
+  } catch (err) {
+    console.error("Error adding to job folder:", err);
+    showToast("Error adding to job folder");
+  }
+}
+
+async function unlinkFromJob(type, itemId) {
+  if (!confirm("Remove this " + type + " from its job folder?")) {
+    return;
+  }
+  
+  try {
+    const endpoint = type === "invoice" 
+      ? `/api/invoices/${itemId}/job`
+      : `/api/quotes/${itemId}/job`;
+    
+    const res = await apiFetch(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: null })
+    });
+    
+    if (res.ok) {
+      showToast(type === "invoice" ? "Invoice removed from job folder" : "Quote removed from job folder");
+      // Refresh the detail view
+      if (type === "invoice") {
+        await viewInvoiceDetail(itemId);
+      } else {
+        await viewQuoteDetail(itemId);
+      }
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to unlink from job");
+    }
+  } catch (err) {
+    console.error("Error unlinking from job:", err);
+    showToast("Error unlinking from job");
   }
 }
 
