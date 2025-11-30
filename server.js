@@ -701,7 +701,22 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     client = clientData;
   }
 
-  res.json({ ...invoice, items: items || [], client: client || null });
+  // Fetch job data if linked
+  let job = null;
+  if (invoice.job_id) {
+    const { data: jobData, error: errJob } = await supabaseAdmin
+      .from("jobs")
+      .select("id, client_name, address, job_type, status")
+      .eq("id", invoice.job_id)
+      .eq("user_id", userId)
+      .single();
+
+    if (!errJob && jobData) {
+      job = jobData;
+    }
+  }
+
+  res.json({ ...invoice, items: items || [], client: client || null, job: job || null });
 });
 
 // INVOICE PHOTOS
@@ -1476,10 +1491,26 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
     client = clientData;
   }
 
+  // Fetch job data if linked
+  let job = null;
+  if (quote.job_id) {
+    const { data: jobData, error: errJob } = await supabaseAdmin
+      .from("jobs")
+      .select("id, client_name, address, job_type, status")
+      .eq("id", quote.job_id)
+      .eq("user_id", userId)
+      .single();
+
+    if (!errJob && jobData) {
+      job = jobData;
+    }
+  }
+
   res.json({
     ...quote,
     items: items || [],
     client,
+    job: job || null,
   });
 });
 
