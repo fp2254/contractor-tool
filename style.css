@@ -3473,3 +3473,100 @@ body.multi-select-mode .bottom-nav {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* Coming Soon Badge on Tiles */
+.coming-soon-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tile {
+  position: relative;
+}
+
+/* Coming Soon Container */
+.coming-soon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  min-height: 60vh;
+}
+
+.coming-soon-icon {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.coming-soon-icon i {
+  font-size: 48px;
+  color: white;
+}
+
+.coming-soon-container h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.coming-soon-subtitle {
+  color: var(--muted);
+  font-size: 16px;
+  margin-bottom: 32px;
+}
+
+.coming-soon-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 32px;
+}
+
+.coming-soon-feature {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--tile);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.coming-soon-feature i {
+  font-size: 20px;
+  color: var(--accent);
+  width: 24px;
+  text-align: center;
+}
+
+.coming-soon-feature span {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.coming-soon-note {
+  color: var(--muted);
+  font-size: 14px;
+  font-style: italic;
+}
