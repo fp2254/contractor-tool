@@ -44,7 +44,11 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
     - **Config-Based AI Models**: Configurable AI models via `config.js` and environment variables.
 - **Invoice & Quote Edit Functionality**: Allows editing of existing invoices and quotes via pre-populated forms and PUT API endpoints.
 - **Archive System**: Functionality to archive invoices and quotes, with active/archived views and unarchive/delete options.
-- **Link to Job Feature**: Invoices and quotes can be linked to existing job folders.
+- **Link to Job Feature**: Bidirectional job folder linking:
+  - FROM Job Folders: "Link Invoice" and "Link Quote" buttons open picker modal showing unlinked items
+  - FROM Invoice/Quote Detail: "Add to Job" button opens job folder picker to link to any open job
+  - Shows linked job name in detail views with "Unlink" option
+  - PATCH endpoints at `/api/invoices/:id/job` and `/api/quotes/:id/job`
 - **Public Invoice View**: Clients can view invoices via a public URL, including a "Pay Now" button if a payment link exists.
 - **Calendar Feature**: Full calendar for scheduling events, linked to clients, jobs, quotes, and invoices.
 - **Send Text Button**: Allows sending invoices via native SMS app with pre-filled message.
