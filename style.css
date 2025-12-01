@@ -3570,3 +3570,731 @@ body.multi-select-mode .bottom-nav {
   font-size: 14px;
   font-style: italic;
 }
+
+/* =====================================================
+   LANDING PAGE STYLES
+   ===================================================== */
+
+#landing-page {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #050509 0%, #0a0a12 100%);
+}
+
+/* Navigation */
+.lp-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(5, 5, 9, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lp-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-logo-img {
+  height: 40px;
+  width: auto;
+  border-radius: 8px;
+}
+
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lp-nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.lp-nav-link:hover {
+  color: #fff;
+}
+
+.lp-nav-btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lp-nav-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+}
+
+.lp-nav-btn-primary {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lp-nav-btn-primary:hover {
+  background: #6ba3ff;
+  transform: translateY(-1px);
+}
+
+/* Hero Section */
+.lp-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 80px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(79, 140, 255, 0.15) 0%, transparent 60%);
+}
+
+.lp-hero-content {
+  max-width: 800px;
+}
+
+.lp-hero-title {
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 24px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.lp-hero-subtitle {
+  font-size: clamp(18px, 3vw, 22px);
+  color: var(--muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.lp-hero-tagline {
+  font-size: 16px;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 40px;
+}
+
+.lp-hero-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.lp-btn-primary-large {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 18px 36px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 24px rgba(79, 140, 255, 0.3);
+}
+
+.lp-btn-primary-large:hover {
+  background: #6ba3ff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(79, 140, 255, 0.4);
+}
+
+.lp-btn-secondary-large {
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s;
+}
+
+.lp-btn-secondary-large:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.lp-hero-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Section Base */
+.lp-section {
+  padding: 100px 24px;
+}
+
+.lp-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.lp-section-title {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  margin: 0 0 60px;
+  letter-spacing: -0.01em;
+}
+
+.lp-section-subtitle {
+  font-size: 18px;
+  color: var(--muted);
+  text-align: center;
+  max-width: 700px;
+  margin: -40px auto 50px;
+  line-height: 1.6;
+}
+
+/* Built for Trades Cards */
+.lp-trades-section {
+  background: rgba(10, 10, 18, 0.5);
+}
+
+.lp-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.lp-card {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  transition: all 0.3s;
+}
+
+.lp-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.lp-card-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(79, 140, 255, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.lp-card-icon i {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.lp-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px;
+}
+
+.lp-card p {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* How It Works Steps */
+.lp-how-section {
+  background: transparent;
+}
+
+.lp-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.lp-step {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.lp-step-number {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.lp-step-content h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+
+.lp-step-content p {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Pricing Section */
+.lp-pricing-section {
+  background: rgba(10, 10, 18, 0.5);
+}
+
+.lp-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.lp-pricing-card {
+  background: var(--tile);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.lp-pricing-card:hover {
+  border-color: rgba(79, 140, 255, 0.5);
+  transform: translateY(-4px);
+}
+
+.lp-pricing-featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(79, 140, 255, 0.1) 0%, var(--tile) 100%);
+}
+
+.lp-pricing-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.lp-pricing-addon {
+  border-style: dashed;
+}
+
+.lp-pricing-addon-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tile);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.lp-pricing-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 8px 0 16px;
+  text-align: center;
+}
+
+.lp-pricing-price {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.lp-price-amount {
+  font-size: 42px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.lp-price-period {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.lp-pricing-alt {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+
+.lp-pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+
+.lp-pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  color: var(--text);
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lp-pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.lp-pricing-features i {
+  color: var(--success);
+  font-size: 14px;
+}
+
+.lp-pricing-urgency {
+  font-size: 13px;
+  color: #ff9800;
+  text-align: center;
+  margin: 0 0 20px;
+  font-style: italic;
+}
+
+.lp-pricing-btn {
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lp-btn-primary {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+}
+
+.lp-btn-primary:hover {
+  background: #6ba3ff;
+  transform: translateY(-2px);
+}
+
+/* AI Section */
+.lp-ai-section {
+  background: transparent;
+  text-align: center;
+}
+
+.lp-ai-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.lp-ai-step {
+  text-align: center;
+  max-width: 180px;
+}
+
+.lp-ai-step-icon {
+  width: 72px;
+  height: 72px;
+  background: rgba(79, 140, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.lp-ai-step-icon i {
+  font-size: 28px;
+  color: var(--accent);
+}
+
+.lp-ai-step p {
+  font-size: 15px;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lp-ai-step-arrow {
+  color: var(--muted);
+  font-size: 24px;
+}
+
+.lp-ai-note {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* FAQ Section */
+.lp-faq-section {
+  background: rgba(10, 10, 18, 0.5);
+}
+
+.lp-faq-list {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.lp-faq-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.lp-faq-question {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lp-faq-question span {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.lp-faq-question i {
+  color: var(--muted);
+  transition: transform 0.3s;
+}
+
+.lp-faq-item.active .lp-faq-question i {
+  transform: rotate(180deg);
+}
+
+.lp-faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.lp-faq-item.active .lp-faq-answer {
+  max-height: 200px;
+}
+
+.lp-faq-answer p {
+  padding: 0 0 24px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* Final CTA */
+.lp-final-cta {
+  background: linear-gradient(180deg, transparent 0%, rgba(79, 140, 255, 0.1) 100%);
+  text-align: center;
+  padding: 120px 24px;
+}
+
+.lp-cta-title {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 16px;
+}
+
+.lp-cta-subtitle {
+  font-size: 18px;
+  color: var(--muted);
+  margin: 0 0 40px;
+}
+
+/* Footer */
+.lp-footer {
+  background: #050509;
+  padding: 48px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.lp-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.lp-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lp-footer-logo {
+  height: 32px;
+  width: auto;
+  border-radius: 6px;
+}
+
+.lp-footer-brand p {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.lp-footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.lp-footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.lp-footer-links a:hover {
+  color: #fff;
+}
+
+.lp-footer-copy {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Back button for auth */
+.lp-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.lp-back-btn:hover {
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .lp-nav-inner {
+    padding: 12px 16px;
+  }
+
+  .lp-nav-link {
+    display: none;
+  }
+
+  .lp-hero {
+    padding: 100px 16px 60px;
+    min-height: auto;
+  }
+
+  .lp-hero-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lp-btn-primary-large,
+  .lp-btn-secondary-large {
+    width: 100%;
+    text-align: center;
+  }
+
+  .lp-section {
+    padding: 60px 16px;
+  }
+
+  .lp-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-ai-steps {
+    flex-direction: column;
+  }
+
+  .lp-ai-step-arrow {
+    transform: rotate(90deg);
+  }
+
+  .lp-footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .lp-footer-brand {
+    flex-direction: column;
+  }
+}

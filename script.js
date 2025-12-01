@@ -460,6 +460,7 @@ async function syncPendingChanges() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   loadTheme();
+  wireLandingPageUI();
   wireAuthUI();
   wireDashboardUI();
   wireInvoiceUI();
@@ -1425,6 +1426,86 @@ function wireAuthUI() {
   }
 }
 
+// LANDING PAGE UI
+function wireLandingPageUI() {
+  const landingPage = document.getElementById("landing-page");
+  const authContainer = document.getElementById("auth-container");
+  
+  if (!landingPage) return;
+  
+  // Show auth form with signup tab active
+  function showSignup() {
+    landingPage.classList.add("hidden");
+    authContainer.classList.remove("hidden");
+    document.getElementById("btn-show-signup").click();
+  }
+  
+  // Show auth form with login tab active
+  function showLogin() {
+    landingPage.classList.add("hidden");
+    authContainer.classList.remove("hidden");
+    document.getElementById("btn-show-login").click();
+  }
+  
+  // Back to landing page
+  const backBtn = document.getElementById("btn-back-to-landing");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      authContainer.classList.add("hidden");
+      landingPage.classList.remove("hidden");
+    });
+  }
+  
+  // Nav buttons
+  const loginBtn = document.getElementById("lp-login-btn");
+  const signupBtn = document.getElementById("lp-signup-btn");
+  
+  if (loginBtn) loginBtn.addEventListener("click", showLogin);
+  if (signupBtn) signupBtn.addEventListener("click", showSignup);
+  
+  // Hero CTA
+  const heroCta = document.getElementById("lp-hero-cta");
+  if (heroCta) heroCta.addEventListener("click", showSignup);
+  
+  // Final CTA
+  const finalCta = document.getElementById("lp-final-cta");
+  if (finalCta) finalCta.addEventListener("click", showSignup);
+  
+  // Pricing buttons
+  document.querySelectorAll(".lp-pricing-btn[data-action]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showSignup();
+    });
+  });
+  
+  // FAQ accordion
+  document.querySelectorAll(".lp-faq-question").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = btn.closest(".lp-faq-item");
+      const isActive = item.classList.contains("active");
+      
+      // Close all
+      document.querySelectorAll(".lp-faq-item").forEach(i => i.classList.remove("active"));
+      
+      // Open clicked if wasn't active
+      if (!isActive) {
+        item.classList.add("active");
+      }
+    });
+  });
+  
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#lp-"]').forEach(anchor => {
+    anchor.addEventListener("click", function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute("href"));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  });
+}
+
 async function handleSignup(e) {
   e.preventDefault();
   const email = document.getElementById("signup-email").value.trim();
@@ -1510,7 +1591,9 @@ async function handleLogout() {
   await sb.auth.signOut();
   currentUser = null;
   document.getElementById("app-container").classList.add("hidden");
-  document.getElementById("auth-container").classList.remove("hidden");
+  document.getElementById("auth-container").classList.add("hidden");
+  const landingPage = document.getElementById("landing-page");
+  if (landingPage) landingPage.classList.remove("hidden");
 }
 
 async function checkSession() {
@@ -1524,6 +1607,8 @@ async function checkSession() {
 }
 
 async function onLoggedIn() {
+  const landingPage = document.getElementById("landing-page");
+  if (landingPage) landingPage.classList.add("hidden");
   document.getElementById("auth-container").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
   

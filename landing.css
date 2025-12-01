@@ -199,6 +199,13 @@ body {
   font-size: 20px;
   color: var(--text-light);
   max-width: 600px;
+  margin: 0 auto 16px;
+}
+
+.hero-tagline {
+  font-size: 17px;
+  color: #4f8cff;
+  font-weight: 600;
   margin: 0 auto 32px;
 }
 

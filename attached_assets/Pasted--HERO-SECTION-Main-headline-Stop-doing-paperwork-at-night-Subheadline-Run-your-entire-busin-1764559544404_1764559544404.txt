@@ -1,0 +1,239 @@
+🔹 HERO SECTION
+
+Main headline:
+
+Stop doing paperwork at night.
+
+Subheadline:
+
+Run your entire business from your phone — quotes, invoices, job folders, and payments in minutes.
+
+Supporting line under subhead (optional):
+
+Built for contractors. No office, no spreadsheets, no bullshit.
+
+Primary button text:
+
+Try It Free — Takes 30 Seconds
+
+Secondary button text:
+
+See Pricing
+
+Line under buttons:
+
+No credit card needed. Works on any phone.
+
+⸻
+
+🔹 “BUILT FOR TRADES” SECTION
+
+Section title:
+
+Built for Trades, Not Tech People
+
+Card 1 title:
+
+Stop writing invoices in your truck
+
+Card 1 body:
+
+Create clean quotes and invoices in minutes. Reuse line items, add tax, and send a payment link before you leave the driveway.
+
+⸻
+
+Card 2 title:
+
+Still works when your signal doesn’t
+
+Card 2 body:
+
+Offline-first. Use TradeBase in basements, bad service areas, and new builds. It syncs automatically when you’re back online.
+
+⸻
+
+Card 3 title:
+
+No more hunting for customer info at midnight
+
+Card 3 body:
+
+Every quote and invoice gets a job folder with the client, address, notes, and photos in one place — so you always know what’s going on.
+
+⸻
+
+🔹 “HOW TRADEBASE FITS YOUR DAY” SECTION
+
+Section title:
+
+How TradeBase Fits Your Day
+
+Step 1 title:
+
+Step 1: Add or pick a client
+
+Step 1 body:
+
+Quick client lookup or add a new one on the fly — name, phone, email, and address saved for next time.
+
+⸻
+
+Step 2 title:
+
+Step 2: Build a quote or invoice in a few taps
+
+Step 2 body:
+
+Choose a template, add your line items and notes, and you’re done. No desktop, no PDF editing.
+
+⸻
+
+Step 3 title:
+
+Step 3: Send it and get paid online
+
+Step 3 body:
+
+Email or text a Stripe payment link, track status in one place, and stop chasing checks.
+
+⸻
+
+🔹 PRICING SECTION
+
+Section header:
+
+Simple, Fair Pricing
+
+⸻
+
+Plan 1
+
+Plan name:
+
+TradeBase Core
+
+Price line:
+
+$9.99/month
+or $99/year
+
+Bullets:
+	•	Invoices & quotes
+	•	Job folders & clients
+	•	Stripe payments
+	•	Offline mode
+	•	Referral program (20% for life)
+
+Button:
+
+Start Free Trial
+
+⸻
+
+Plan 2 – Lifetime
+
+Plan name:
+
+TradeBase Lifetime
+
+Price line:
+
+One-time payment (no monthly fees)
+
+Bullets:
+	•	All TradeBase Core features
+	•	No subscription — you own it
+	•	Priority access to new features
+
+Urgency line:
+
+Lifetime access opens only during special release windows and may close without notice.
+
+Button:
+
+Get Lifetime (If Available)
+
+⸻
+
+Plan 3 – AI Add-On
+
+Plan name:
+
+Talk to Work — AI Add-On
+
+Price line:
+
++$9.99/month
+Add to any plan
+
+Bullets:
+	•	Voice-to-quote creation
+	•	Auto job folder creation
+	•	Smart autofill & cleanup
+	•	Profanity filtering
+
+⸻
+
+🔹 TALK TO WORK SECTION
+
+Section title:
+
+Talk to Work: Hands-Free Mode
+
+Subhead:
+
+Hit one button, talk like you’re on the job, and TradeBase turns your words into a client, job folder, and quote — without you typing a thing.
+
+Step 1:
+
+	1.	Press the Talk to Work button
+
+Step 2:
+
+	2.	Describe the job in your own words
+
+Step 3:
+
+	3.	TradeBase auto-creates the client, job folder, and quote
+
+Small note under steps:
+
+Available as an optional AI add-on.
+
+⸻
+
+🔹 FAQ TEXT
+
+Q1: Do I need a credit card for the free trial?
+A1: No. You can start a 14-day free trial with just your email. If you like it, add a card later. If not, it simply stops — no surprise charges.
+
+⸻
+
+Q2: Can I use TradeBase offline?
+A2: Yes. TradeBase is offline-first. You can create quotes, invoices, and job folders with no signal. Everything syncs when you’re back online.
+
+⸻
+
+Q3: Is Talk to Work required?
+A3: No. TradeBase Core works without AI. Talk to Work is an optional add-on if you want to run things mostly by voice.
+
+⸻
+
+Q4: Who is TradeBase for?
+A4: TradeBase is built for small contractors and solo operators — radon, HVAC, electrical, plumbing, handyman, and anyone who’s tired of doing paperwork after hours.
+
+⸻
+
+🔹 FINAL CTA SECTION
+
+Heading:
+
+Ready to stop doing paperwork after hours?
+
+Body:
+
+Start your 14-day free trial and send your first quote in minutes.
+
+Button:
+
+Start Free Trial

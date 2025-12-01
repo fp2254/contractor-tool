@@ -24,8 +24,248 @@
 </head>
 <body>
   <div id="app-root">
+    <!-- LANDING PAGE -->
+    <div id="landing-page">
+      <!-- Navigation -->
+      <nav class="lp-nav">
+        <div class="lp-nav-inner">
+          <div class="lp-logo">
+            <img src="/attached_assets/tradebase-logo.png" alt="TradeBase" class="lp-logo-img">
+          </div>
+          <div class="lp-nav-links">
+            <a href="#lp-pricing" class="lp-nav-link">Pricing</a>
+            <button id="lp-login-btn" class="lp-nav-btn-outline">Log In</button>
+            <button id="lp-signup-btn" class="lp-nav-btn-primary">Try It Free</button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="lp-hero">
+        <div class="lp-hero-content">
+          <h1 class="lp-hero-title">Stop doing paperwork at night.</h1>
+          <p class="lp-hero-subtitle">Run your entire business from your phone — quotes, invoices, job folders, and payments in minutes.</p>
+          <p class="lp-hero-tagline">Built for contractors. No office, no spreadsheets, no bullshit.</p>
+          <div class="lp-hero-buttons">
+            <button id="lp-hero-cta" class="lp-btn-primary-large">Try It Free — Takes 30 Seconds</button>
+            <a href="#lp-pricing" class="lp-btn-secondary-large">See Pricing</a>
+          </div>
+          <p class="lp-hero-note">No credit card needed. Works on any phone.</p>
+        </div>
+      </section>
+
+      <!-- Built for Trades Section -->
+      <section class="lp-section lp-trades-section">
+        <div class="lp-container">
+          <h2 class="lp-section-title">Built for Trades, Not Tech People</h2>
+          <div class="lp-cards-grid">
+            <div class="lp-card">
+              <div class="lp-card-icon"><i class="fa-solid fa-truck"></i></div>
+              <h3>Stop writing invoices in your truck</h3>
+              <p>Create clean quotes and invoices in minutes. Reuse line items, add tax, and send a payment link before you leave the driveway.</p>
+            </div>
+            <div class="lp-card">
+              <div class="lp-card-icon"><i class="fa-solid fa-wifi-slash"></i></div>
+              <h3>Still works when your signal doesn't</h3>
+              <p>Offline-first. Use TradeBase in basements, bad service areas, and new builds. It syncs automatically when you're back online.</p>
+            </div>
+            <div class="lp-card">
+              <div class="lp-card-icon"><i class="fa-solid fa-folder-open"></i></div>
+              <h3>No more hunting for customer info at midnight</h3>
+              <p>Every quote and invoice gets a job folder with the client, address, notes, and photos in one place — so you always know what's going on.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="lp-section lp-how-section">
+        <div class="lp-container">
+          <h2 class="lp-section-title">How TradeBase Fits Your Day</h2>
+          <div class="lp-steps">
+            <div class="lp-step">
+              <div class="lp-step-number">1</div>
+              <div class="lp-step-content">
+                <h3>Add or pick a client</h3>
+                <p>Quick client lookup or add a new one on the fly — name, phone, email, and address saved for next time.</p>
+              </div>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-number">2</div>
+              <div class="lp-step-content">
+                <h3>Build a quote or invoice in a few taps</h3>
+                <p>Choose a template, add your line items and notes, and you're done. No desktop, no PDF editing.</p>
+              </div>
+            </div>
+            <div class="lp-step">
+              <div class="lp-step-number">3</div>
+              <div class="lp-step-content">
+                <h3>Send it and get paid online</h3>
+                <p>Email or text a Stripe payment link, track status in one place, and stop chasing checks.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing Section -->
+      <section class="lp-section lp-pricing-section" id="lp-pricing">
+        <div class="lp-container">
+          <h2 class="lp-section-title">Simple, Fair Pricing</h2>
+          <div class="lp-pricing-grid">
+            <!-- Core Plan -->
+            <div class="lp-pricing-card">
+              <h3 class="lp-pricing-name">TradeBase Core</h3>
+              <div class="lp-pricing-price">
+                <span class="lp-price-amount">$9.99</span><span class="lp-price-period">/month</span>
+              </div>
+              <p class="lp-pricing-alt">or $99/year</p>
+              <ul class="lp-pricing-features">
+                <li><i class="fa-solid fa-check"></i> Invoices & quotes</li>
+                <li><i class="fa-solid fa-check"></i> Job folders & clients</li>
+                <li><i class="fa-solid fa-check"></i> Stripe payments</li>
+                <li><i class="fa-solid fa-check"></i> Offline mode</li>
+                <li><i class="fa-solid fa-check"></i> Referral program (20% for life)</li>
+              </ul>
+              <button class="lp-pricing-btn lp-btn-primary" data-action="signup">Start Free Trial</button>
+            </div>
+
+            <!-- Lifetime Plan -->
+            <div class="lp-pricing-card lp-pricing-featured">
+              <div class="lp-pricing-badge">BEST VALUE</div>
+              <h3 class="lp-pricing-name">TradeBase Lifetime</h3>
+              <div class="lp-pricing-price">
+                <span class="lp-price-amount">$149</span><span class="lp-price-period"> one-time</span>
+              </div>
+              <p class="lp-pricing-alt">No monthly fees ever</p>
+              <ul class="lp-pricing-features">
+                <li><i class="fa-solid fa-check"></i> All TradeBase Core features</li>
+                <li><i class="fa-solid fa-check"></i> No subscription — you own it</li>
+                <li><i class="fa-solid fa-check"></i> Priority access to new features</li>
+              </ul>
+              <p class="lp-pricing-urgency">Lifetime access opens only during special release windows and may close without notice.</p>
+              <button class="lp-pricing-btn lp-btn-primary" data-action="signup-lifetime">Get Lifetime (If Available)</button>
+            </div>
+
+            <!-- AI Add-On -->
+            <div class="lp-pricing-card lp-pricing-addon">
+              <div class="lp-pricing-addon-badge">ADD-ON</div>
+              <h3 class="lp-pricing-name">Talk to Work — AI</h3>
+              <div class="lp-pricing-price">
+                <span class="lp-price-amount">+$9.99</span><span class="lp-price-period">/month</span>
+              </div>
+              <p class="lp-pricing-alt">Add to any plan</p>
+              <ul class="lp-pricing-features">
+                <li><i class="fa-solid fa-check"></i> Voice-to-quote creation</li>
+                <li><i class="fa-solid fa-check"></i> Auto job folder creation</li>
+                <li><i class="fa-solid fa-check"></i> Smart autofill & cleanup</li>
+                <li><i class="fa-solid fa-check"></i> Profanity filtering</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Talk to Work Section -->
+      <section class="lp-section lp-ai-section">
+        <div class="lp-container">
+          <h2 class="lp-section-title">Talk to Work: Hands-Free Mode</h2>
+          <p class="lp-section-subtitle">Hit one button, talk like you're on the job, and TradeBase turns your words into a client, job folder, and quote — without you typing a thing.</p>
+          <div class="lp-ai-steps">
+            <div class="lp-ai-step">
+              <div class="lp-ai-step-icon"><i class="fa-solid fa-microphone"></i></div>
+              <p>Press the Talk to Work button</p>
+            </div>
+            <div class="lp-ai-step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="lp-ai-step">
+              <div class="lp-ai-step-icon"><i class="fa-solid fa-comments"></i></div>
+              <p>Describe the job in your own words</p>
+            </div>
+            <div class="lp-ai-step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="lp-ai-step">
+              <div class="lp-ai-step-icon"><i class="fa-solid fa-magic-wand-sparkles"></i></div>
+              <p>TradeBase auto-creates the client, job folder, and quote</p>
+            </div>
+          </div>
+          <p class="lp-ai-note">Available as an optional AI add-on.</p>
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section class="lp-section lp-faq-section">
+        <div class="lp-container">
+          <h2 class="lp-section-title">Frequently Asked Questions</h2>
+          <div class="lp-faq-list">
+            <div class="lp-faq-item">
+              <button class="lp-faq-question">
+                <span>Do I need a credit card for the free trial?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="lp-faq-answer">
+                <p>No. You can start a 14-day free trial with just your email. If you like it, add a card later. If not, it simply stops — no surprise charges.</p>
+              </div>
+            </div>
+            <div class="lp-faq-item">
+              <button class="lp-faq-question">
+                <span>Can I use TradeBase offline?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="lp-faq-answer">
+                <p>Yes. TradeBase is offline-first. You can create quotes, invoices, and job folders with no signal. Everything syncs when you're back online.</p>
+              </div>
+            </div>
+            <div class="lp-faq-item">
+              <button class="lp-faq-question">
+                <span>Is Talk to Work required?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="lp-faq-answer">
+                <p>No. TradeBase Core works without AI. Talk to Work is an optional add-on if you want to run things mostly by voice.</p>
+              </div>
+            </div>
+            <div class="lp-faq-item">
+              <button class="lp-faq-question">
+                <span>Who is TradeBase for?</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="lp-faq-answer">
+                <p>TradeBase is built for small contractors and solo operators — radon, HVAC, electrical, plumbing, handyman, and anyone who's tired of doing paperwork after hours.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA Section -->
+      <section class="lp-section lp-final-cta">
+        <div class="lp-container">
+          <h2 class="lp-cta-title">Ready to stop doing paperwork after hours?</h2>
+          <p class="lp-cta-subtitle">Start your 14-day free trial and send your first quote in minutes.</p>
+          <button id="lp-final-cta" class="lp-btn-primary-large">Start Free Trial</button>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="lp-footer">
+        <div class="lp-container">
+          <div class="lp-footer-content">
+            <div class="lp-footer-brand">
+              <img src="/attached_assets/tradebase-logo.png" alt="TradeBase" class="lp-footer-logo">
+              <p>Simple invoicing for tradespeople.</p>
+            </div>
+            <div class="lp-footer-links">
+              <a href="#" id="lp-tos-link">Terms of Service</a>
+              <a href="#" id="lp-privacy-link">Privacy Policy</a>
+            </div>
+          </div>
+          <p class="lp-footer-copy">&copy; 2025 TradeBase. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+
     <!-- AUTH -->
-    <div id="auth-container">
+    <div id="auth-container" class="hidden">
+      <button id="btn-back-to-landing" class="lp-back-btn"><i class="fa-solid fa-arrow-left"></i> Back</button>
       <div class="auth-card">
         <div class="auth-logo">
           <img src="/attached_assets/tradebase-logo.png" alt="TradeBase Logo" class="logo-img">
