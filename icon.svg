@@ -1,4 +1,8 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="100" fill="#4f8cff"/>
-  <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" fill="white" font-family="Arial, sans-serif" font-size="220" font-weight="bold">TB</text>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="100" fill="#1a1a1a"/>
+  <g transform="translate(100, 120)">
+    <path d="M156 0L312 80V100L156 180L0 100V80L156 0Z" fill="white"/>
+    <path d="M156 60L312 140V160L156 240L0 160V140L156 60Z" fill="white" fill-opacity="0.7"/>
+    <path d="M156 120L312 200V220L156 300L0 220V200L156 120Z" fill="white" fill-opacity="0.4"/>
+  </g>
 </svg>
