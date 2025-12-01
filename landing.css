@@ -675,6 +675,86 @@ body {
   opacity: 1;
 }
 
+/* Mobile visibility toggles */
+.features-mobile,
+.ai-steps-mobile {
+  display: none;
+}
+
+/* Mobile compact features bullets */
+.features-compact {
+  text-align: center;
+}
+
+.features-bullets {
+  list-style: none;
+  display: inline-block;
+  text-align: left;
+  background: var(--bg-alt);
+  padding: 24px 32px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.features-bullets li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.features-bullets i {
+  color: var(--success);
+  font-size: 16px;
+}
+
+/* AI accordion (mobile) */
+.ai-steps-accordion {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.ai-accordion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 14px 28px;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-accordion-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ai-accordion-toggle i {
+  transition: transform 0.3s;
+}
+
+.ai-steps-accordion.open .ai-accordion-toggle i {
+  transform: rotate(180deg);
+}
+
+.ai-accordion-content {
+  display: none;
+  margin-top: 24px;
+}
+
+.ai-steps-accordion.open .ai-accordion-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 /* Mobile Responsive */
 @media (max-width: 900px) {
   .features-grid,
@@ -698,6 +778,23 @@ body {
 }
 
 @media (max-width: 768px) {
+  /* Show/hide mobile vs desktop elements */
+  .features-desktop {
+    display: none;
+  }
+  
+  .features-mobile {
+    display: block;
+  }
+  
+  .ai-steps-desktop {
+    display: none;
+  }
+  
+  .ai-steps-mobile {
+    display: block;
+  }
+  
   .nav-links,
   .nav-cta {
     display: none;
@@ -707,73 +804,206 @@ body {
     display: block;
   }
   
+  /* Reduce padding/margins by ~35% on all sections */
   .hero {
-    padding: 120px 0 80px;
+    padding: 100px 0 50px;
+  }
+  
+  .features {
+    padding: 50px 0;
+  }
+  
+  .ai-section {
+    padding: 50px 0;
+  }
+  
+  .how-it-works {
+    padding: 50px 0;
+  }
+  
+  .pricing {
+    padding: 50px 0;
+  }
+  
+  .faq {
+    padding: 50px 0;
+  }
+  
+  .final-cta {
+    padding: 50px 0;
+  }
+  
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 28px;
   }
   
   .hero h1 {
-    font-size: 36px;
+    font-size: 32px;
+    margin-bottom: 14px;
   }
   
   .hero-sub {
-    font-size: 17px;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  .hero-tagline {
+    font-size: 15px;
+    margin-bottom: 24px;
   }
   
   .hero-buttons {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
   
   .btn {
     width: 100%;
-    padding: 16px 24px;
+    padding: 14px 20px;
+    font-size: 15px;
   }
   
-  .section-title {
-    font-size: 28px;
+  .hero-trust {
+    margin-top: 16px;
+    font-size: 13px;
   }
   
-  .feature-card {
-    padding: 30px 24px;
-  }
-  
+  /* AI section mobile */
   .ai-section h2 {
-    font-size: 28px;
+    font-size: 24px;
+    margin-bottom: 12px;
   }
   
   .ai-desc {
-    font-size: 16px;
+    font-size: 15px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  
+  .ai-badge {
+    padding: 8px 16px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  
+  .ai-addon-badge {
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+  
+  /* How It Works - more compact */
+  .steps-vertical {
+    margin-bottom: 0;
   }
   
   .step-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 16px;
+    flex-direction: row;
+    text-align: left;
+    gap: 14px;
+    padding: 16px 0;
   }
   
   .step-icon {
-    margin: 0 auto;
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    margin: 0;
   }
   
+  .step-content h3 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  
+  .step-content p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  
+  /* Pricing - tighter */
   .pricing-grid {
-    gap: 16px;
+    gap: 12px;
   }
   
   .price-card {
-    padding: 28px 20px;
+    padding: 24px 18px;
+  }
+  
+  .price-card h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
   }
   
   .price {
-    font-size: 36px;
+    font-size: 32px;
   }
   
+  .price-sub {
+    margin-bottom: 16px;
+  }
+  
+  .price-features {
+    margin-bottom: 16px;
+  }
+  
+  .price-features li {
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  
+  .price-note {
+    font-size: 12px;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+  
+  /* FAQ - tighter */
+  .faq-item {
+    margin-bottom: 8px;
+  }
+  
+  .faq-question {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  
+  .faq-answer {
+    padding: 0 16px 14px;
+  }
+  
+  .faq-answer p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  /* Final CTA */
   .final-cta h2 {
-    font-size: 28px;
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  
+  .final-cta p {
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+  
+  .btn-large {
+    padding: 16px 32px;
+    font-size: 16px;
+  }
+  
+  .footer {
+    padding: 28px 0;
   }
   
   .footer-content {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     text-align: center;
+  }
+  
+  .footer-links {
+    gap: 16px;
   }
 }

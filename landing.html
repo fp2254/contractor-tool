@@ -61,7 +61,8 @@
   <section id="features" class="features">
     <div class="container">
       <h2 class="section-title">Built for Trades, Not Tech People</h2>
-      <div class="features-grid">
+      <!-- Desktop: Full cards -->
+      <div class="features-grid features-desktop">
         <div class="feature-card">
           <div class="feature-icon">
             <i class="fa-solid fa-truck"></i>
@@ -84,6 +85,15 @@
           <p>Every quote and invoice gets a job folder with the client, address, notes, and photos in one place — so you always know what's going on.</p>
         </div>
       </div>
+      <!-- Mobile: Compact bullets -->
+      <div class="features-compact features-mobile">
+        <ul class="features-bullets">
+          <li><i class="fa-solid fa-check"></i> Invoices in minutes</li>
+          <li><i class="fa-solid fa-check"></i> Works without signal</li>
+          <li><i class="fa-solid fa-check"></i> Job folders auto-organized</li>
+          <li><i class="fa-solid fa-check"></i> Payments by text/email</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -96,7 +106,8 @@
       <h2>Talk to Work: Your Hands-Free Mode</h2>
       <p class="ai-desc">Hit one button, talk like you're on the job, and TradeBase turns your words into a complete quote, job folder, and PDF — without you typing a thing.</p>
       
-      <div class="ai-steps">
+      <!-- Desktop: Show steps directly -->
+      <div class="ai-steps ai-steps-desktop">
         <div class="ai-step">
           <div class="step-number">1</div>
           <p>Press the Talk to Work button</p>
@@ -108,6 +119,28 @@
         <div class="ai-step">
           <div class="step-number">3</div>
           <p>TradeBase auto-creates the client, job folder, and quote</p>
+        </div>
+      </div>
+      
+      <!-- Mobile: Collapsible steps -->
+      <div class="ai-steps-accordion ai-steps-mobile">
+        <button class="ai-accordion-toggle">
+          <span>See how it works</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="ai-accordion-content">
+          <div class="ai-step">
+            <div class="step-number">1</div>
+            <p>Press the Talk to Work button</p>
+          </div>
+          <div class="ai-step">
+            <div class="step-number">2</div>
+            <p>Describe the job in your own words</p>
+          </div>
+          <div class="ai-step">
+            <div class="step-number">3</div>
+            <p>TradeBase auto-creates the client, job folder, and quote</p>
+          </div>
         </div>
       </div>
       
@@ -310,6 +343,15 @@
         }
       });
     });
+
+    // AI steps accordion (mobile)
+    const aiAccordionToggle = document.querySelector('.ai-accordion-toggle');
+    if (aiAccordionToggle) {
+      aiAccordionToggle.addEventListener('click', () => {
+        const accordion = aiAccordionToggle.parentElement;
+        accordion.classList.toggle('open');
+      });
+    }
 
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
