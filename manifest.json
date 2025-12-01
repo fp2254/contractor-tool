@@ -2,7 +2,7 @@
   "name": "TradeBase - Invoice & Billing",
   "short_name": "TradeBase",
   "description": "Professional invoicing and billing app for tradespeople. Create invoices, quotes, manage clients and inventory - works offline!",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#050509",
   "theme_color": "#4f8cff",
