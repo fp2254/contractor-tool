@@ -1739,7 +1739,7 @@ async function loadInitialData() {
   // Check for checkout success/cancel
   const params = new URLSearchParams(window.location.search);
   if (params.get("checkout") === "success") {
-    showToast("Subscription activated! Welcome to TradeBase.");
+    showToast("Subscription activated! Welcome to Skippy Stack.");
     window.history.replaceState({}, '', '/');
   } else if (params.get("checkout") === "cancel") {
     showToast("Checkout canceled. You can subscribe anytime!");
@@ -5458,7 +5458,7 @@ function wireNotificationsUI() {
 async function loadNotifications() {
   if (tourMode) {
     allNotifications = [
-      { id: 1, title: "Welcome to TradeBase!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
+      { id: 1, title: "Welcome to Skippy Stack!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
       { id: 2, title: "Trial Reminder", content: "Your 14-day free trial has started. Enjoy all features!", message_type: "info", is_read: false, created_at: new Date(Date.now() - 86400000).toISOString() }
     ];
     renderNotifications(allNotifications);

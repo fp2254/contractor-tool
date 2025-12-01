@@ -124,7 +124,7 @@ function renderBasicClean(data, type, numberField, dateField) {
       ${data.notes ? `<div style="border-top: 1px solid #ccc; padding-top: 15px; font-size: 11px; color: #666;"><strong>Notes:</strong> ${data.notes}</div>` : ''}
       ${data.invoice_footer ? `<div style="text-align: center; font-size: 10px; color: #999; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ccc;">${data.invoice_footer}</div>` : ''}
       <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ddd;">
-        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #3b82f6; text-decoration: none; font-weight: 600;">TradeBase</a> - <a href="https://trade-base.biz" style="color: #3b82f6; text-decoration: none;">Start your free trial</a></p>
+        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #3b82f6; text-decoration: none; font-weight: 600;">Skippy Stack</a> - <a href="https://trade-base.biz" style="color: #3b82f6; text-decoration: none;">Start your free trial</a></p>
       </div>
     </div>
   `;
@@ -199,7 +199,7 @@ function renderModernPro(data, type, numberField, dateField) {
       ${data.notes ? `<div style="background: #f8f9fa; padding: 12px; margin-bottom: 15px; border-left: 3px solid #2c3e50; font-size: 11px; color: #666;"><strong>Notes:</strong> ${data.notes}</div>` : ''}
       ${data.invoice_footer ? `<div style="text-align: center; font-size: 10px; color: #999; padding-top: 15px; border-top: 1px solid #e9ecef;">${data.invoice_footer}</div>` : ''}
       <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #e9ecef;">
-        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #2c3e50; text-decoration: none; font-weight: 600;">TradeBase</a> - <a href="https://trade-base.biz" style="color: #2c3e50; text-decoration: none;">Start your free trial</a></p>
+        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #2c3e50; text-decoration: none; font-weight: 600;">Skippy Stack</a> - <a href="https://trade-base.biz" style="color: #2c3e50; text-decoration: none;">Start your free trial</a></p>
       </div>
     </div>
   `;
@@ -274,7 +274,7 @@ function renderColorAccent(data, type, numberField, dateField) {
         ${data.notes ? `<div style="border-left: 3px solid #3b82f6; padding: 12px; margin-bottom: 15px; background: #f0f9ff; font-size: 11px; color: #0c4a6e;"><strong>Notes:</strong> ${data.notes}</div>` : ''}
         ${data.invoice_footer ? `<div style="text-align: center; font-size: 10px; color: #999; padding-top: 15px; border-top: 1px solid #e5e7eb;">${data.invoice_footer}</div>` : ''}
         <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #e5e7eb;">
-          <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #1e3a8a; text-decoration: none; font-weight: 600;">TradeBase</a> - <a href="https://trade-base.biz" style="color: #1e3a8a; text-decoration: none;">Start your free trial</a></p>
+          <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #1e3a8a; text-decoration: none; font-weight: 600;">Skippy Stack</a> - <a href="https://trade-base.biz" style="color: #1e3a8a; text-decoration: none;">Start your free trial</a></p>
         </div>
       </div>
     </div>
@@ -346,7 +346,7 @@ function renderBigTotal(data, type, numberField, dateField) {
       ${data.notes ? `<div style="border: 1px solid #ddd; padding: 12px; margin-bottom: 15px; font-size: 11px; color: #666;"><strong>Notes:</strong> ${data.notes}</div>` : ''}
       ${data.invoice_footer ? `<div style="text-align: center; font-size: 10px; color: #999; padding-top: 15px; border-top: 1px solid #ddd;">${data.invoice_footer}</div>` : ''}
       <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ddd;">
-        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #000; text-decoration: none; font-weight: 600;">TradeBase</a> - <a href="https://trade-base.biz" style="color: #000; text-decoration: none;">Start your free trial</a></p>
+        <p style="margin: 0; font-size: 10px; color: #888;">Powered by <a href="https://trade-base.biz" style="color: #000; text-decoration: none; font-weight: 600;">Skippy Stack</a> - <a href="https://trade-base.biz" style="color: #000; text-decoration: none;">Start your free trial</a></p>
       </div>
     </div>
   `;
