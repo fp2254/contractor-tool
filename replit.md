@@ -1,7 +1,9 @@
-# TradeBase - Invoice & Billing App
+# Skippy Stack - Invoice & Billing App
 
 ## Overview
-TradeBase is a comprehensive, full-stack web application designed for tradespeople, offering client management, invoice and estimate creation, job photo tracking, cost calculation with markup, and a referral program. It aims to streamline business operations through multi-language support, customizable invoice templates, and robust financial tracking capabilities. The project's ambition is to provide a robust solution for managing business operations.
+Skippy Stack (internally codenamed "TradeBase") is a comprehensive, full-stack web application designed for tradespeople, offering client management, invoice and estimate creation, job photo tracking, cost calculation with markup, and a referral program. It aims to streamline business operations through multi-language support, customizable invoice templates, and robust financial tracking capabilities. The project's ambition is to provide a robust solution for managing business operations.
+
+**Branding Strategy**: All user-facing elements use "Skippy Stack" branding, while internal code references (cache names, database tables, variables) retain "tradebase" naming to avoid unnecessary refactoring.
 
 ## User Preferences
 - "Keep it stupid simple" philosophy for non-technical users
@@ -28,7 +30,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Subscription Flow**: 14-day free trial managed with `trial_ends_at` and `requireSubscription` middleware. Stripe webhooks handle subscription events, including a separate AI Add-On subscription system.
 - **Payment Collection Workflow**: Integration with Stripe Payment Links for invoice payments, automatic status updates, and manual payment controls.
 - **Multi-Language System**: UI translation in 5 languages (English, Spanish, French, German, Portuguese) using `data-i18n` attributes and a dynamic `applyLanguage()` function.
-- **Invoice Template System**: 4 distinct, professional invoice templates defined in `templates.js`, rendered dynamically. All templates include "Powered by TradeBase" footer.
+- **Invoice Template System**: 4 distinct, professional invoice templates defined in `templates.js`, rendered dynamically. All templates include "Powered by Skippy Stack" footer.
 - **Offline PWA**: Progressive Web App with an offline-first architecture using Service Worker and IndexedDB.
 - **Job Folders**: Automatic job organization by ClientName_Address_Date_JobType, linking invoices, quotes, photos, and voice notes.
 - **Notification Center**: In-app system for system messages and announcements.
