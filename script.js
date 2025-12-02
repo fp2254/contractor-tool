@@ -4695,26 +4695,41 @@ async function shareQuote(quote) {
       profile: profile
     };
     
-    // Create off-screen template (use renderInvoiceTemplate with isQuote=true)
+    // Create template - must be visible for html2canvas to work on mobile
     const template = document.createElement("div");
     template.className = "quote-template-print";
     template.innerHTML = renderInvoiceTemplate(quoteData, true);
-    template.style.position = "absolute";
-    template.style.left = "-9999px";
-    template.style.width = "800px";
-    template.style.backgroundColor = "#ffffff";
-    document.body.appendChild(template);
-    
-    // Wait for rendering
-    await new Promise(r => setTimeout(r, 100));
-    
-    // Generate canvas
+    template.style.position = "fixed";
     template.style.left = "0";
     template.style.top = "0";
+    template.style.width = "800px";
+    template.style.backgroundColor = "#ffffff";
+    template.style.zIndex = "99999";
+    template.style.opacity = "0.01";
+    document.body.appendChild(template);
+    
+    // Wait for images to load
+    const images = template.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+    
+    // Additional wait for rendering
+    await new Promise(r => setTimeout(r, 300));
+    
+    // Make fully visible for capture
+    template.style.opacity = "1";
     
     const canvas = await html2canvas(template, {
       backgroundColor: "#ffffff",
-      scale: 2
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false
     });
     
     document.body.removeChild(template);
