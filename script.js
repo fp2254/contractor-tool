@@ -1899,6 +1899,7 @@ async function handleInvoiceSubmit(e) {
   errorEl.textContent = "";
 
   const clientName = document.getElementById("invoice-client-name").value.trim();
+  const clientAddress = document.getElementById("invoice-client-address").value.trim();
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
   const template = document.getElementById("invoice-template-select").value || "basic_clean";
@@ -1923,6 +1924,7 @@ async function handleInvoiceSubmit(e) {
   const invoiceData = {
     client_id: null,
     client_name: clientName,
+    client_address: clientAddress,
     date,
     notes,
     template,
@@ -2024,6 +2026,7 @@ function editInvoice(invoice) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("invoice-client-name").value = invoice.client_name || (invoice.client ? invoice.client.name : '');
+  document.getElementById("invoice-client-address").value = invoice.client_address || (invoice.client ? invoice.client.address : '') || '';
   document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = invoice.notes || '';
   
@@ -2070,6 +2073,7 @@ function editInvoice(invoice) {
 function resetInvoiceForm() {
   editingInvoiceId = null;
   document.getElementById("invoice-client-name").value = '';
+  document.getElementById("invoice-client-address").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
   
@@ -2100,6 +2104,7 @@ function editQuote(quote) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
+  document.getElementById("quote-client-address").value = quote.client_address || (quote.client ? quote.client.address : '') || '';
   document.getElementById("quote-date").value = quote.quote_date || new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = quote.notes || '';
   
@@ -2152,6 +2157,7 @@ function editQuote(quote) {
 function resetQuoteForm() {
   editingQuoteId = null;
   document.getElementById("quote-client-name").value = '';
+  document.getElementById("quote-client-address").value = '';
   document.getElementById("quote-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = '';
   
@@ -4402,6 +4408,7 @@ async function handleQuoteSubmit(e) {
   errorEl.textContent = "";
 
   const clientName = document.getElementById("quote-client-name").value.trim();
+  const clientAddress = document.getElementById("quote-client-address").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
   const notes = document.getElementById("quote-notes").value;
   const template = document.getElementById("quote-template").value || "basic_clean";
@@ -4424,6 +4431,7 @@ async function handleQuoteSubmit(e) {
 
   const quoteData = {
     client_name: clientName,
+    client_address: clientAddress,
     quote_date: quoteDate,
     notes,
     template,

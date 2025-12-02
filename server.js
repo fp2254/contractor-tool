@@ -537,7 +537,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -545,6 +545,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       user_id: userId,
       client_id,
       client_name,
+      client_address,
       date,
       notes,
       template: template || "basic_clean",
@@ -586,7 +587,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceId = req.params.id;
-  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -606,6 +607,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     .update({
       client_id,
       client_name,
+      client_address,
       date,
       notes,
       template: template || "basic_clean",
@@ -1239,7 +1241,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, quote_date, quote_number, notes, template, subtotal, tax, total, items } = req.body;
 
   const { data: quote, error: errQuote } = await supabaseAdmin
     .from("quotes")
@@ -1247,6 +1249,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
       user_id: userId,
       client_id,
       client_name,
+      client_address,
       quote_date: quote_date || null,
       quote_number: quote_number || null,
       subtotal,
@@ -1286,7 +1289,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const quoteId = req.params.id;
-  const { client_id, client_name, quote_date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items } = req.body;
 
   // Verify quote belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -1306,6 +1309,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     .update({
       client_id,
       client_name,
+      client_address,
       quote_date: quote_date || null,
       subtotal,
       tax,
