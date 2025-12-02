@@ -211,7 +211,7 @@ function renderColorAccent(data, type, numberField, dateField) {
       <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px;">
         <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
           <div style="flex: 1; min-width: 150px;">
-            ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 150px; max-height: 60px; filter: brightness(0) invert(1); display: block;">` : ''}
+            ${data.logo_url ? `<div style="background: white; padding: 8px; border-radius: 6px; display: inline-block; margin-bottom: 8px;"><img src="${data.logo_url}" style="max-width: 150px; max-height: 60px; display: block;"></div>` : ''}
             <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9; word-wrap: break-word;">${data.business_name || ''}</p>
           </div>
           <h1 style="margin: 0; font-size: 28px; font-weight: 700; text-align: right; flex-shrink: 0;">${type}</h1>
