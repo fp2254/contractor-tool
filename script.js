@@ -4687,49 +4687,62 @@ async function shareQuote(quote) {
       console.log("Could not load profile for share");
     }
     
-    // Generate a professional quote image using the template system
+    // Generate quote data with business info flattened at top level (template expects this)
     const quoteData = {
       ...quote,
+      ...profile,
+      logo_url: profile.logo_url,
+      business_name: profile.business_name,
+      address: profile.address,
+      phone: profile.phone,
       quote_number: quoteNumber,
       client_name: clientName,
       profile: profile
     };
     
-    // Create template - must be visible for html2canvas to work on mobile
+    // Create template - use normal flow for iOS Safari compatibility
     const template = document.createElement("div");
-    template.className = "quote-template-print";
     template.innerHTML = renderInvoiceTemplate(quoteData, true);
-    template.style.position = "fixed";
-    template.style.left = "0";
-    template.style.top = "0";
-    template.style.width = "800px";
-    template.style.backgroundColor = "#ffffff";
-    template.style.zIndex = "99999";
-    template.style.opacity = "0.01";
+    template.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 800px;
+      min-height: 100px;
+      background-color: #ffffff;
+      overflow: visible;
+    `;
     document.body.appendChild(template);
+    
+    // Wait for next animation frame
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     
     // Wait for images to load
     const images = template.querySelectorAll('img');
     await Promise.all(Array.from(images).map(img => {
-      if (img.complete) return Promise.resolve();
+      if (img.complete && img.naturalHeight > 0) return Promise.resolve();
       return new Promise(resolve => {
         img.onload = resolve;
         img.onerror = resolve;
+        setTimeout(resolve, 2000);
       });
     }));
     
-    // Additional wait for rendering
-    await new Promise(r => setTimeout(r, 300));
+    // Move into viewport for capture (iOS requires this)
+    template.style.left = "0";
+    template.style.zIndex = "99999";
     
-    // Make fully visible for capture
-    template.style.opacity = "1";
+    // Wait for layout
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 100)));
     
     const canvas = await html2canvas(template, {
       backgroundColor: "#ffffff",
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      logging: false
+      logging: false,
+      width: 800,
+      windowWidth: 800
     });
     
     document.body.removeChild(template);
