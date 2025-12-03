@@ -30,9 +30,6 @@ function setTemplate(templateId) {
 }
 
 function renderInvoiceTemplate(invoiceData, isQuote = false) {
-  const template = document.getElementById('invoice-template');
-  template.innerHTML = '';
-  
   const type = isQuote ? 'QUOTE' : 'INVOICE';
   const numberField = isQuote ? 'quote_number' : 'number';
   const dateField = isQuote ? 'quote_date' : 'date';
@@ -52,7 +49,14 @@ function renderInvoiceTemplate(invoiceData, isQuote = false) {
     html = renderBigTotal(invoiceData, type, numberField, dateField);
   }
   
-  template.innerHTML = html;
+  // Set the DOM element if it exists (for preview screens)
+  const templateEl = document.getElementById('invoice-template');
+  if (templateEl) {
+    templateEl.innerHTML = html;
+  }
+  
+  // Always return HTML for sharing/downloading functions
+  return html;
 }
 
 function renderBasicClean(data, type, numberField, dateField) {
