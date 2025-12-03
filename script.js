@@ -3013,7 +3013,10 @@ async function viewQuoteDetail(quoteId) {
           <i class="fa-solid fa-file-invoice"></i> <span data-i18n="quote.convert_to_invoice">Convert to Invoice</span>
         </button>
         <button class="btn-sm" id="share-quote-btn-${quote.id}">
-          <i class="fa-solid fa-share-nodes"></i> Send Quote
+          <i class="fa-solid fa-share-nodes"></i> Share Quote
+        </button>
+        <button class="btn-sm" id="send-text-quote-btn" data-quote-id="${quote.id}" data-client-phone="${quote.client?.phone || ''}" data-total="${quote.total || 0}" style="background: #22c55e; color: white;">
+          <i class="fa-solid fa-comment-sms"></i> Send Text
         </button>
         <button class="btn-sm" id="schedule-quote-btn-${quote.id}">
           <i class="fa-solid fa-calendar-plus"></i> Schedule Follow-Up
@@ -3049,6 +3052,14 @@ async function viewQuoteDetail(quoteId) {
     }
     
     document.getElementById(`share-quote-btn-${quote.id}`)?.addEventListener('click', () => shareQuote(quote));
+    
+    // Wire up send text button
+    const sendTextQuoteBtn = document.getElementById('send-text-quote-btn');
+    if (sendTextQuoteBtn) {
+      sendTextQuoteBtn.addEventListener('click', () => {
+        sendQuoteSMS(quote);
+      });
+    }
     
     // Wire up schedule button
     document.getElementById(`schedule-quote-btn-${quote.id}`)?.addEventListener('click', () => {
@@ -3270,6 +3281,58 @@ function sendInvoiceSMS(invoice) {
   
   // Get client phone (cleaned)
   const clientPhone = (invoice.client?.phone || '').replace(/[^0-9+]/g, '');
+  
+  // Encode message for URL
+  const encodedMessage = encodeURIComponent(message);
+  
+  // Build SMS URL - format differs for iOS vs Android
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  let smsUrl;
+  
+  if (clientPhone) {
+    smsUrl = isIOS ? `sms:${clientPhone}&body=${encodedMessage}` : `sms:${clientPhone}?body=${encodedMessage}`;
+  } else {
+    smsUrl = isIOS ? `sms:&body=${encodedMessage}` : `sms:?body=${encodedMessage}`;
+  }
+  
+  console.log("SMS URL:", smsUrl);
+  
+  // Check if running in iframe (dev preview)
+  const isInIframe = window.self !== window.top;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (isInIframe || !isMobile) {
+    // Dev mode or desktop - show message to copy
+    alert("TEXT MESSAGE:\n\n" + message);
+  } else {
+    // Real mobile app - open SMS
+    showToast("Opening Messages...");
+    window.location.href = smsUrl;
+  }
+}
+
+// Send Quote via SMS (opens native Messages app)
+function sendQuoteSMS(quote) {
+  console.log("sendQuoteSMS called with quote:", quote);
+  
+  // Build message - get business name from settings input field
+  const businessNameEl = document.getElementById("business-name");
+  const businessName = businessNameEl?.value || "Your business";
+  const total = formatCurrency(quote.total || 0);
+  const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'Quote');
+  const clientName = quote.client_name || quote.client?.name || 'Customer';
+  
+  let message = `Hi ${clientName}! Here's your quote from ${businessName} for ${total}.`;
+  message += `\n\nQuote #${quoteNumber}`;
+  
+  if (quote.notes) {
+    message += `\n\nDetails: ${quote.notes}`;
+  }
+  
+  message += `\n\nPlease reply to approve or let me know if you have any questions!`;
+  
+  // Get client phone (cleaned)
+  const clientPhone = (quote.client?.phone || '').replace(/[^0-9+]/g, '');
   
   // Encode message for URL
   const encodedMessage = encodeURIComponent(message);
