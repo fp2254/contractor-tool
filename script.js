@@ -4669,102 +4669,49 @@ async function downloadQuote(quote) {
   }
 }
 
-async function shareQuote(quote) {
-  try {
-    showToast("Generating quote image...");
-    
-    const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'N/A');
-    const clientName = quote.client_name || (quote.client ? quote.client.name : 'N/A');
-    
-    // Get user's profile for business info
-    let profile = {};
-    try {
-      const profileRes = await apiFetch('/api/profile');
-      if (profileRes.ok) {
-        profile = await profileRes.json();
-      }
-    } catch (e) {
-      console.log("Could not load profile for share");
-    }
-    
-    // Generate quote data with business info at top level (template expects this)
-    const quoteData = {
-      ...quote,
-      ...profile,
-      quote_number: quoteNumber,
-      client_name: clientName
-    };
-    
-    // Create off-screen template
-    const template = document.createElement("div");
-    template.innerHTML = renderInvoiceTemplate(quoteData, true);
-    template.style.position = "absolute";
-    template.style.left = "-9999px";
-    template.style.width = "800px";
-    template.style.backgroundColor = "#ffffff";
-    document.body.appendChild(template);
-    
-    // Wait for images to load
-    const images = template.querySelectorAll('img');
-    await Promise.all(Array.from(images).map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.onload = resolve;
-        img.onerror = resolve;
-        setTimeout(resolve, 1500);
-      });
-    }));
-    
-    // Brief wait for rendering
-    await new Promise(r => setTimeout(r, 150));
-    
-    // Move into view for capture
-    template.style.left = "0";
-    template.style.top = "0";
-    
-    const canvas = await html2canvas(template, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-      useCORS: true,
-      allowTaint: true
-    });
-    
-    document.body.removeChild(template);
-    
-    // Convert to blob for sharing
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    const file = new File([blob], `Quote-${quoteNumber}.png`, { type: 'image/png' });
-    
-    // Check if we can share files
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: `Quote #${quoteNumber}`,
-        text: `Quote for ${clientName}`
-      });
-      showToast("Quote shared!");
-    } else if (navigator.share) {
-      // Fallback: download the image first, then offer to share text
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Quote-${quoteNumber}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("Quote image downloaded! You can attach it to your message.");
-    } else {
-      // Desktop fallback - just download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Quote-${quoteNumber}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("Quote image downloaded!");
-    }
-  } catch (err) {
-    console.error("Share error:", err);
-    showToast("Failed to generate quote image");
+// Send Quote via SMS (opens native Messages app with link)
+function shareQuote(quote) {
+  console.log("shareQuote (SMS) called with quote:", quote);
+  
+  // Build message - get business name from settings input field
+  const businessNameEl = document.getElementById("business-name");
+  const businessName = businessNameEl?.value || "Your business";
+  const total = formatCurrency(quote.total || 0);
+  const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : '');
+  const quoteViewLink = `https://trade-base.biz/view/quote/${quote.id}`;
+  
+  let message = `Quote from ${businessName} for ${total}.`;
+  message += `\n\nView quote: ${quoteViewLink}`;
+  
+  // Get client phone (cleaned)
+  const clientPhone = (quote.client?.phone || '').replace(/[^0-9+]/g, '');
+  
+  // Encode message for URL
+  const encodedMessage = encodeURIComponent(message);
+  
+  // Build SMS URL - format differs for iOS vs Android
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  let smsUrl;
+  
+  if (clientPhone) {
+    smsUrl = isIOS ? `sms:${clientPhone}&body=${encodedMessage}` : `sms:${clientPhone}?body=${encodedMessage}`;
+  } else {
+    smsUrl = isIOS ? `sms:&body=${encodedMessage}` : `sms:?body=${encodedMessage}`;
+  }
+  
+  console.log("SMS URL:", smsUrl);
+  
+  // Check if running in iframe (dev preview)
+  const isInIframe = window.self !== window.top;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (isInIframe || !isMobile) {
+    // Dev mode or desktop - show message to copy
+    alert("TEXT MESSAGE:\n\n" + message);
+  } else {
+    // Real mobile app - open SMS
+    showToast("Opening Messages...");
+    window.location.href = smsUrl;
   }
 }
 

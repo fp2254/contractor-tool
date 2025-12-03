@@ -4816,6 +4816,153 @@ app.get("/view/invoice/:id", async (req, res) => {
   }
 });
 
+// PUBLIC QUOTE VIEW (no auth required - for clients to view their quotes)
+app.get("/view/quote/:id", async (req, res) => {
+  try {
+    const quoteId = req.params.id;
+    
+    // Get quote
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from("quotes")
+      .select("*")
+      .eq("id", quoteId)
+      .single();
+    
+    if (quoteError || !quote) {
+      return res.status(404).send("<h1>Quote not found</h1>");
+    }
+    
+    // Get quote items
+    const { data: items } = await supabaseAdmin
+      .from("quote_items")
+      .select("*")
+      .eq("quote_id", quoteId);
+    
+    // Get business profile
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("business_name, email, phone, address, logo_url")
+      .eq("id", quote.user_id)
+      .single();
+    
+    // Get client info
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("name, email, phone, address")
+      .eq("id", quote.client_id)
+      .single();
+    
+    const businessName = profile?.business_name || "Business";
+    const logoUrl = profile?.logo_url || null;
+    const clientName = client?.name || quote.client_name || "Client";
+    const clientAddress = quote.client_address || client?.address || "";
+    const total = items?.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0) || parseFloat(quote.total) || 0;
+    
+    // Generate HTML page
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote #${quote.quote_number || quoteId} - ${businessName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 30px; }
+    .header h1 { font-size: 24px; margin-bottom: 5px; }
+    .header p { opacity: 0.9; }
+    .content { padding: 30px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .info-box h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+    .info-box p { color: #333; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #f8f9fa; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; color: #666; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    .total-row { background: #f8f9fa; font-weight: bold; font-size: 18px; }
+    .total-row td { padding: 20px 12px; }
+    .actions { display: flex; gap: 10px; justify-content: center; padding: 20px; background: #f8f9fa; }
+    .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block; }
+    .btn-primary { background: #059669; color: white; }
+    .btn-secondary { background: #e5e7eb; color: #333; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; max-width: 150px; margin-bottom: 10px; border-radius: 8px;">` : ''}
+      <h1>${businessName}</h1>
+      <p>Quote #${quote.quote_number || quoteId}</p>
+    </div>
+    <div class="content">
+      <div class="info-grid">
+        <div class="info-box">
+          <h3>Prepared For</h3>
+          <p><strong>${clientName}</strong></p>
+          ${clientAddress ? `<p>${clientAddress}</p>` : ''}
+          ${client?.email ? `<p>${client.email}</p>` : ''}
+          ${client?.phone ? `<p>${client.phone}</p>` : ''}
+        </div>
+        <div class="info-box" style="text-align: right;">
+          <h3>Quote Details</h3>
+          <p>Date: ${quote.quote_date || new Date().toLocaleDateString()}</p>
+          ${quote.due_date ? `<p>Valid Until: ${quote.due_date}</p>` : ''}
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(items || []).map(item => `
+            <tr>
+              <td>${item.description || ''}</td>
+              <td style="text-align: center;">${item.quantity || item.qty || 1}</td>
+              <td style="text-align: right;">$${(parseFloat(item.unit_price) || parseFloat(item.price) || 0).toFixed(2)}</td>
+              <td style="text-align: right;">$${(parseFloat(item.total) || 0).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row">
+            <td colspan="3" style="text-align: right;">Total:</td>
+            <td style="text-align: right;">$${total.toFixed(2)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      ${quote.notes ? `<p style="color: #666; font-style: italic; margin-top: 20px;">${quote.notes}</p>` : ''}
+    </div>
+    
+    <div class="actions">
+      <a href="javascript:window.print()" class="btn btn-secondary">Print / Save PDF</a>
+    </div>
+    
+    <div class="footer">
+      <p>Powered by <a href="https://trade-base.biz" style="color: #059669;">Skippy Stack</a></p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    
+    res.send(html);
+  } catch (err) {
+    console.error("Error rendering public quote:", err);
+    res.status(500).send("<h1>Error loading quote</h1>");
+  }
+});
+
 // START
 app.listen(port, '0.0.0.0', async () => {
   console.log(`TradeBase server running on http://0.0.0.0:${port}`);
