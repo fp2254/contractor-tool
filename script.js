@@ -1899,7 +1899,6 @@ async function handleInvoiceSubmit(e) {
   errorEl.textContent = "";
 
   const clientName = document.getElementById("invoice-client-name").value.trim();
-  const clientAddress = document.getElementById("invoice-client-address").value.trim();
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
   const template = document.getElementById("invoice-template-select").value || "basic_clean";
@@ -1924,7 +1923,6 @@ async function handleInvoiceSubmit(e) {
   const invoiceData = {
     client_id: null,
     client_name: clientName,
-    client_address: clientAddress,
     date,
     notes,
     template,
@@ -2026,7 +2024,6 @@ function editInvoice(invoice) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("invoice-client-name").value = invoice.client_name || (invoice.client ? invoice.client.name : '');
-  document.getElementById("invoice-client-address").value = invoice.client_address || (invoice.client ? invoice.client.address : '') || '';
   document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = invoice.notes || '';
   
@@ -2073,7 +2070,6 @@ function editInvoice(invoice) {
 function resetInvoiceForm() {
   editingInvoiceId = null;
   document.getElementById("invoice-client-name").value = '';
-  document.getElementById("invoice-client-address").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
   
@@ -2104,7 +2100,6 @@ function editQuote(quote) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
-  document.getElementById("quote-client-address").value = quote.client_address || (quote.client ? quote.client.address : '') || '';
   document.getElementById("quote-date").value = quote.quote_date || new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = quote.notes || '';
   
@@ -2157,7 +2152,6 @@ function editQuote(quote) {
 function resetQuoteForm() {
   editingQuoteId = null;
   document.getElementById("quote-client-name").value = '';
-  document.getElementById("quote-client-address").value = '';
   document.getElementById("quote-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = '';
   
@@ -4408,7 +4402,6 @@ async function handleQuoteSubmit(e) {
   errorEl.textContent = "";
 
   const clientName = document.getElementById("quote-client-name").value.trim();
-  const clientAddress = document.getElementById("quote-client-address").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
   const notes = document.getElementById("quote-notes").value;
   const template = document.getElementById("quote-template").value || "basic_clean";
@@ -4431,7 +4424,6 @@ async function handleQuoteSubmit(e) {
 
   const quoteData = {
     client_name: clientName,
-    client_address: clientAddress,
     quote_date: quoteDate,
     notes,
     template,
@@ -4669,49 +4661,90 @@ async function downloadQuote(quote) {
   }
 }
 
-// Send Quote via SMS (opens native Messages app with link)
-function shareQuote(quote) {
-  console.log("shareQuote (SMS) called with quote:", quote);
-  
-  // Build message - get business name from settings input field
-  const businessNameEl = document.getElementById("business-name");
-  const businessName = businessNameEl?.value || "Your business";
-  const total = formatCurrency(quote.total || 0);
-  const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : '');
-  const quoteViewLink = `https://trade-base.biz/view/quote/${quote.id}`;
-  
-  let message = `Quote from ${businessName} for ${total}.`;
-  message += `\n\nView quote: ${quoteViewLink}`;
-  
-  // Get client phone (cleaned)
-  const clientPhone = (quote.client?.phone || '').replace(/[^0-9+]/g, '');
-  
-  // Encode message for URL
-  const encodedMessage = encodeURIComponent(message);
-  
-  // Build SMS URL - format differs for iOS vs Android
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  let smsUrl;
-  
-  if (clientPhone) {
-    smsUrl = isIOS ? `sms:${clientPhone}&body=${encodedMessage}` : `sms:${clientPhone}?body=${encodedMessage}`;
-  } else {
-    smsUrl = isIOS ? `sms:&body=${encodedMessage}` : `sms:?body=${encodedMessage}`;
-  }
-  
-  console.log("SMS URL:", smsUrl);
-  
-  // Check if running in iframe (dev preview)
-  const isInIframe = window.self !== window.top;
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-  if (isInIframe || !isMobile) {
-    // Dev mode or desktop - show message to copy
-    alert("TEXT MESSAGE:\n\n" + message);
-  } else {
-    // Real mobile app - open SMS
-    showToast("Opening Messages...");
-    window.location.href = smsUrl;
+async function shareQuote(quote) {
+  try {
+    showToast("Generating quote image...");
+    
+    const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'N/A');
+    const clientName = quote.client_name || (quote.client ? quote.client.name : 'N/A');
+    
+    // Get user's profile for business info
+    let profile = {};
+    try {
+      const profileRes = await apiFetch('/api/profile');
+      if (profileRes.ok) {
+        profile = await profileRes.json();
+      }
+    } catch (e) {
+      console.log("Could not load profile for share");
+    }
+    
+    // Generate a professional quote image using the template system
+    const quoteData = {
+      ...quote,
+      quote_number: quoteNumber,
+      client_name: clientName,
+      profile: profile
+    };
+    
+    // Create off-screen template (use renderInvoiceTemplate with isQuote=true)
+    const template = document.createElement("div");
+    template.className = "quote-template-print";
+    template.innerHTML = renderInvoiceTemplate(quoteData, true);
+    template.style.position = "absolute";
+    template.style.left = "-9999px";
+    template.style.width = "800px";
+    template.style.backgroundColor = "#ffffff";
+    document.body.appendChild(template);
+    
+    // Wait for rendering
+    await new Promise(r => setTimeout(r, 100));
+    
+    // Generate canvas
+    template.style.left = "0";
+    template.style.top = "0";
+    
+    const canvas = await html2canvas(template, {
+      backgroundColor: "#ffffff",
+      scale: 2
+    });
+    
+    document.body.removeChild(template);
+    
+    // Convert to blob for sharing
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const file = new File([blob], `Quote-${quoteNumber}.png`, { type: 'image/png' });
+    
+    // Check if we can share files
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: `Quote #${quoteNumber}`,
+        text: `Quote for ${clientName}`
+      });
+      showToast("Quote shared!");
+    } else if (navigator.share) {
+      // Fallback: download the image first, then offer to share text
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quote-${quoteNumber}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote image downloaded! You can attach it to your message.");
+    } else {
+      // Desktop fallback - just download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quote-${quoteNumber}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Quote image downloaded!");
+    }
+  } catch (err) {
+    console.error("Share error:", err);
+    showToast("Failed to generate quote image");
   }
 }
 

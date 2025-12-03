@@ -30,6 +30,9 @@ function setTemplate(templateId) {
 }
 
 function renderInvoiceTemplate(invoiceData, isQuote = false) {
+  const template = document.getElementById('invoice-template');
+  template.innerHTML = '';
+  
   const type = isQuote ? 'QUOTE' : 'INVOICE';
   const numberField = isQuote ? 'quote_number' : 'number';
   const dateField = isQuote ? 'quote_date' : 'date';
@@ -49,14 +52,7 @@ function renderInvoiceTemplate(invoiceData, isQuote = false) {
     html = renderBigTotal(invoiceData, type, numberField, dateField);
   }
   
-  // Set the DOM element if it exists (for preview screens)
-  const templateEl = document.getElementById('invoice-template');
-  if (templateEl) {
-    templateEl.innerHTML = html;
-  }
-  
-  // Always return HTML for sharing/downloading functions
-  return html;
+  template.innerHTML = html;
 }
 
 function renderBasicClean(data, type, numberField, dateField) {
@@ -78,7 +74,7 @@ function renderBasicClean(data, type, numberField, dateField) {
             <p style="margin: 0; color: #000; font-weight: bold;">${data.client_name || ''}</p>
             <p style="margin: 2px 0; color: #666;">${data.client?.email || ''}</p>
             <p style="margin: 2px 0; color: #666;">${data.client?.phone || ''}</p>
-            <p style="margin: 2px 0; color: #666;">${data.client_address || data.client?.address || ''}</p>
+            <p style="margin: 2px 0; color: #666;">${data.client?.address || ''}</p>
           </td>
           <td style="vertical-align: top; text-align: right;">
             <p style="margin: 0 0 5px 0; color: #666; font-size: 11px; font-weight: bold;">${numberField === 'quote_number' ? 'QUOTE #' : 'INVOICE #'}</p>
@@ -156,7 +152,7 @@ function renderModernPro(data, type, numberField, dateField) {
           <p style="margin: 0; font-size: 14px; font-weight: 600; color: #000;">${data.client_name || ''}</p>
           <p style="margin: 4px 0; font-size: 12px; color: #666;">${data.client?.email || ''}</p>
           <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client?.phone || ''}</p>
-          <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client_address || data.client?.address || ''}</p>
+          <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client?.address || ''}</p>
         </div>
         <div style="text-align: right;">
           <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 700; color: #2c3e50; text-transform: uppercase;">Date</p>
@@ -215,7 +211,7 @@ function renderColorAccent(data, type, numberField, dateField) {
       <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px;">
         <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
           <div style="flex: 1; min-width: 150px;">
-            ${data.logo_url ? `<div style="background: white; padding: 8px; border-radius: 6px; display: inline-block; margin-bottom: 8px;"><img src="${data.logo_url}" style="max-width: 150px; max-height: 60px; display: block;"></div>` : ''}
+            ${data.logo_url ? `<img src="${data.logo_url}" style="max-width: 150px; max-height: 60px; filter: brightness(0) invert(1); display: block;">` : ''}
             <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9; word-wrap: break-word;">${data.business_name || ''}</p>
           </div>
           <h1 style="margin: 0; font-size: 28px; font-weight: 700; text-align: right; flex-shrink: 0;">${type}</h1>
@@ -230,7 +226,7 @@ function renderColorAccent(data, type, numberField, dateField) {
               <p style="margin: 0; font-size: 14px; font-weight: 600; color: #000;">${data.client_name || ''}</p>
               <p style="margin: 4px 0; font-size: 12px; color: #666;">${data.client?.email || ''}</p>
               <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client?.phone || ''}</p>
-              <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client_address || data.client?.address || ''}</p>
+              <p style="margin: 2px 0; font-size: 12px; color: #666;">${data.client?.address || ''}</p>
             </td>
             <td style="vertical-align: top; text-align: right;">
               <div style="margin-bottom: 15px;">
@@ -307,7 +303,7 @@ function renderBigTotal(data, type, numberField, dateField) {
         <p style="margin: 0 0 8px 0; font-weight: 600; color: #000;">BILL TO:</p>
         <p style="margin: 0; color: #000; font-weight: 600;">${data.client_name || ''}</p>
         <p style="margin: 4px 0 2px 0; color: #666;">${data.client?.email || ''} | ${data.client?.phone || ''}</p>
-        <p style="margin: 0; color: #666;">${data.client_address || data.client?.address || ''}</p>
+        <p style="margin: 0; color: #666;">${data.client?.address || ''}</p>
       </div>
       
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px;">
