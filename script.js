@@ -3321,14 +3321,10 @@ function sendQuoteSMS(quote) {
   const total = formatCurrency(quote.total || 0);
   const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'Quote');
   const clientName = quote.client_name || quote.client?.name || 'Customer';
+  const quoteViewLink = `https://trade-base.biz/view/quote/${quote.id}`;
   
   let message = `Hi ${clientName}! Here's your quote from ${businessName} for ${total}.`;
-  message += `\n\nQuote #${quoteNumber}`;
-  
-  if (quote.notes) {
-    message += `\n\nDetails: ${quote.notes}`;
-  }
-  
+  message += `\n\nView & download your quote: ${quoteViewLink}`;
   message += `\n\nPlease reply to approve or let me know if you have any questions!`;
   
   // Get client phone (cleaned)
