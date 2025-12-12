@@ -54,6 +54,8 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Public Invoice View**: Clients can view invoices via a public URL, including a "Pay Now" button if a payment link exists.
 - **Calendar Feature**: Full calendar for scheduling events, linked to clients, jobs, quotes, and invoices.
 - **Send Text Button**: Allows sending invoices via native SMS app with pre-filled message.
+- **Quick Pay Link**: Dashboard tile for sending payment requests without creating full invoices. Supports sending via SMS (opens native messaging app) or email (via Resend). Creates Stripe payment links on demand.
+- **Mobile Download Improvement**: Uses navigator.share() API on mobile for native sharing, with data URL fallback for iOS long-press save.
 
 ## External Dependencies
 - **Supabase**: PostgreSQL Database, Authentication, and File Storage.
