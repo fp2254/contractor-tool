@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tradebase-v42';
+const CACHE_NAME = 'tradebase-v44';
 const RUNTIME_CACHE = 'tradebase-runtime-v34';
 
 const APP_SHELL = [

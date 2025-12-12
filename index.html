@@ -434,6 +434,9 @@
                 </div>
               </div>
             </div>
+            <button class="btn-history-link" onclick="showScreen('activity-log')">
+              <i class="fa-solid fa-clock-rotate-left"></i> View Command History
+            </button>
           </div>
 
           <!-- SUMMARY STATS BAR -->
@@ -1142,6 +1145,24 @@
             </form>
           </div>
         </div>
+
+        <!-- ACTIVITY LOG -->
+        <section id="screen-activity-log" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Voice Command History</h2>
+          </div>
+          
+          <div class="activity-log-container">
+            <div id="activity-log-list" class="activity-log-list">
+              <div class="activity-log-empty">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <p>No voice commands yet</p>
+                <p class="text-muted">Use "Talk to Work" to add clients, inventory, or create quotes with your voice</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- SETTINGS -->
         <section id="screen-settings" class="screen">

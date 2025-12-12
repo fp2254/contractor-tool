@@ -4454,3 +4454,207 @@ body.multi-select-mode .bottom-nav {
   transform: translateY(-10px);
   transition: all 0.3s;
 }
+
+/* Activity Log / Command History */
+.btn-history-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-history-link:hover {
+  color: var(--accent);
+}
+
+.btn-history-link i {
+  font-size: 14px;
+}
+
+.activity-log-container {
+  padding: 16px;
+}
+
+.activity-log-list {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.activity-log-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.activity-log-empty i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.activity-log-empty p {
+  margin: 8px 0;
+}
+
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-group {
+  background: var(--bg-alt);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.activity-group.undone {
+  opacity: 0.5;
+}
+
+.activity-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-time {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.activity-date {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.activity-undone-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.activity-actions {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.activity-action-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.activity-action-summary {
+  flex: 1;
+  font-size: 14px;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+}
+
+.loading-spinner i {
+  font-size: 24px;
+}
+
+/* Risky Action Guardrails */
+.action-preview-item.action-risky {
+  border: 2px solid var(--danger);
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.action-preview-item.action-risky .action-check {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+.risky-badge {
+  background: var(--danger);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.risky-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-top: 16px;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.risky-warning i {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.risky-confirm-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.risky-confirm-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.risky-confirm-checkbox span {
+  color: var(--text);
+}

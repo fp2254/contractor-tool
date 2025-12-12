@@ -1886,6 +1886,11 @@ function showScreen(screenId) {
   if (screenId === "calendar") {
     loadCalendarEvents();
   }
+  
+  // Load activity log when navigating to activity-log screen
+  if (screenId === "activity-log") {
+    showActivityLog();
+  }
 }
 
 // INITIAL LOAD
@@ -6774,16 +6779,30 @@ function showActionPreviewModal(previewId, transcript, plannedActions) {
   const existing = document.getElementById("action-preview-modal");
   if (existing) existing.remove();
   
+  // Check if any actions are risky (send, delete, charge)
+  const hasRiskyActions = plannedActions.some(a => a.risky);
+  
   const actionsHtml = plannedActions.map(action => `
-    <div class="action-preview-item">
-      <span class="action-icon">${action.icon}</span>
+    <div class="action-preview-item ${action.risky ? 'action-risky' : ''}">
+      <span class="action-icon">${action.risky ? '⚠️' : action.icon}</span>
       <div class="action-details">
-        <div class="action-title">${action.title}</div>
+        <div class="action-title">${action.risky ? '<span class="risky-badge">Risky</span> ' : ''}${action.title}</div>
         <div class="action-description">${action.description}</div>
       </div>
-      <span class="action-check">✓</span>
+      <span class="action-check">${action.risky ? '!' : '✓'}</span>
     </div>
   `).join("");
+  
+  const riskyWarningHtml = hasRiskyActions ? `
+    <div class="risky-warning">
+      <i class="fa-solid fa-exclamation-triangle"></i>
+      <span>This includes actions that send emails, delete data, or charge money. Please review carefully.</span>
+    </div>
+    <label class="risky-confirm-checkbox">
+      <input type="checkbox" id="risky-confirm-check" onchange="toggleRiskyRunButton()">
+      <span>I understand and want to proceed with these risky actions</span>
+    </label>
+  ` : '';
   
   const modal = document.createElement("div");
   modal.id = "action-preview-modal";
@@ -6791,7 +6810,7 @@ function showActionPreviewModal(previewId, transcript, plannedActions) {
   modal.innerHTML = `
     <div class="modal action-preview-modal-content">
       <div class="modal-header">
-        <h3>Confirm Actions</h3>
+        <h3>${hasRiskyActions ? '⚠️ Review Risky Actions' : 'Confirm Actions'}</h3>
         <button class="modal-close" onclick="cancelActionPreview()">&times;</button>
       </div>
       <div class="modal-body">
@@ -6799,10 +6818,11 @@ function showActionPreviewModal(previewId, transcript, plannedActions) {
         <div class="action-preview-list">
           ${actionsHtml}
         </div>
+        ${riskyWarningHtml}
       </div>
       <div class="modal-footer action-preview-buttons">
         <button class="btn btn-secondary" onclick="cancelActionPreview()">Cancel</button>
-        <button class="btn btn-primary" onclick="confirmActionPreview('${previewId}')">
+        <button class="btn btn-primary" id="btn-run-actions" onclick="confirmActionPreview('${previewId}')" ${hasRiskyActions ? 'disabled' : ''}>
           <i class="fa-solid fa-check"></i> Run All
         </button>
       </div>
@@ -6813,6 +6833,14 @@ function showActionPreviewModal(previewId, transcript, plannedActions) {
   
   // Store for potential undo
   window.currentPreviewId = previewId;
+}
+
+function toggleRiskyRunButton() {
+  const checkbox = document.getElementById("risky-confirm-check");
+  const btn = document.getElementById("btn-run-actions");
+  if (checkbox && btn) {
+    btn.disabled = !checkbox.checked;
+  }
 }
 
 function cancelActionPreview() {
@@ -6951,6 +6979,124 @@ async function undoLastActions(actionSetId, btn) {
 window.cancelActionPreview = cancelActionPreview;
 window.confirmActionPreview = confirmActionPreview;
 window.undoLastActions = undoLastActions;
+window.showActivityLog = showActivityLog;
+window.toggleRiskyRunButton = toggleRiskyRunButton;
+
+async function showActivityLog() {
+  const container = document.getElementById("activity-log-list");
+  if (!container) return;
+  
+  container.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+  
+  try {
+    const res = await apiFetch("/api/activity-log?limit=100");
+    if (!res.ok) throw new Error("Failed to load activity log");
+    
+    const logs = await res.json();
+    
+    if (!logs || logs.length === 0) {
+      container.innerHTML = `
+        <div class="activity-log-empty">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <p>No voice commands yet</p>
+          <p class="text-muted">Use "Talk to Work" to add clients, inventory, or create quotes with your voice</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const groupedBySet = {};
+    for (const log of logs) {
+      const setId = log.action_set_id;
+      if (!groupedBySet[setId]) {
+        groupedBySet[setId] = {
+          actions: [],
+          timestamp: log.created_at,
+          isUndone: log.is_undone
+        };
+      }
+      groupedBySet[setId].actions.push(log);
+    }
+    
+    const actionSetIds = Object.keys(groupedBySet).sort((a, b) => {
+      return new Date(groupedBySet[b].timestamp) - new Date(groupedBySet[a].timestamp);
+    });
+    
+    let html = '<div class="activity-timeline">';
+    
+    for (const setId of actionSetIds) {
+      const group = groupedBySet[setId];
+      const date = new Date(group.timestamp);
+      const timeAgo = formatTimeAgo(date);
+      const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      
+      html += `
+        <div class="activity-group ${group.isUndone ? 'undone' : ''}">
+          <div class="activity-group-header">
+            <span class="activity-time">${timeAgo}</span>
+            <span class="activity-date">${dateStr} at ${timeStr}</span>
+            ${group.isUndone ? '<span class="activity-undone-badge">Undone</span>' : ''}
+          </div>
+          <div class="activity-actions">
+      `;
+      
+      for (const action of group.actions) {
+        const icon = getActionIcon(action.action_type);
+        html += `
+          <div class="activity-action-item">
+            <span class="activity-action-icon">${icon}</span>
+            <span class="activity-action-summary">${escapeHtml(action.summary || action.action_type)}</span>
+          </div>
+        `;
+      }
+      
+      html += `
+          </div>
+        </div>
+      `;
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+  } catch (err) {
+    console.error("Error loading activity log:", err);
+    container.innerHTML = `
+      <div class="activity-log-empty">
+        <i class="fa-solid fa-exclamation-triangle"></i>
+        <p>Failed to load history</p>
+        <p class="text-muted">${err.message}</p>
+      </div>
+    `;
+  }
+}
+
+function getActionIcon(actionType) {
+  switch (actionType) {
+    case 'create_client': return '<i class="fa-solid fa-user-plus"></i>';
+    case 'add_inventory_item': return '<i class="fa-solid fa-box"></i>';
+    case 'create_quote': return '<i class="fa-solid fa-file-invoice"></i>';
+    case 'create_invoice': return '<i class="fa-solid fa-file-invoice-dollar"></i>';
+    case 'create_calendar_event': return '<i class="fa-solid fa-calendar-plus"></i>';
+    default: return '<i class="fa-solid fa-bolt"></i>';
+  }
+}
+
+function formatTimeAgo(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return '';
+}
 
 function refreshAfterVoiceCommand(actions) {
   const currentScreen = document.querySelector(".screen.active")?.id;
