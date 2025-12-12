@@ -6782,6 +6782,9 @@ function refreshAfterVoiceCommand(actions) {
         if (currentScreen === "screen-quotes") loadQuotes();
         if (currentScreen === "screen-jobs") loadJobs();
         break;
+      case "create_invoice":
+        if (currentScreen === "screen-invoices") loadInvoices();
+        break;
     }
   }
   
