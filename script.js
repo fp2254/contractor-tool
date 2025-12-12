@@ -6785,6 +6785,9 @@ function refreshAfterVoiceCommand(actions) {
       case "create_invoice":
         if (currentScreen === "screen-invoices") loadInvoices();
         break;
+      case "create_calendar_event":
+        if (currentScreen === "screen-calendar") loadCalendar();
+        break;
     }
   }
   

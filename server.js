@@ -2040,7 +2040,7 @@ app.get("/api/calendar-events", requireAuth, async (req, res) => {
         clients (id, name),
         jobs (id, folder_name, client_name),
         quotes (id, quote_number, client_name),
-        invoices (id, invoice_number, client_name)
+        invoices (id, number, client_name)
       `)
       .eq("user_id", userId)
       .order("event_datetime", { ascending: true });
@@ -2077,7 +2077,7 @@ app.get("/api/calendar-events/:id", requireAuth, async (req, res) => {
         clients (id, name),
         jobs (id, folder_name, client_name),
         quotes (id, quote_number, client_name),
-        invoices (id, invoice_number, client_name)
+        invoices (id, number, client_name)
       `)
       .eq("id", req.params.id)
       .eq("user_id", userId)
@@ -3741,6 +3741,23 @@ const VOICE_COMMAND_TOOLS = [
         required: ["client_name", "line_items"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_calendar_event",
+      description: "Create a calendar event, reminder, or schedule an appointment",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Title of the event or reminder" },
+          event_datetime: { type: "string", description: "Date and time for the event in ISO format (e.g., 2024-12-15T10:00:00). If only a date is mentioned, use 9:00 AM as default time." },
+          client_name: { type: "string", description: "Name of the client this event is for (optional)" },
+          notes: { type: "string", description: "Additional details or notes (optional)" }
+        },
+        required: ["title", "event_datetime"]
+      }
+    }
   }
 ];
 
@@ -4000,6 +4017,55 @@ async function executeVoiceToolCall(toolName, args, userId) {
         success: true,
         data: invoice,
         summary: `Created invoice ${invoiceNumber} for ${client_name} - $${total.toFixed(2)}`
+      };
+    }
+    
+    case "create_calendar_event": {
+      const { title, event_datetime, client_name = "", notes = "" } = args;
+      
+      // Optionally find client if provided
+      let clientId = null;
+      if (client_name) {
+        const { data: existingClient } = await supabaseAdmin
+          .from("clients")
+          .select("id")
+          .eq("user_id", userId)
+          .ilike("name", client_name)
+          .single();
+        
+        if (existingClient) {
+          clientId = existingClient.id;
+        }
+      }
+      
+      const { data: event, error: eventError } = await supabaseAdmin
+        .from("calendar_events")
+        .insert({
+          user_id: userId,
+          title,
+          event_datetime,
+          client_id: clientId,
+          notes
+        })
+        .select()
+        .single();
+      
+      if (eventError) throw new Error(`Failed to create calendar event: ${eventError.message}`);
+      
+      const eventDate = new Date(event_datetime);
+      const dateStr = eventDate.toLocaleDateString("en-US", { 
+        weekday: "short", 
+        month: "short", 
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+      
+      return {
+        type: "create_calendar_event",
+        success: true,
+        data: event,
+        summary: `Created calendar event "${title}" for ${dateStr}`
       };
     }
     
