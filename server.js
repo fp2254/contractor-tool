@@ -936,6 +936,98 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
   }
 });
 
+// Quick Pay - Generate standalone payment link and optionally send via email
+app.post("/api/quick-pay", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { amount, description, sendMethod, email, name, phone } = req.body;
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: "Valid amount is required" });
+  }
+
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("business_name, business_email, business_phone")
+      .eq("id", userId)
+      .single();
+
+    const businessName = profile?.business_name || 'Payment Request';
+    const amountInCents = Math.round(amount * 100);
+    const paymentDescription = description || 'Payment Request';
+
+    const paymentLink = await stripe.paymentLinks.create({
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: paymentDescription,
+            description: `Payment to ${businessName}`,
+          },
+          unit_amount: amountInCents,
+        },
+        quantity: 1,
+      }],
+      metadata: {
+        user_id: userId,
+        type: 'quick_pay',
+        description: paymentDescription,
+      },
+      after_completion: {
+        type: 'hosted_confirmation',
+        hosted_confirmation: {
+          custom_message: 'Thank you for your payment!',
+        },
+      },
+    });
+
+    let sendResult = { sent: false };
+
+    if (sendMethod === 'email' && email && name) {
+      try {
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333;">Payment Request from ${businessName}</h2>
+            <p>Hi ${name},</p>
+            <p>You have received a payment request for <strong>$${parseFloat(amount).toFixed(2)}</strong>.</p>
+            ${description ? `<p><strong>For:</strong> ${description}</p>` : ''}
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="${paymentLink.url}" style="background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Pay Now</a>
+            </div>
+            <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link: ${paymentLink.url}</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">Powered by Skippy Stack</p>
+          </div>
+        `;
+
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM || 'Skippy Stack <noreply@skippystack.com>',
+          to: email,
+          subject: `Payment Request: $${parseFloat(amount).toFixed(2)} from ${businessName}`,
+          html: emailHtml,
+        });
+
+        sendResult = { sent: true, method: 'email', to: email };
+      } catch (emailErr) {
+        console.error("Error sending quick pay email:", emailErr);
+        sendResult = { sent: false, error: 'Failed to send email' };
+      }
+    }
+
+    res.json({ 
+      payment_link: paymentLink.url, 
+      amount: amount,
+      description: paymentDescription,
+      sendResult
+    });
+  } catch (error) {
+    console.error("Error creating quick pay link:", error);
+    res.status(500).json({ error: "Failed to create payment link" });
+  }
+});
+
 // Manually update invoice payment status
 app.patch("/api/invoices/:id/payment-status", requireSubscription, async (req, res) => {
   const userId = req.userId;

@@ -475,6 +475,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   wireVoiceRecording();
   wireTourMode();
   wirePlansModal();
+  wireQuickPayModal();
   wireAIDoAllMenu();
   wireAdminPanel();
   initCalendar();
@@ -1680,6 +1681,169 @@ function wireDashboardUI() {
       // Save preference to profile (also updates dropdown value)
       saveLanguagePreference(e.target.value);
     });
+  }
+}
+
+// QUICK PAY FUNCTIONS
+let quickPayMethod = null;
+
+function wireQuickPayModal() {
+  const quickPayBtn = document.getElementById("btn-quick-pay");
+  const closeBtn = document.getElementById("close-quick-pay-modal");
+  const modal = document.getElementById("quick-pay-modal");
+  const form = document.getElementById("quick-pay-form");
+  
+  if (quickPayBtn) {
+    quickPayBtn.addEventListener("click", openQuickPayModal);
+  }
+  
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeQuickPayModal);
+  }
+  
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeQuickPayModal();
+    });
+  }
+  
+  if (form) {
+    form.addEventListener("submit", handleQuickPaySubmit);
+  }
+}
+
+function openQuickPayModal() {
+  if (tourMode) {
+    showToast("Quick Pay is disabled in demo mode");
+    return;
+  }
+  
+  const modal = document.getElementById("quick-pay-modal");
+  if (modal) {
+    modal.style.display = "block";
+    document.getElementById("quick-pay-amount").value = "";
+    document.getElementById("quick-pay-description").value = "";
+    document.getElementById("quick-pay-phone").value = "";
+    document.getElementById("quick-pay-email").value = "";
+    document.getElementById("quick-pay-name").value = "";
+    quickPayMethod = null;
+    document.getElementById("quick-pay-phone-field").style.display = "none";
+    document.getElementById("quick-pay-email-field").style.display = "none";
+    document.getElementById("quick-pay-submit-section").style.display = "none";
+    document.getElementById("quick-pay-method-text").classList.remove("active");
+    document.getElementById("quick-pay-method-email").classList.remove("active");
+  }
+}
+
+function closeQuickPayModal() {
+  const modal = document.getElementById("quick-pay-modal");
+  if (modal) modal.style.display = "none";
+}
+
+function setQuickPayMethod(method) {
+  quickPayMethod = method;
+  const textBtn = document.getElementById("quick-pay-method-text");
+  const emailBtn = document.getElementById("quick-pay-method-email");
+  const phoneField = document.getElementById("quick-pay-phone-field");
+  const emailField = document.getElementById("quick-pay-email-field");
+  const submitSection = document.getElementById("quick-pay-submit-section");
+  
+  textBtn.classList.toggle("active", method === "text");
+  emailBtn.classList.toggle("active", method === "email");
+  textBtn.style.background = method === "text" ? "var(--accent)" : "";
+  textBtn.style.color = method === "text" ? "white" : "";
+  emailBtn.style.background = method === "email" ? "var(--accent)" : "";
+  emailBtn.style.color = method === "email" ? "white" : "";
+  
+  phoneField.style.display = method === "text" ? "block" : "none";
+  emailField.style.display = method === "email" ? "block" : "none";
+  submitSection.style.display = "block";
+}
+
+async function handleQuickPaySubmit(e) {
+  e.preventDefault();
+  
+  const amount = parseFloat(document.getElementById("quick-pay-amount").value);
+  const description = document.getElementById("quick-pay-description").value.trim();
+  
+  if (!amount || amount <= 0) {
+    showToast("Please enter a valid amount");
+    return;
+  }
+  
+  if (!quickPayMethod) {
+    showToast("Please select how to send the payment link");
+    return;
+  }
+  
+  const submitBtn = document.querySelector("#quick-pay-submit-section button");
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Link...';
+  
+  try {
+    if (quickPayMethod === "text") {
+      const phone = document.getElementById("quick-pay-phone").value.trim();
+      if (!phone) {
+        showToast("Please enter a phone number");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Payment Request';
+        return;
+      }
+      
+      const res = await apiFetch("/api/quick-pay", {
+        method: "POST",
+        body: JSON.stringify({ amount, description, sendMethod: "text" })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create payment link");
+      }
+      
+      const data = await res.json();
+      const message = `Hi! Here's your payment link for $${amount.toFixed(2)}${description ? ` (${description})` : ''}: ${data.payment_link}`;
+      const smsUrl = `sms:${phone}?body=${encodeURIComponent(message)}`;
+      window.open(smsUrl, "_blank");
+      
+      closeQuickPayModal();
+      showToast("Payment link created! Your messaging app should open.");
+      
+    } else if (quickPayMethod === "email") {
+      const email = document.getElementById("quick-pay-email").value.trim();
+      const name = document.getElementById("quick-pay-name").value.trim();
+      
+      if (!email || !name) {
+        showToast("Please enter email and name");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Payment Request';
+        return;
+      }
+      
+      const res = await apiFetch("/api/quick-pay", {
+        method: "POST",
+        body: JSON.stringify({ amount, description, sendMethod: "email", email, name })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create payment link");
+      }
+      
+      const data = await res.json();
+      
+      if (data.sendResult?.sent) {
+        closeQuickPayModal();
+        showToast(`Payment request sent to ${email}!`);
+      } else {
+        showToast("Payment link created but email failed to send. Link: " + data.payment_link);
+      }
+    }
+  } catch (err) {
+    console.error("Quick pay error:", err);
+    showToast(err.message || "Failed to send payment request");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Payment Request';
   }
 }
 

@@ -479,6 +479,14 @@
               </div>
             </button>
 
+            <button class="tile tile-accent" id="btn-quick-pay">
+              <div class="tile-icon"><i class="fa-solid fa-paper-plane"></i></div>
+              <div class="tile-text">
+                <h3>Quick Pay Link</h3>
+                <p>Send a payment request instantly.</p>
+              </div>
+            </button>
+
             <button class="tile" data-screen="trade-deals">
               <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
               <div class="tile-text">
@@ -1807,6 +1815,62 @@
           <div style="display: flex; gap: 10px; margin-top: 10px;">
             <button type="submit" class="btn-primary" style="flex: 1; min-height: 44px; font-size: 15px;" data-i18n="invoice.send_button">Send Invoice</button>
             <button type="button" id="cancel-email-modal" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 15px;" data-i18n="common.cancel">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Pay Modal -->
+  <div id="quick-pay-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow: auto; padding: 20px;">
+    <div style="max-width: 500px; margin: 50px auto; position: relative;">
+      <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; color: var(--text);"><i class="fa-solid fa-paper-plane" style="margin-right: 10px; color: #10b981;"></i>Quick Pay Link</h2>
+          <button id="close-quick-pay-modal" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+        </div>
+        
+        <p style="color: var(--muted); margin-bottom: 20px; font-size: 14px;">Send a payment request without creating a full invoice.</p>
+        
+        <form id="quick-pay-form" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Amount ($) *</label>
+            <input type="number" id="quick-pay-amount" required min="1" step="0.01" placeholder="0.00" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 18px; font-weight: bold; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Description (optional)</label>
+            <input type="text" id="quick-pay-description" placeholder="e.g. Bathroom repair, deposit, etc." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px;">Send via:</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+              <button type="button" id="quick-pay-method-text" class="btn-outline" style="flex: 1; min-height: 44px;" onclick="setQuickPayMethod('text')">
+                <i class="fa-solid fa-comment-sms"></i> Text
+              </button>
+              <button type="button" id="quick-pay-method-email" class="btn-outline" style="flex: 1; min-height: 44px;" onclick="setQuickPayMethod('email')">
+                <i class="fa-solid fa-envelope"></i> Email
+              </button>
+            </div>
+          </div>
+          
+          <div id="quick-pay-phone-field" style="display: none;">
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Phone Number *</label>
+            <input type="tel" id="quick-pay-phone" placeholder="(555) 123-4567" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div id="quick-pay-email-field" style="display: none;">
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Email Address *</label>
+            <input type="email" id="quick-pay-email" placeholder="customer@example.com" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; margin-top: 12px;">Recipient Name *</label>
+            <input type="text" id="quick-pay-name" placeholder="John Smith" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div id="quick-pay-submit-section" style="display: none; margin-top: 10px;">
+            <button type="submit" class="btn-primary" style="width: 100%; min-height: 50px; font-size: 16px;">
+              <i class="fa-solid fa-paper-plane"></i> Send Payment Request
+            </button>
           </div>
         </form>
       </div>
