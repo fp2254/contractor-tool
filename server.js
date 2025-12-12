@@ -3712,6 +3712,35 @@ const VOICE_COMMAND_TOOLS = [
         required: ["client_name", "line_items"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_invoice",
+      description: "Create an invoice for a client",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Name of the client" },
+          address: { type: "string", description: "Job address (optional)" },
+          line_items: {
+            type: "array",
+            description: "List of items/services in the invoice",
+            items: {
+              type: "object",
+              properties: {
+                description: { type: "string", description: "Brief service/item description" },
+                quantity: { type: "number", description: "Quantity (default 1)" },
+                unit_price: { type: "number", description: "Price per unit in dollars" }
+              },
+              required: ["description", "unit_price"]
+            }
+          },
+          notes: { type: "string", description: "Additional notes (optional)" }
+        },
+        required: ["client_name", "line_items"]
+      }
+    }
   }
 ];
 
@@ -3895,6 +3924,86 @@ async function executeVoiceToolCall(toolName, args, userId) {
       };
     }
     
+    case "create_invoice": {
+      const { client_name, address = "", line_items = [], notes = "" } = args;
+      
+      // First, find or create the client
+      let clientId = null;
+      const { data: existingClient } = await supabaseAdmin
+        .from("clients")
+        .select("id")
+        .eq("user_id", userId)
+        .ilike("name", client_name)
+        .single();
+      
+      if (existingClient) {
+        clientId = existingClient.id;
+      } else {
+        const { data: newClient, error: clientError } = await supabaseAdmin
+          .from("clients")
+          .insert({
+            user_id: userId,
+            name: client_name,
+            address: address
+          })
+          .select()
+          .single();
+        
+        if (clientError) throw new Error(`Failed to create client: ${clientError.message}`);
+        clientId = newClient.id;
+      }
+      
+      // Calculate totals
+      const subtotal = line_items.reduce((sum, item) => {
+        return sum + (item.quantity || 1) * (item.unit_price || 0);
+      }, 0);
+      const tax = 0;
+      const total = subtotal + tax;
+      
+      // Create the invoice
+      const invoiceNumber = `INV-${Date.now()}`;
+      const { data: invoice, error: invoiceError } = await supabaseAdmin
+        .from("invoices")
+        .insert({
+          user_id: userId,
+          client_id: clientId,
+          client_name: client_name,
+          number: invoiceNumber,
+          date: new Date().toISOString().split("T")[0],
+          notes,
+          subtotal,
+          tax,
+          total,
+          status: "draft",
+          payment_status: "unpaid",
+          template: "basic_clean"
+        })
+        .select()
+        .single();
+      
+      if (invoiceError) throw new Error(`Failed to create invoice: ${invoiceError.message}`);
+      
+      // Add line items
+      if (line_items.length > 0) {
+        const items = line_items.map(item => ({
+          invoice_id: invoice.id,
+          description: item.description,
+          qty: item.quantity || 1,
+          price: item.unit_price || 0,
+          total: (item.quantity || 1) * (item.unit_price || 0)
+        }));
+        
+        await supabaseAdmin.from("invoice_items").insert(items);
+      }
+      
+      return {
+        type: "create_invoice",
+        success: true,
+        data: invoice,
+        summary: `Created invoice ${invoiceNumber} for ${client_name} - $${total.toFixed(2)}`
+      };
+    }
+    
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -3952,12 +4061,19 @@ app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, re
     // Use function calling to determine intent and extract data
     const systemPrompt = `You are a voice command assistant for a contractor/tradesperson app. Parse the user's spoken command and call the appropriate function(s).
 
+CRITICAL: ALWAYS CALL MULTIPLE FUNCTIONS WHEN REQUESTED
+- "create invoice for John and add fans to inventory" = create_invoice + add_inventory_item (BOTH!)
+- "add 10 PVC pipes and create quote for Mike" = add_inventory_item + create_quote (BOTH!)
+- "add client Bob and 5 copper fittings to inventory" = create_client + add_inventory_item (BOTH!)
+
 IMPORTANT RULES:
-1. If the user mentions MULTIPLE actions, call MULTIPLE functions (e.g., "add John Smith and create a quote" = create_client + create_quote)
+1. If the user mentions MULTIPLE actions (using "and", "also", "then"), call ALL appropriate functions
 2. Extract names, amounts, quantities accurately
 3. For prices, convert spoken amounts to numbers (e.g., "four fifty" = 450, "two dollars" = 2)
-4. If creating a quote for a new client, call create_client FIRST, then create_quote
-5. Be smart about context - "2 fans at 450" means quantity=2, unit_price=450
+4. Be smart about context - "2 fans at 450" means quantity=2, unit_price=450
+5. For inventory: "add 5 fans" or "add fans to inventory" = add_inventory_item
+6. For invoices: "create invoice" or "bill" = create_invoice
+7. For quotes: "create quote" or "estimate" = create_quote
 
 Today's date is: ${new Date().toISOString().split("T")[0]}`;
 
