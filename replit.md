@@ -44,6 +44,10 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
     - **Profanity Filter**: Cleans transcribed text.
     - **Global Command Mic**: Prominent dashboard mic button for full-screen voice interaction.
     - **Config-Based AI Models**: Configurable AI models via `config.js` and environment variables.
+    - **Action Preview Mode**: Voice commands show confirmation modal before execution, displaying planned actions with icons and descriptions.
+    - **Activity Log**: Timeline view of all voice command actions with timestamps, grouping by action set, and undone status badges. Accessible via "View Command History" button on dashboard.
+    - **Undo/Rollback**: 8-second undo window after voice commands execute, with ability to reverse created entities.
+    - **Risky Action Guardrails**: When dangerous actions are detected (send, delete, charge), requires explicit checkbox confirmation before proceeding.
 - **Invoice & Quote Edit Functionality**: Allows editing of existing invoices and quotes via pre-populated forms and PUT API endpoints.
 - **Archive System**: Functionality to archive invoices and quotes, with active/archived views and unarchive/delete options.
 - **Link to Job Feature**: Bidirectional job folder linking:
