@@ -3830,31 +3830,49 @@ async function downloadInvoice(invoice) {
 }
 
 // Mobile-friendly download helper
-function downloadBlobAsPng(blob, filename, type = "File") {
-  const url = URL.createObjectURL(blob);
+async function downloadBlobAsPng(blob, filename, type = "File") {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
   if (isMobile) {
-    // On mobile, open in new tab so user can long-press to save
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head><title>${filename}</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-          <body style="margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f5f5f5;">
-            <div style="text-align:center; padding:20px;">
-              <p style="margin-bottom:15px; font-family:sans-serif; color:#333;">Long-press the image to save it</p>
-              <img src="${url}" style="max-width:100%; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-            </div>
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-    } else {
-      window.location.href = url;
+    // Try navigator.share() first - works great on iOS and Android
+    if (navigator.share && navigator.canShare) {
+      try {
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: filename,
+            text: `${type} from Skippy Stack`
+          });
+          showToast(`${type} shared!`);
+          return;
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.log('Share failed, falling back to data URL:', err);
+        } else {
+          // User cancelled share - don't show error
+          return;
+        }
+      }
     }
-    showToast("Long-press the image to save it!");
+    
+    // Fallback: Convert to data URL and open directly (works for long-press save)
+    const reader = new FileReader();
+    reader.onloadend = function() {
+      const dataUrl = reader.result;
+      // Open the data URL directly - iOS can long-press save on this
+      const newWindow = window.open(dataUrl, '_blank');
+      if (!newWindow) {
+        // If popup blocked, try navigating current window
+        window.location.href = dataUrl;
+      }
+      showToast("Long-press the image to save it!");
+    };
+    reader.readAsDataURL(blob);
   } else {
+    // Desktop: Use download link
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = filename;
