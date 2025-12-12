@@ -3774,7 +3774,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
     }
     
     case "add_inventory_item": {
-      const { name, quantity = 1, unit_price = 0, category = "Other", notes = "" } = args;
+      const { name, quantity = 1, unit_price = 0, category = "Other" } = args;
       
       // Check if item already exists to potentially stack
       const { data: existing } = await supabaseAdmin
@@ -3816,8 +3816,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
             name,
             quantity,
             unit_price,
-            category,
-            notes
+            category
           })
           .select()
           .single();
