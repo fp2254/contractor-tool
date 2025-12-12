@@ -3793,9 +3793,9 @@ async function downloadInvoice(invoice) {
     const invoiceForTemplate = {
       ...invoiceData,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
@@ -4035,9 +4035,9 @@ async function previewInvoiceTemplate(invoice, templateId) {
     const invoiceForTemplate = {
       ...invoiceData,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
@@ -4133,9 +4133,9 @@ async function previewQuoteTemplate(quote, templateId) {
       number: quoteData.quote_number,
       date: quoteData.quote_date,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (quoteData.items || []).map(item => ({
@@ -4229,9 +4229,9 @@ async function downloadInvoiceWithTemplate(invoice, templateId) {
     const invoiceForTemplate = {
       ...invoiceData,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
@@ -4301,9 +4301,9 @@ async function downloadQuoteWithTemplate(quote, templateId) {
       number: quoteData.quote_number,
       date: quoteData.quote_date,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (quoteData.items || []).map(item => ({
@@ -4679,9 +4679,9 @@ async function downloadQuote(quote) {
       number: quoteData.quote_number,
       date: quoteData.quote_date,
       business_name: profile?.business_name,
-      address: profile?.address,
-      phone: profile?.phone,
-      email: profile?.email,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (quoteData.items || []).map(item => ({
