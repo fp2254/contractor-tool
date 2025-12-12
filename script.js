@@ -6710,9 +6710,10 @@ async function processCommandMicAudio() {
     const transcript = document.getElementById("command-mic-transcript");
     status.textContent = "Transcribing...";
     
-    // Send to unified voice command endpoint
+    // Send to unified voice command endpoint (preview mode by default)
     const formData = new FormData();
     formData.append("audio", audioBlob, "command.webm");
+    formData.append("preview", "true");
     
     const res = await apiFetch("/api/voice-command", {
       method: "POST",
@@ -6732,16 +6733,22 @@ async function processCommandMicAudio() {
       transcript.textContent = `"${result.transcript}"`;
     }
     
-    // Hide overlay
+    // Hide mic overlay
     hideCommandMicOverlay();
     
-    // Handle result
+    // Handle result based on status
     if (result.status === "no_action") {
       showToast(result.message || "I didn't understand. Try again.");
       return;
     }
     
-    // Show toast for each action
+    // PREVIEW MODE: Show confirmation modal
+    if (result.status === "preview" && result.plannedActions) {
+      showActionPreviewModal(result.previewId, result.transcript, result.plannedActions);
+      return;
+    }
+    
+    // DIRECT EXECUTION (legacy or explicit): Show toasts
     if (result.actions && result.actions.length > 0) {
       for (const action of result.actions) {
         if (action.success) {
@@ -6749,12 +6756,8 @@ async function processCommandMicAudio() {
         } else {
           showToast(`Failed: ${action.summary}`, "error");
         }
-        
-        // Small delay between toasts
         await new Promise(r => setTimeout(r, 500));
       }
-      
-      // Refresh relevant screens
       refreshAfterVoiceCommand(result.actions);
     }
     
@@ -6764,6 +6767,190 @@ async function processCommandMicAudio() {
     showToast(err.message || "Failed to process voice command");
   }
 }
+
+// Show action preview modal for user confirmation
+function showActionPreviewModal(previewId, transcript, plannedActions) {
+  // Remove existing modal if any
+  const existing = document.getElementById("action-preview-modal");
+  if (existing) existing.remove();
+  
+  const actionsHtml = plannedActions.map(action => `
+    <div class="action-preview-item">
+      <span class="action-icon">${action.icon}</span>
+      <div class="action-details">
+        <div class="action-title">${action.title}</div>
+        <div class="action-description">${action.description}</div>
+      </div>
+      <span class="action-check">✓</span>
+    </div>
+  `).join("");
+  
+  const modal = document.createElement("div");
+  modal.id = "action-preview-modal";
+  modal.className = "action-preview-overlay";
+  modal.innerHTML = `
+    <div class="modal action-preview-modal-content">
+      <div class="modal-header">
+        <h3>Confirm Actions</h3>
+        <button class="modal-close" onclick="cancelActionPreview()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="transcript-preview">"${transcript}"</p>
+        <div class="action-preview-list">
+          ${actionsHtml}
+        </div>
+      </div>
+      <div class="modal-footer action-preview-buttons">
+        <button class="btn btn-secondary" onclick="cancelActionPreview()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmActionPreview('${previewId}')">
+          <i class="fa-solid fa-check"></i> Run All
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Store for potential undo
+  window.currentPreviewId = previewId;
+}
+
+function cancelActionPreview() {
+  const modal = document.getElementById("action-preview-modal");
+  if (modal) modal.remove();
+  window.currentPreviewId = null;
+}
+
+async function confirmActionPreview(previewId) {
+  const modal = document.getElementById("action-preview-modal");
+  const runBtn = modal?.querySelector(".btn-primary");
+  
+  if (runBtn) {
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+  }
+  
+  try {
+    const res = await apiFetch("/api/voice-command/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ previewId })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to execute actions");
+    }
+    
+    const result = await res.json();
+    console.log("Confirmed actions result:", result);
+    
+    // Close modal
+    if (modal) modal.remove();
+    
+    // Store last action set for undo
+    window.lastActionSetId = result.actionSetId;
+    
+    // Show results with undo option
+    if (result.actions && result.actions.length > 0) {
+      const successCount = result.actions.filter(a => a.success).length;
+      
+      if (successCount > 0) {
+        showUndoableToast(`${successCount} action${successCount > 1 ? 's' : ''} completed`, result.actionSetId);
+      }
+      
+      // Show individual failures
+      for (const action of result.actions) {
+        if (!action.success) {
+          showToast(`Failed: ${action.summary}`, "error");
+        }
+      }
+      
+      refreshAfterVoiceCommand(result.actions);
+    }
+    
+  } catch (err) {
+    console.error("Confirm action error:", err);
+    showToast(err.message || "Failed to execute actions", "error");
+    if (modal) modal.remove();
+  }
+}
+
+// Toast with undo button
+function showUndoableToast(message, actionSetId) {
+  const toastContainer = document.getElementById("toast-container") || createToastContainer();
+  
+  const toast = document.createElement("div");
+  toast.className = "toast toast-success toast-undoable";
+  toast.innerHTML = `
+    <span>${message}</span>
+    <button class="toast-undo-btn" onclick="undoLastActions('${actionSetId}', this)">Undo</button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Auto-remove after 8 seconds (longer for undo option)
+  setTimeout(() => {
+    toast.classList.add("toast-fade");
+    setTimeout(() => toast.remove(), 300);
+  }, 8000);
+}
+
+async function undoLastActions(actionSetId, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Undoing...";
+  }
+  
+  try {
+    const res = await apiFetch("/api/activity-log/undo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actionSetId })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to undo");
+    }
+    
+    const result = await res.json();
+    console.log("Undo result:", result);
+    
+    // Remove the toast
+    if (btn) {
+      const toast = btn.closest(".toast");
+      if (toast) toast.remove();
+    }
+    
+    showToast("Actions undone", "success");
+    
+    // Refresh current screen
+    const currentScreen = document.querySelector(".screen.active")?.id;
+    switch (currentScreen) {
+      case "screen-clients": loadClients(); break;
+      case "screen-inventory": loadInventory(); break;
+      case "screen-quotes": loadQuotes(); break;
+      case "screen-invoices": loadInvoices(); break;
+      case "screen-calendar": loadCalendar(); break;
+      case "screen-jobs": loadJobs(); break;
+      case "screen-dashboard": loadDashboardStats(); break;
+    }
+    
+  } catch (err) {
+    console.error("Undo error:", err);
+    showToast(err.message || "Failed to undo", "error");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Undo";
+    }
+  }
+}
+
+// Make functions globally accessible
+window.cancelActionPreview = cancelActionPreview;
+window.confirmActionPreview = confirmActionPreview;
+window.undoLastActions = undoLastActions;
 
 function refreshAfterVoiceCommand(actions) {
   const currentScreen = document.querySelector(".screen.active")?.id;

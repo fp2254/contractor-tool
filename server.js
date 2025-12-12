@@ -4074,7 +4074,79 @@ async function executeVoiceToolCall(toolName, args, userId) {
   }
 }
 
-// Main voice command endpoint
+// In-memory store for pending action previews (in production, use Redis or DB)
+const pendingActionPreviews = new Map();
+
+// Generate human-readable preview for an action
+function generateActionPreview(toolName, args) {
+  switch (toolName) {
+    case "create_client":
+      return {
+        icon: "👤",
+        title: "Add Client",
+        description: `${args.name}${args.phone ? ` (${args.phone})` : ""}${args.email ? ` - ${args.email}` : ""}`,
+        risky: false
+      };
+    case "add_inventory_item":
+      return {
+        icon: "📦",
+        title: "Add Inventory",
+        description: `${args.quantity || 1}× ${args.name}${args.unit_price ? ` @ $${args.unit_price}` : ""}`,
+        risky: false
+      };
+    case "create_quote":
+      const quoteTotal = (args.line_items || []).reduce((sum, i) => sum + (i.quantity || 1) * (i.unit_price || 0), 0);
+      return {
+        icon: "📋",
+        title: "Create Quote",
+        description: `$${quoteTotal.toFixed(2)} for ${args.client_name}`,
+        risky: false
+      };
+    case "create_invoice":
+      const invTotal = (args.line_items || []).reduce((sum, i) => sum + (i.quantity || 1) * (i.unit_price || 0), 0);
+      return {
+        icon: "🧾",
+        title: "Create Invoice",
+        description: `$${invTotal.toFixed(2)} for ${args.client_name}`,
+        risky: false
+      };
+    case "create_calendar_event":
+      const eventDate = new Date(args.event_datetime);
+      const dateStr = eventDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      return {
+        icon: "📅",
+        title: "Calendar Event",
+        description: `${args.title} - ${dateStr}`,
+        risky: false
+      };
+    default:
+      return {
+        icon: "⚡",
+        title: toolName,
+        description: JSON.stringify(args),
+        risky: false
+      };
+  }
+}
+
+// Log action to activity_logs table
+async function logActivityAction(userId, actionSetId, action) {
+  try {
+    await supabaseAdmin.from("activity_logs").insert({
+      user_id: userId,
+      action_set_id: actionSetId,
+      action_type: action.type,
+      action_data: action.data || {},
+      entity_id: action.data?.id || null,
+      entity_type: action.type.replace("create_", "").replace("add_", ""),
+      summary: action.summary
+    });
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
+}
+
+// Main voice command endpoint - now with preview mode
 app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -4086,6 +4158,9 @@ app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, re
 
     const OpenAI = (await import("openai")).default;
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    
+    // Check if this is preview mode (default: true for safety)
+    const previewMode = req.body.preview !== "false" && req.body.preview !== false;
     
     let transcript = req.body.transcript;
     
@@ -4166,19 +4241,65 @@ Today's date is: ${new Date().toISOString().split("T")[0]}`;
       });
     }
 
-    // Execute all tool calls
+    // Parse all planned actions
+    const plannedActions = toolCalls.map(toolCall => {
+      const args = JSON.parse(toolCall.function.arguments);
+      const preview = generateActionPreview(toolCall.function.name, args);
+      return {
+        toolName: toolCall.function.name,
+        args,
+        preview
+      };
+    });
+
+    // PREVIEW MODE: Return planned actions for user confirmation
+    if (previewMode) {
+      const previewId = `preview_${userId}_${Date.now()}`;
+      
+      // Store pending actions (expires in 5 minutes)
+      pendingActionPreviews.set(previewId, {
+        userId,
+        transcript,
+        actions: plannedActions,
+        expiresAt: Date.now() + 5 * 60 * 1000
+      });
+      
+      // Clean up expired previews
+      for (const [key, value] of pendingActionPreviews.entries()) {
+        if (value.expiresAt < Date.now()) {
+          pendingActionPreviews.delete(key);
+        }
+      }
+      
+      return res.json({
+        status: "preview",
+        previewId,
+        transcript,
+        plannedActions: plannedActions.map(a => ({
+          type: a.toolName,
+          args: a.args,
+          ...a.preview
+        }))
+      });
+    }
+
+    // EXECUTE MODE: Run all actions immediately
+    const actionSetId = crypto.randomUUID ? crypto.randomUUID() : `set_${Date.now()}`;
     const actions = [];
-    for (const toolCall of toolCalls) {
+    
+    for (const planned of plannedActions) {
       try {
-        const args = JSON.parse(toolCall.function.arguments);
-        console.log(`Executing ${toolCall.function.name}:`, args);
+        console.log(`Executing ${planned.toolName}:`, planned.args);
         
-        const result = await executeVoiceToolCall(toolCall.function.name, args, userId);
+        const result = await executeVoiceToolCall(planned.toolName, planned.args, userId);
         actions.push(result);
+        
+        // Log to activity log
+        await logActivityAction(userId, actionSetId, result);
       } catch (execError) {
-        console.error(`Tool execution error for ${toolCall.function.name}:`, execError);
+        console.error(`Tool execution error for ${planned.toolName}:`, execError);
         actions.push({
-          type: toolCall.function.name,
+          type: planned.toolName,
           success: false,
           error: execError.message,
           summary: `Failed: ${execError.message}`
@@ -4188,6 +4309,7 @@ Today's date is: ${new Date().toISOString().split("T")[0]}`;
 
     res.json({
       status: "ok",
+      actionSetId,
       transcript,
       actions
     });
@@ -4198,6 +4320,195 @@ Today's date is: ${new Date().toISOString().split("T")[0]}`;
       error: "Failed to process voice command",
       details: error.message 
     });
+  }
+});
+
+// Confirm and execute previewed actions
+app.post("/api/voice-command/confirm", requireAI, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { previewId } = req.body;
+    
+    if (!previewId) {
+      return res.status(400).json({ error: "Preview ID required" });
+    }
+    
+    const pending = pendingActionPreviews.get(previewId);
+    
+    if (!pending) {
+      return res.status(404).json({ error: "Preview expired or not found. Please try again." });
+    }
+    
+    if (pending.userId !== userId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    
+    if (pending.expiresAt < Date.now()) {
+      pendingActionPreviews.delete(previewId);
+      return res.status(410).json({ error: "Preview expired. Please try again." });
+    }
+    
+    // Execute all planned actions
+    const actionSetId = crypto.randomUUID ? crypto.randomUUID() : `set_${Date.now()}`;
+    const actions = [];
+    
+    for (const planned of pending.actions) {
+      try {
+        console.log(`Confirming ${planned.toolName}:`, planned.args);
+        
+        const result = await executeVoiceToolCall(planned.toolName, planned.args, userId);
+        actions.push(result);
+        
+        // Log to activity log
+        await logActivityAction(userId, actionSetId, result);
+      } catch (execError) {
+        console.error(`Tool execution error for ${planned.toolName}:`, execError);
+        actions.push({
+          type: planned.toolName,
+          success: false,
+          error: execError.message,
+          summary: `Failed: ${execError.message}`
+        });
+      }
+    }
+    
+    // Remove the pending preview
+    pendingActionPreviews.delete(previewId);
+    
+    res.json({
+      status: "ok",
+      actionSetId,
+      transcript: pending.transcript,
+      actions
+    });
+    
+  } catch (error) {
+    console.error("Confirm voice command error:", error);
+    res.status(500).json({ error: "Failed to execute actions" });
+  }
+});
+
+// Get activity log / receipts
+app.get("/api/activity-log", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    
+    const { data, error } = await supabaseAdmin
+      .from("activity_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    
+    res.json(data || []);
+  } catch (err) {
+    console.error("Error fetching activity log:", err);
+    res.status(500).json({ error: "Failed to fetch activity log" });
+  }
+});
+
+// Undo last action set
+app.post("/api/activity-log/undo", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { actionSetId } = req.body;
+    
+    // Get the most recent action set if not specified
+    let targetSetId = actionSetId;
+    
+    if (!targetSetId) {
+      const { data: recent } = await supabaseAdmin
+        .from("activity_logs")
+        .select("action_set_id")
+        .eq("user_id", userId)
+        .eq("is_undone", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!recent) {
+        return res.status(404).json({ error: "No actions to undo" });
+      }
+      targetSetId = recent.action_set_id;
+    }
+    
+    // Get all actions in this set
+    const { data: actionsToUndo, error: fetchError } = await supabaseAdmin
+      .from("activity_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("action_set_id", targetSetId)
+      .eq("is_undone", false);
+    
+    if (fetchError) return res.status(500).json({ error: fetchError.message });
+    
+    if (!actionsToUndo || actionsToUndo.length === 0) {
+      return res.status(404).json({ error: "No actions to undo or already undone" });
+    }
+    
+    const undoResults = [];
+    
+    // Undo each action (delete the created entities)
+    for (const action of actionsToUndo) {
+      try {
+        const entityId = action.entity_id;
+        if (!entityId) continue;
+        
+        switch (action.action_type) {
+          case "create_client":
+            await supabaseAdmin.from("clients").delete().eq("id", entityId).eq("user_id", userId);
+            undoResults.push({ type: action.action_type, success: true, summary: `Removed client` });
+            break;
+          case "add_inventory_item":
+            await supabaseAdmin.from("inventory_items").delete().eq("id", entityId).eq("user_id", userId);
+            undoResults.push({ type: action.action_type, success: true, summary: `Removed inventory item` });
+            break;
+          case "create_quote":
+            await supabaseAdmin.from("quote_items").delete().eq("quote_id", entityId);
+            await supabaseAdmin.from("quotes").delete().eq("id", entityId).eq("user_id", userId);
+            undoResults.push({ type: action.action_type, success: true, summary: `Removed quote` });
+            break;
+          case "create_invoice":
+            await supabaseAdmin.from("invoice_items").delete().eq("invoice_id", entityId);
+            await supabaseAdmin.from("invoices").delete().eq("id", entityId).eq("user_id", userId);
+            undoResults.push({ type: action.action_type, success: true, summary: `Removed invoice` });
+            break;
+          case "create_calendar_event":
+            await supabaseAdmin.from("calendar_events").delete().eq("id", entityId).eq("user_id", userId);
+            undoResults.push({ type: action.action_type, success: true, summary: `Removed calendar event` });
+            break;
+        }
+      } catch (undoErr) {
+        console.error(`Failed to undo ${action.action_type}:`, undoErr);
+        undoResults.push({ type: action.action_type, success: false, error: undoErr.message });
+      }
+    }
+    
+    // Mark actions as undone
+    await supabaseAdmin
+      .from("activity_logs")
+      .update({ is_undone: true })
+      .eq("action_set_id", targetSetId)
+      .eq("user_id", userId);
+    
+    res.json({
+      status: "ok",
+      actionSetId: targetSetId,
+      undoResults
+    });
+    
+  } catch (error) {
+    console.error("Undo error:", error);
+    res.status(500).json({ error: "Failed to undo actions" });
   }
 });
 

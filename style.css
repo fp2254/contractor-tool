@@ -4298,3 +4298,159 @@ body.multi-select-mode .bottom-nav {
     flex-direction: column;
   }
 }
+
+/* Action Preview Modal */
+.action-preview-overlay,
+#action-preview-modal {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.action-preview-modal-content {
+  background: var(--bg-alt);
+  border-radius: 16px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.action-preview-modal-content .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-preview-modal-content .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.action-preview-modal-content .modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.transcript-preview {
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.action-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.action-preview-item .action-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.action-preview-item .action-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-preview-item .action-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.action-preview-item .action-description {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-preview-item .action-check {
+  color: var(--success);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.action-preview-buttons {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.action-preview-buttons .btn {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 16px;
+  border-radius: 10px;
+}
+
+/* Undoable Toast */
+.toast-undoable {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px !important;
+}
+
+.toast-undo-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toast-undo-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.toast-undo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toast-fade {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s;
+}
