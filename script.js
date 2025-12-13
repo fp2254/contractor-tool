@@ -6906,7 +6906,8 @@ async function confirmActionPreview(previewId) {
 
 // Toast with undo button
 function showUndoableToast(message, actionSetId) {
-  const toastContainer = document.getElementById("toast-container") || createToastContainer();
+  const existing = document.querySelector(".toast-undoable");
+  if (existing) existing.remove();
   
   const toast = document.createElement("div");
   toast.className = "toast toast-success toast-undoable";
@@ -6915,7 +6916,7 @@ function showUndoableToast(message, actionSetId) {
     <button class="toast-undo-btn" onclick="undoLastActions('${actionSetId}', this)">Undo</button>
   `;
   
-  toastContainer.appendChild(toast);
+  document.body.appendChild(toast);
   
   // Auto-remove after 8 seconds (longer for undo option)
   setTimeout(() => {
