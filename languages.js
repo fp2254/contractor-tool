@@ -199,6 +199,10 @@ const TRANSLATIONS = {
     "inventory.category_placeholder": "Type a category or choose from your existing ones",
     "inventory.low_stock_placeholder": "Alert when quantity is at or below this number",
     
+    // Jobs
+    "jobs.title": "Job Folders",
+    "jobs.new_job": "New Job",
+    
     // Payments
     "payments.title": "Payments",
     "payments.payment_collection": "Payment Collection",
@@ -452,6 +456,10 @@ const TRANSLATIONS = {
     "inventory.category_placeholder": "Escriba una categoría o elija de las existentes",
     "inventory.low_stock_placeholder": "Alertar cuando la cantidad sea igual o menor a este número",
     
+    // Jobs
+    "jobs.title": "Carpetas de Trabajo",
+    "jobs.new_job": "Nuevo Trabajo",
+    
     "payments.title": "Pagos",
     "payments.payment_collection": "Cobro de pagos",
     "payments.stripe_status": "Estado de Stripe Connect",
@@ -701,6 +709,10 @@ const TRANSLATIONS = {
     "inventory.delete": "Supprimer",
     "inventory.no_items": "Pas encore d'articles d'inventaire",
     "inventory.add_first": "Ajouter votre premier article",
+    
+    // Jobs
+    "jobs.title": "Dossiers de Travaux",
+    "jobs.new_job": "Nouveau Travail",
     
     "payments.title": "Paiements",
     "payments.payment_collection": "Recouvrement des paiements",
@@ -952,6 +964,10 @@ const TRANSLATIONS = {
     "inventory.no_items": "Noch keine Bestandsartikel",
     "inventory.add_first": "Fügen Sie Ihren ersten Artikel hinzu",
     
+    // Jobs
+    "jobs.title": "Auftragsordner",
+    "jobs.new_job": "Neuer Auftrag",
+    
     "payments.title": "Zahlungen",
     "payments.payment_collection": "Zahlungseinzug",
     "payments.stripe_status": "Stripe Connect Status",
@@ -1201,6 +1217,10 @@ const TRANSLATIONS = {
     "inventory.delete": "Deletar",
     "inventory.no_items": "Sem itens de inventário ainda",
     "inventory.add_first": "Adicione Seu Primeiro Item",
+    
+    // Jobs
+    "jobs.title": "Pastas de Trabalho",
+    "jobs.new_job": "Novo Trabalho",
     
     "payments.title": "Pagamentos",
     "payments.payment_collection": "Cobrança de Pagamentos",
