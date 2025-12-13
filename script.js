@@ -3859,19 +3859,47 @@ function copyReferralLink() {
 // STRIPE CHECKOUT
 
 async function startCheckout(planCode, addonCodes = []) {
-  const res = await apiFetch("/api/stripe/create-checkout-session", {
-    method: "POST",
-    body: JSON.stringify({ plan: planCode, addons: addonCodes }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    console.error("Checkout error:", data);
-    showToast("Could not start checkout.");
-    return;
-  }
+  try {
+    console.log("Starting checkout for plan:", planCode, "addons:", addonCodes);
+    showToast("Opening checkout...");
+    
+    const res = await apiFetch("/api/stripe/create-checkout-session", {
+      method: "POST",
+      body: JSON.stringify({ plan: planCode, addons: addonCodes }),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("Checkout error:", res.status, errorData);
+      if (res.status === 401) {
+        showToast("Please log in to subscribe");
+        showScreen("auth");
+      } else {
+        showToast(errorData.error || "Could not start checkout.");
+      }
+      return;
+    }
+    
+    const data = await res.json();
+    console.log("Checkout session created:", data.sessionId);
+    
+    if (!data.sessionId) {
+      console.error("No session ID returned");
+      showToast("Could not create checkout session.");
+      return;
+    }
 
-  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-  await stripe.redirectToCheckout({ sessionId: data.sessionId });
+    const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+    const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+    
+    if (result.error) {
+      console.error("Stripe redirect error:", result.error);
+      showToast(result.error.message || "Payment redirect failed.");
+    }
+  } catch (err) {
+    console.error("Checkout exception:", err);
+    showToast("Error starting checkout. Please try again.");
+  }
 }
 
 // UTILS
