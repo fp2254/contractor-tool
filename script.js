@@ -8631,6 +8631,18 @@ async function handleInventoryDelete() {
 }
 
 async function deleteInventoryItem(itemId) {
+  // Handle tour mode - just remove from demo data
+  if (tourMode) {
+    const index = DEMO_DATA.inventory.findIndex(item => item.id === itemId || item.id === parseInt(itemId));
+    if (index > -1) {
+      DEMO_DATA.inventory.splice(index, 1);
+      showToast("Item deleted!");
+      showScreen("inventory");
+      loadInventory();
+    }
+    return;
+  }
+  
   try {
     const res = await apiFetch(`/api/inventory/${itemId}`, {
       method: "DELETE",
@@ -8641,9 +8653,16 @@ async function deleteInventoryItem(itemId) {
       return;
     }
 
+    // Also delete from IndexedDB cache so it doesn't reappear
+    try {
+      await tradebaseDB.deleteInventory(itemId);
+    } catch (dbErr) {
+      console.warn("Could not delete from IndexedDB:", dbErr);
+    }
+
     showToast("Item deleted!");
     showScreen("inventory");
-    loadInventory();
+    await loadInventory();
   } catch (err) {
     console.error("Error deleting inventory item:", err);
     showToast("Failed to delete item");
