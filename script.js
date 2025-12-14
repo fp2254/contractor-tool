@@ -1780,6 +1780,53 @@ function closeQuickPayModal() {
   if (modal) modal.style.display = "none";
 }
 
+function showQuickPayLinkPopup(paymentLink, phone, message) {
+  const existingPopup = document.getElementById("quick-pay-link-popup");
+  if (existingPopup) existingPopup.remove();
+  
+  const popup = document.createElement("div");
+  popup.id = "quick-pay-link-popup";
+  popup.className = "modal active";
+  popup.style.cssText = "display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999;";
+  popup.innerHTML = `
+    <div style="background:var(--bg-card); padding:24px; border-radius:12px; max-width:400px; width:90%; text-align:center;">
+      <h3 style="margin:0 0 16px; color:var(--text-primary);">Payment Link Created!</h3>
+      <p style="color:var(--text-secondary); margin-bottom:16px;">Copy the message below and send it via text:</p>
+      <textarea readonly style="width:100%; height:100px; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); resize:none; font-size:14px;">${message}</textarea>
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <button onclick="copyQuickPayMessage()" style="flex:1; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">
+          <i class="fa-solid fa-copy"></i> Copy Message
+        </button>
+        <button onclick="closeQuickPayLinkPopup()" style="flex:1; padding:12px; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; cursor:pointer;">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(popup);
+  popup.addEventListener("click", (e) => {
+    if (e.target === popup) closeQuickPayLinkPopup();
+  });
+}
+
+function copyQuickPayMessage() {
+  const textarea = document.querySelector("#quick-pay-link-popup textarea");
+  if (textarea) {
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      showToast("Message copied! Paste it in your texting app.");
+    }).catch(() => {
+      textarea.select();
+      document.execCommand("copy");
+      showToast("Message copied! Paste it in your texting app.");
+    });
+  }
+}
+
+function closeQuickPayLinkPopup() {
+  const popup = document.getElementById("quick-pay-link-popup");
+  if (popup) popup.remove();
+}
+
 function setQuickPayMethod(method) {
   quickPayMethod = method;
   const textBtn = document.getElementById("quick-pay-method-text");
@@ -1842,11 +1889,26 @@ async function handleQuickPaySubmit(e) {
       
       const data = await res.json();
       const message = `Hi! Here's your payment link for $${amount.toFixed(2)}${description ? ` (${description})` : ''}: ${data.payment_link}`;
-      const smsUrl = `sms:${phone}?body=${encodeURIComponent(message)}`;
-      window.open(smsUrl, "_blank");
       
-      closeQuickPayModal();
-      showToast("Payment link created! Your messaging app should open.");
+      // Try multiple methods to open SMS
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      
+      // iOS uses different SMS URL format
+      const smsUrl = isIOS 
+        ? `sms:${phone}&body=${encodeURIComponent(message)}`
+        : `sms:${phone}?body=${encodeURIComponent(message)}`;
+      
+      if (isMobile) {
+        // On mobile, use location.href which works better for SMS links
+        window.location.href = smsUrl;
+        closeQuickPayModal();
+        showToast("Opening your messaging app...");
+      } else {
+        // On desktop, show a popup with the link to copy
+        closeQuickPayModal();
+        showQuickPayLinkPopup(data.payment_link, phone, message);
+      }
       
     } else if (quickPayMethod === "email") {
       const email = document.getElementById("quick-pay-email").value.trim();
