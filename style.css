@@ -59,14 +59,30 @@ body {
 
 /* AUTH */
 
-#auth-container,
+#auth-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #050509 0%, #0a0a12 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+:root[data-theme="light"] #auth-container {
+  background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
 #app-container {
   width: 100%;
 }
 
 .auth-card {
   max-width: 420px;
-  margin: 40px auto;
+  width: 100%;
+  margin: 0 auto;
   background: var(--bg-alt);
   border-radius: 18px;
   padding: 24px 20px 28px;
