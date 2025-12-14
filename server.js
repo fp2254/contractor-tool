@@ -12,21 +12,25 @@ import { execSync } from "child_process";
 
 dotenv.config();
 
-// Dynamic chromium path finder for both dev and production
+// Lazy-loaded chromium path (cached after first call)
+let cachedChromiumPath = undefined;
+
 function getChromiumPath() {
+  if (cachedChromiumPath !== undefined) return cachedChromiumPath;
+  
   try {
-    const path = execSync('which chromium', { encoding: 'utf-8' }).trim();
-    if (path) return path;
+    cachedChromiumPath = execSync('which chromium', { encoding: 'utf-8' }).trim();
+    if (cachedChromiumPath) return cachedChromiumPath;
   } catch (e) {}
   
   try {
-    const path = execSync('which chromium-browser', { encoding: 'utf-8' }).trim();
-    if (path) return path;
+    cachedChromiumPath = execSync('which chromium-browser', { encoding: 'utf-8' }).trim();
+    if (cachedChromiumPath) return cachedChromiumPath;
   } catch (e) {}
   
   try {
-    const path = execSync('which google-chrome', { encoding: 'utf-8' }).trim();
-    if (path) return path;
+    cachedChromiumPath = execSync('which google-chrome', { encoding: 'utf-8' }).trim();
+    if (cachedChromiumPath) return cachedChromiumPath;
   } catch (e) {}
   
   // Fallback paths
@@ -38,9 +42,13 @@ function getChromiumPath() {
   ];
   
   for (const p of fallbacks) {
-    if (p) return p;
+    if (p) {
+      cachedChromiumPath = p;
+      return cachedChromiumPath;
+    }
   }
   
+  cachedChromiumPath = null;
   return null;
 }
 
@@ -66,6 +74,11 @@ const __dirname = path.dirname(__filename);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+
+// Health check endpoint - responds immediately for deployment checks
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: Date.now() });
+});
 
 // Main landing page at root (must be before static middleware)
 app.get("/", (req, res) => {
