@@ -37,6 +37,14 @@ let aiEnabled = false;
 let editingInvoiceId = null;
 let editingQuoteId = null;
 
+function toggleMoreOptions(btn) {
+  btn.classList.toggle('expanded');
+  const section = btn.nextElementSibling;
+  if (section && section.classList.contains('more-options-section')) {
+    section.classList.toggle('expanded');
+  }
+}
+
 // TEMPLATE INIT
 document.addEventListener('DOMContentLoaded', () => {
   // Language is initialized in languages.js DOMContentLoaded
@@ -919,20 +927,22 @@ function renderDemoInvoices() {
   invoicesList.innerHTML = '';
   
   DEMO_DATA.invoices.forEach(inv => {
+    const initials = getInitials(inv.client_name);
+    const paymentStatus = inv.payment_status || 'unpaid';
+    const statusIcon = paymentStatus === 'paid' ? '🟢' : paymentStatus === 'pending' ? '🟡' : '🔴';
+    const statusLabel = paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1);
+    
     const item = document.createElement("div");
     item.className = "list-item clickable";
     item.style.cursor = "pointer";
     item.innerHTML = `
-      <div class="list-item-header">
-        <strong>Invoice #${inv.number}</strong>
-        <span>$${inv.total.toFixed(2)}</span>
-      </div>
-      <div class="list-item-sub">${inv.client_name}</div>
-      <div class="list-item-sub">
-        ${inv.date} • ${inv.status} • 
-        <span class="payment-status-badge ${inv.payment_status}">
-          ${inv.payment_status.charAt(0).toUpperCase() + inv.payment_status.slice(1)}
-        </span>
+      <div class="list-item-simple">
+        <div class="client-avatar">${initials}</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${inv.client_name}</div>
+          <div class="list-item-meta">INV #${inv.number} • ${statusIcon} ${statusLabel}</div>
+        </div>
+        <div class="list-item-amount">$${inv.total.toFixed(2)}</div>
       </div>
     `;
     item.onclick = () => viewDemoInvoiceDetail(inv);
@@ -947,16 +957,23 @@ function renderDemoQuotes() {
   quotesList.innerHTML = '';
   
   DEMO_DATA.quotes.forEach(quote => {
+    const initials = getInitials(quote.client_name);
+    const status = quote.status || 'draft';
+    const statusIcon = status === 'accepted' ? '🟢' : status === 'sent' ? '🟡' : '⚪';
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    
     const item = document.createElement("div");
     item.className = "list-item clickable";
     item.style.cursor = "pointer";
     item.innerHTML = `
-      <div class="list-item-header">
-        <strong>Quote #${quote.quote_number}</strong>
-        <span>$${quote.total.toFixed(2)}</span>
+      <div class="list-item-simple">
+        <div class="client-avatar">${initials}</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${quote.client_name}</div>
+          <div class="list-item-meta">QUO #${quote.quote_number} • ${statusIcon} ${statusLabel}</div>
+        </div>
+        <div class="list-item-amount">$${quote.total.toFixed(2)}</div>
       </div>
-      <div class="list-item-sub">${quote.client_name} • ${quote.quote_date}</div>
-      <div class="list-item-sub">${quote.status}</div>
     `;
     item.onclick = () => viewDemoQuoteDetail(quote);
     quotesList.appendChild(item);
@@ -1979,17 +1996,93 @@ function wireInvoiceUI() {
   addLineItemRow();
 }
 
+function getSavedLineItems() {
+  try {
+    return JSON.parse(localStorage.getItem('tb_saved_line_items') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveLineItem(description, price) {
+  if (!description || !price) return;
+  const items = getSavedLineItems();
+  const existingIndex = items.findIndex(i => i.description.toLowerCase() === description.toLowerCase());
+  if (existingIndex >= 0) {
+    items[existingIndex].price = price;
+    items[existingIndex].count = (items[existingIndex].count || 1) + 1;
+  } else {
+    items.push({ description, price, count: 1 });
+  }
+  items.sort((a, b) => (b.count || 1) - (a.count || 1));
+  localStorage.setItem('tb_saved_line_items', JSON.stringify(items.slice(0, 50)));
+}
+
+function saveLineItemsFromUI() {
+  const rows = document.querySelectorAll("#line-items .line-item-row, #quote-line-items .quote-line-item-row");
+  rows.forEach(row => {
+    const descInput = row.querySelector(".li-desc, .qli-desc");
+    const priceInput = row.querySelector(".li-price, .qli-price");
+    if (descInput && priceInput) {
+      const desc = descInput.value.trim();
+      const price = parseFloat(priceInput.value) || 0;
+      if (desc && price > 0) saveLineItem(desc, price);
+    }
+  });
+}
+
 function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
   const container = document.getElementById("line-items");
   const row = document.createElement("div");
   row.className = "line-item-row";
 
   row.innerHTML = `
-    <input type="text" class="li-desc" placeholder="${t('invoice.line_description_placeholder')}" value="${item.description}" />
+    <div class="li-desc-wrapper">
+      <input type="text" class="li-desc" placeholder="${t('invoice.line_description_placeholder')}" value="${item.description}" autocomplete="off" />
+      <div class="line-item-suggest hidden"></div>
+    </div>
     <input type="number" class="li-qty" min="0" step="0.1" value="${item.qty}" placeholder="${t('invoice.line_qty_placeholder')}" />
     <input type="number" class="li-price" min="0" step="0.01" value="${item.price}" placeholder="${t('invoice.line_price_placeholder')}" />
     <button type="button" class="btn-remove-line">&times;</button>
   `;
+
+  const descInput = row.querySelector(".li-desc");
+  const suggestBox = row.querySelector(".line-item-suggest");
+  const priceInput = row.querySelector(".li-price");
+  
+  descInput.addEventListener("input", () => {
+    const query = descInput.value.trim().toLowerCase();
+    if (query.length < 2) {
+      suggestBox.classList.add("hidden");
+      return;
+    }
+    const saved = getSavedLineItems();
+    const matches = saved.filter(i => i.description.toLowerCase().includes(query)).slice(0, 5);
+    if (matches.length === 0) {
+      suggestBox.classList.add("hidden");
+      return;
+    }
+    suggestBox.innerHTML = matches.map(m => `
+      <div class="suggest-item" data-desc="${m.description}" data-price="${m.price}">
+        <span class="suggest-desc">${m.description}</span>
+        <span class="suggest-price">${formatCurrency(m.price)}</span>
+      </div>
+    `).join('');
+    suggestBox.classList.remove("hidden");
+    
+    suggestBox.querySelectorAll(".suggest-item").forEach(el => {
+      el.addEventListener("click", () => {
+        descInput.value = el.dataset.desc;
+        priceInput.value = el.dataset.price;
+        suggestBox.classList.add("hidden");
+        updateInvoiceTotals();
+      });
+    });
+  });
+  
+  descInput.addEventListener("blur", () => {
+    setTimeout(() => suggestBox.classList.add("hidden"), 150);
+  });
 
   row.querySelector(".li-qty").addEventListener("input", updateInvoiceTotals);
   row.querySelector(".li-price").addEventListener("input", updateInvoiceTotals);
@@ -2192,6 +2285,7 @@ async function handleInvoiceSubmit(e) {
       document.getElementById("invoice-photos").value = "";
     }
 
+    saveLineItemsFromUI();
     showToast(isEditing ? "Invoice updated." : "Invoice saved.");
     resetInvoiceForm();
     await loadInvoices();
@@ -2783,16 +2877,19 @@ async function loadInvoices(showArchived = false) {
 
   invoices.forEach((inv) => {
     const isOffline = isOfflineId(inv.id);
-    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning); margin-left: 4px;">📱 Offline</span>' : '';
+    const initials = getInitials(inv.client_name);
+    const paymentStatus = inv.payment_status || 'unpaid';
+    const statusIcon = paymentStatus === 'paid' ? '🟢' : paymentStatus === 'pending' ? '🟡' : '🔴';
+    const offlineIcon = isOffline ? ' 📱' : '';
     
     const content = `
-      <div class="list-item-header">
-        <strong>Invoice #${inv.number || inv.id}${offlineBadge}</strong>
-        <span>${formatCurrency(inv.total || 0)}</span>
-      </div>
-      <div class="list-item-sub">${inv.client_name || ""}</div>
-      <div class="list-item-sub">
-        ${inv.date || ""} • ${inv.status || "draft"}
+      <div class="list-item-simple">
+        <div class="client-avatar">${initials}</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${inv.client_name || "Unknown Client"}</div>
+          <div class="list-item-meta">INV #${inv.number || inv.id} • ${statusIcon} ${paymentStatus}${offlineIcon}</div>
+        </div>
+        <div class="list-item-amount">${formatCurrency(inv.total || 0)}</div>
       </div>
     `;
     
@@ -2859,13 +2956,20 @@ async function loadQuotes(showArchived = false) {
   quotes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   quotes.forEach((quote) => {
+    const initials = getInitials(quote.client_name);
+    const status = quote.status || 'draft';
+    const statusIcon = status === 'accepted' ? '🟢' : status === 'sent' ? '🟡' : '⚪';
+    const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+    
     const content = `
-      <div class="list-item-header">
-        <strong>Quote #${quote.quote_number || quote.id}</strong>
-        <span>${formatCurrency(quote.total || 0)}</span>
+      <div class="list-item-simple">
+        <div class="client-avatar">${initials}</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${quote.client_name || "Unknown Client"}</div>
+          <div class="list-item-meta">QUO #${quote.quote_number || quote.id} • ${statusIcon} ${statusLabel}</div>
+        </div>
+        <div class="list-item-amount">${formatCurrency(quote.total || 0)}</div>
       </div>
-      <div class="list-item-sub">${quote.client_name || ""} • ${quote.quote_date || ""}</div>
-      <div class="list-item-sub">${quote.status || "draft"}</div>
     `;
     
     const itemMeta = { type: "quote", id: quote.id, data: quote };
@@ -3942,6 +4046,15 @@ function formatCurrency(amount) {
   return `$${n.toFixed(2)}`;
 }
 
+function getInitials(name) {
+  if (!name) return '??';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function showToast(message) {
   if (!message) return;
   if (toastTimeout) clearTimeout(toastTimeout);
@@ -4805,6 +4918,7 @@ async function handleQuoteSubmit(e) {
         console.warn("IndexedDB save failed (non-critical):", dbErr);
       }
       
+      saveLineItemsFromUI();
       showToast(isEditing ? "Quote updated!" : "Quote created!");
       resetQuoteForm();
       showScreen("quotes");
@@ -4847,12 +4961,53 @@ function addQuoteLineItemRow(data = {}) {
   const row = document.createElement("div");
   row.className = "line-item-row";
   row.innerHTML = `
-    <input type="text" placeholder="${t('quote.line_description_placeholder')}" class="item-desc" value="${data.description || ""}" />
+    <div class="li-desc-wrapper">
+      <input type="text" placeholder="${t('quote.line_description_placeholder')}" class="item-desc" value="${data.description || ""}" autocomplete="off" />
+      <div class="line-item-suggest hidden"></div>
+    </div>
     <input type="number" placeholder="${t('quote.line_qty_placeholder')}" class="item-qty" value="${data.qty || 1}" min="0" step="0.01" />
     <input type="number" placeholder="${t('quote.line_price_placeholder')}" class="item-price" value="${data.unit_price || 0}" min="0" step="0.01" />
     <button type="button" class="btn-sm" onclick="this.parentElement.remove(); updateQuoteTotals()">Remove</button>
   `;
   container.appendChild(row);
+
+  const descInput = row.querySelector(".item-desc");
+  const suggestBox = row.querySelector(".line-item-suggest");
+  const priceInput = row.querySelector(".item-price");
+  
+  descInput.addEventListener("input", () => {
+    const query = descInput.value.trim().toLowerCase();
+    if (query.length < 2) {
+      suggestBox.classList.add("hidden");
+      return;
+    }
+    const saved = getSavedLineItems();
+    const matches = saved.filter(i => i.description.toLowerCase().includes(query)).slice(0, 5);
+    if (matches.length === 0) {
+      suggestBox.classList.add("hidden");
+      return;
+    }
+    suggestBox.innerHTML = matches.map(m => `
+      <div class="suggest-item" data-desc="${m.description}" data-price="${m.price}">
+        <span class="suggest-desc">${m.description}</span>
+        <span class="suggest-price">${formatCurrency(m.price)}</span>
+      </div>
+    `).join('');
+    suggestBox.classList.remove("hidden");
+    
+    suggestBox.querySelectorAll(".suggest-item").forEach(el => {
+      el.addEventListener("click", () => {
+        descInput.value = el.dataset.desc;
+        priceInput.value = el.dataset.price;
+        suggestBox.classList.add("hidden");
+        updateQuoteTotals();
+      });
+    });
+  });
+  
+  descInput.addEventListener("blur", () => {
+    setTimeout(() => suggestBox.classList.add("hidden"), 150);
+  });
 
   row.querySelectorAll("input").forEach((inp) => {
     inp.addEventListener("input", updateQuoteTotals);

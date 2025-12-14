@@ -566,16 +566,6 @@
 
           <form id="invoice-form" class="form">
             <div class="form-row">
-              <label data-i18n="invoice.template">Template</label>
-              <select id="invoice-template-select">
-                <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
-                <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
-                <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
-                <option value="big_total" data-i18n="templates.big_total">Big Total</option>
-              </select>
-            </div>
-
-            <div class="form-row">
               <label data-i18n="invoice.client">Client</label>
               <input type="text" id="invoice-client-name" data-i18n-placeholder="invoice.client_placeholder" placeholder="Type client name or select saved client" list="client-datalist" />
               <datalist id="client-datalist"></datalist>
@@ -587,66 +577,81 @@
               <input type="date" id="invoice-date" />
             </div>
 
-            <div class="form-row">
-              <label data-i18n="invoice.notes">Invoice Notes</label>
-              <div style="display: flex; gap: 8px; align-items: flex-start;">
-                <textarea id="invoice-notes" rows="3" data-i18n-placeholder="invoice.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
-                <button type="button" id="btn-invoice-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
-                  <i class="fas fa-microphone"></i> Voice
-                </button>
-              </div>
-            </div>
-
             <h3 data-i18n="invoice.line_items">Line Items</h3>
             <div id="line-items"></div>
             <button type="button" id="btn-add-line-item" class="btn-outline-sm" data-i18n="invoice.add_item">
               + Add Line Item
             </button>
 
-            <!-- COST & MARKUP HELPER -->
-            <div class="helper-card">
-              <h3 data-i18n="invoice.cost_helper">Cost & Markup Helper (optional)</h3>
-              <div class="form-row-inline">
-                <div>
-                  <label data-i18n="invoice.materials">Materials Cost</label>
-                  <input type="number" id="helper-materials" min="0" step="0.01" />
-                </div>
-                <div>
-                  <label data-i18n="invoice.labor_hours">Labor Hours</label>
-                  <input type="number" id="helper-hours" min="0" step="0.1" />
-                </div>
+            <button type="button" class="more-options-toggle" onclick="toggleMoreOptions(this)">
+              <i class="fa-solid fa-chevron-down"></i> More options
+            </button>
+            <div class="more-options-section">
+              <div class="form-row">
+                <label data-i18n="invoice.template">Template</label>
+                <select id="invoice-template-select">
+                  <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
+                  <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
+                  <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
+                  <option value="big_total" data-i18n="templates.big_total">Big Total</option>
+                </select>
               </div>
-              <div class="form-row-inline">
-                <div>
-                  <label data-i18n="invoice.hourly_rate">Hourly Rate</label>
-                  <input type="number" id="helper-rate" min="0" step="0.01" />
-                </div>
-                <div>
-                  <label data-i18n="invoice.markup">Markup %</label>
-                  <input type="number" id="helper-markup" min="0" step="1" />
-                </div>
-                <div>
-                  <label data-i18n="invoice.tax">Tax %</label>
-                  <input type="number" id="helper-tax" min="0" step="0.1" />
-                </div>
-              </div>
-              <button type="button" id="btn-helper-calc" class="btn-outline-sm" data-i18n="invoice.calculate">
-                Calculate Price
-              </button>
-              <div id="helper-results" class="helper-results hidden">
-                <p data-i18n="invoice.recommended_total">Recommended total: <span id="helper-total"></span></p>
-                <p data-i18n="invoice.profit">Profit: <span id="helper-profit"></span> (<span id="helper-margin"></span>% margin)</p>
-                <button type="button" id="btn-helper-apply" class="btn-sm" data-i18n="invoice.use_total">
-                  Use this as invoice total
-                </button>
-              </div>
-            </div>
 
-            <!-- PHOTOS -->
-            <div class="form-row">
-              <label data-i18n="invoice.photos">Attach Photos</label>
-              <input type="file" id="invoice-photos" accept="image/*" multiple />
-              <div id="photo-preview" class="photo-preview"></div>
+              <div class="form-row">
+                <label data-i18n="invoice.notes">Invoice Notes</label>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <textarea id="invoice-notes" rows="3" data-i18n-placeholder="invoice.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
+                  <button type="button" id="btn-invoice-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
+                    <i class="fas fa-microphone"></i> Voice
+                  </button>
+                </div>
+              </div>
+
+              <!-- COST & MARKUP HELPER -->
+              <div class="helper-card">
+                <h3 data-i18n="invoice.cost_helper">Cost & Markup Helper (optional)</h3>
+                <div class="form-row-inline">
+                  <div>
+                    <label data-i18n="invoice.materials">Materials Cost</label>
+                    <input type="number" id="helper-materials" min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label data-i18n="invoice.labor_hours">Labor Hours</label>
+                    <input type="number" id="helper-hours" min="0" step="0.1" />
+                  </div>
+                </div>
+                <div class="form-row-inline">
+                  <div>
+                    <label data-i18n="invoice.hourly_rate">Hourly Rate</label>
+                    <input type="number" id="helper-rate" min="0" step="0.01" />
+                  </div>
+                  <div>
+                    <label data-i18n="invoice.markup">Markup %</label>
+                    <input type="number" id="helper-markup" min="0" step="1" />
+                  </div>
+                  <div>
+                    <label data-i18n="invoice.tax">Tax %</label>
+                    <input type="number" id="helper-tax" min="0" step="0.1" />
+                  </div>
+                </div>
+                <button type="button" id="btn-helper-calc" class="btn-outline-sm" data-i18n="invoice.calculate">
+                  Calculate Price
+                </button>
+                <div id="helper-results" class="helper-results hidden">
+                  <p data-i18n="invoice.recommended_total">Recommended total: <span id="helper-total"></span></p>
+                  <p data-i18n="invoice.profit">Profit: <span id="helper-profit"></span> (<span id="helper-margin"></span>% margin)</p>
+                  <button type="button" id="btn-helper-apply" class="btn-sm" data-i18n="invoice.use_total">
+                    Use this as invoice total
+                  </button>
+                </div>
+              </div>
+
+              <!-- PHOTOS -->
+              <div class="form-row">
+                <label data-i18n="invoice.photos">Attach Photos</label>
+                <input type="file" id="invoice-photos" accept="image/*" multiple />
+                <div id="photo-preview" class="photo-preview"></div>
+              </div>
             </div>
 
             <!-- TOTALS -->
@@ -732,16 +737,6 @@
 
           <form id="quote-form" class="form">
             <div class="form-row">
-              <label data-i18n="quote.template">Template</label>
-              <select id="quote-template">
-                <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
-                <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
-                <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
-                <option value="big_total" data-i18n="templates.big_total">Big Total</option>
-              </select>
-            </div>
-
-            <div class="form-row">
               <label data-i18n="quote.client">Client</label>
               <input type="text" id="quote-client-name" data-i18n-placeholder="quote.client_placeholder" placeholder="Type client name or select saved client" list="quote-client-datalist" />
               <datalist id="quote-client-datalist"></datalist>
@@ -750,16 +745,6 @@
             <div class="form-row">
               <label data-i18n="quote.date">Quote Date</label>
               <input type="date" id="quote-date" />
-            </div>
-
-            <div class="form-row">
-              <label data-i18n="quote.notes">Quote Notes</label>
-              <div style="display: flex; gap: 8px; align-items: flex-start;">
-                <textarea id="quote-notes" rows="3" data-i18n-placeholder="quote.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
-                <button type="button" id="btn-quote-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
-                  <i class="fas fa-microphone"></i> Voice
-                </button>
-              </div>
             </div>
 
             <h3 data-i18n="quote.line_items">Line Items</h3>
@@ -773,9 +758,34 @@
               </button>
             </div>
 
-            <div class="form-row">
-              <label data-i18n="invoice.tax_label">Tax %</label>
-              <input type="number" id="quote-tax" placeholder="0" min="0" step="0.01" value="0" />
+            <button type="button" class="more-options-toggle" onclick="toggleMoreOptions(this)">
+              <i class="fa-solid fa-chevron-down"></i> More options
+            </button>
+            <div class="more-options-section">
+              <div class="form-row">
+                <label data-i18n="quote.template">Template</label>
+                <select id="quote-template">
+                  <option value="basic_clean" data-i18n="templates.basic_clean">Basic Clean</option>
+                  <option value="modern_pro" data-i18n="templates.modern_pro">Modern Pro</option>
+                  <option value="color_accent" data-i18n="templates.color_accent">Color Accent</option>
+                  <option value="big_total" data-i18n="templates.big_total">Big Total</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label data-i18n="quote.notes">Quote Notes</label>
+                <div style="display: flex; gap: 8px; align-items: flex-start;">
+                  <textarea id="quote-notes" rows="3" data-i18n-placeholder="quote.notes_placeholder" placeholder="Optional notes for the client" style="flex: 1;"></textarea>
+                  <button type="button" id="btn-quote-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
+                    <i class="fas fa-microphone"></i> Voice
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label data-i18n="invoice.tax_label">Tax %</label>
+                <input type="number" id="quote-tax" placeholder="0" min="0" step="0.01" value="0" />
+              </div>
             </div>
 
             <div class="totals-box">
