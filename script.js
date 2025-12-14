@@ -2561,6 +2561,40 @@ function wireSettingsUI() {
   document
     .getElementById("btn-copy-referral")
     .addEventListener("click", copyReferralLink);
+  
+  // Wire up warranty checkboxes for invoice and quote forms
+  wireWarrantyCheckbox("invoice");
+  wireWarrantyCheckbox("quote");
+}
+
+function wireWarrantyCheckbox(formType) {
+  const checkbox = document.getElementById(`${formType}-include-warranty`);
+  const container = document.getElementById(`${formType}-warranty-container`);
+  const textarea = document.getElementById(`${formType}-warranty-text`);
+  
+  if (!checkbox || !container || !textarea) return;
+  
+  checkbox.addEventListener("change", async () => {
+    if (checkbox.checked) {
+      container.classList.remove("hidden");
+      // Load default warranty text from profile if textarea is empty
+      if (!textarea.value.trim()) {
+        try {
+          const res = await apiFetch("/api/profile");
+          if (res.ok) {
+            const profile = await res.json();
+            if (profile?.default_warranty_text) {
+              textarea.value = profile.default_warranty_text;
+            }
+          }
+        } catch (err) {
+          console.log("Could not load default warranty text");
+        }
+      }
+    } else {
+      container.classList.add("hidden");
+    }
+  });
 }
 
 async function handleAddClient(e) {
@@ -3870,6 +3904,11 @@ async function loadSettings() {
 
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
+  
+  const warrantyField = document.getElementById("business-warranty");
+  if (warrantyField) {
+    warrantyField.value = profile.default_warranty_text || "";
+  }
 
   if (profile.logo_url) {
     const preview = document.getElementById("business-logo-preview");
@@ -3896,6 +3935,9 @@ async function handleSaveSettings(e) {
     // Template will be applied when downloading next invoice
   }
 
+  const warrantyField = document.getElementById("business-warranty");
+  const defaultWarrantyText = warrantyField ? warrantyField.value : "";
+
   const payload = {
     business_name: document.getElementById("business-name").value,
     business_phone: document.getElementById("business-phone").value,
@@ -3903,6 +3945,7 @@ async function handleSaveSettings(e) {
     business_address: document.getElementById("business-address").value,
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
+    default_warranty_text: defaultWarrantyText,
   };
 
   if (selectedLogoFile) {

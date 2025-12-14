@@ -577,10 +577,10 @@
               <input type="date" id="invoice-date" />
             </div>
 
-            <h3 data-i18n="invoice.line_items">Line Items</h3>
+            <h3 data-i18n="invoice.line_items">Services Performed</h3>
             <div id="line-items"></div>
             <button type="button" id="btn-add-line-item" class="btn-outline-sm" data-i18n="invoice.add_item">
-              + Add Line Item
+              + Add Service
             </button>
 
             <button type="button" class="more-options-toggle" onclick="toggleMoreOptions(this)">
@@ -604,6 +604,16 @@
                   <button type="button" id="btn-invoice-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
                     <i class="fas fa-microphone"></i> Voice
                   </button>
+                </div>
+              </div>
+
+              <div class="form-row warranty-section">
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="invoice-include-warranty" style="width: 20px; height: 20px; cursor: pointer;">
+                  <span data-i18n="invoice.include_warranty">Include Warranty/Terms</span>
+                </label>
+                <div id="invoice-warranty-container" class="warranty-container hidden" style="margin-top: 10px;">
+                  <textarea id="invoice-warranty-text" rows="3" data-i18n-placeholder="invoice.warranty_placeholder" placeholder="Enter warranty terms or conditions..." style="width: 100%;"></textarea>
                 </div>
               </div>
 
@@ -761,11 +771,11 @@
               <input type="date" id="quote-date" />
             </div>
 
-            <h3 data-i18n="quote.line_items">Line Items</h3>
+            <h3 data-i18n="quote.line_items">Services Performed</h3>
             <div id="quote-line-items"></div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <button type="button" id="btn-add-quote-line-item" class="btn-outline-sm" data-i18n="quote.add_item">
-                + Add Line Item
+                + Add Service
               </button>
               <button type="button" id="btn-open-calculator-quote" class="btn-outline-sm" onclick="openCalculatorFromQuote()">
                 <i class="fa-solid fa-calculator"></i> Cost Calculator
@@ -793,6 +803,16 @@
                   <button type="button" id="btn-quote-voice" class="btn-sm" style="margin-top: 10px; min-width: 90px; display: none; background-color: #10b981;">
                     <i class="fas fa-microphone"></i> Voice
                   </button>
+                </div>
+              </div>
+
+              <div class="form-row warranty-section">
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" id="quote-include-warranty" style="width: 20px; height: 20px; cursor: pointer;">
+                  <span data-i18n="quote.include_warranty">Include Warranty/Terms</span>
+                </label>
+                <div id="quote-warranty-container" class="warranty-container hidden" style="margin-top: 10px;">
+                  <textarea id="quote-warranty-text" rows="3" data-i18n-placeholder="quote.warranty_placeholder" placeholder="Enter warranty terms or conditions..." style="width: 100%;"></textarea>
                 </div>
               </div>
 
@@ -1231,6 +1251,12 @@
             <div class="form-row">
               <label data-i18n="settings.footer">Invoice Footer Text</label>
               <textarea id="business-footer" rows="2"></textarea>
+            </div>
+
+            <div class="form-row">
+              <label data-i18n="settings.warranty_terms">Default Warranty/Terms Text</label>
+              <textarea id="business-warranty" rows="3" data-i18n-placeholder="settings.warranty_placeholder" placeholder="e.g., All work is guaranteed for 1 year from date of completion..."></textarea>
+              <p class="form-hint" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">This text will auto-fill when you check "Include Warranty/Terms" on invoices and quotes.</p>
             </div>
 
             <div class="form-row">
