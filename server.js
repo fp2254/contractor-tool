@@ -874,8 +874,8 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  const invoiceId = parseInt(req.params.id, 10);
-  if (isNaN(invoiceId)) {
+  const invoiceId = req.params.id;
+  if (!invoiceId) {
     return res.status(400).json({ error: "Invalid invoice ID" });
   }
 
