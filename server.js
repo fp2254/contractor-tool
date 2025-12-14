@@ -8,8 +8,41 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
+import { execSync } from "child_process";
 
 dotenv.config();
+
+// Dynamic chromium path finder for both dev and production
+function getChromiumPath() {
+  try {
+    const path = execSync('which chromium', { encoding: 'utf-8' }).trim();
+    if (path) return path;
+  } catch (e) {}
+  
+  try {
+    const path = execSync('which chromium-browser', { encoding: 'utf-8' }).trim();
+    if (path) return path;
+  } catch (e) {}
+  
+  try {
+    const path = execSync('which google-chrome', { encoding: 'utf-8' }).trim();
+    if (path) return path;
+  } catch (e) {}
+  
+  // Fallback paths
+  const fallbacks = [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    process.env.CHROMIUM_PATH
+  ];
+  
+  for (const p of fallbacks) {
+    if (p) return p;
+  }
+  
+  return null;
+}
 
 // Simple profanity filter (replaces bad-words package for ES module compatibility)
 const badWordsList = ['damn', 'hell', 'crap', 'shit', 'fuck', 'ass', 'bitch', 'bastard', 'piss'];
@@ -2823,8 +2856,14 @@ async function generateInvoicePDF(invoice, profile) {
   `;
 
   try {
+    const chromiumPath = getChromiumPath();
+    if (!chromiumPath) {
+      console.error('Chromium not found - PDF generation disabled');
+      return null;
+    }
+    
     const browser = await puppeteer.launch({
-      executablePath: '/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium',
+      executablePath: chromiumPath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
@@ -2975,8 +3014,14 @@ async function generateQuotePDF(quote, profile) {
   `;
 
   try {
+    const chromiumPath = getChromiumPath();
+    if (!chromiumPath) {
+      console.error('Chromium not found - Quote PDF generation disabled');
+      return null;
+    }
+    
     const browser = await puppeteer.launch({
-      executablePath: '/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium',
+      executablePath: chromiumPath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
