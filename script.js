@@ -1890,6 +1890,16 @@ async function saveLanguagePreference(lang) {
   }
 }
 
+// Toggle More Tools section on dashboard
+function toggleMoreTools() {
+  const toggle = document.getElementById('more-tools-toggle');
+  const secondary = document.getElementById('secondary-tiles');
+  if (toggle && secondary) {
+    toggle.classList.toggle('expanded');
+    secondary.classList.toggle('expanded');
+  }
+}
+
 function showScreen(screenId) {
   // Exit multi-select mode when changing screens
   if (typeof exitMultiSelectMode === 'function' && typeof multiSelectMode !== 'undefined' && multiSelectMode) {

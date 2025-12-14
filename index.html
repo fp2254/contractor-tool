@@ -434,9 +434,6 @@
                 </div>
               </div>
             </div>
-            <button class="btn-history-link" onclick="showScreen('activity-log')">
-              <i class="fa-solid fa-clock-rotate-left"></i> View Command History
-            </button>
           </div>
 
           <!-- SUMMARY STATS BAR -->
@@ -455,14 +452,12 @@
             </div>
           </div>
 
-          <!-- FEATURE TILES GRID (2-COLUMN) -->
+          <!-- PRIMARY TILES (always visible) -->
           <div class="tile-grid">
-            <!-- CREATE QUOTE - Primary Action -->
             <button class="tile tile-primary" data-screen="new-quote">
               <div class="tile-icon"><i class="fa-solid fa-plus-circle"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.create_quote">Create Quote</h3>
-                <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
               </div>
             </button>
 
@@ -470,7 +465,6 @@
               <div class="tile-icon"><i class="fa-solid fa-paper-plane"></i></div>
               <div class="tile-text">
                 <h3>Quick Pay Link</h3>
-                <p>Send a payment request instantly.</p>
               </div>
             </button>
 
@@ -478,7 +472,13 @@
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.quotes">Quotes</h3>
-                <p data-i18n="dashboard.quotes_desc">Draft and track job quotes.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="invoices">
+              <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.invoices">Invoices</h3>
               </div>
             </button>
 
@@ -486,40 +486,6 @@
               <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.clients">Clients</h3>
-                <p data-i18n="dashboard.clients_desc">Save clients once, reuse forever.</p>
-              </div>
-            </button>
-
-            <button class="tile" data-screen="trade-deals">
-              <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
-              <div class="tile-text">
-                <h3>Trade Deals</h3>
-                <p>Supplier discounts & special offers.</p>
-              </div>
-              <span class="coming-soon-badge">Coming Soon</span>
-            </button>
-
-            <button class="tile" data-screen="invoices">
-              <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.invoices">Invoices</h3>
-                <p data-i18n="dashboard.invoices_desc">View and manage past invoices.</p>
-              </div>
-            </button>
-
-            <button class="tile" data-screen="payments">
-              <div class="tile-icon"><i class="fa-solid fa-credit-card"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.payments">Payments</h3>
-                <p data-i18n="dashboard.payments_desc">Accept payments & track status.</p>
-              </div>
-            </button>
-
-            <button class="tile" data-screen="inventory">
-              <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.inventory">Inventory</h3>
-                <p data-i18n="dashboard.inventory_desc">Track supplies, materials & stock.</p>
               </div>
             </button>
 
@@ -527,7 +493,36 @@
               <div class="tile-icon"><i class="fa-solid fa-folder-tree"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.jobs">Job Folders</h3>
-                <p data-i18n="dashboard.jobs_desc">Organize all your work by job.</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="payments">
+              <div class="tile-icon"><i class="fa-solid fa-credit-card"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.payments">Payments</h3>
+              </div>
+            </button>
+
+            <button class="tile referrals-banner" data-screen="referrals">
+              <div class="tile-icon"><i class="fa-solid fa-gift"></i></div>
+              <div class="tile-text">
+                <h3>Referrals</h3>
+              </div>
+            </button>
+          </div>
+
+          <!-- MORE TOGGLE -->
+          <button id="more-tools-toggle" class="more-toggle-btn" onclick="toggleMoreTools()">
+            <span>More Tools</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+
+          <!-- SECONDARY TILES (collapsed by default) -->
+          <div id="secondary-tiles" class="secondary-tiles">
+            <button class="tile" data-screen="inventory">
+              <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.inventory">Inventory</h3>
               </div>
             </button>
 
@@ -535,7 +530,6 @@
               <div class="tile-icon"><i class="fa-solid fa-calendar-days"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.calendar">Calendar</h3>
-                <p data-i18n="dashboard.calendar_desc">Schedule jobs and reminders.</p>
               </div>
             </button>
 
@@ -543,29 +537,24 @@
               <div class="tile-icon"><i class="fa-solid fa-gear"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.settings">Settings</h3>
-                <p data-i18n="dashboard.settings_desc">Logo, business info, defaults.</p>
               </div>
+            </button>
+
+            <button class="tile" data-screen="trade-deals">
+              <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
+              <div class="tile-text">
+                <h3>Trade Deals</h3>
+              </div>
+              <span class="coming-soon-badge">Coming Soon</span>
             </button>
 
             <button id="admin-tile-dashboard" class="tile" data-screen="admin" style="display: none;">
               <div class="tile-icon"><i class="fa-solid fa-shield"></i></div>
               <div class="tile-text">
                 <h3>Admin Panel</h3>
-                <p>Manage users and announcements.</p>
               </div>
             </button>
           </div>
-
-          <!-- REFERRALS BOTTOM BANNER -->
-          <button class="tile referrals-banner" data-screen="referrals">
-            <div class="referrals-banner-content">
-              <i class="fa-solid fa-badge-dollar"></i>
-              <div>
-                <h3 data-i18n="dashboard.referrals">Referrals – 20% For Life</h3>
-                <p data-i18n="dashboard.referrals_desc">Share your link. Get paid every month your referrals stay.</p>
-              </div>
-            </div>
-          </button>
         </section>
 
         <!-- NEW INVOICE -->

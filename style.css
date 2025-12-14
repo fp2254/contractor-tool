@@ -469,7 +469,7 @@ body {
 }
 
 #screen-container {
-  padding: 10px 10px 24px;
+  padding: 8px 8px 16px;
   max-width: 500px;
   margin: 0 auto;
 }
@@ -534,23 +534,23 @@ body {
 .tile-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 .tile {
   background: var(--tile);
-  border-radius: 12px;
-  padding: 12px 12px 14px;
+  border-radius: 10px;
+  padding: 10px 10px 10px;
   border: 1px solid var(--border);
   text-align: left;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   cursor: pointer;
-  min-height: 70px;
+  min-height: 52px;
 }
 
 .tile-full {
@@ -562,64 +562,61 @@ body {
 }
 
 .tile-icon {
-  font-size: 20px;
-  margin-top: 2px;
+  font-size: 18px;
   color: var(--accent);
 }
 
 .tile-text h2,
 .tile-text h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
 
 .tile-text p {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.3;
+  display: none;
 }
 
 /* TALK TO WORK - Voice Command Button */
 .command-mic-container {
   position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .command-mic-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 10px 14px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 14px;
+  border-radius: 10px;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .talk-to-work-btn {
-  min-height: 70px;
-  padding: 16px 20px;
+  min-height: 50px;
+  padding: 10px 14px;
 }
 
 .talk-to-work-btn .command-mic-icon {
-  width: 48px;
-  height: 48px;
-  font-size: 22px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
 }
 
 .talk-to-work-btn .command-mic-text h3 {
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .talk-to-work-btn .command-mic-text p {
-  font-size: 12px;
+  font-size: 11px;
+  display: none;
 }
 
 .command-mic-btn:hover {
@@ -632,27 +629,27 @@ body {
 }
 
 .command-mic-icon {
-  width: 56px;
-  height: 56px;
+  width: 36px;
+  height: 36px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 16px;
   color: white;
 }
 
 .command-mic-text h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   color: white;
 }
 
 .command-mic-text p {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: 2px 0 0;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -804,12 +801,12 @@ body {
 .dashboard-stats-bar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 6px 8px;
   background: linear-gradient(135deg, var(--tile) 0%, var(--tile) 100%);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .stat-column {
@@ -817,16 +814,16 @@ body {
 }
 
 .stat-column .stat-label {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--muted);
   text-transform: uppercase;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .stat-column .stat-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -834,13 +831,14 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 12px;
+  padding: 8px 10px;
   background: var(--tile);
   border: 2px solid var(--accent);
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-top: 8px;
+  margin-top: 6px;
+  min-height: auto;
 }
 
 .referrals-banner:hover {
@@ -857,22 +855,62 @@ body {
 }
 
 .referrals-banner-content i {
-  font-size: 24px;
+  font-size: 20px;
   color: var(--accent);
   flex-shrink: 0;
 }
 
 .referrals-banner-content h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
 
 .referrals-banner-content p {
-  margin: 3px 0 0;
-  font-size: 12px;
+  display: none;
+}
+
+/* MORE TOOLS TOGGLE */
+.more-toggle-btn {
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
   color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  transition: all 0.2s;
+}
+
+.more-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.more-toggle-btn i {
+  transition: transform 0.2s;
+}
+
+.more-toggle-btn.expanded i {
+  transform: rotate(180deg);
+}
+
+.secondary-tiles {
+  display: none;
+}
+
+.secondary-tiles.expanded {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .stats-section {
