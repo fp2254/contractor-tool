@@ -2574,6 +2574,8 @@ function wireWarrantyCheckbox(formType) {
   
   if (!checkbox || !container || !textarea) return;
   
+  const updatePreview = formType === 'invoice' ? updateInvoicePreview : updateQuotePreview;
+  
   checkbox.addEventListener("change", async () => {
     if (checkbox.checked) {
       container.classList.remove("hidden");
@@ -2594,7 +2596,12 @@ function wireWarrantyCheckbox(formType) {
     } else {
       container.classList.add("hidden");
     }
+    // Update preview to show/hide warranty text
+    updatePreview();
   });
+  
+  // Also update preview when warranty text is edited
+  textarea.addEventListener("input", updatePreview);
 }
 
 async function handleAddClient(e) {
@@ -5180,9 +5187,16 @@ function updateInvoicePreview() {
   
   const clientName = document.getElementById("invoice-client-name")?.value || '';
   const date = document.getElementById("invoice-date")?.value || new Date().toISOString().split('T')[0];
-  const notes = document.getElementById("invoice-notes")?.value || '';
+  let notes = document.getElementById("invoice-notes")?.value || '';
   const templateSelect = document.getElementById("invoice-template-select");
   const template = templateSelect ? templateSelect.value : 'basic_clean';
+  
+  // Include warranty text if checkbox is checked
+  const warrantyCheckbox = document.getElementById("invoice-include-warranty");
+  const warrantyText = document.getElementById("invoice-warranty-text")?.value || '';
+  if (warrantyCheckbox?.checked && warrantyText.trim()) {
+    notes = notes ? `${notes}\n\n--- Warranty/Terms ---\n${warrantyText}` : `--- Warranty/Terms ---\n${warrantyText}`;
+  }
   
   const items = getLineItemsFromUI();
   let subtotal = 0;
@@ -5246,9 +5260,16 @@ function updateQuotePreview() {
   
   const clientName = document.getElementById("quote-client-name")?.value || '';
   const date = document.getElementById("quote-date")?.value || new Date().toISOString().split('T')[0];
-  const notes = document.getElementById("quote-notes")?.value || '';
+  let notes = document.getElementById("quote-notes")?.value || '';
   const templateSelect = document.getElementById("quote-template");
   const template = templateSelect ? templateSelect.value : 'basic_clean';
+  
+  // Include warranty text if checkbox is checked
+  const warrantyCheckbox = document.getElementById("quote-include-warranty");
+  const warrantyText = document.getElementById("quote-warranty-text")?.value || '';
+  if (warrantyCheckbox?.checked && warrantyText.trim()) {
+    notes = notes ? `${notes}\n\n--- Warranty/Terms ---\n${warrantyText}` : `--- Warranty/Terms ---\n${warrantyText}`;
+  }
   
   const items = getQuoteLineItemsFromUI();
   let subtotal = 0;
