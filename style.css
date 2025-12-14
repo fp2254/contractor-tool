@@ -92,8 +92,16 @@ body {
 
 .app-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
+}
+
+.app-header.compact {
+  padding: 8px 14px;
+}
+
+.app-header.compact .app-title {
+  font-size: 20px;
 }
 
 .auth-logo {
