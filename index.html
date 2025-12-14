@@ -670,6 +670,20 @@
               </div>
             </div>
 
+            <!-- LIVE PREVIEW TOGGLE -->
+            <button type="button" id="btn-invoice-preview-toggle" class="preview-toggle-btn">
+              <i class="fa-solid fa-eye"></i> Show Preview
+            </button>
+            <div id="invoice-preview-panel" class="preview-panel hidden">
+              <div class="preview-panel-header">
+                <span>Live Preview</span>
+                <button type="button" class="preview-close-btn" onclick="toggleInvoicePreview()">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </div>
+              <div id="invoice-preview-content" class="preview-content"></div>
+            </div>
+
             <button type="submit" class="btn-primary" data-i18n="invoice.save">Save Invoice</button>
             <p id="invoice-error" class="error-text"></p>
           </form>
@@ -801,6 +815,20 @@
                 <span data-i18n="quote.total">Total:</span>
                 <span id="quote-total">$0.00</span>
               </div>
+            </div>
+
+            <!-- LIVE PREVIEW TOGGLE -->
+            <button type="button" id="btn-quote-preview-toggle" class="preview-toggle-btn">
+              <i class="fa-solid fa-eye"></i> Show Preview
+            </button>
+            <div id="quote-preview-panel" class="preview-panel hidden">
+              <div class="preview-panel-header">
+                <span>Live Preview</span>
+                <button type="button" class="preview-close-btn" onclick="toggleQuotePreview()">
+                  <i class="fa-solid fa-times"></i>
+                </button>
+              </div>
+              <div id="quote-preview-content" class="preview-content"></div>
             </div>
 
             <button type="submit" class="btn-primary" data-i18n="quote.save">Save Quote</button>

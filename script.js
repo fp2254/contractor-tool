@@ -1993,6 +1993,21 @@ function wireInvoiceUI() {
     .getElementById("btn-add-client-inline")
     .addEventListener("click", () => showScreen("clients"));
 
+  // Wire up invoice preview toggle
+  const invoicePreviewToggle = document.getElementById("btn-invoice-preview-toggle");
+  if (invoicePreviewToggle) {
+    invoicePreviewToggle.addEventListener("click", toggleInvoicePreview);
+  }
+
+  // Wire up live preview updates
+  document.getElementById("invoice-client-name").addEventListener("input", updateInvoicePreview);
+  document.getElementById("invoice-date").addEventListener("change", updateInvoicePreview);
+  const templateSelect = document.getElementById("invoice-template-select");
+  if (templateSelect) {
+    templateSelect.addEventListener("change", updateInvoicePreview);
+  }
+  document.getElementById("invoice-notes").addEventListener("input", updateInvoicePreview);
+
   addLineItemRow();
 }
 
@@ -2129,6 +2144,9 @@ function updateInvoiceTotals() {
     formatCurrency(subtotal);
   document.getElementById("display-tax").textContent = formatCurrency(tax);
   document.getElementById("display-total").textContent = formatCurrency(total);
+  
+  // Update live preview if visible
+  updateInvoicePreview();
 }
 
 // Helper calc
@@ -5026,6 +5044,9 @@ function updateQuoteTotals() {
   document.getElementById("quote-subtotal").textContent = formatCurrency(subtotal);
   document.getElementById("quote-tax-amount").textContent = formatCurrency(tax);
   document.getElementById("quote-total").textContent = formatCurrency(total);
+  
+  // Update live preview if visible
+  updateQuotePreview();
 }
 
 function wireQuotesUI() {
@@ -5042,6 +5063,201 @@ function wireQuotesUI() {
   const quoteTaxInput = document.getElementById("quote-tax");
   if (quoteTaxInput) {
     quoteTaxInput.addEventListener("input", updateQuoteTotals);
+  }
+
+  // Wire up quote preview toggle
+  const quotePreviewToggle = document.getElementById("btn-quote-preview-toggle");
+  if (quotePreviewToggle) {
+    quotePreviewToggle.addEventListener("click", toggleQuotePreview);
+  }
+
+  // Wire up live preview updates for quotes
+  const quoteClientName = document.getElementById("quote-client-name");
+  if (quoteClientName) {
+    quoteClientName.addEventListener("input", updateQuotePreview);
+  }
+  const quoteDate = document.getElementById("quote-date");
+  if (quoteDate) {
+    quoteDate.addEventListener("change", updateQuotePreview);
+  }
+  const quoteTemplate = document.getElementById("quote-template");
+  if (quoteTemplate) {
+    quoteTemplate.addEventListener("change", updateQuotePreview);
+  }
+  const quoteNotes = document.getElementById("quote-notes");
+  if (quoteNotes) {
+    quoteNotes.addEventListener("input", updateQuotePreview);
+  }
+}
+
+// LIVE PREVIEW FUNCTIONS
+
+let invoicePreviewVisible = false;
+let quotePreviewVisible = false;
+
+function toggleInvoicePreview() {
+  invoicePreviewVisible = !invoicePreviewVisible;
+  const panel = document.getElementById("invoice-preview-panel");
+  const btn = document.getElementById("btn-invoice-preview-toggle");
+  
+  if (invoicePreviewVisible) {
+    panel.classList.remove("hidden");
+    btn.classList.add("active");
+    btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Hide Preview';
+    updateInvoicePreview();
+  } else {
+    panel.classList.add("hidden");
+    btn.classList.remove("active");
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i> Show Preview';
+  }
+}
+
+function toggleQuotePreview() {
+  quotePreviewVisible = !quotePreviewVisible;
+  const panel = document.getElementById("quote-preview-panel");
+  const btn = document.getElementById("btn-quote-preview-toggle");
+  
+  if (quotePreviewVisible) {
+    panel.classList.remove("hidden");
+    btn.classList.add("active");
+    btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Hide Preview';
+    updateQuotePreview();
+  } else {
+    panel.classList.add("hidden");
+    btn.classList.remove("active");
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i> Show Preview';
+  }
+}
+
+function updateInvoicePreview() {
+  if (!invoicePreviewVisible) return;
+  
+  const content = document.getElementById("invoice-preview-content");
+  if (!content) return;
+  
+  const clientName = document.getElementById("invoice-client-name")?.value || '';
+  const date = document.getElementById("invoice-date")?.value || new Date().toISOString().split('T')[0];
+  const notes = document.getElementById("invoice-notes")?.value || '';
+  const templateSelect = document.getElementById("invoice-template-select");
+  const template = templateSelect ? templateSelect.value : 'basic_clean';
+  
+  const items = getLineItemsFromUI();
+  let subtotal = 0;
+  items.forEach(i => subtotal += i.line_total);
+  
+  const taxPercent = parseFloat(document.getElementById("helper-tax")?.value) || 0;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+  
+  const invoiceData = {
+    number: 'INV-PREVIEW',
+    date: date,
+    client_name: clientName || 'Client Name',
+    client: { email: '', phone: '', address: '' },
+    business_name: '',
+    address: '',
+    phone: '',
+    logo_url: '',
+    items: items.map(i => ({
+      description: i.description,
+      qty: i.qty,
+      price: i.unit_price,
+      total: i.line_total
+    })),
+    subtotal: subtotal,
+    tax: tax,
+    total: total,
+    notes: notes,
+    template: template
+  };
+  
+  // Use the template rendering functions from templates.js
+  let html = '';
+  if (template === 'basic_clean') {
+    html = renderBasicClean(invoiceData, 'INVOICE', 'number', 'date');
+  } else if (template === 'modern_pro') {
+    html = renderModernPro(invoiceData, 'INVOICE', 'number', 'date');
+  } else if (template === 'color_accent') {
+    html = renderColorAccent(invoiceData, 'INVOICE', 'number', 'date');
+  } else if (template === 'big_total') {
+    html = renderBigTotal(invoiceData, 'INVOICE', 'number', 'date');
+  }
+  
+  if (!clientName && items.length === 0) {
+    content.innerHTML = `
+      <div class="preview-empty">
+        <i class="fa-solid fa-file-invoice"></i>
+        Start filling out the form to see a live preview
+      </div>
+    `;
+  } else {
+    content.innerHTML = `<div class="preview-content-wrapper">${html}</div>`;
+  }
+}
+
+function updateQuotePreview() {
+  if (!quotePreviewVisible) return;
+  
+  const content = document.getElementById("quote-preview-content");
+  if (!content) return;
+  
+  const clientName = document.getElementById("quote-client-name")?.value || '';
+  const date = document.getElementById("quote-date")?.value || new Date().toISOString().split('T')[0];
+  const notes = document.getElementById("quote-notes")?.value || '';
+  const templateSelect = document.getElementById("quote-template");
+  const template = templateSelect ? templateSelect.value : 'basic_clean';
+  
+  const items = getQuoteLineItemsFromUI();
+  let subtotal = 0;
+  items.forEach(i => subtotal += i.line_total);
+  
+  const taxPercent = parseFloat(document.getElementById("quote-tax")?.value) || 0;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+  
+  const quoteData = {
+    quote_number: 'QUO-PREVIEW',
+    quote_date: date,
+    client_name: clientName || 'Client Name',
+    client: { email: '', phone: '', address: '' },
+    business_name: '',
+    address: '',
+    phone: '',
+    logo_url: '',
+    items: items.map(i => ({
+      description: i.description,
+      qty: i.quantity,
+      price: i.unit_price,
+      total: i.line_total
+    })),
+    subtotal: subtotal,
+    tax: tax,
+    total: total,
+    notes: notes,
+    template: template
+  };
+  
+  // Use the template rendering functions from templates.js
+  let html = '';
+  if (template === 'basic_clean') {
+    html = renderBasicClean(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+  } else if (template === 'modern_pro') {
+    html = renderModernPro(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+  } else if (template === 'color_accent') {
+    html = renderColorAccent(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+  } else if (template === 'big_total') {
+    html = renderBigTotal(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+  }
+  
+  if (!clientName && items.length === 0) {
+    content.innerHTML = `
+      <div class="preview-empty">
+        <i class="fa-solid fa-file-contract"></i>
+        Start filling out the form to see a live preview
+      </div>
+    `;
+  } else {
+    content.innerHTML = `<div class="preview-content-wrapper">${html}</div>`;
   }
 }
 
