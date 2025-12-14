@@ -451,8 +451,9 @@
             </div>
           </div>
 
-          <!-- PRIMARY TILES (always visible) -->
+          <!-- DASHBOARD TILES -->
           <div class="tile-grid">
+            <!-- ROW 1: IMMEDIATE ACTION -->
             <button class="tile tile-primary" data-screen="new-quote">
               <div class="tile-icon"><i class="fa-solid fa-plus-circle"></i></div>
               <div class="tile-text">
@@ -467,31 +468,11 @@
               </div>
             </button>
 
-            <button class="tile" data-screen="quotes">
-              <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.quotes">Quotes</h3>
-              </div>
-            </button>
-
+            <!-- ROW 2: MONEY STATUS -->
             <button class="tile" data-screen="invoices">
               <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.invoices">Invoices</h3>
-              </div>
-            </button>
-
-            <button class="tile" data-screen="clients">
-              <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.clients">Clients</h3>
-              </div>
-            </button>
-
-            <button class="tile" data-screen="jobs">
-              <div class="tile-icon"><i class="fa-solid fa-folder-tree"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.jobs">Job Folders</h3>
               </div>
             </button>
 
@@ -502,6 +483,37 @@
               </div>
             </button>
 
+            <!-- ROW 3: SALES PIPELINE -->
+            <button class="tile" data-screen="clients">
+              <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.clients">Clients</h3>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="quotes">
+              <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.quotes">Quotes</h3>
+              </div>
+            </button>
+
+            <!-- ROW 4: JOB EXECUTION -->
+            <button class="tile" data-screen="jobs">
+              <div class="tile-icon"><i class="fa-solid fa-folder-tree"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.jobs">Job Folders</h3>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="calendar">
+              <div class="tile-icon"><i class="fa-solid fa-calendar-days"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.calendar">Calendar</h3>
+              </div>
+            </button>
+
+            <!-- ROW 5: GROWTH / SECONDARY -->
             <button class="tile referrals-banner" data-screen="referrals">
               <div class="tile-icon"><i class="fa-solid fa-gift"></i></div>
               <div class="tile-text">
@@ -516,13 +528,7 @@
               </div>
             </button>
 
-            <button class="tile" data-screen="calendar">
-              <div class="tile-icon"><i class="fa-solid fa-calendar-days"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.calendar">Calendar</h3>
-              </div>
-            </button>
-
+            <!-- ROW 6: SETTINGS -->
             <button class="tile" data-screen="settings">
               <div class="tile-icon"><i class="fa-solid fa-gear"></i></div>
               <div class="tile-text">
@@ -530,6 +536,7 @@
               </div>
             </button>
 
+            <!-- ROW 7: FUTURE / HIDDEN -->
             <button class="tile" data-screen="trade-deals">
               <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
               <div class="tile-text">
