@@ -1535,17 +1535,23 @@ async function handleSignup(e) {
   }
 
   // Save trade type to profile after signup
-  if (data && data.user && data.user.id) {
+  if (data && data.user && data.user.id && data.session) {
     try {
-      // Store trade type in profile
-      await fetch("/api/profile", {
+      // Store trade type in profile - use apiFetch with auth token
+      const profileRes = await fetch("/api/profile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${data.session.access_token}`
+        },
         body: JSON.stringify({ 
           trade_type: tradeType,
           tos_accepted_at: new Date().toISOString()
         })
       });
+      if (!profileRes.ok) {
+        console.error("Profile creation failed:", await profileRes.text());
+      }
     } catch (err) {
       console.error("Error saving trade type:", err);
     }
@@ -1613,16 +1619,33 @@ async function onLoggedIn() {
   document.getElementById("auth-container").classList.add("hidden");
   document.getElementById("app-container").classList.remove("hidden");
   
-  // Load user preferences
+  // Load user preferences - auto-create profile if it doesn't exist
   try {
     const res = await apiFetch("/api/profile");
     if (res.ok) {
       const profile = await res.json();
-      if (profile?.preferred_language && profile.preferred_language !== currentLanguage) {
-        setLanguage(profile.preferred_language);
-      }
-      if (profile?.preferred_template && profile.preferred_template !== currentTemplate) {
-        setTemplate(profile.preferred_template);
+      
+      // If no profile exists, create one with trial
+      if (!profile) {
+        console.log("No profile found, creating one with trial...");
+        const createRes = await apiFetch("/api/profile", {
+          method: "POST",
+          body: JSON.stringify({})
+        });
+        if (createRes.ok) {
+          const newProfile = await createRes.json();
+          console.log("Profile created with trial:", newProfile);
+        } else {
+          console.error("Failed to create profile");
+        }
+      } else {
+        // Apply existing preferences
+        if (profile.preferred_language && profile.preferred_language !== currentLanguage) {
+          setLanguage(profile.preferred_language);
+        }
+        if (profile.preferred_template && profile.preferred_template !== currentTemplate) {
+          setTemplate(profile.preferred_template);
+        }
       }
     }
   } catch (err) {

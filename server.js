@@ -296,26 +296,39 @@ app.post("/api/profile", async (req, res) => {
 
   const payload = { ...req.body, id: userId };
   
-  // Set trial on first profile creation
+  // Check for existing profile and preserve critical fields
   const { data: existing } = await supabaseAdmin
     .from("profiles")
-    .select("id, trial_ends_at")
+    .select("id, trial_ends_at, subscription_status, subscription_plan, subscription_ends_at, ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start")
     .eq("id", userId)
     .single();
   
-  if (!existing || !existing.trial_ends_at) {
+  // Set trial only on FIRST profile creation (no existing profile at all)
+  if (!existing) {
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 14);
     payload.trial_ends_at = trialEnd.toISOString();
     payload.subscription_status = "trial";
+  } else {
+    // PRESERVE existing subscription and AI settings - never overwrite them
+    payload.trial_ends_at = existing.trial_ends_at;
+    payload.subscription_status = existing.subscription_status;
+    payload.subscription_plan = existing.subscription_plan;
+    payload.subscription_ends_at = existing.subscription_ends_at;
+    payload.ai_enabled = existing.ai_enabled;
+    payload.ai_plan = existing.ai_plan;
+    payload.ai_subscription_id = existing.ai_subscription_id;
+    payload.ai_actions_used = existing.ai_actions_used;
+    payload.ai_actions_limit = existing.ai_actions_limit;
+    payload.ai_billing_cycle_start = existing.ai_billing_cycle_start;
   }
 
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .upsert({
       ...payload,
-      preferred_language: payload.preferred_language || 'en',
-      preferred_template: payload.preferred_template || 'basic_clean',
+      preferred_language: payload.preferred_language || existing?.preferred_language || 'en',
+      preferred_template: payload.preferred_template || existing?.preferred_template || 'basic_clean',
       stripe_connect_enabled: true
     })
     .select()
