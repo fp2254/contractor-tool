@@ -66,6 +66,16 @@ const TRANSLATIONS = {
     "dashboard.settings_desc": "Logo, business info, defaults.",
     "dashboard.referrals": "Referrals",
     "dashboard.referrals_desc": "Share your link, earn 20% for life.",
+    "dashboard.talk_to_work": "Talk to Work",
+    "dashboard.talk_to_work_desc": "Add clients, inventory, or create quotes with your voice",
+    "dashboard.trade_deals": "Trade Deals",
+    "dashboard.coming_soon": "Coming Soon",
+    "dashboard.coming_soon_title": "Coming Soon!",
+    "dashboard.coming_soon_subtitle": "We're building something great for you.",
+    
+    // Voice
+    "voice.listening": "Listening...",
+    "voice.done_speaking": "Done Speaking",
     
     // Invoice
     "invoice.invoice": "INVOICE",
@@ -343,6 +353,16 @@ const TRANSLATIONS = {
     "dashboard.settings_desc": "Logotipo, info empresarial, predeterminados.",
     "dashboard.referrals": "Referidos",
     "dashboard.referrals_desc": "Comparte tu enlace, gana 20% de por vida.",
+    "dashboard.talk_to_work": "Habla para Trabajar",
+    "dashboard.talk_to_work_desc": "Agrega clientes, inventario o crea presupuestos con tu voz",
+    "dashboard.trade_deals": "Ofertas Comerciales",
+    "dashboard.coming_soon": "Próximamente",
+    "dashboard.coming_soon_title": "¡Próximamente!",
+    "dashboard.coming_soon_subtitle": "Estamos construyendo algo genial para ti.",
+    
+    // Voice
+    "voice.listening": "Escuchando...",
+    "voice.done_speaking": "Listo",
     
     "invoice.invoice": "FACTURA",
     "invoice.quote": "PRESUPUESTO",
@@ -594,6 +614,14 @@ const TRANSLATIONS = {
     "dashboard.settings_desc": "Logo, infos entreprise, défauts.",
     "dashboard.referrals": "Parrainages",
     "dashboard.referrals_desc": "Partagez votre lien, gagnez 20% à vie.",
+    "dashboard.talk_to_work": "Parler pour Travailler",
+    "dashboard.talk_to_work_desc": "Ajoutez des clients, inventaire ou créez des devis avec votre voix",
+    "dashboard.trade_deals": "Offres Commerciales",
+    "dashboard.coming_soon": "Bientôt Disponible",
+    "dashboard.coming_soon_title": "Bientôt Disponible!",
+    "dashboard.coming_soon_subtitle": "Nous construisons quelque chose de génial pour vous.",
+    "voice.listening": "Écoute...",
+    "voice.done_speaking": "Terminé",
     
     "invoice.invoice": "FACTURE",
     "invoice.quote": "DEVIS",
@@ -848,6 +876,14 @@ const TRANSLATIONS = {
     "dashboard.settings_desc": "Logo, Geschäftsinfo, Standards.",
     "dashboard.referrals": "Empfehlungen",
     "dashboard.referrals_desc": "Teilen Sie Ihren Link, verdienen Sie 20% auf Lebenszeit.",
+    "dashboard.talk_to_work": "Sprechen zum Arbeiten",
+    "dashboard.talk_to_work_desc": "Fügen Sie Kunden, Inventar hinzu oder erstellen Sie Angebote mit Ihrer Stimme",
+    "dashboard.trade_deals": "Handelsangebote",
+    "dashboard.coming_soon": "Demnächst",
+    "dashboard.coming_soon_title": "Demnächst!",
+    "dashboard.coming_soon_subtitle": "Wir bauen etwas Großartiges für Sie.",
+    "voice.listening": "Höre zu...",
+    "voice.done_speaking": "Fertig",
     
     "invoice.invoice": "RECHNUNG",
     "invoice.quote": "ANGEBOT",
@@ -1102,6 +1138,14 @@ const TRANSLATIONS = {
     "dashboard.settings_desc": "Logotipo, info empresarial, padrões.",
     "dashboard.referrals": "Indicações",
     "dashboard.referrals_desc": "Compartilhe seu link, ganhe 20% vitalício.",
+    "dashboard.talk_to_work": "Falar para Trabalhar",
+    "dashboard.talk_to_work_desc": "Adicione clientes, inventário ou crie orçamentos com sua voz",
+    "dashboard.trade_deals": "Ofertas Comerciais",
+    "dashboard.coming_soon": "Em Breve",
+    "dashboard.coming_soon_title": "Em Breve!",
+    "dashboard.coming_soon_subtitle": "Estamos construindo algo incrível para você.",
+    "voice.listening": "Ouvindo...",
+    "voice.done_speaking": "Pronto",
     
     "invoice.invoice": "FATURA",
     "invoice.quote": "ORÇAMENTO",

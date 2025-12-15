@@ -462,8 +462,8 @@
                 <i class="fa-solid fa-microphone"></i>
               </div>
               <div class="command-mic-text">
-                <h3>Talk to Work</h3>
-                <p>Add clients, inventory, or create quotes with your voice</p>
+                <h3 data-i18n="dashboard.talk_to_work">Talk to Work</h3>
+                <p data-i18n="dashboard.talk_to_work_desc">Add clients, inventory, or create quotes with your voice</p>
               </div>
             </button>
             
@@ -482,14 +482,14 @@
                     <i class="fa-solid fa-microphone"></i>
                   </div>
                 </div>
-                <p id="command-mic-status">Listening...</p>
+                <p id="command-mic-status" data-i18n="voice.listening">Listening...</p>
                 <p id="command-mic-transcript" class="command-mic-transcript"></p>
                 <div class="command-mic-actions">
                   <button id="btn-command-mic-stop" class="btn btn-primary" onclick="stopCommandMic()">
-                    <i class="fa-solid fa-stop"></i> Done Speaking
+                    <i class="fa-solid fa-stop"></i> <span data-i18n="voice.done_speaking">Done Speaking</span>
                   </button>
                   <button id="btn-command-mic-cancel" class="btn btn-secondary" onclick="cancelCommandMic()">
-                    Cancel
+                    <span data-i18n="common.cancel">Cancel</span>
                   </button>
                 </div>
               </div>
@@ -601,9 +601,9 @@
             <button class="tile" data-screen="trade-deals">
               <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
               <div class="tile-text">
-                <h3>Trade Deals</h3>
+                <h3 data-i18n="dashboard.trade_deals">Trade Deals</h3>
               </div>
-              <span class="coming-soon-badge">Coming Soon</span>
+              <span class="coming-soon-badge" data-i18n="dashboard.coming_soon">Coming Soon</span>
             </button>
 
             <button id="admin-tile-dashboard" class="tile" data-screen="admin" style="display: none;">
@@ -1089,13 +1089,13 @@
         <!-- TRADE DEALS -->
         <section id="screen-trade-deals" class="screen">
           <div class="screen-header">
-            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Trade Deals</h2>
+            <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
+            <h2 data-i18n="dashboard.trade_deals">Trade Deals</h2>
           </div>
           <div class="coming-soon-container">
             <div class="coming-soon-icon"><i class="fa-solid fa-tags"></i></div>
-            <h3>Coming Soon!</h3>
-            <p class="coming-soon-subtitle">We're building something great for you.</p>
+            <h3 data-i18n="dashboard.coming_soon_title">Coming Soon!</h3>
+            <p class="coming-soon-subtitle" data-i18n="dashboard.coming_soon_subtitle">We're building something great for you.</p>
             <div class="coming-soon-features">
               <div class="coming-soon-feature">
                 <i class="fa-solid fa-truck"></i>
