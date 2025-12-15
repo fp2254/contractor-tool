@@ -562,15 +562,17 @@ body {
 .tile {
   background: var(--tile);
   border-radius: 10px;
-  padding: 10px 10px 10px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   text-align: left;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  min-height: 52px;
+  min-height: 60px;
+  box-shadow: 0 1px 3px var(--shadow-light);
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
 .tile-full {
@@ -579,6 +581,12 @@ body {
 
 .tile:hover {
   background: var(--tile-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px var(--shadow);
+}
+
+.tile:active {
+  transform: scale(0.98);
 }
 
 .tile-icon {
@@ -5115,5 +5123,118 @@ body.multi-select-mode .bottom-nav {
   .preview-content-wrapper {
     transform: scale(0.5);
     width: 200%;
+  }
+}
+
+/* MOBILE DASHBOARD POLISH */
+@media (max-width: 600px) {
+  /* Reduce header spacing */
+  .app-header.compact {
+    padding: 6px 10px;
+  }
+  
+  .app-tagline {
+    font-size: 11px;
+  }
+  
+  /* Compact screen container */
+  #screen-container {
+    padding: 6px 6px 12px;
+  }
+  
+  /* Reduce Talk to Work button on mobile */
+  .command-mic-container {
+    margin-bottom: 4px;
+  }
+  
+  .talk-to-work-btn {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  
+  .talk-to-work-btn .command-mic-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .talk-to-work-btn .command-mic-text h3 {
+    font-size: 14px;
+  }
+  
+  /* Compact stats bar */
+  .dashboard-stats-bar {
+    padding: 4px 6px;
+    margin-bottom: 4px;
+  }
+  
+  .stat-column .stat-label {
+    font-size: 8px;
+  }
+  
+  .stat-column .stat-value {
+    font-size: 13px;
+  }
+  
+  /* Compact trust line */
+  .trust-line {
+    margin: 4px 0;
+    font-size: 10px;
+  }
+  
+  /* Compact hero CTA */
+  .tile-hero {
+    padding: 12px 16px;
+    margin-bottom: 6px;
+  }
+  
+  .tile-hero .tile-icon {
+    font-size: 20px;
+  }
+  
+  .tile-hero .tile-text h3 {
+    font-size: 14px;
+  }
+  
+  .tile-hero .tile-desc {
+    font-size: 11px;
+  }
+  
+  /* Compact tile grid */
+  .tile-grid {
+    gap: 4px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+  
+  /* Compact tiles - hide descriptions to reduce clutter */
+  .tile {
+    min-height: 52px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  
+  .tile .tile-desc {
+    display: none;
+  }
+  
+  /* Keep hero CTA description visible on mobile */
+  .tile-hero .tile-desc {
+    display: block;
+  }
+  
+  .tile-icon {
+    font-size: 16px;
+  }
+  
+  .tile-text h3 {
+    font-size: 12px;
+  }
+  
+  /* Compact AI usage pill */
+  .dashboard-ai-usage {
+    padding: 4px 10px;
+    font-size: 11px;
+    margin-top: 4px;
   }
 }
