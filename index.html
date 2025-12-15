@@ -691,6 +691,17 @@
                 </div>
               </div>
 
+              <!-- PAYMENT LINK SELECTOR -->
+              <div class="form-row">
+                <label data-i18n="invoice.payment_link">Payment Link</label>
+                <select id="invoice-payment-link-select">
+                  <option value="">-- No payment link --</option>
+                </select>
+                <p id="invoice-no-links-warning" class="warning-text" style="display: none; font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                  <i class="fa-solid fa-info-circle"></i> Add payment links in Settings to include a pay button on this invoice
+                </p>
+              </div>
+
               <!-- COST & MARKUP HELPER -->
               <div class="helper-card">
                 <h3 data-i18n="invoice.cost_helper">Cost & Markup Helper (optional)</h3>
@@ -1341,14 +1352,18 @@
 
             <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
 
-            <h3 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-credit-card" style="margin-right: 8px; color: var(--accent);"></i> Payment Collection</h3>
-            <div class="form-row">
-              <label>Your Payment Link</label>
-              <input type="url" id="business-payment-link" placeholder="https://venmo.com/yourname or PayPal.me/yourname" />
-              <p class="form-hint" style="font-size: 12px; color: var(--muted); margin-top: 4px;">
-                Paste your Venmo, PayPal, CashApp, or Zelle link. This is what customers will use to pay you.
-              </p>
+            <h3 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-credit-card" style="margin-right: 8px; color: var(--accent);"></i> Payment Links</h3>
+            <p class="form-hint" style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
+              Add your Venmo, PayPal, CashApp, or other payment links. Mark one as default for Quick Pay.
+            </p>
+            
+            <div id="payment-links-list" style="margin-bottom: 16px;">
+              <!-- Payment links will be rendered here -->
             </div>
+            
+            <button type="button" id="btn-add-payment-link" class="btn-secondary" style="width: 100%; padding: 14px; font-size: 15px;" onclick="showAddPaymentLinkModal()">
+              <i class="fa-solid fa-plus"></i> Add Payment Link
+            </button>
 
             <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
 
@@ -1377,18 +1392,48 @@
             <p id="settings-message" class="success-text"></p>
           </form>
 
-          <!-- Payment Collection Status -->
-          <div id="payment-collection-status" class="feature-status-card hidden">
-            <div class="feature-status-header">
-              <i class="fa-solid fa-credit-card"></i>
-              <h3>Payment Collection</h3>
-            </div>
-            <div class="feature-status-body">
-              <div class="status-badge status-active">
-                <i class="fa-solid fa-check-circle"></i>
-                <span>Active</span>
+          <!-- Payment Links Modal -->
+          <div id="payment-link-modal" class="modal-overlay hidden" onclick="if(event.target===this)closePaymentLinkModal()">
+            <div class="modal-card" style="max-width: 400px;">
+              <div class="modal-header">
+                <h3 id="payment-link-modal-title">Add Payment Link</h3>
+                <button class="modal-close" onclick="closePaymentLinkModal()">&times;</button>
               </div>
-              <p>Stripe Connect is enabled. You can collect payments directly from your invoices.</p>
+              <div class="modal-body">
+                <input type="hidden" id="payment-link-edit-id" />
+                
+                <div class="form-row">
+                  <label>Payment Provider</label>
+                  <select id="payment-link-provider" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 16px;">
+                    <option value="venmo">Venmo</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="cashapp">Cash App</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="stripe">Stripe</option>
+                    <option value="square">Square</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                <div class="form-row">
+                  <label>Label (optional)</label>
+                  <input type="text" id="payment-link-label" placeholder="e.g., Personal Venmo, Business PayPal" />
+                </div>
+                
+                <div class="form-row">
+                  <label>Payment Link URL</label>
+                  <input type="url" id="payment-link-url" placeholder="https://venmo.com/yourname" required />
+                </div>
+                
+                <div class="form-row" style="display: flex; align-items: center; gap: 10px;">
+                  <input type="checkbox" id="payment-link-default" style="width: 20px; height: 20px;" />
+                  <label for="payment-link-default" style="margin: 0; cursor: pointer;">Set as default payment link</label>
+                </div>
+              </div>
+              <div class="modal-footer" style="display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="closePaymentLinkModal()" style="flex: 1;">Cancel</button>
+                <button class="btn-primary" onclick="savePaymentLink()" style="flex: 1;">Save</button>
+              </div>
             </div>
           </div>
 
@@ -2010,6 +2055,16 @@
           <div>
             <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Description (optional)</label>
             <input type="text" id="quick-pay-description" placeholder="e.g. Bathroom repair, deposit, etc." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Payment Link *</label>
+            <select id="quick-pay-link-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;">
+              <option value="">-- Select payment link --</option>
+            </select>
+            <p id="quick-pay-no-links-warning" style="display: none; color: var(--warning); font-size: 12px; margin-top: 6px;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Add a payment link in Settings first.
+            </p>
           </div>
           
           <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">

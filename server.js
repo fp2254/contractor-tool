@@ -493,6 +493,192 @@ app.get("/api/profile/lifetime-count", async (req, res) => {
   }
 });
 
+// ================== PAYMENT LINKS CRUD ==================
+
+// GET all payment links for user
+app.get("/api/payment-links", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("payment_links")
+      .select("*")
+      .eq("profile_id", userId)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching payment links:", error);
+      return res.status(500).json({ error: error.message });
+    }
+    res.json(data || []);
+  } catch (err) {
+    console.error("Error in get payment links:", err);
+    res.status(500).json({ error: "Failed to fetch payment links" });
+  }
+});
+
+// POST create a new payment link
+app.post("/api/payment-links", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { provider, label, url, is_default } = req.body;
+
+  if (!provider || !url) {
+    return res.status(400).json({ error: "Provider and URL are required" });
+  }
+
+  try {
+    // If this is set as default, unset any existing default
+    if (is_default) {
+      await supabaseAdmin
+        .from("payment_links")
+        .update({ is_default: false })
+        .eq("profile_id", userId);
+    }
+
+    // Get the max sort_order for this user
+    const { data: existing } = await supabaseAdmin
+      .from("payment_links")
+      .select("sort_order")
+      .eq("profile_id", userId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = (existing?.[0]?.sort_order || 0) + 1;
+
+    const { data, error } = await supabaseAdmin
+      .from("payment_links")
+      .insert({
+        profile_id: userId,
+        provider,
+        label: label || provider,
+        url,
+        is_default: is_default || false,
+        sort_order: nextOrder
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating payment link:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("Error in create payment link:", err);
+    res.status(500).json({ error: "Failed to create payment link" });
+  }
+});
+
+// PUT update a payment link
+app.put("/api/payment-links/:id", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+  const { provider, label, url, is_default } = req.body;
+
+  try {
+    // If setting as default, unset any existing default
+    if (is_default) {
+      await supabaseAdmin
+        .from("payment_links")
+        .update({ is_default: false })
+        .eq("profile_id", userId);
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("payment_links")
+      .update({
+        provider,
+        label,
+        url,
+        is_default: is_default || false,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id)
+      .eq("profile_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating payment link:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("Error in update payment link:", err);
+    res.status(500).json({ error: "Failed to update payment link" });
+  }
+});
+
+// DELETE a payment link
+app.delete("/api/payment-links/:id", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+
+  try {
+    const { error } = await supabaseAdmin
+      .from("payment_links")
+      .delete()
+      .eq("id", id)
+      .eq("profile_id", userId);
+
+    if (error) {
+      console.error("Error deleting payment link:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error in delete payment link:", err);
+    res.status(500).json({ error: "Failed to delete payment link" });
+  }
+});
+
+// PATCH set a payment link as default
+app.patch("/api/payment-links/:id/default", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+
+  try {
+    // Unset any existing default
+    await supabaseAdmin
+      .from("payment_links")
+      .update({ is_default: false })
+      .eq("profile_id", userId);
+
+    // Set the new default
+    const { data, error } = await supabaseAdmin
+      .from("payment_links")
+      .update({ is_default: true, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("profile_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error setting default payment link:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("Error in set default payment link:", err);
+    res.status(500).json({ error: "Failed to set default payment link" });
+  }
+});
+
+// ================== END PAYMENT LINKS ==================
+
 // ENABLE STRIPE CONNECT (FREE FOR EVERYONE)
 app.post("/api/stripe-connect/enable", async (req, res) => {
   const userId = req.userId;
@@ -641,7 +827,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -652,6 +838,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       date,
       notes,
       template: template || "basic_clean",
+      payment_link: payment_link || null,
       subtotal,
       tax,
       total,
@@ -690,7 +877,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceId = req.params.id;
-  const { client_id, client_name, date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -713,6 +900,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
       date,
       notes,
       template: template || "basic_clean",
+      payment_link: payment_link || null,
       subtotal,
       tax,
       total
@@ -1028,35 +1216,33 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
   }
 });
 
-// Quick Pay - Use contractor's custom payment link (Venmo, PayPal, etc.)
+// Quick Pay - Use contractor's selected payment link (Venmo, PayPal, etc.)
 app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { amount, description, sendMethod, email, name, phone } = req.body;
+  const { amount, description, sendMethod, email, name, phone, payment_link } = req.body;
 
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: "Valid amount is required" });
   }
 
+  if (!payment_link) {
+    return res.status(400).json({ error: "Payment link is required" });
+  }
+
   try {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("business_name, business_email, business_phone, payment_link")
+      .select("business_name, business_email, business_phone")
       .eq("id", userId)
       .single();
 
     const businessName = profile?.business_name || 'Payment Request';
     const paymentDescription = description || 'Payment Request';
     
-    // Use contractor's custom payment link
-    const paymentUrl = profile?.payment_link;
-    
-    if (!paymentUrl) {
-      return res.status(400).json({ 
-        error: "No payment link configured. Please add your Venmo, PayPal, or CashApp link in Settings." 
-      });
-    }
+    // Use the payment link passed from client
+    const paymentUrl = payment_link;
 
     let sendResult = { sent: false };
 

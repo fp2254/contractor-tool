@@ -1772,7 +1772,64 @@ function openQuickPayModal() {
     document.getElementById("quick-pay-submit-section").style.display = "none";
     document.getElementById("quick-pay-method-text").classList.remove("active");
     document.getElementById("quick-pay-method-email").classList.remove("active");
+    
+    // Populate payment links dropdown
+    populateQuickPayLinkSelector();
   }
+}
+
+function populateQuickPayLinkSelector() {
+  const select = document.getElementById("quick-pay-link-select");
+  const warning = document.getElementById("quick-pay-no-links-warning");
+  if (!select) return;
+  
+  select.innerHTML = '<option value="">-- Select payment link --</option>';
+  
+  if (paymentLinksCache.length === 0) {
+    warning.style.display = "block";
+    return;
+  }
+  
+  warning.style.display = "none";
+  
+  paymentLinksCache.forEach(link => {
+    const providerName = link.provider.charAt(0).toUpperCase() + link.provider.slice(1);
+    const displayLabel = link.label || providerName;
+    const option = document.createElement("option");
+    option.value = link.url;
+    option.textContent = `${displayLabel}${link.is_default ? ' (Default)' : ''}`;
+    if (link.is_default) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+function populateInvoiceLinkSelector(selectedUrl = null) {
+  const select = document.getElementById("invoice-payment-link-select");
+  const warning = document.getElementById("invoice-no-links-warning");
+  if (!select) return;
+  
+  select.innerHTML = '<option value="">-- No payment link --</option>';
+  
+  if (paymentLinksCache.length === 0) {
+    if (warning) warning.style.display = "block";
+    return;
+  }
+  
+  if (warning) warning.style.display = "none";
+  
+  paymentLinksCache.forEach(link => {
+    const providerName = link.provider.charAt(0).toUpperCase() + link.provider.slice(1);
+    const displayLabel = link.label || providerName;
+    const option = document.createElement("option");
+    option.value = link.url;
+    option.textContent = `${displayLabel}${link.is_default ? ' (Default)' : ''}`;
+    if (selectedUrl && link.url === selectedUrl) {
+      option.selected = true;
+    } else if (!selectedUrl && link.is_default) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
 }
 
 function closeQuickPayModal() {
@@ -1852,9 +1909,15 @@ async function handleQuickPaySubmit(e) {
   
   const amount = parseFloat(document.getElementById("quick-pay-amount").value);
   const description = document.getElementById("quick-pay-description").value.trim();
+  const selectedPaymentLink = document.getElementById("quick-pay-link-select").value;
   
   if (!amount || amount <= 0) {
     showToast("Please enter a valid amount");
+    return;
+  }
+  
+  if (!selectedPaymentLink) {
+    showToast("Please select a payment link");
     return;
   }
   
@@ -1865,9 +1928,11 @@ async function handleQuickPaySubmit(e) {
   
   const submitBtn = document.querySelector("#quick-pay-submit-section button");
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Link...';
+  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
   
   try {
+    const message = `Hi! Here's your payment link for $${amount.toFixed(2)}${description ? ` (${description})` : ''}: ${selectedPaymentLink}`;
+    
     if (quickPayMethod === "text") {
       const phone = document.getElementById("quick-pay-phone").value.trim();
       if (!phone) {
@@ -1876,19 +1941,6 @@ async function handleQuickPaySubmit(e) {
         submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Payment Request';
         return;
       }
-      
-      const res = await apiFetch("/api/quick-pay", {
-        method: "POST",
-        body: JSON.stringify({ amount, description, sendMethod: "text" })
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create payment link");
-      }
-      
-      const data = await res.json();
-      const message = `Hi! Here's your payment link for $${amount.toFixed(2)}${description ? ` (${description})` : ''}: ${data.payment_link}`;
       
       // Try multiple methods to open SMS
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -1907,7 +1959,7 @@ async function handleQuickPaySubmit(e) {
       } else {
         // On desktop, show a popup with the link to copy
         closeQuickPayModal();
-        showQuickPayLinkPopup(data.payment_link, phone, message);
+        showQuickPayLinkPopup(selectedPaymentLink, phone, message);
       }
       
     } else if (quickPayMethod === "email") {
@@ -1921,14 +1973,15 @@ async function handleQuickPaySubmit(e) {
         return;
       }
       
+      // Send email via server
       const res = await apiFetch("/api/quick-pay", {
         method: "POST",
-        body: JSON.stringify({ amount, description, sendMethod: "email", email, name })
+        body: JSON.stringify({ amount, description, sendMethod: "email", email, name, payment_link: selectedPaymentLink })
       });
       
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to create payment link");
+        throw new Error(err.error || "Failed to send email");
       }
       
       const data = await res.json();
@@ -1937,7 +1990,7 @@ async function handleQuickPaySubmit(e) {
         closeQuickPayModal();
         showToast(`Payment request sent to ${email}!`);
       } else {
-        showToast("Payment link created but email failed to send. Link: " + data.payment_link);
+        showToast("Email failed to send. You can copy the link: " + selectedPaymentLink);
       }
     }
   } catch (err) {
@@ -2013,6 +2066,7 @@ async function loadInitialData() {
     loadInvoices(),
     loadQuotes(),
     loadSettings(),
+    loadPaymentLinks(),
     loadReferralSummary(),
     loadPaymentStats(),
   ]);
@@ -2277,6 +2331,7 @@ async function handleInvoiceSubmit(e) {
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
   const template = document.getElementById("invoice-template-select").value || "basic_clean";
+  const paymentLink = document.getElementById("invoice-payment-link-select")?.value || null;
   const items = getLineItemsFromUI();
 
   if (!clientName) {
@@ -2301,6 +2356,7 @@ async function handleInvoiceSubmit(e) {
     date,
     notes,
     template,
+    payment_link: paymentLink,
     subtotal,
     tax,
     total,
@@ -2409,6 +2465,9 @@ function editInvoice(invoice) {
     templateSelect.value = invoice.template;
   }
   
+  // Populate and set payment link selector
+  populateInvoiceLinkSelector(invoice.payment_link || null);
+  
   // Clear existing line items and add invoice items
   const container = document.getElementById("line-items");
   container.innerHTML = "";
@@ -2448,6 +2507,9 @@ function resetInvoiceForm() {
   document.getElementById("invoice-client-name").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
+  
+  // Reset payment link selector to default
+  populateInvoiceLinkSelector(null);
   
   const container = document.getElementById("line-items");
   container.innerHTML = "";
@@ -3983,8 +4045,6 @@ async function loadSettings() {
   document.getElementById("business-phone").value = profile.business_phone || "";
   document.getElementById("business-email").value = profile.business_email || "";
   document.getElementById("business-address").value = profile.business_address || "";
-  document.getElementById("business-payment-link").value = profile.payment_link || "";
-
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
   
@@ -4026,7 +4086,6 @@ async function handleSaveSettings(e) {
     business_phone: document.getElementById("business-phone").value,
     business_email: document.getElementById("business-email").value,
     business_address: document.getElementById("business-address").value,
-    payment_link: document.getElementById("business-payment-link").value,
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,
@@ -4085,6 +4144,192 @@ async function handleSaveSettings(e) {
     msg.style.color = "var(--danger)";
   }
 }
+
+// ================== PAYMENT LINKS MANAGEMENT ==================
+
+let paymentLinksCache = [];
+
+const PROVIDER_ICONS = {
+  venmo: 'fa-brands fa-venmo',
+  paypal: 'fa-brands fa-paypal',
+  cashapp: 'fa-solid fa-dollar-sign',
+  zelle: 'fa-solid fa-z',
+  stripe: 'fa-brands fa-stripe',
+  square: 'fa-solid fa-square',
+  other: 'fa-solid fa-link'
+};
+
+const PROVIDER_COLORS = {
+  venmo: '#3D95CE',
+  paypal: '#003087',
+  cashapp: '#00D632',
+  zelle: '#6D1ED4',
+  stripe: '#635BFF',
+  square: '#3E4348',
+  other: '#666'
+};
+
+async function loadPaymentLinks() {
+  if (tourMode) return;
+  
+  try {
+    const res = await apiFetch("/api/payment-links");
+    if (!res.ok) return;
+    
+    paymentLinksCache = await res.json();
+    renderPaymentLinksList();
+  } catch (err) {
+    console.error("Error loading payment links:", err);
+  }
+}
+
+function renderPaymentLinksList() {
+  const container = document.getElementById("payment-links-list");
+  if (!container) return;
+  
+  if (paymentLinksCache.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--muted); background: var(--bg-secondary); border-radius: 8px;">
+        <i class="fa-solid fa-credit-card" style="font-size: 24px; margin-bottom: 8px;"></i>
+        <p>No payment links added yet</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = paymentLinksCache.map(link => {
+    const icon = PROVIDER_ICONS[link.provider] || PROVIDER_ICONS.other;
+    const color = PROVIDER_COLORS[link.provider] || PROVIDER_COLORS.other;
+    const providerName = link.provider.charAt(0).toUpperCase() + link.provider.slice(1);
+    const displayLabel = link.label || providerName;
+    const truncatedUrl = link.url.length > 35 ? link.url.substring(0, 35) + '...' : link.url;
+    
+    return `
+      <div class="payment-link-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 8px;">
+        <div style="width: 40px; height: 40px; border-radius: 8px; background: ${color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <i class="${icon}" style="color: white; font-size: 18px;"></i>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <strong style="font-size: 14px;">${escapeHtml(displayLabel)}</strong>
+            ${link.is_default ? '<span style="background: var(--accent); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">DEFAULT</span>' : ''}
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(truncatedUrl)}</p>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          ${!link.is_default ? `<button class="icon-btn" onclick="setDefaultPaymentLink('${link.id}')" title="Set as default" style="padding: 8px;"><i class="fa-solid fa-star" style="color: var(--muted);"></i></button>` : ''}
+          <button class="icon-btn" onclick="editPaymentLink('${link.id}')" title="Edit" style="padding: 8px;"><i class="fa-solid fa-pen" style="color: var(--muted);"></i></button>
+          <button class="icon-btn" onclick="deletePaymentLink('${link.id}')" title="Delete" style="padding: 8px;"><i class="fa-solid fa-trash" style="color: var(--danger);"></i></button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showAddPaymentLinkModal() {
+  document.getElementById("payment-link-modal-title").textContent = "Add Payment Link";
+  document.getElementById("payment-link-edit-id").value = "";
+  document.getElementById("payment-link-provider").value = "venmo";
+  document.getElementById("payment-link-label").value = "";
+  document.getElementById("payment-link-url").value = "";
+  document.getElementById("payment-link-default").checked = paymentLinksCache.length === 0;
+  document.getElementById("payment-link-modal").classList.remove("hidden");
+}
+
+function editPaymentLink(id) {
+  const link = paymentLinksCache.find(l => l.id === id);
+  if (!link) return;
+  
+  document.getElementById("payment-link-modal-title").textContent = "Edit Payment Link";
+  document.getElementById("payment-link-edit-id").value = id;
+  document.getElementById("payment-link-provider").value = link.provider;
+  document.getElementById("payment-link-label").value = link.label || "";
+  document.getElementById("payment-link-url").value = link.url;
+  document.getElementById("payment-link-default").checked = link.is_default;
+  document.getElementById("payment-link-modal").classList.remove("hidden");
+}
+
+function closePaymentLinkModal() {
+  document.getElementById("payment-link-modal").classList.add("hidden");
+}
+
+async function savePaymentLink() {
+  const id = document.getElementById("payment-link-edit-id").value;
+  const provider = document.getElementById("payment-link-provider").value;
+  const label = document.getElementById("payment-link-label").value;
+  const url = document.getElementById("payment-link-url").value;
+  const is_default = document.getElementById("payment-link-default").checked;
+  
+  if (!url) {
+    showToast("Please enter a payment link URL", "error");
+    return;
+  }
+  
+  try {
+    const endpoint = id ? `/api/payment-links/${id}` : "/api/payment-links";
+    const method = id ? "PUT" : "POST";
+    
+    const res = await apiFetch(endpoint, {
+      method,
+      body: JSON.stringify({ provider, label, url, is_default })
+    });
+    
+    if (!res.ok) {
+      const data = await res.json();
+      showToast(data.error || "Failed to save payment link", "error");
+      return;
+    }
+    
+    showToast(id ? "Payment link updated!" : "Payment link added!");
+    closePaymentLinkModal();
+    await loadPaymentLinks();
+  } catch (err) {
+    console.error("Error saving payment link:", err);
+    showToast("Failed to save payment link", "error");
+  }
+}
+
+async function deletePaymentLink(id) {
+  if (!confirm("Delete this payment link?")) return;
+  
+  try {
+    const res = await apiFetch(`/api/payment-links/${id}`, { method: "DELETE" });
+    
+    if (!res.ok) {
+      showToast("Failed to delete payment link", "error");
+      return;
+    }
+    
+    showToast("Payment link deleted");
+    await loadPaymentLinks();
+  } catch (err) {
+    console.error("Error deleting payment link:", err);
+    showToast("Failed to delete payment link", "error");
+  }
+}
+
+async function setDefaultPaymentLink(id) {
+  try {
+    const res = await apiFetch(`/api/payment-links/${id}/default`, { method: "PATCH" });
+    
+    if (!res.ok) {
+      showToast("Failed to set default", "error");
+      return;
+    }
+    
+    showToast("Default payment link updated!");
+    await loadPaymentLinks();
+  } catch (err) {
+    console.error("Error setting default:", err);
+    showToast("Failed to set default", "error");
+  }
+}
+
+function getDefaultPaymentLink() {
+  return paymentLinksCache.find(l => l.is_default) || paymentLinksCache[0] || null;
+}
+
+// ================== END PAYMENT LINKS ==================
 
 // REFERRALS
 
