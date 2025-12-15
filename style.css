@@ -352,10 +352,11 @@ body {
   top: 100%;
   right: 0;
   margin-top: 8px;
-  background: var(--surface);
+  background: var(--bg-alt);
   border: 1px solid var(--border);
   border-radius: 12px;
-  width: 320px;
+  width: 300px;
+  max-width: calc(100vw - 20px);
   max-height: 400px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -470,10 +471,21 @@ body {
 }
 
 .notification-empty {
-  padding: 40px 20px;
+  padding: 32px 20px;
   text-align: center;
   color: var(--muted);
   font-size: 14px;
+}
+
+.notification-empty i {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.notification-empty p {
+  margin: 0;
 }
 
 #screen-container {
