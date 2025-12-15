@@ -274,31 +274,45 @@ async function requireAI(req, res, next) {
 
 // Log AI usage and increment counter
 async function logAIUsage(userId, toolType) {
+  console.log(`Logging AI usage for user ${userId}, tool: ${toolType}`);
+  
+  // Always do the direct increment - most reliable approach
   try {
-    // Log the usage
-    await supabaseAdmin
-      .from("ai_usage_logs")
-      .insert({ user_id: userId, tool_type: toolType });
+    const { data: profile, error: fetchError } = await supabaseAdmin
+      .from("profiles")
+      .select("ai_actions_used")
+      .eq("id", userId)
+      .single();
     
-    // Increment the counter
-    await supabaseAdmin.rpc('increment_ai_actions', { user_id_param: userId });
+    if (fetchError) {
+      console.error("Failed to fetch profile for AI usage:", fetchError);
+      return;
+    }
+    
+    const currentUsage = profile?.ai_actions_used || 0;
+    const newUsage = currentUsage + 1;
+    
+    const { error: updateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ ai_actions_used: newUsage })
+      .eq("id", userId);
+    
+    if (updateError) {
+      console.error("Failed to update AI usage:", updateError);
+    } else {
+      console.log(`AI usage updated: ${currentUsage} -> ${newUsage}`);
+    }
+    
+    // Also try to log to ai_usage_logs table (optional, don't fail if it doesn't exist)
+    try {
+      await supabaseAdmin
+        .from("ai_usage_logs")
+        .insert({ user_id: userId, tool_type: toolType });
+    } catch (logErr) {
+      // Table might not exist, that's okay
+    }
   } catch (err) {
     console.error("Failed to log AI usage:", err);
-    // Fallback: try direct increment if RPC doesn't exist
-    try {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("ai_actions_used")
-        .eq("id", userId)
-        .single();
-      
-      await supabaseAdmin
-        .from("profiles")
-        .update({ ai_actions_used: (profile?.ai_actions_used || 0) + 1 })
-        .eq("id", userId);
-    } catch (fallbackErr) {
-      console.error("Fallback increment failed:", fallbackErr);
-    }
   }
 }
 
