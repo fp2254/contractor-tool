@@ -6943,6 +6943,14 @@ function updateAIUI(data = {}) {
 }
 
 function updateAIUsageDisplay(usage) {
+  if (!usage) return;
+  
+  const used = usage.actions_used || 0;
+  const limit = usage.actions_limit || 300;
+  const remaining = limit - used;
+  const percentage = Math.min((used / limit) * 100, 100);
+  
+  // Update Settings page elements (if present)
   const usedEl = document.getElementById("ai-actions-used");
   const limitEl = document.getElementById("ai-actions-limit");
   const fillEl = document.getElementById("ai-usage-fill");
@@ -6952,15 +6960,19 @@ function updateAIUsageDisplay(usage) {
   const limitReachedEl = document.getElementById("ai-usage-limit-reached");
   const limitResetDateEl = document.getElementById("ai-limit-reset-date");
   
-  if (!usage) return;
-  
-  const used = usage.actions_used || 0;
-  const limit = usage.actions_limit || 300;
-  const remaining = limit - used;
-  const percentage = Math.min((used / limit) * 100, 100);
-  
   if (usedEl) usedEl.textContent = used;
   if (limitEl) limitEl.textContent = limit;
+  
+  // Update Dashboard AI usage pill (always visible when AI enabled)
+  const dashboardUsedEl = document.getElementById("dashboard-ai-used");
+  const dashboardLimitEl = document.getElementById("dashboard-ai-limit");
+  const dashboardContainer = document.getElementById("dashboard-ai-usage");
+  
+  if (dashboardUsedEl) dashboardUsedEl.textContent = used;
+  if (dashboardLimitEl) dashboardLimitEl.textContent = limit;
+  if (dashboardContainer && aiEnabled) {
+    dashboardContainer.classList.remove("hidden");
+  }
   
   if (fillEl) {
     fillEl.style.width = `${percentage}%`;
