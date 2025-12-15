@@ -3983,6 +3983,7 @@ async function loadSettings() {
   document.getElementById("business-phone").value = profile.business_phone || "";
   document.getElementById("business-email").value = profile.business_email || "";
   document.getElementById("business-address").value = profile.business_address || "";
+  document.getElementById("business-payment-link").value = profile.payment_link || "";
 
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
@@ -4025,6 +4026,7 @@ async function handleSaveSettings(e) {
     business_phone: document.getElementById("business-phone").value,
     business_email: document.getElementById("business-email").value,
     business_address: document.getElementById("business-address").value,
+    payment_link: document.getElementById("business-payment-link").value,
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,

@@ -64,7 +64,7 @@
       "Create professional invoices and quotes",
       "Job folder organization",
       "Offline-first functionality",
-      "Stripe payment integration",
+      "Payment link integration",
       "Voice-to-quote AI assistant",
       "Multi-language support"
     ]
@@ -153,7 +153,7 @@
               <div class="lp-step-number">3</div>
               <div class="lp-step-content">
                 <h3>Send it and get paid online</h3>
-                <p>Email or text a Stripe payment link, track status in one place, and stop chasing checks.</p>
+                <p>Email or text a payment link, track status in one place, and stop chasing checks.</p>
               </div>
             </div>
           </div>
@@ -175,7 +175,7 @@
               <ul class="lp-pricing-features">
                 <li><i class="fa-solid fa-check"></i> Invoices & quotes</li>
                 <li><i class="fa-solid fa-check"></i> Job folders & clients</li>
-                <li><i class="fa-solid fa-check"></i> Stripe payments</li>
+                <li><i class="fa-solid fa-check"></i> Payment links (Venmo, PayPal, etc.)</li>
                 <li><i class="fa-solid fa-check"></i> Offline mode</li>
                 <li><i class="fa-solid fa-check"></i> Referral program (20% for life)</li>
               </ul>
@@ -1337,6 +1337,17 @@
               <label data-i18n="settings.logo">Upload Logo</label>
               <input type="file" id="business-logo" accept="image/*" />
               <div id="business-logo-preview" class="logo-preview"></div>
+            </div>
+
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+
+            <h3 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-credit-card" style="margin-right: 8px; color: var(--accent);"></i> Payment Collection</h3>
+            <div class="form-row">
+              <label>Your Payment Link</label>
+              <input type="url" id="business-payment-link" placeholder="https://venmo.com/yourname or PayPal.me/yourname" />
+              <p class="form-hint" style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                Paste your Venmo, PayPal, CashApp, or Zelle link. This is what customers will use to pay you.
+              </p>
             </div>
 
             <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">

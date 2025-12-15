@@ -972,7 +972,7 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
 
 // PAYMENT ENDPOINTS
 
-// Generate Stripe Payment Link for an invoice
+// Get contractor's payment link for an invoice
 app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -993,7 +993,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("business_name")
+      .select("business_name, payment_link")
       .eq("id", userId)
       .single();
 
@@ -1001,35 +1001,19 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    const amountInCents = Math.round((invoice.total || 0) * 100);
+    // Use contractor's custom payment link
+    const paymentUrl = profile?.payment_link;
     
-    const paymentLink = await stripe.paymentLinks.create({
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `Invoice #${invoice.number || invoice.id}`,
-            description: `Payment for ${profile.business_name || 'invoice'}`,
-          },
-          unit_amount: amountInCents,
-        },
-        quantity: 1,
-      }],
-      metadata: {
-        invoice_id: invoiceId,
-        user_id: userId,
-      },
-      after_completion: {
-        type: 'hosted_confirmation',
-        hosted_confirmation: {
-          custom_message: 'Thank you for your payment! Your invoice has been marked as paid.',
-        },
-      },
-    });
+    if (!paymentUrl) {
+      return res.status(400).json({ 
+        error: "No payment link configured. Please add your Venmo, PayPal, or CashApp link in Settings." 
+      });
+    }
 
+    // Save the payment link reference to the invoice
     const { error: updateErr } = await supabaseAdmin
       .from("invoices")
-      .update({ payment_link: paymentLink.url })
+      .update({ payment_link: paymentUrl })
       .eq("id", invoiceId)
       .eq("user_id", userId);
 
@@ -1037,14 +1021,14 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
       console.error("Error saving payment link:", updateErr);
     }
 
-    res.json({ payment_link: paymentLink.url });
+    res.json({ payment_link: paymentUrl });
   } catch (error) {
-    console.error("Error creating payment link:", error);
-    res.status(500).json({ error: "Failed to create payment link" });
+    console.error("Error getting payment link:", error);
+    res.status(500).json({ error: "Failed to get payment link" });
   }
 });
 
-// Quick Pay - Generate standalone payment link and optionally send via email
+// Quick Pay - Use contractor's custom payment link (Venmo, PayPal, etc.)
 app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1058,38 +1042,21 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   try {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("business_name, business_email, business_phone")
+      .select("business_name, business_email, business_phone, payment_link")
       .eq("id", userId)
       .single();
 
     const businessName = profile?.business_name || 'Payment Request';
-    const amountInCents = Math.round(amount * 100);
     const paymentDescription = description || 'Payment Request';
-
-    const paymentLink = await stripe.paymentLinks.create({
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: paymentDescription,
-            description: `Payment to ${businessName}`,
-          },
-          unit_amount: amountInCents,
-        },
-        quantity: 1,
-      }],
-      metadata: {
-        user_id: userId,
-        type: 'quick_pay',
-        description: paymentDescription,
-      },
-      after_completion: {
-        type: 'hosted_confirmation',
-        hosted_confirmation: {
-          custom_message: 'Thank you for your payment!',
-        },
-      },
-    });
+    
+    // Use contractor's custom payment link
+    const paymentUrl = profile?.payment_link;
+    
+    if (!paymentUrl) {
+      return res.status(400).json({ 
+        error: "No payment link configured. Please add your Venmo, PayPal, or CashApp link in Settings." 
+      });
+    }
 
     let sendResult = { sent: false };
 
@@ -1102,9 +1069,9 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
             <p>You have received a payment request for <strong>$${parseFloat(amount).toFixed(2)}</strong>.</p>
             ${description ? `<p><strong>For:</strong> ${description}</p>` : ''}
             <div style="margin: 30px 0; text-align: center;">
-              <a href="${paymentLink.url}" style="background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Pay Now</a>
+              <a href="${paymentUrl}" style="background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Pay Now - $${parseFloat(amount).toFixed(2)}</a>
             </div>
-            <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link: ${paymentLink.url}</p>
+            <p style="color: #666; font-size: 14px;">Click the button above to pay via ${businessName}'s preferred payment method.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
             <p style="color: #999; font-size: 12px;">Powered by Skippy Stack</p>
           </div>
@@ -1125,7 +1092,7 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
     }
 
     res.json({ 
-      payment_link: paymentLink.url, 
+      payment_link: paymentUrl, 
       amount: amount,
       description: paymentDescription,
       sendResult
@@ -5408,10 +5375,10 @@ app.get("/view/invoice/:id", async (req, res) => {
       .select("*")
       .eq("invoice_id", invoiceId);
     
-    // Get business profile
+    // Get business profile (including payment_link)
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("business_name, email, phone, address, logo_url")
+      .select("business_name, email, phone, address, logo_url, payment_link")
       .eq("id", invoice.user_id)
       .single();
     
@@ -5518,7 +5485,7 @@ app.get("/view/invoice/:id", async (req, res) => {
     </div>
     
     <div class="actions">
-      ${invoice.payment_link && invoice.payment_status !== 'paid' ? `<a href="${invoice.payment_link}" class="btn btn-primary">Pay Now</a>` : ''}
+      ${(profile?.payment_link || invoice.payment_link) && invoice.payment_status !== 'paid' ? `<a href="${profile?.payment_link || invoice.payment_link}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
       <a href="javascript:window.print()" class="btn btn-secondary">Print / Save PDF</a>
     </div>
     
