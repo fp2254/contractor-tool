@@ -413,6 +413,7 @@
       <header class="app-header compact">
         <div>
           <h1 class="app-title">Skippy Stack</h1>
+          <p class="app-tagline">Quote, send a pay link, and get paid in under 60 seconds.</p>
         </div>
         <div class="header-actions">
           <div id="online-status-indicator" class="online-status online">
@@ -512,6 +513,20 @@
             </div>
           </div>
 
+          <!-- TRUST LINE -->
+          <p class="trust-line" id="trust-line">
+            <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
+          </p>
+
+          <!-- HERO CTA -->
+          <button class="tile tile-hero" id="btn-quick-pay">
+            <div class="tile-icon"><i class="fa-solid fa-paper-plane"></i></div>
+            <div class="tile-text">
+              <h3>Quick Pay Link</h3>
+              <p class="tile-desc">Send a link — no invoice needed</p>
+            </div>
+          </button>
+
           <!-- DASHBOARD TILES -->
           <div class="tile-grid">
             <!-- ROW 1: IMMEDIATE ACTION -->
@@ -519,58 +534,66 @@
               <div class="tile-icon"><i class="fa-solid fa-plus-circle"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.create_quote">Create Quote</h3>
+                <p class="tile-desc">Convert to invoice in one tap</p>
               </div>
             </button>
 
-            <button class="tile tile-accent" id="btn-quick-pay">
-              <div class="tile-icon"><i class="fa-solid fa-paper-plane"></i></div>
-              <div class="tile-text">
-                <h3>Quick Pay Link</h3>
-              </div>
-            </button>
-
-            <!-- ROW 2: MONEY STATUS -->
             <button class="tile" data-screen="invoices">
               <div class="tile-icon"><i class="fa-solid fa-folder-open"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.invoices">Invoices</h3>
+                <p class="tile-desc">Track what's due</p>
               </div>
             </button>
 
+            <!-- ROW 2: MONEY STATUS -->
             <button class="tile" data-screen="payments">
               <div class="tile-icon"><i class="fa-solid fa-credit-card"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.payments">Payments</h3>
+                <p class="tile-desc">See paid vs pending</p>
               </div>
             </button>
 
-            <!-- ROW 3: SALES PIPELINE -->
             <button class="tile" data-screen="clients">
               <div class="tile-icon"><i class="fa-solid fa-user"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.clients">Clients</h3>
+                <p class="tile-desc">Contacts & history</p>
               </div>
             </button>
 
+            <!-- ROW 3: SALES PIPELINE -->
             <button class="tile" data-screen="quotes">
               <div class="tile-icon"><i class="fa-solid fa-clipboard-list"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.quotes">Quotes</h3>
+                <p class="tile-desc">Draft & send estimates</p>
               </div>
             </button>
 
-            <!-- ROW 4: JOB EXECUTION -->
             <button class="tile" data-screen="jobs">
               <div class="tile-icon"><i class="fa-solid fa-folder-tree"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.jobs">Job Folders</h3>
+                <p class="tile-desc">Photos, notes, files</p>
               </div>
             </button>
 
+            <!-- ROW 4: JOB EXECUTION -->
             <button class="tile" data-screen="calendar">
               <div class="tile-icon"><i class="fa-solid fa-calendar-days"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.calendar">Calendar</h3>
+                <p class="tile-desc">Schedule jobs</p>
+              </div>
+            </button>
+
+            <button class="tile" data-screen="inventory">
+              <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div class="tile-text">
+                <h3 data-i18n="dashboard.inventory">Inventory</h3>
+                <p class="tile-desc">Parts & supplies</p>
               </div>
             </button>
 
@@ -579,31 +602,24 @@
               <div class="tile-icon"><i class="fa-solid fa-gift"></i></div>
               <div class="tile-text">
                 <h3>Referrals</h3>
+                <p class="tile-desc">Earn from invites</p>
               </div>
             </button>
 
-            <button class="tile" data-screen="inventory">
-              <div class="tile-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-              <div class="tile-text">
-                <h3 data-i18n="dashboard.inventory">Inventory</h3>
-              </div>
-            </button>
-
-            <!-- ROW 6: SETTINGS -->
             <button class="tile" data-screen="settings">
               <div class="tile-icon"><i class="fa-solid fa-gear"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.settings">Settings</h3>
+                <p class="tile-desc">Company + preferences</p>
               </div>
             </button>
 
-            <!-- ROW 7: FUTURE / HIDDEN -->
-            <button class="tile" data-screen="trade-deals">
+            <!-- ROW 7: FUTURE / HIDDEN - Trade Deals hidden until ready -->
+            <button class="tile" data-screen="trade-deals" style="display: none;">
               <div class="tile-icon"><i class="fa-solid fa-tags"></i></div>
               <div class="tile-text">
                 <h3 data-i18n="dashboard.trade_deals">Trade Deals</h3>
               </div>
-              <span class="coming-soon-badge" data-i18n="dashboard.coming_soon">Coming Soon</span>
             </button>
 
             <button id="admin-tile-dashboard" class="tile" data-screen="admin" style="display: none;">

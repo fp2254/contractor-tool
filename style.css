@@ -825,6 +825,78 @@ body {
   background: var(--tile-hover);
 }
 
+/* App Tagline */
+.app-tagline {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Trust Line */
+.trust-line {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.trust-line i {
+  color: #4CAF50;
+}
+
+/* Hero CTA Tile */
+.tile-hero {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--accent) 0%, #5856d6 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tile-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(79, 140, 255, 0.4);
+}
+
+.tile-hero .tile-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.tile-hero .tile-text h3 {
+  color: white;
+  font-size: 16px;
+  margin: 0;
+}
+
+.tile-hero .tile-desc {
+  color: rgba(255,255,255,0.85);
+  font-size: 12px;
+  margin: 2px 0 0 0;
+  display: block;
+}
+
+/* Tile Descriptions */
+.tile-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 2px 0 0 0;
+  display: block;
+}
+
 /* DASHBOARD STATS */
 
 .btn-new-invoice {
