@@ -7044,6 +7044,52 @@ function cancelAISubscription() {
   }
 }
 
+async function clearLocalCache() {
+  if (!confirm("This will clear all locally cached data and reload the app. Continue?")) {
+    return;
+  }
+  
+  try {
+    // Clear IndexedDB
+    const databases = await indexedDB.databases();
+    for (const db of databases) {
+      if (db.name) {
+        indexedDB.deleteDatabase(db.name);
+      }
+    }
+    
+    // Clear localStorage
+    localStorage.clear();
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    
+    // Unregister service workers
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
+    }
+    
+    // Clear caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      for (const name of cacheNames) {
+        await caches.delete(name);
+      }
+    }
+    
+    showToast("Cache cleared! Reloading...");
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 1000);
+  } catch (err) {
+    console.error("Error clearing cache:", err);
+    showToast("Error clearing cache. Try clearing browser data manually.");
+  }
+}
+
 function closeCancelAIModal() {
   const modal = document.getElementById("cancel-ai-modal");
   if (modal) {
