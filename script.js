@@ -2776,6 +2776,15 @@ async function loadClients() {
     }
   }
 
+  if (!clients.length) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-user-plus empty-state-icon"></i>
+      <p class="empty-state-title">No clients yet</p>
+      <p class="empty-state-desc">Add your first client using the form above</p>
+    </div>`;
+    return;
+  }
+
   clients.forEach((c) => {
     const isOffline = isOfflineId(c.id);
     const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning);">📱</span>' : '';
@@ -2989,8 +2998,10 @@ async function loadInvoices(showArchived = false) {
   invoices.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   if (!invoices.length) {
-    list.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted);">
-      ${showArchived ? 'No archived invoices' : 'No invoices yet. Create one to get started!'}
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-file-invoice empty-state-icon"></i>
+      <p class="empty-state-title">${showArchived ? 'No archived invoices' : 'No invoices yet'}</p>
+      <p class="empty-state-desc">${showArchived ? 'Archived invoices will appear here' : 'Create your first invoice to start tracking payments'}</p>
     </div>`;
     if (!showArchived) renderDashboardStats([]);
     return;
@@ -3068,8 +3079,10 @@ async function loadQuotes(showArchived = false) {
   }
 
   if (!quotes.length) {
-    list.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted);">
-      ${showArchived ? 'No archived quotes' : 'No quotes yet. Create one to get started!'}
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-clipboard-list empty-state-icon"></i>
+      <p class="empty-state-title">${showArchived ? 'No archived quotes' : 'No quotes yet'}</p>
+      <p class="empty-state-desc">${showArchived ? 'Archived quotes will appear here' : 'Create your first quote to send estimates to clients'}</p>
     </div>`;
     return;
   }
