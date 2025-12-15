@@ -875,6 +875,8 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
   }
 
   const invoiceId = req.params.id;
+  console.log("Delete invoice request - invoiceId:", invoiceId, "userId:", userId);
+  
   if (!invoiceId) {
     return res.status(400).json({ error: "Invalid invoice ID" });
   }
@@ -888,8 +890,10 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
       .eq("user_id", userId)
       .single();
 
+    console.log("Find result - invoice:", invoice, "error:", findError);
+
     if (findError || !invoice) {
-      return res.status(404).json({ error: "Invoice not found" });
+      return res.status(404).json({ error: "Invoice not found", details: findError?.message });
     }
 
     // Delete related items and attachments
