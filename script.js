@@ -10223,7 +10223,7 @@ async function bulkDeleteSelected() {
         case "client": endpoint = `/api/clients/${item.id}`; break;
         case "job": endpoint = `/api/jobs/${item.id}`; break;
         case "inventory": endpoint = `/api/inventory/${item.id}`; break;
-        case "event": endpoint = `/api/calendar/${item.id}`; break;
+        case "event": endpoint = `/api/calendar-events/${item.id}`; break;
         default: 
           console.log('Unknown item type:', item.type);
           continue;
