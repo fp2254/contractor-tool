@@ -7524,11 +7524,17 @@ async function confirmActionPreview(previewId) {
     }
     
   } catch (err) {
-    // Only log if it's a real error (not an empty object from somewhere)
-    if (err && (err.message || Object.keys(err).length > 0)) {
+    // Only log and show toast for real errors with content
+    const hasMessage = err && err.message && err.message.length > 0;
+    const hasKeys = err && typeof err === 'object' && Object.keys(err).length > 0;
+    if (hasMessage) {
       console.error("Confirm action error:", err);
-      showToast(err.message || "Failed to execute actions", "error");
+      showToast(err.message, "error");
+    } else if (hasKeys && !(err instanceof Object && Object.keys(err).length === 0)) {
+      console.error("Confirm action error:", err);
+      showToast("Failed to execute actions", "error");
     }
+    // Silently ignore empty objects - likely a spurious error from somewhere
     if (modal) modal.remove();
   }
 }
