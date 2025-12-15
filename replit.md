@@ -34,7 +34,7 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Offline PWA**: Progressive Web App with an offline-first architecture using Service Worker and IndexedDB.
 - **Job Folders**: Automatic job organization by ClientName_Address_Date_JobType, linking invoices, quotes, photos, and voice notes.
 - **Notification Center**: In-app system for system messages and announcements.
-- **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, `system_messages`, `calendar_events`, and `ai_usage_logs` tables.
+- **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, `system_messages`, `calendar_events`, `ai_usage_logs`, and `payment_links` tables.
 - **File Storage**: Supabase Storage for `logos` and `invoice-photos`.
 - **API Endpoints**: RESTful APIs for managing core entities.
 - **Inventory Management**: Comprehensive system for managing inventory items, including quantity tracking and alerts.
@@ -58,7 +58,8 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Public Invoice View**: Clients can view invoices via a public URL, including a "Pay Now" button if a payment link exists.
 - **Calendar Feature**: Full calendar for scheduling events, linked to clients, jobs, quotes, and invoices.
 - **Send Text Button**: Allows sending invoices via native SMS app with pre-filled message.
-- **Quick Pay Link**: Dashboard tile for sending payment requests without creating full invoices. Supports sending via SMS (opens native messaging app) or email (via Resend). Creates Stripe payment links on demand.
+- **Quick Pay Link**: Dashboard tile for sending payment requests without creating full invoices. Supports sending via SMS (opens native messaging app) or email (via Resend). Uses user's saved payment links.
+- **Multiple Payment Links System**: Users can save multiple payment methods (Venmo, PayPal, CashApp, Zelle, Stripe, Square, Other) in Settings. Each payment link has a provider, custom label, URL, and optional default flag. Payment link selector appears in Quick Pay modal and Invoice form. Selected payment link is stored per invoice and displayed on the public invoice view.
 - **Mobile Download Improvement**: Uses navigator.share() API on mobile for native sharing, with data URL fallback for iOS long-press save.
 
 ## External Dependencies
