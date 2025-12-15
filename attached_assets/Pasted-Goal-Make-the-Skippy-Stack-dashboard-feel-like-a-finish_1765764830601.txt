@@ -1,0 +1,61 @@
+Goal: Make the Skippy Stack dashboard feel like a finished, production SaaS (not an MVP) with better hierarchy, copy, consistency, and polish — without adding major new features.
+
+1) Remove MVP “tells”
+- Remove any “Coming Soon” badges from the dashboard.
+- For unfinished features, either:
+  A) Hide the tile entirely for non-admin users, OR
+  B) Show a disabled “locked” tile with a tooltip/subtext: “Locked — available in Pro” (no “coming soon” language).
+
+2) Add a clear product value sentence
+- Under the “Skippy Stack” header, add a single-line tagline that explains the outcome:
+  “Quote, send a pay link, and get paid in under 60 seconds.”
+- Keep it subtle (small text), consistent with the theme.
+
+3) Establish visual hierarchy (one primary action)
+- Make ONE primary CTA tile visually dominant:
+  Option A: “Quick Pay Link” (recommended)
+  Option B: “Create Quote”
+- The primary tile should be larger (or full width) and appear first.
+- All other tiles should be secondary style.
+
+4) Add microcopy to tiles (small helper text under the title)
+Add one short line under each tile title, e.g.:
+- Quick Pay Link: “Send a link — no invoice needed”
+- Create Quote: “Convert to invoice in one tap”
+- Invoices: “Track what’s due”
+- Payments: “See paid vs pending”
+- Clients: “Contacts & history”
+- Job Folders: “Photos, notes, files”
+- Calendar: “Schedule jobs”
+- Referrals: “Earn from invites”
+- Inventory: “Parts & supplies”
+- Settings: “Company + preferences”
+Keep these one line, muted color, consistent font.
+
+5) Improve spacing + consistency
+- Standardize tile height, padding, border radius, and icon size.
+- Ensure consistent font sizes/weights across all tiles.
+- Make tile borders/shadows consistent across the grid.
+
+6) Empty states (must feel finished)
+For each module page (Invoices, Payments, Quotes, etc.), if there’s no data, show an “empty state” card with:
+- A short explanation of what the page is for
+- One primary button to create the first item
+Example:
+“No invoices yet. Create a quote and turn it into cash today.”
+[Create Quote]
+
+7) Professional “trust” micro-band
+- Under the stats row (Outstanding/Paid/Pending), add a small trust line:
+  “Secure payments. Funds go directly to your account.”
+(Only show if payments are enabled; otherwise show “Connect payments to accept cards.”)
+
+8) Mobile polish
+- Ensure tiles and primary CTA look great on iPhone widths.
+- Primary CTA should stay above the fold.
+- Reduce visual clutter (no extra badges, no redundant icons).
+
+Deliverable:
+- Update the dashboard layout + styling + copy based on the above.
+- Keep the code changes clean and minimal (CSS + component layout).
+- Do not add new backend features; this is UI/UX polish only.
