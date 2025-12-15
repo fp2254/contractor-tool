@@ -4464,6 +4464,8 @@ app.post("/api/voice-command/confirm", requireAI, async (req, res) => {
     const actionSetId = crypto.randomUUID ? crypto.randomUUID() : `set_${Date.now()}`;
     const actions = [];
     
+    let successfulActions = 0;
+    
     for (const planned of pending.actions) {
       try {
         console.log(`Confirming ${planned.toolName}:`, planned.args);
@@ -4473,6 +4475,11 @@ app.post("/api/voice-command/confirm", requireAI, async (req, res) => {
         
         // Log to activity log
         await logActivityAction(userId, actionSetId, result);
+        
+        // Track successful action for usage counting
+        if (result.success) {
+          successfulActions++;
+        }
       } catch (execError) {
         console.error(`Tool execution error for ${planned.toolName}:`, execError);
         actions.push({
@@ -4486,6 +4493,13 @@ app.post("/api/voice-command/confirm", requireAI, async (req, res) => {
     
     // Remove the pending preview
     pendingActionPreviews.delete(previewId);
+    
+    // Increment AI usage counter for successful actions
+    if (successfulActions > 0) {
+      for (let i = 0; i < successfulActions; i++) {
+        await logAIUsage(userId, "voice_action_executed");
+      }
+    }
     
     // Get updated usage info to return to frontend
     const usage = await getAIUsageInfo(userId);
