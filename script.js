@@ -7524,8 +7524,11 @@ async function confirmActionPreview(previewId) {
     }
     
   } catch (err) {
-    console.error("Confirm action error:", err);
-    showToast(err.message || "Failed to execute actions", "error");
+    // Only log if it's a real error (not an empty object from somewhere)
+    if (err && (err.message || Object.keys(err).length > 0)) {
+      console.error("Confirm action error:", err);
+      showToast(err.message || "Failed to execute actions", "error");
+    }
     if (modal) modal.remove();
   }
 }

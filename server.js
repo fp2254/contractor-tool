@@ -4286,7 +4286,7 @@ app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, re
     
     // If audio file provided, transcribe it first
     if (req.file && !transcript) {
-      await logAIUsage(userId, "voice_transcription");
+      // Note: Usage is only counted when action is confirmed/executed, not during transcription
       
       const fs = await import("fs");
       const path = await import("path");
@@ -4315,8 +4315,7 @@ app.post("/api/voice-command", requireAI, upload.single("audio"), async (req, re
 
     console.log("Voice command transcript:", transcript);
     
-    // Log AI usage for intent parsing
-    await logAIUsage(userId, "voice_command");
+    // Note: Usage is only counted when action is confirmed/executed, not during parsing
 
     // Use function calling to determine intent and extract data
     const systemPrompt = `You are a voice command assistant for a contractor/tradesperson app. Parse the user's spoken command and call the appropriate function(s).
