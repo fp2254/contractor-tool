@@ -7368,6 +7368,11 @@ async function processCommandMicAudio() {
         await new Promise(r => setTimeout(r, 500));
       }
       refreshAfterVoiceCommand(result.actions);
+      
+      // Update AI usage display with returned data
+      if (result.usage) {
+        updateAIUsageDisplay(result.usage);
+      }
     }
     
   } catch (err) {
@@ -7499,6 +7504,11 @@ async function confirmActionPreview(previewId) {
       }
       
       refreshAfterVoiceCommand(result.actions);
+    }
+    
+    // Update AI usage display with returned data
+    if (result.usage) {
+      updateAIUsageDisplay(result.usage);
     }
     
   } catch (err) {

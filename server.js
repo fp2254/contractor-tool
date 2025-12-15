@@ -302,6 +302,37 @@ async function logAIUsage(userId, toolType) {
   }
 }
 
+// Get current AI usage info for a user
+async function getAIUsageInfo(userId) {
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("ai_actions_used, ai_actions_limit, ai_billing_cycle_start")
+      .eq("id", userId)
+      .single();
+    
+    if (!profile) return null;
+    
+    const cycleStart = new Date(profile.ai_billing_cycle_start || Date.now());
+    const resetDate = new Date(cycleStart);
+    resetDate.setMonth(resetDate.getMonth() + 1);
+    
+    const actionsUsed = profile.ai_actions_used || 0;
+    const actionsLimit = profile.ai_actions_limit || 300;
+    
+    return {
+      actions_used: actionsUsed,
+      actions_limit: actionsLimit,
+      reset_date: resetDate.toISOString(),
+      is_at_limit: actionsUsed >= actionsLimit,
+      is_warning: actionsUsed >= 250 && actionsUsed < actionsLimit
+    };
+  } catch (err) {
+    console.error("Failed to get AI usage info:", err);
+    return null;
+  }
+}
+
 // SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
 async function requireSubscription(req, res, next) {
   const userId = req.userId;
@@ -4382,11 +4413,15 @@ Today's date is: ${new Date().toISOString().split("T")[0]}`;
       }
     }
 
+    // Get updated usage info to return to frontend
+    const usage = await getAIUsageInfo(userId);
+
     res.json({
       status: "ok",
       actionSetId,
       transcript,
-      actions
+      actions,
+      usage
     });
 
   } catch (error) {
@@ -4452,11 +4487,15 @@ app.post("/api/voice-command/confirm", requireAI, async (req, res) => {
     // Remove the pending preview
     pendingActionPreviews.delete(previewId);
     
+    // Get updated usage info to return to frontend
+    const usage = await getAIUsageInfo(userId);
+
     res.json({
       status: "ok",
       actionSetId,
       transcript: pending.transcript,
-      actions
+      actions,
+      usage
     });
     
   } catch (error) {
