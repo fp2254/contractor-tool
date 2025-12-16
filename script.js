@@ -4329,6 +4329,14 @@ function getDefaultPaymentLink() {
   return paymentLinksCache.find(l => l.is_default) || paymentLinksCache[0] || null;
 }
 
+// Expose payment link functions globally for onclick handlers
+window.showAddPaymentLinkModal = showAddPaymentLinkModal;
+window.closePaymentLinkModal = closePaymentLinkModal;
+window.savePaymentLink = savePaymentLink;
+window.editPaymentLink = editPaymentLink;
+window.deletePaymentLink = deletePaymentLink;
+window.setDefaultPaymentLink = setDefaultPaymentLink;
+
 // ================== END PAYMENT LINKS ==================
 
 // REFERRALS
