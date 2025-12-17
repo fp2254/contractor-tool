@@ -2686,6 +2686,16 @@ function wireSettingsUI() {
     .getElementById("btn-copy-referral")
     .addEventListener("click", copyReferralLink);
   
+  // Wire up payment link button
+  const addPaymentLinkBtn = document.getElementById("btn-add-payment-link");
+  if (addPaymentLinkBtn) {
+    addPaymentLinkBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showAddPaymentLinkModal();
+    });
+  }
+  
   // Wire up warranty checkboxes for invoice and quote forms
   wireWarrantyCheckbox("invoice");
   wireWarrantyCheckbox("quote");
