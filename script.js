@@ -3829,18 +3829,33 @@ async function previewInvoiceTemplateForText(invoice, templateId) {
   const modal = document.getElementById("template-preview-modal");
   const content = document.getElementById("template-preview-content");
   
-  if (!modal || !content) return;
+  if (!modal || !content) {
+    console.error("Preview modal not found");
+    return;
+  }
   
   closeTemplateChooser();
   
   try {
+    console.log("Loading preview for invoice:", invoice.id, "template:", templateId);
+    
     const [invoiceRes, profileRes] = await Promise.all([
       apiFetch(`/api/invoices/${invoice.id}`),
       apiFetch("/api/profile")
     ]);
     
+    if (!invoiceRes.ok) {
+      const errData = await invoiceRes.json();
+      console.error("Invoice fetch failed:", errData);
+      showToast("Failed to load invoice: " + (errData.error || "Unknown error"));
+      return;
+    }
+    
     const invoiceData = await invoiceRes.json();
     const profile = await profileRes.json();
+    
+    console.log("Invoice data loaded:", invoiceData);
+    console.log("Profile loaded:", profile);
     
     const invoiceForTemplate = {
       ...invoiceData,
@@ -4905,6 +4920,12 @@ function closeTemplateChooser() {
   const modal = document.getElementById("template-chooser-modal");
   modal.style.display = 'none';
 }
+
+function closeTemplatePreview() {
+  const modal = document.getElementById("template-preview-modal");
+  if (modal) modal.style.display = 'none';
+}
+window.closeTemplatePreview = closeTemplatePreview;
 
 // EMAIL INVOICE MODAL
 
