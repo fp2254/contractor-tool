@@ -4243,7 +4243,7 @@ function showAddPaymentLinkModal() {
   document.getElementById("payment-link-label").value = "";
   document.getElementById("payment-link-url").value = "";
   document.getElementById("payment-link-default").checked = paymentLinksCache.length === 0;
-  document.getElementById("payment-link-modal").classList.remove("hidden");
+  document.getElementById("payment-link-modal").classList.add("active");
 }
 
 function editPaymentLink(id) {
@@ -4256,11 +4256,11 @@ function editPaymentLink(id) {
   document.getElementById("payment-link-label").value = link.label || "";
   document.getElementById("payment-link-url").value = link.url;
   document.getElementById("payment-link-default").checked = link.is_default;
-  document.getElementById("payment-link-modal").classList.remove("hidden");
+  document.getElementById("payment-link-modal").classList.add("active");
 }
 
 function closePaymentLinkModal() {
-  document.getElementById("payment-link-modal").classList.add("hidden");
+  document.getElementById("payment-link-modal").classList.remove("active");
 }
 
 async function savePaymentLink() {
