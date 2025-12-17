@@ -519,6 +519,14 @@
           </p>
 
           <!-- HERO CTA -->
+          <button class="tile tile-hero" id="btn-quick-pay-venmo" style="background: linear-gradient(135deg, #008CFF 0%, #3D95CE 100%); border: none;">
+            <div class="tile-icon" style="color: white;"><i class="fa-brands fa-vimeo-v"></i></div>
+            <div class="tile-text">
+              <h3 style="color: white;">Quick Pay (Venmo)</h3>
+              <p class="tile-desc" style="color: rgba(255,255,255,0.85);">Request payment with amount pre-filled</p>
+            </div>
+          </button>
+
           <button class="tile tile-hero" id="btn-quick-pay">
             <div class="tile-icon"><i class="fa-solid fa-paper-plane"></i></div>
             <div class="tile-text">
@@ -1356,6 +1364,12 @@
             <p class="form-hint" style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">
               Add your Venmo, PayPal, CashApp, or other payment links. Mark one as default for Quick Pay.
             </p>
+            
+            <div class="form-row" style="margin-bottom: 16px;">
+              <label><i class="fa-brands fa-vimeo-v" style="margin-right: 6px; color: #3D95CE;"></i> Venmo Username (for Quick Pay)</label>
+              <input type="text" id="venmo-username" placeholder="@YourVenmoName or just YourVenmoName" style="font-size: 16px;" />
+              <p class="form-hint" style="font-size: 12px; color: var(--muted); margin-top: 4px;">Used for Quick Pay Venmo - sends payment requests with amounts pre-filled.</p>
+            </div>
             
             <div id="payment-links-list" style="margin-bottom: 16px;">
               <!-- Payment links will be rendered here -->
@@ -2302,6 +2316,40 @@
       <div class="modal-footer" style="display: flex; gap: 10px;">
         <button class="btn-secondary" onclick="closePaymentLinkModal()" style="flex: 1;">Cancel</button>
         <button class="btn-primary" onclick="savePaymentLink()" style="flex: 1;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Pay Venmo Modal -->
+  <div id="quick-pay-venmo-modal" class="modal-overlay" onclick="if(event.target===this)closeQuickPayVenmoModal()">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #008CFF 0%, #3D95CE 100%);">
+        <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-brands fa-vimeo-v"></i> Quick Pay (Venmo)
+        </h3>
+        <button class="modal-close" onclick="closeQuickPayVenmoModal()" style="color: white;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div class="form-row" style="margin-bottom: 20px;">
+          <label style="font-weight: 600; font-size: 15px;">Amount ($)</label>
+          <input type="number" id="venmo-pay-amount" placeholder="0.00" min="0.01" step="0.01" style="font-size: 24px; padding: 16px; text-align: center; font-weight: bold;" />
+        </div>
+        
+        <div class="form-row" style="margin-bottom: 20px;">
+          <label style="font-weight: 600; font-size: 15px;">Note / Memo (optional)</label>
+          <input type="text" id="venmo-pay-note" placeholder="e.g., Radon job - 8 Natures Way" style="font-size: 16px; padding: 14px;" />
+        </div>
+        
+        <div id="venmo-pay-preview" style="display: none; background: var(--tile); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">Generated Link:</p>
+          <p id="venmo-pay-url-preview" style="font-size: 13px; word-break: break-all; color: var(--accent);"></p>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 10px; padding: 16px 20px;">
+        <button class="btn-secondary" onclick="closeQuickPayVenmoModal()" style="flex: 1; padding: 14px;">Cancel</button>
+        <button class="btn-primary" onclick="generateVenmoPayLink()" style="flex: 1; padding: 14px; background: #008CFF;">
+          <i class="fa-solid fa-share-nodes"></i> Generate & Share
+        </button>
       </div>
     </div>
   </div>

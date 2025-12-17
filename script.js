@@ -1729,12 +1729,17 @@ let quickPayMethod = null;
 
 function wireQuickPayModal() {
   const quickPayBtn = document.getElementById("btn-quick-pay");
+  const quickPayVenmoBtn = document.getElementById("btn-quick-pay-venmo");
   const closeBtn = document.getElementById("close-quick-pay-modal");
   const modal = document.getElementById("quick-pay-modal");
   const form = document.getElementById("quick-pay-form");
   
   if (quickPayBtn) {
     quickPayBtn.addEventListener("click", openQuickPayModal);
+  }
+  
+  if (quickPayVenmoBtn) {
+    quickPayVenmoBtn.addEventListener("click", openQuickPayVenmoModal);
   }
   
   if (closeBtn) {
@@ -4058,6 +4063,11 @@ async function loadSettings() {
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
   
+  const venmoField = document.getElementById("venmo-username");
+  if (venmoField) {
+    venmoField.value = profile.venmo_username || "";
+  }
+  
   const warrantyField = document.getElementById("business-warranty");
   if (warrantyField) {
     warrantyField.value = profile.default_warranty_text || "";
@@ -4091,6 +4101,9 @@ async function handleSaveSettings(e) {
   const warrantyField = document.getElementById("business-warranty");
   const defaultWarrantyText = warrantyField ? warrantyField.value : "";
 
+  const venmoUsernameField = document.getElementById("venmo-username");
+  const venmoUsername = venmoUsernameField ? venmoUsernameField.value.replace(/^@/, '') : "";
+
   const payload = {
     business_name: document.getElementById("business-name").value,
     business_phone: document.getElementById("business-phone").value,
@@ -4099,6 +4112,7 @@ async function handleSaveSettings(e) {
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,
+    venmo_username: venmoUsername,
   };
 
   if (selectedLogoFile) {
@@ -4148,6 +4162,7 @@ async function handleSaveSettings(e) {
     msg.textContent = "Settings saved!";
     msg.style.color = "var(--success)";
     selectedLogoFile = null;
+    cachedVenmoUsername = null;
   } catch (err) {
     console.error("Profile save error:", err);
     msg.textContent = "Failed to save settings. Please try again.";
@@ -4348,6 +4363,105 @@ window.deletePaymentLink = deletePaymentLink;
 window.setDefaultPaymentLink = setDefaultPaymentLink;
 
 // ================== END PAYMENT LINKS ==================
+
+// ================== QUICK PAY VENMO ==================
+
+let cachedVenmoUsername = null;
+
+async function loadVenmoUsername() {
+  if (tourMode) return null;
+  if (cachedVenmoUsername) return cachedVenmoUsername;
+  
+  try {
+    const res = await apiFetch("/api/profile");
+    if (!res.ok) return null;
+    const profile = await res.json();
+    cachedVenmoUsername = profile?.venmo_username || null;
+    return cachedVenmoUsername;
+  } catch (err) {
+    console.error("Error loading Venmo username:", err);
+    return null;
+  }
+}
+
+function openQuickPayVenmoModal() {
+  document.getElementById("venmo-pay-amount").value = "";
+  document.getElementById("venmo-pay-note").value = "";
+  document.getElementById("venmo-pay-preview").style.display = "none";
+  document.getElementById("quick-pay-venmo-modal").classList.add("active");
+}
+
+function closeQuickPayVenmoModal() {
+  document.getElementById("quick-pay-venmo-modal").classList.remove("active");
+}
+
+async function generateVenmoPayLink() {
+  const amountInput = document.getElementById("venmo-pay-amount").value;
+  const note = document.getElementById("venmo-pay-note").value.trim();
+  
+  const amount = parseFloat(amountInput);
+  if (isNaN(amount) || amount <= 0) {
+    showToast("Please enter a valid amount greater than $0", "error");
+    return;
+  }
+  
+  const venmoUsername = await loadVenmoUsername();
+  if (!venmoUsername) {
+    showToast("Please add your Venmo username in Settings first", "error");
+    closeQuickPayVenmoModal();
+    showScreen("settings");
+    return;
+  }
+  
+  const formattedAmount = amount.toFixed(2);
+  const cleanUsername = encodeURIComponent(venmoUsername.replace(/^@/, ''));
+  
+  let venmoUrl = `https://venmo.com/${cleanUsername}?txn=pay&amount=${formattedAmount}`;
+  if (note) {
+    venmoUrl += `&note=${encodeURIComponent(note)}`;
+  }
+  
+  document.getElementById("venmo-pay-url-preview").textContent = venmoUrl;
+  document.getElementById("venmo-pay-preview").style.display = "block";
+  
+  let copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(venmoUrl);
+      copied = true;
+      showToast("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Clipboard write failed:", err);
+    }
+  }
+  
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Payment Request - $${formattedAmount}`,
+        text: note ? `${note} - $${formattedAmount}` : `Payment request for $${formattedAmount}`,
+        url: venmoUrl
+      });
+      closeQuickPayVenmoModal();
+      return;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("Share failed:", err);
+      }
+    }
+  }
+  
+  if (!copied) {
+    showToast("Link ready - long press to copy or share manually");
+  }
+  window.open(venmoUrl, '_blank');
+}
+
+window.openQuickPayVenmoModal = openQuickPayVenmoModal;
+window.closeQuickPayVenmoModal = closeQuickPayVenmoModal;
+window.generateVenmoPayLink = generateVenmoPayLink;
+
+// ================== END QUICK PAY VENMO ==================
 
 // REFERRALS
 
