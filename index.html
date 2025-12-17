@@ -1392,51 +1392,6 @@
             <p id="settings-message" class="success-text"></p>
           </form>
 
-          <!-- Payment Links Modal -->
-          <div id="payment-link-modal" class="modal-overlay hidden" onclick="if(event.target===this)closePaymentLinkModal()">
-            <div class="modal-card" style="max-width: 400px;">
-              <div class="modal-header">
-                <h3 id="payment-link-modal-title">Add Payment Link</h3>
-                <button class="modal-close" onclick="closePaymentLinkModal()">&times;</button>
-              </div>
-              <div class="modal-body">
-                <input type="hidden" id="payment-link-edit-id" />
-                
-                <div class="form-row">
-                  <label>Payment Provider</label>
-                  <select id="payment-link-provider" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 16px;">
-                    <option value="venmo">Venmo</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="cashapp">Cash App</option>
-                    <option value="zelle">Zelle</option>
-                    <option value="stripe">Stripe</option>
-                    <option value="square">Square</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                
-                <div class="form-row">
-                  <label>Label (optional)</label>
-                  <input type="text" id="payment-link-label" placeholder="e.g., Personal Venmo, Business PayPal" />
-                </div>
-                
-                <div class="form-row">
-                  <label>Payment Link URL</label>
-                  <input type="url" id="payment-link-url" placeholder="https://venmo.com/yourname" required />
-                </div>
-                
-                <div class="form-row" style="display: flex; align-items: center; gap: 10px;">
-                  <input type="checkbox" id="payment-link-default" style="width: 20px; height: 20px;" />
-                  <label for="payment-link-default" style="margin: 0; cursor: pointer;">Set as default payment link</label>
-                </div>
-              </div>
-              <div class="modal-footer" style="display: flex; gap: 10px;">
-                <button class="btn-secondary" onclick="closePaymentLinkModal()" style="flex: 1;">Cancel</button>
-                <button class="btn-primary" onclick="savePaymentLink()" style="flex: 1;">Save</button>
-              </div>
-            </div>
-          </div>
-
           <!-- Admin Panel Access (only visible for admins) -->
           <div id="admin-settings-card" class="feature-status-card" style="display: none;">
             <div class="feature-status-header">
@@ -2302,6 +2257,51 @@
             <i class="fa-solid fa-plus"></i> Create Job Folder
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Links Modal -->
+  <div id="payment-link-modal" class="modal-overlay hidden" onclick="if(event.target===this)closePaymentLinkModal()">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="payment-link-modal-title">Add Payment Link</h3>
+        <button class="modal-close" onclick="closePaymentLinkModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="payment-link-edit-id" />
+        
+        <div class="form-row">
+          <label>Payment Provider</label>
+          <select id="payment-link-provider" style="padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 16px;">
+            <option value="venmo">Venmo</option>
+            <option value="paypal">PayPal</option>
+            <option value="cashapp">Cash App</option>
+            <option value="zelle">Zelle</option>
+            <option value="stripe">Stripe</option>
+            <option value="square">Square</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <label>Label (optional)</label>
+          <input type="text" id="payment-link-label" placeholder="e.g., Personal Venmo, Business PayPal" />
+        </div>
+        
+        <div class="form-row">
+          <label>Payment Link URL</label>
+          <input type="url" id="payment-link-url" placeholder="https://venmo.com/yourname" required />
+        </div>
+        
+        <div class="form-row" style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" id="payment-link-default" style="width: 20px; height: 20px;" />
+          <label for="payment-link-default" style="margin: 0; cursor: pointer;">Set as default payment link</label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 10px;">
+        <button class="btn-secondary" onclick="closePaymentLinkModal()" style="flex: 1;">Cancel</button>
+        <button class="btn-primary" onclick="savePaymentLink()" style="flex: 1;">Save</button>
       </div>
     </div>
   </div>
