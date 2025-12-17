@@ -3385,11 +3385,11 @@ async function viewInvoiceDetail(invoiceId) {
       });
     }
     
-    // Wire up send text button
+    // Wire up send text button - opens template chooser first
     const sendTextBtn = document.getElementById('send-text-invoice-btn');
     if (sendTextBtn) {
       sendTextBtn.addEventListener('click', () => {
-        sendInvoiceSMS(invoice);
+        openTemplateChooserForTextInvoice(invoice);
       });
     }
     
@@ -3785,6 +3785,62 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
     console.error("Failed to copy:", err);
     showToast("Failed to copy to clipboard");
   });
+}
+
+// Open template chooser before sending invoice via SMS
+function openTemplateChooserForTextInvoice(invoice) {
+  const modal = document.getElementById("template-chooser-modal");
+  const grid = document.getElementById("template-chooser-grid");
+  const title = modal.querySelector('h2');
+  
+  title.textContent = 'Choose Template for Text';
+  
+  const templates = [
+    { id: 'basic_clean', name: 'Basic Clean', desc: 'Classic black & white contractor PDF style' },
+    { id: 'modern_pro', name: 'Modern Pro', desc: 'Bold headings, clean professional layout' },
+    { id: 'color_accent', name: 'Color Accent Header', desc: 'Blue/gray header for official appearance' },
+    { id: 'big_total', name: 'Big Total', desc: 'Emphasizes the total amount prominently' }
+  ];
+  
+  grid.innerHTML = templates.map(template => `
+    <div class="template-card-text" data-invoice-id="${invoice.id}" data-template-id="${template.id}" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
+      <h3 style="margin: 0 0 8px 0; color: var(--text); font-size: 16px;">${template.name}</h3>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">${template.desc}</p>
+      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: #22c55e; font-size: 12px; font-weight: 600;">
+        <i class="fa-solid fa-comment-sms"></i> SELECT & SEND TEXT
+      </div>
+    </div>
+  `).join('');
+  
+  // Add event listeners to template cards
+  grid.querySelectorAll('.template-card-text').forEach(card => {
+    card.addEventListener('click', async () => {
+      const invoiceId = card.getAttribute('data-invoice-id');
+      const templateId = card.getAttribute('data-template-id');
+      
+      // Update invoice template first
+      try {
+        const res = await apiFetch(`/api/invoices/${invoiceId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ template: templateId })
+        });
+        
+        if (res.ok) {
+          const updatedInvoice = await res.json();
+          modal.style.display = 'none';
+          sendInvoiceSMS({ ...invoice, ...updatedInvoice, template: templateId });
+        } else {
+          showToast("Failed to update template");
+        }
+      } catch (err) {
+        console.error("Error updating template:", err);
+        modal.style.display = 'none';
+        sendInvoiceSMS(invoice); // Send anyway with existing template
+      }
+    });
+  });
+  
+  modal.style.display = 'block';
 }
 
 // Send Invoice via SMS (opens native Messages app)
