@@ -59,7 +59,6 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Calendar Feature**: Full calendar for scheduling events, linked to clients, jobs, quotes, and invoices.
 - **Send Text Button**: Allows sending invoices via native SMS app with pre-filled message.
 - **Quick Pay Link**: Dashboard tile for sending payment requests without creating full invoices. Supports sending via SMS (opens native messaging app) or email (via Resend). Uses user's saved payment links.
-- **Quick Pay Venmo**: Dedicated Venmo payment request feature on dashboard. User stores Venmo username in Settings. Generates payment URLs with amount pre-filled (format: `https://venmo.com/{username}?txn=pay&amount={amount}&note={note}`). Copies to clipboard and triggers native share sheet on mobile.
 - **Multiple Payment Links System**: Users can save multiple payment methods (Venmo, PayPal, CashApp, Zelle, Stripe, Square, Other) in Settings. Each payment link has a provider, custom label, URL, and optional default flag. Payment link selector appears in Quick Pay modal and Invoice form. Selected payment link is stored per invoice and displayed on the public invoice view.
 - **Mobile Download Improvement**: Uses navigator.share() API on mobile for native sharing, with data URL fallback for iOS long-press save.
 

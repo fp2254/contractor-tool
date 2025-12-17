@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tradebase-v52';
-const RUNTIME_CACHE = 'tradebase-runtime-v39';
+const CACHE_NAME = 'tradebase-v53';
+const RUNTIME_CACHE = 'tradebase-runtime-v40';
 
 const APP_SHELL = [
   '/app',
