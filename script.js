@@ -2332,6 +2332,7 @@ async function handleInvoiceSubmit(e) {
   const notes = document.getElementById("invoice-notes").value;
   const template = document.getElementById("invoice-template-select").value || "basic_clean";
   const paymentLink = document.getElementById("invoice-payment-link-select")?.value || null;
+  const paymentUrl = document.getElementById("invoice-payment-url")?.value.trim() || null;
   const items = getLineItemsFromUI();
 
   if (!clientName) {
@@ -2357,6 +2358,7 @@ async function handleInvoiceSubmit(e) {
     notes,
     template,
     payment_link: paymentLink,
+    payment_url: paymentUrl,
     subtotal,
     tax,
     total,
@@ -2468,6 +2470,12 @@ function editInvoice(invoice) {
   // Populate and set payment link selector
   populateInvoiceLinkSelector(invoice.payment_link || null);
   
+  // Set payment URL if exists
+  const paymentUrlField = document.getElementById("invoice-payment-url");
+  if (paymentUrlField) {
+    paymentUrlField.value = invoice.payment_url || '';
+  }
+  
   // Clear existing line items and add invoice items
   const container = document.getElementById("line-items");
   container.innerHTML = "";
@@ -2507,6 +2515,12 @@ function resetInvoiceForm() {
   document.getElementById("invoice-client-name").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
+  
+  // Reset payment URL field
+  const paymentUrlField = document.getElementById("invoice-payment-url");
+  if (paymentUrlField) {
+    paymentUrlField.value = '';
+  }
   
   // Reset payment link selector to default
   populateInvoiceLinkSelector(null);
@@ -4063,6 +4077,16 @@ async function loadSettings() {
     warrantyField.value = profile.default_warranty_text || "";
   }
 
+  const paymentProviderSelect = document.getElementById("payment-provider-select");
+  if (paymentProviderSelect) {
+    paymentProviderSelect.value = profile.payment_provider || "";
+  }
+  
+  const paymentValueInput = document.getElementById("payment-value-input");
+  if (paymentValueInput) {
+    paymentValueInput.value = profile.payment_value || "";
+  }
+
   if (profile.logo_url) {
     const preview = document.getElementById("business-logo-preview");
     preview.innerHTML = "";
@@ -4091,6 +4115,9 @@ async function handleSaveSettings(e) {
   const warrantyField = document.getElementById("business-warranty");
   const defaultWarrantyText = warrantyField ? warrantyField.value : "";
 
+  const paymentProvider = document.getElementById("payment-provider-select")?.value || "";
+  const paymentValue = document.getElementById("payment-value-input")?.value || "";
+
   const payload = {
     business_name: document.getElementById("business-name").value,
     business_phone: document.getElementById("business-phone").value,
@@ -4099,6 +4126,8 @@ async function handleSaveSettings(e) {
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,
+    payment_provider: paymentProvider || null,
+    payment_value: paymentValue || null,
   };
 
   if (selectedLogoFile) {
@@ -4154,6 +4183,49 @@ async function handleSaveSettings(e) {
     msg.style.color = "var(--danger)";
   }
 }
+
+// ================== GENERATE PAYMENT URL ==================
+
+async function generateInvoicePaymentUrl() {
+  const paymentUrlField = document.getElementById("invoice-payment-url");
+  if (!paymentUrlField) return;
+  
+  const items = getLineItemsFromUI();
+  let subtotal = 0;
+  items.forEach((i) => (subtotal += i.line_total));
+  const taxPercent = parseFloat(document.getElementById("helper-tax")?.value) || 0;
+  const tax = subtotal * (taxPercent / 100);
+  const total = subtotal + tax;
+  
+  if (total <= 0) {
+    showToast("Add line items first to calculate total", "error");
+    return;
+  }
+  
+  try {
+    const res = await apiFetch("/api/generate-payment-url", {
+      method: "POST",
+      body: JSON.stringify({ 
+        amount: total,
+        invoiceNumber: `INV-${Date.now()}`
+      }),
+    });
+    
+    const data = await res.json();
+    
+    if (data.payment_url) {
+      paymentUrlField.value = data.payment_url;
+      showToast("Payment URL generated!");
+    } else {
+      showToast("Set up payment provider in Settings first", "error");
+    }
+  } catch (err) {
+    console.error("Error generating payment URL:", err);
+    showToast("Failed to generate payment URL", "error");
+  }
+}
+
+window.generateInvoicePaymentUrl = generateInvoicePaymentUrl;
 
 // ================== PAYMENT LINKS MANAGEMENT ==================
 

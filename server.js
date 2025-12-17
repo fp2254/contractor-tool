@@ -71,6 +71,45 @@ const filter = {
 const app = express();
 const port = process.env.PORT || 5000;
 
+// ================== PAYMENT ROUTER ==================
+// Builds redirect URLs for payment providers
+// Skippy Stack is a redirector only - never authenticates with payment providers
+
+function buildPaymentUrl(provider, value, amount, invoiceNumber) {
+  if (!provider || !value) return null;
+  
+  const cleanValue = value.trim();
+  const formattedAmount = parseFloat(amount).toFixed(2);
+  const encodedNote = encodeURIComponent(invoiceNumber || '');
+  
+  switch (provider.toLowerCase()) {
+    case 'venmo':
+      const venmoUsername = cleanValue.replace(/^@/, '');
+      return `https://venmo.com/${encodeURIComponent(venmoUsername)}?txn=pay&amount=${formattedAmount}&note=${encodedNote}`;
+    
+    case 'paypal':
+      const paypalUsername = cleanValue.replace(/^@/, '');
+      return `https://paypal.me/${encodeURIComponent(paypalUsername)}/${formattedAmount}`;
+    
+    case 'cashapp':
+      const cashappUsername = cleanValue.startsWith('$') ? cleanValue.slice(1) : cleanValue;
+      return `https://cash.app/$${encodeURIComponent(cashappUsername)}/${formattedAmount}`;
+    
+    case 'zelle':
+      return cleanValue;
+    
+    case 'square':
+    case 'stripe':
+    case 'custom':
+      return cleanValue.startsWith('http') ? cleanValue : `https://${cleanValue}`;
+    
+    default:
+      return cleanValue.startsWith('http') ? cleanValue : null;
+  }
+}
+
+// ================== END PAYMENT ROUTER ==================
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -501,6 +540,42 @@ app.get("/api/profile/lifetime-count", async (req, res) => {
   }
 });
 
+// Generate payment URL from profile settings
+app.post("/api/generate-payment-url", async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  
+  const { amount, invoiceNumber } = req.body;
+  
+  if (!amount || parseFloat(amount) <= 0) {
+    return res.status(400).json({ error: "Valid amount required" });
+  }
+  
+  // Get user's payment settings
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("payment_provider, payment_value")
+    .eq("id", userId)
+    .single();
+  
+  if (error || !profile) {
+    return res.status(404).json({ error: "Profile not found" });
+  }
+  
+  if (!profile.payment_provider || !profile.payment_value) {
+    return res.json({ payment_url: null, message: "No payment provider configured" });
+  }
+  
+  const paymentUrl = buildPaymentUrl(
+    profile.payment_provider,
+    profile.payment_value,
+    amount,
+    invoiceNumber || ''
+  );
+  
+  res.json({ payment_url: paymentUrl });
+});
+
 // ================== PAYMENT LINKS CRUD (Direct SQL) ==================
 
 // GET all payment links for user
@@ -797,7 +872,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -809,6 +884,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
+      payment_url: payment_url || null,
       subtotal,
       tax,
       total,
@@ -847,7 +923,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceId = req.params.id;
-  const { client_id, client_name, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -871,6 +947,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
+      payment_url: payment_url || null,
       subtotal,
       tax,
       total
