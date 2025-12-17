@@ -9,6 +9,8 @@ import { fileURLToPath } from "url";
 import { Resend } from "resend";
 import puppeteer from "puppeteer-core";
 import { execSync } from "child_process";
+import pg from "pg";
+const { Pool } = pg;
 
 dotenv.config();
 
@@ -110,6 +112,12 @@ const supabaseAdmin = createClient(
 
 // STRIPE
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
+const pgPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 // PLAN PRICE IDS (MUST MATCH FRONTEND)
 const PLAN_PRICE_IDS = {
@@ -493,7 +501,7 @@ app.get("/api/profile/lifetime-count", async (req, res) => {
   }
 });
 
-// ================== PAYMENT LINKS CRUD ==================
+// ================== PAYMENT LINKS CRUD (Direct SQL) ==================
 
 // GET all payment links for user
 app.get("/api/payment-links", async (req, res) => {
@@ -501,19 +509,13 @@ app.get("/api/payment-links", async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from("payment_links")
-      .select("*")
-      .eq("profile_id", userId)
-      .order("sort_order", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching payment links:", error);
-      return res.status(500).json({ error: error.message });
-    }
-    res.json(data || []);
+    const result = await pgPool.query(
+      `SELECT * FROM payment_links WHERE profile_id = $1 ORDER BY sort_order ASC`,
+      [userId]
+    );
+    res.json(result.rows || []);
   } catch (err) {
-    console.error("Error in get payment links:", err);
+    console.error("Error fetching payment links:", err);
     res.status(500).json({ error: "Failed to fetch payment links" });
   }
 });
@@ -532,43 +534,29 @@ app.post("/api/payment-links", async (req, res) => {
   try {
     // If this is set as default, unset any existing default
     if (is_default) {
-      await supabaseAdmin
-        .from("payment_links")
-        .update({ is_default: false })
-        .eq("profile_id", userId);
+      await pgPool.query(
+        `UPDATE payment_links SET is_default = false WHERE profile_id = $1`,
+        [userId]
+      );
     }
 
     // Get the max sort_order for this user
-    const { data: existing } = await supabaseAdmin
-      .from("payment_links")
-      .select("sort_order")
-      .eq("profile_id", userId)
-      .order("sort_order", { ascending: false })
-      .limit(1);
+    const orderResult = await pgPool.query(
+      `SELECT COALESCE(MAX(sort_order), 0) + 1 as next_order FROM payment_links WHERE profile_id = $1`,
+      [userId]
+    );
+    const nextOrder = orderResult.rows[0].next_order;
 
-    const nextOrder = (existing?.[0]?.sort_order || 0) + 1;
+    const result = await pgPool.query(
+      `INSERT INTO payment_links (profile_id, provider, label, url, is_default, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [userId, provider, label || provider, url, is_default || false, nextOrder]
+    );
 
-    const { data, error } = await supabaseAdmin
-      .from("payment_links")
-      .insert({
-        profile_id: userId,
-        provider,
-        label: label || provider,
-        url,
-        is_default: is_default || false,
-        sort_order: nextOrder
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating payment link:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error in create payment link:", err);
+    console.error("Error creating payment link:", err);
     res.status(500).json({ error: "Failed to create payment link" });
   }
 });
@@ -584,34 +572,27 @@ app.put("/api/payment-links/:id", async (req, res) => {
   try {
     // If setting as default, unset any existing default
     if (is_default) {
-      await supabaseAdmin
-        .from("payment_links")
-        .update({ is_default: false })
-        .eq("profile_id", userId);
+      await pgPool.query(
+        `UPDATE payment_links SET is_default = false WHERE profile_id = $1`,
+        [userId]
+      );
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("payment_links")
-      .update({
-        provider,
-        label,
-        url,
-        is_default: is_default || false,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", id)
-      .eq("profile_id", userId)
-      .select()
-      .single();
+    const result = await pgPool.query(
+      `UPDATE payment_links 
+       SET provider = $1, label = $2, url = $3, is_default = $4
+       WHERE id = $5 AND profile_id = $6
+       RETURNING *`,
+      [provider, label, url, is_default || false, id, userId]
+    );
 
-    if (error) {
-      console.error("Error updating payment link:", error);
-      return res.status(500).json({ error: error.message });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Payment link not found" });
     }
 
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error in update payment link:", err);
+    console.error("Error updating payment link:", err);
     res.status(500).json({ error: "Failed to update payment link" });
   }
 });
@@ -624,20 +605,13 @@ app.delete("/api/payment-links/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { error } = await supabaseAdmin
-      .from("payment_links")
-      .delete()
-      .eq("id", id)
-      .eq("profile_id", userId);
-
-    if (error) {
-      console.error("Error deleting payment link:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
+    await pgPool.query(
+      `DELETE FROM payment_links WHERE id = $1 AND profile_id = $2`,
+      [id, userId]
+    );
     res.json({ success: true });
   } catch (err) {
-    console.error("Error in delete payment link:", err);
+    console.error("Error deleting payment link:", err);
     res.status(500).json({ error: "Failed to delete payment link" });
   }
 });
@@ -651,28 +625,24 @@ app.patch("/api/payment-links/:id/default", async (req, res) => {
 
   try {
     // Unset any existing default
-    await supabaseAdmin
-      .from("payment_links")
-      .update({ is_default: false })
-      .eq("profile_id", userId);
+    await pgPool.query(
+      `UPDATE payment_links SET is_default = false WHERE profile_id = $1`,
+      [userId]
+    );
 
     // Set the new default
-    const { data, error } = await supabaseAdmin
-      .from("payment_links")
-      .update({ is_default: true, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("profile_id", userId)
-      .select()
-      .single();
+    const result = await pgPool.query(
+      `UPDATE payment_links SET is_default = true WHERE id = $1 AND profile_id = $2 RETURNING *`,
+      [id, userId]
+    );
 
-    if (error) {
-      console.error("Error setting default payment link:", error);
-      return res.status(500).json({ error: error.message });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Payment link not found" });
     }
 
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Error in set default payment link:", err);
+    console.error("Error setting default payment link:", err);
     res.status(500).json({ error: "Failed to set default payment link" });
   }
 });
