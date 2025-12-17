@@ -3787,7 +3787,7 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
   });
 }
 
-// Open template chooser before sending invoice via SMS
+// Open template chooser before sending invoice via SMS - shows preview first
 function openTemplateChooserForTextInvoice(invoice) {
   const modal = document.getElementById("template-chooser-modal");
   const grid = document.getElementById("template-chooser-grid");
@@ -3803,44 +3803,108 @@ function openTemplateChooserForTextInvoice(invoice) {
   ];
   
   grid.innerHTML = templates.map(template => `
-    <div class="template-card-text" data-invoice-id="${invoice.id}" data-template-id="${template.id}" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
+    <div class="template-card" data-invoice-id="${invoice.id}" data-template-id="${template.id}" data-action="text" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
       <h3 style="margin: 0 0 8px 0; color: var(--text); font-size: 16px;">${template.name}</h3>
       <p style="margin: 0; color: var(--muted); font-size: 13px;">${template.desc}</p>
-      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: #22c55e; font-size: 12px; font-weight: 600;">
-        <i class="fa-solid fa-comment-sms"></i> SELECT & SEND TEXT
+      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: var(--primary); font-size: 12px; font-weight: 600;">
+        <i class="fa-solid fa-eye"></i> CLICK TO PREVIEW
       </div>
     </div>
   `).join('');
   
-  // Add event listeners to template cards
-  grid.querySelectorAll('.template-card-text').forEach(card => {
-    card.addEventListener('click', async () => {
+  // Add event listeners to template cards - shows preview with Send Text button
+  grid.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('click', () => {
       const invoiceId = card.getAttribute('data-invoice-id');
       const templateId = card.getAttribute('data-template-id');
-      
-      // Update invoice template first
-      try {
-        const res = await apiFetch(`/api/invoices/${invoiceId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ template: templateId })
-        });
-        
-        if (res.ok) {
-          const updatedInvoice = await res.json();
-          modal.style.display = 'none';
-          sendInvoiceSMS({ ...invoice, ...updatedInvoice, template: templateId });
-        } else {
-          showToast("Failed to update template");
-        }
-      } catch (err) {
-        console.error("Error updating template:", err);
-        modal.style.display = 'none';
-        sendInvoiceSMS(invoice); // Send anyway with existing template
-      }
+      previewInvoiceTemplateForText(invoice, templateId);
     });
   });
   
   modal.style.display = 'block';
+}
+
+// Preview invoice template with Send Text action button
+async function previewInvoiceTemplateForText(invoice, templateId) {
+  const modal = document.getElementById("template-preview-modal");
+  const content = document.getElementById("template-preview-content");
+  
+  if (!modal || !content) return;
+  
+  closeTemplateChooser();
+  
+  try {
+    const [invoiceRes, profileRes] = await Promise.all([
+      apiFetch(`/api/invoices/${invoice.id}`),
+      apiFetch("/api/profile")
+    ]);
+    
+    const invoiceData = await invoiceRes.json();
+    const profile = await profileRes.json();
+    
+    const invoiceForTemplate = {
+      ...invoiceData,
+      business_name: profile?.business_name,
+      address: profile?.business_address,
+      phone: profile?.business_phone,
+      email: profile?.business_email,
+      logo_url: profile?.logo_url,
+      invoice_footer: profile?.invoice_footer,
+      items: (invoiceData.items || []).map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        rate: item.rate,
+        amount: item.amount
+      }))
+    };
+    
+    const templateHtml = window.invoiceTemplates[templateId]?.(invoiceForTemplate) 
+      || window.invoiceTemplates.basic_clean(invoiceForTemplate);
+    
+    content.innerHTML = `
+      <div style="background: white; padding: 20px; border-radius: 8px; max-height: 60vh; overflow-y: auto;">
+        ${templateHtml}
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: center; flex-wrap: wrap;">
+        <button id="send-text-from-preview" style="background: #22c55e; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-comment-sms"></i> Send This via Text
+        </button>
+        <button id="back-to-templates" style="background: var(--muted); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+          <i class="fa-solid fa-arrow-left"></i> Choose Different Template
+        </button>
+        <button onclick="closeTemplatePreview()" style="background: var(--border); color: var(--text); padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+    `;
+    
+    // Wire up Send Text button
+    document.getElementById('send-text-from-preview').addEventListener('click', async () => {
+      // Save the template choice first
+      try {
+        await apiFetch(`/api/invoices/${invoice.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ template: templateId })
+        });
+      } catch (err) {
+        console.log("Could not save template preference:", err);
+      }
+      
+      modal.style.display = 'none';
+      sendInvoiceSMS({ ...invoiceData, template: templateId });
+    });
+    
+    // Wire up back button
+    document.getElementById('back-to-templates').addEventListener('click', () => {
+      modal.style.display = 'none';
+      openTemplateChooserForTextInvoice(invoice);
+    });
+    
+    modal.style.display = 'block';
+  } catch (err) {
+    console.error("Error loading preview:", err);
+    showToast("Failed to load preview");
+  }
 }
 
 // Send Invoice via SMS (opens native Messages app)
