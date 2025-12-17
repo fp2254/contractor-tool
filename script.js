@@ -6302,6 +6302,9 @@ function closeLinkToJobModal() {
   linkToJobId = null;
 }
 
+window.openLinkToJobModal = openLinkToJobModal;
+window.closeLinkToJobModal = closeLinkToJobModal;
+
 async function linkItemToJob(type, itemId) {
   if (!linkToJobId) {
     showToast("No job selected");
@@ -6332,6 +6335,8 @@ async function linkItemToJob(type, itemId) {
     showToast("Error linking item to job");
   }
 }
+
+window.linkItemToJob = linkItemToJob;
 
 // Job Folder Picker - for linking FROM invoice/quote detail view
 let jobPickerType = null;
@@ -6467,6 +6472,11 @@ async function unlinkFromJob(type, itemId) {
     showToast("Error unlinking from job");
   }
 }
+
+window.openJobFolderPicker = openJobFolderPicker;
+window.closeJobFolderPicker = closeJobFolderPicker;
+window.selectJobFolder = selectJobFolder;
+window.unlinkFromJob = unlinkFromJob;
 
 async function handleJobSubmit(e) {
   e.preventDefault();

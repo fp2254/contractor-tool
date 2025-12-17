@@ -59,7 +59,13 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Calendar Feature**: Full calendar for scheduling events, linked to clients, jobs, quotes, and invoices.
 - **Send Text Button**: Allows sending invoices via native SMS app with pre-filled message.
 - **Quick Pay Link**: Dashboard tile for sending payment requests without creating full invoices. Supports sending via SMS (opens native messaging app) or email (via Resend). Uses user's saved payment links.
-- **Multiple Payment Links System**: Users can save multiple payment methods (Venmo, PayPal, CashApp, Zelle, Stripe, Square, Other) in Settings. Each payment link has a provider, custom label, URL, and optional default flag. Payment link selector appears in Quick Pay modal and Invoice form. Selected payment link is stored per invoice and displayed on the public invoice view.
+- **Multiple Payment Links System**: Users can save multiple payment methods (Venmo, PayPal, CashApp, Zelle, Stripe, Square, Other) in Settings. Each payment link has a provider, custom label, URL, and optional default flag. Payment link selector appears in Quick Pay modal.
+- **Payment Routing System**: Simplified payment redirector (no OAuth, no webhooks). Contractor sets a default payment_provider (venmo/paypal/cashapp/zelle/square/stripe/custom) and payment_value (username or URL) in Settings. When creating an invoice, a payment_url is auto-generated or can be manually overridden. PaymentRouter builds provider-specific URLs:
+  - Venmo: `https://venmo.com/{username}?txn=pay&amount={total}&note={invoiceNumber}`
+  - PayPal: `https://paypal.me/{username}/{total}`
+  - CashApp: `https://cash.app/${username}/{total}`
+  - Square/Stripe/Custom: uses provided URL directly
+  - Public invoice page shows "Pay Now" button redirecting to invoice.payment_url
 - **Mobile Download Improvement**: Uses navigator.share() API on mobile for native sharing, with data URL fallback for iOS long-press save.
 
 ## External Dependencies

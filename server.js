@@ -874,6 +874,24 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   const { client_id, client_name, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
+  // Auto-generate payment_url from profile settings if not provided
+  let finalPaymentUrl = payment_url || null;
+  if (!finalPaymentUrl && total > 0) {
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("payment_provider, payment_value")
+        .eq("id", userId)
+        .single();
+      
+      if (profile?.payment_provider && profile?.payment_value) {
+        finalPaymentUrl = buildPaymentUrl(profile.payment_provider, profile.payment_value, total, `INV-${Date.now()}`);
+      }
+    } catch (err) {
+      console.log("Could not auto-generate payment URL:", err);
+    }
+  }
+
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .insert({
@@ -884,7 +902,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
-      payment_url: payment_url || null,
+      payment_url: finalPaymentUrl,
       subtotal,
       tax,
       total,
@@ -937,6 +955,24 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return res.status(404).json({ error: "Invoice not found" });
   }
 
+  // Auto-generate payment_url from profile settings if not provided
+  let finalPaymentUrl = payment_url || null;
+  if (!finalPaymentUrl && total > 0) {
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("payment_provider, payment_value")
+        .eq("id", userId)
+        .single();
+      
+      if (profile?.payment_provider && profile?.payment_value) {
+        finalPaymentUrl = buildPaymentUrl(profile.payment_provider, profile.payment_value, total, `INV-${invoiceId}`);
+      }
+    } catch (err) {
+      console.log("Could not auto-generate payment URL:", err);
+    }
+  }
+
   // Update invoice
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -947,7 +983,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
-      payment_url: payment_url || null,
+      payment_url: finalPaymentUrl,
       subtotal,
       tax,
       total
@@ -5718,7 +5754,8 @@ app.get("/view/invoice/:id", async (req, res) => {
     </div>
     
     <div class="actions">
-      ${(profile?.payment_link || invoice.payment_link) && invoice.payment_status !== 'paid' ? `<a href="${profile?.payment_link || invoice.payment_link}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
+      ${invoice.payment_url && invoice.payment_status !== 'paid' ? `<a href="${invoice.payment_url}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
+      ${!invoice.payment_url && (profile?.payment_link || invoice.payment_link) && invoice.payment_status !== 'paid' ? `<a href="${profile?.payment_link || invoice.payment_link}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
       <a href="javascript:window.print()" class="btn btn-secondary">Print / Save PDF</a>
     </div>
     
