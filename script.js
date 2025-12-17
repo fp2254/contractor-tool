@@ -3796,13 +3796,13 @@ function sendInvoiceSMS(invoice) {
   const businessName = businessNameEl?.value || "Your business";
   const total = formatCurrency(invoice.total || 0);
   const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
-  const paymentLink = invoice.payment_link;
+  const paymentUrl = invoice.payment_url || invoice.payment_link;
   
   let message = `Invoice from ${businessName} for ${total}.`;
   message += `\n\nView invoice: ${invoiceViewLink}`;
   
-  if (paymentLink && invoice.payment_status !== 'paid') {
-    message += `\n\nPay now: ${paymentLink}`;
+  if (paymentUrl && invoice.payment_status !== 'paid') {
+    message += `\n\nPay now: ${paymentUrl}`;
   }
   
   // Get client phone (cleaned)
