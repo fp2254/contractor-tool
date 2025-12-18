@@ -1967,6 +1967,49 @@
     <div id="invoice-footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px; color: #666 !important;"></div>
   </div>
 
+  <!-- Inline Add Client Modal (for invoice/quote forms) -->
+  <div id="inline-add-client-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow: auto; padding: 20px;">
+    <div style="max-width: 500px; margin: 50px auto; position: relative;">
+      <div style="background: var(--bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0; color: var(--text);">Add New Client</h2>
+          <button id="close-inline-client-modal" style="background: var(--tile); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; color: var(--text);">&times;</button>
+        </div>
+        
+        <form id="inline-client-form" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Client Name *</label>
+            <input type="text" id="inline-client-name" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Email</label>
+            <input type="email" id="inline-client-email" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Phone</label>
+            <input type="tel" id="inline-client-phone" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px; min-height: 44px;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px;">Address</label>
+            <textarea id="inline-client-address" rows="2" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--text); font-size: 14px;"></textarea>
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 10px;">
+            <button type="submit" style="flex: 1; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+              <i class="fa-solid fa-user-plus"></i> Add Client
+            </button>
+            <button type="button" id="cancel-inline-client" style="padding: 14px 20px; background: var(--tile); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; cursor: pointer;">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Template Preview Modal -->
   <div id="template-preview-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; overflow: auto; padding: 20px;">
     <div style="max-width: 900px; margin: 0 auto; position: relative;">

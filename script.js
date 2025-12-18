@@ -2107,7 +2107,15 @@ function wireInvoiceUI() {
 
   document
     .getElementById("btn-add-client-inline")
-    .addEventListener("click", () => showScreen("clients"));
+    .addEventListener("click", openInlineAddClientModal);
+    
+  // Wire up inline client modal
+  document.getElementById("close-inline-client-modal")?.addEventListener("click", closeInlineAddClientModal);
+  document.getElementById("cancel-inline-client")?.addEventListener("click", closeInlineAddClientModal);
+  document.getElementById("inline-client-form")?.addEventListener("submit", handleInlineAddClient);
+  
+  // Wire up client selection to auto-populate details
+  document.getElementById("invoice-client-name")?.addEventListener("change", handleClientSelection);
 
   // Wire up invoice preview toggle
   const invoicePreviewToggle = document.getElementById("btn-invoice-preview-toggle");
@@ -2351,8 +2359,11 @@ async function handleInvoiceSubmit(e) {
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
 
+  // Use selectedClientData if available (from datalist selection or inline add)
+  const clientId = selectedClientData?.id || null;
+  
   const invoiceData = {
-    client_id: null,
+    client_id: clientId,
     client_name: clientName,
     date,
     notes,
@@ -2512,6 +2523,7 @@ function editInvoice(invoice) {
 // Reset invoice form to create mode
 function resetInvoiceForm() {
   editingInvoiceId = null;
+  selectedClientData = null;
   document.getElementById("invoice-client-name").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
@@ -2750,6 +2762,115 @@ function wireWarrantyCheckbox(formType) {
   
   // Also update preview when warranty text is edited
   textarea.addEventListener("input", updatePreview);
+}
+
+// Store selected client data for invoice/quote
+let selectedClientData = null;
+
+// Inline Add Client Modal functions
+function openInlineAddClientModal() {
+  const modal = document.getElementById("inline-add-client-modal");
+  const form = document.getElementById("inline-client-form");
+  
+  // Pre-fill name from invoice form if typed
+  const invoiceClientName = document.getElementById("invoice-client-name")?.value.trim();
+  if (invoiceClientName) {
+    document.getElementById("inline-client-name").value = invoiceClientName;
+  } else {
+    form.reset();
+  }
+  
+  modal.style.display = "block";
+}
+
+function closeInlineAddClientModal() {
+  const modal = document.getElementById("inline-add-client-modal");
+  modal.style.display = "none";
+}
+
+async function handleInlineAddClient(e) {
+  e.preventDefault();
+  
+  const name = document.getElementById("inline-client-name").value.trim();
+  const email = document.getElementById("inline-client-email").value.trim();
+  const phone = document.getElementById("inline-client-phone").value.trim();
+  const address = document.getElementById("inline-client-address").value.trim();
+  
+  if (!name) {
+    showToast("Client name is required");
+    return;
+  }
+  
+  const clientData = {
+    name,
+    phone,
+    email,
+    address,
+    created_at: new Date().toISOString()
+  };
+  
+  try {
+    const res = await apiFetch("/api/clients", {
+      method: "POST",
+      body: JSON.stringify(clientData),
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      clientData.id = data.id;
+      await tradebaseDB.saveClient(clientData);
+      
+      // Update the invoice form with the new client
+      document.getElementById("invoice-client-name").value = name;
+      selectedClientData = clientData;
+      
+      // Reload clients datalist
+      await loadClients();
+      
+      closeInlineAddClientModal();
+      showToast("Client added!");
+      
+      // Update preview
+      updateInvoicePreview();
+    } else {
+      const errData = await res.json();
+      showToast(`Failed: ${errData.error || 'Unknown error'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error adding client:', error);
+    showToast('Error adding client: ' + error.message, 'error');
+  }
+}
+
+// Handle client selection from datalist - auto-populate email/phone/address
+async function handleClientSelection(e) {
+  const clientName = e.target.value.trim();
+  if (!clientName) {
+    selectedClientData = null;
+    return;
+  }
+  
+  // Find client in local cache or API
+  try {
+    const res = await apiFetch("/api/clients");
+    if (res.ok) {
+      const clients = await res.json();
+      const matchedClient = clients.find(c => c.name === clientName);
+      
+      if (matchedClient) {
+        selectedClientData = matchedClient;
+        console.log("Client selected:", selectedClientData);
+        showToast(`Client loaded: ${matchedClient.name}`);
+      } else {
+        selectedClientData = { name: clientName };
+      }
+    }
+  } catch (err) {
+    console.log("Could not lookup client:", err);
+    selectedClientData = { name: clientName };
+  }
+  
+  updateInvoicePreview();
 }
 
 async function handleAddClient(e) {
