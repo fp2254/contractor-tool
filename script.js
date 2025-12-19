@@ -4512,9 +4512,16 @@ async function loadPaymentLinks() {
   
   try {
     const res = await apiFetch("/api/payment-links");
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.log("Payment links response not ok:", res.status);
+      return;
+    }
     
     paymentLinksCache = await res.json();
+    if (!Array.isArray(paymentLinksCache)) {
+      console.log("Payment links response not an array:", paymentLinksCache);
+      paymentLinksCache = [];
+    }
     renderPaymentLinksList();
   } catch (err) {
     console.error("Error loading payment links:", err.message || err);
