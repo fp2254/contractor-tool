@@ -3988,9 +3988,9 @@ async function previewInvoiceTemplateForText(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity,
-        rate: item.rate,
-        amount: item.amount
+        quantity: item.quantity || item.qty || 1,
+        rate: item.unit_price || item.rate || item.price || 0,
+        amount: item.total || item.amount || item.line_total || 0
       }))
     };
     
@@ -4038,7 +4038,7 @@ async function previewInvoiceTemplateForText(invoice, templateId) {
     
     modal.style.display = 'block';
   } catch (err) {
-    console.error("Error loading preview:", err);
+    console.error("Error loading preview:", err.message || err);
     showToast("Failed to load preview");
   }
 }
@@ -4517,7 +4517,7 @@ async function loadPaymentLinks() {
     paymentLinksCache = await res.json();
     renderPaymentLinksList();
   } catch (err) {
-    console.error("Error loading payment links:", err);
+    console.error("Error loading payment links:", err.message || err);
   }
 }
 
