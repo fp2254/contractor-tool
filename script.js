@@ -1612,6 +1612,18 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
+  // Clear all cached data to prevent cross-account data leakage
+  try {
+    await tradebaseDB.clearAll();
+  } catch (err) {
+    console.log("Could not clear local cache:", err.message || err);
+  }
+  
+  // Clear any cached global state
+  paymentLinksCache = [];
+  aiEnabled = false;
+  isAdminUser = false;
+  
   await sb.auth.signOut();
   currentUser = null;
   document.getElementById("app-container").classList.add("hidden");

@@ -239,6 +239,19 @@ class TradeBaseDB {
       await this.delete(STORES.SYNC_QUEUE, sync.id);
     }
   }
+
+  async clearAll() {
+    await this.ensureDB();
+    if (!this.db) return;
+    
+    await Promise.all([
+      this.clear(STORES.INVOICES),
+      this.clear(STORES.QUOTES),
+      this.clear(STORES.CLIENTS),
+      this.clear(STORES.INVENTORY),
+      this.clear(STORES.SYNC_QUEUE)
+    ]);
+  }
 }
 
 const tradebaseDB = new TradeBaseDB();
