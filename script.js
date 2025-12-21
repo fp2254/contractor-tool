@@ -4813,6 +4813,16 @@ async function startCheckout(planCode, addonCodes = []) {
 
 // UTILS
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatCurrency(amount) {
   const n = Number(amount) || 0;
   return `$${n.toFixed(2)}`;

@@ -983,7 +983,6 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
-      payment_url: finalPaymentUrl,
       subtotal,
       tax,
       total
