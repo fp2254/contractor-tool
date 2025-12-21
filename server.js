@@ -1091,7 +1091,13 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     }
   }
 
-  res.json({ ...invoice, items: items || [], client: client || null, job: job || null });
+  // Fetch attachments/photos
+  const { data: attachments } = await supabaseAdmin
+    .from("invoice_attachments")
+    .select("*")
+    .eq("invoice_id", invoiceId);
+
+  res.json({ ...invoice, items: items || [], client: client || null, job: job || null, attachments: attachments || [] });
 });
 
 // INVOICE PHOTOS
@@ -5658,6 +5664,12 @@ app.get("/view/invoice/:id", async (req, res) => {
       .eq("id", invoice.client_id)
       .single();
     
+    // Get invoice attachments/photos
+    const { data: attachments } = await supabaseAdmin
+      .from("invoice_attachments")
+      .select("*")
+      .eq("invoice_id", invoiceId);
+    
     const businessName = profile?.business_name || "Business";
     const logoUrl = profile?.logo_url || null;
     const clientName = client?.name || invoice.client_name || "Client";
@@ -5696,9 +5708,15 @@ app.get("/view/invoice/:id", async (req, res) => {
     .status-unpaid { background: #fee2e2; color: #991b1b; }
     .status-pending { background: #fef3c7; color: #92400e; }
     .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+    .photos-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+    .photos-section h3 { font-size: 14px; text-transform: uppercase; color: #666; margin-bottom: 15px; }
+    .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .photo-item { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .photo-item img { width: 100%; height: 150px; object-fit: cover; display: block; cursor: pointer; }
     @media (max-width: 600px) {
       .info-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: column; }
+      .photos-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -5751,6 +5769,21 @@ app.get("/view/invoice/:id", async (req, res) => {
       </table>
       
       ${invoice.notes ? `<p style="color: #666; font-style: italic; margin-top: 20px;">${invoice.notes}</p>` : ''}
+      
+      ${attachments && attachments.length > 0 ? `
+        <div class="photos-section">
+          <h3>Job Photos</h3>
+          <div class="photos-grid">
+            ${attachments.map(photo => `
+              <div class="photo-item">
+                <a href="${photo.file_url}" target="_blank">
+                  <img src="${photo.file_url}" alt="${photo.file_name || 'Job photo'}" loading="lazy">
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
     </div>
     
     <div class="actions">

@@ -3460,6 +3460,23 @@ async function viewInvoiceDetail(invoiceId) {
           `}
         </div>
       </div>
+      
+      <!-- Photos Section -->
+      ${invoice.attachments && invoice.attachments.length > 0 ? `
+        <div class="detail-section" style="margin-bottom: 16px;">
+          <h4 style="margin-bottom: 12px;"><i class="fa-solid fa-camera" style="margin-right: 8px;"></i>Job Photos (${invoice.attachments.length})</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px;">
+            ${invoice.attachments.map(photo => `
+              <div style="border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <a href="${photo.file_url}" target="_blank">
+                  <img src="${photo.file_url}" alt="${photo.file_name || 'Job photo'}" 
+                       style="width: 100%; height: 100px; object-fit: cover; display: block; cursor: pointer;" loading="lazy">
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
 
       <div class="detail-actions">
         <button class="btn-sm" id="edit-invoice-btn-${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
