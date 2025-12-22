@@ -2348,6 +2348,7 @@ async function handleInvoiceSubmit(e) {
   errorEl.textContent = "";
 
   const clientName = document.getElementById("invoice-client-name").value.trim();
+  const clientAddress = document.getElementById("invoice-client-address")?.value.trim() || null;
   const date = document.getElementById("invoice-date").value;
   const notes = document.getElementById("invoice-notes").value;
   const template = document.getElementById("invoice-template-select").value || "basic_clean";
@@ -2377,6 +2378,7 @@ async function handleInvoiceSubmit(e) {
   const invoiceData = {
     client_id: clientId,
     client_name: clientName,
+    client_address: clientAddress,
     date,
     notes,
     template,
@@ -2481,6 +2483,7 @@ function editInvoice(invoice) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("invoice-client-name").value = invoice.client_name || (invoice.client ? invoice.client.name : '');
+  document.getElementById("invoice-client-address").value = invoice.client_address || (invoice.client ? invoice.client.address : '') || '';
   document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = invoice.notes || '';
   
@@ -2537,6 +2540,7 @@ function resetInvoiceForm() {
   editingInvoiceId = null;
   selectedClientData = null;
   document.getElementById("invoice-client-name").value = '';
+  document.getElementById("invoice-client-address").value = '';
   document.getElementById("invoice-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = '';
   
@@ -2873,6 +2877,12 @@ async function handleClientSelection(e) {
         selectedClientData = matchedClient;
         console.log("Client selected:", selectedClientData);
         showToast(`Client loaded: ${matchedClient.name}`);
+        
+        // Auto-fill address field if client has one saved
+        const addressInput = document.getElementById("invoice-client-address");
+        if (addressInput && matchedClient.address) {
+          addressInput.value = matchedClient.address;
+        }
       } else {
         selectedClientData = { name: clientName };
       }

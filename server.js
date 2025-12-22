@@ -872,7 +872,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   // Auto-generate payment_url from profile settings if not provided
   let finalPaymentUrl = payment_url || null;
@@ -898,6 +898,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       user_id: userId,
       client_id,
       client_name,
+      client_address: client_address || null,
       date,
       notes,
       template: template || "basic_clean",
@@ -941,7 +942,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceId = req.params.id;
-  const { client_id, client_name, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -979,6 +980,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     .update({
       client_id,
       client_name,
+      client_address: client_address || null,
       date,
       notes,
       template: template || "basic_clean",
