@@ -826,16 +826,25 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
-  const client = await pgPool.connect();
+  const dbClient = await pgPool.connect();
   try {
-    await client.query('BEGIN');
+    await dbClient.query('BEGIN');
+    
+    // Generate invoice number: INV-YYYYMMDD-XXX
+    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const countResult = await dbClient.query(
+      `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
+      [userId, `INV-${dateStr}-%`]
+    );
+    const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
+    const invoiceNumber = `INV-${dateStr}-${seqNum}`;
     
     // Insert invoice - use correct column names that match database schema
-    const invResult = await client.query(
-      `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    const invResult = await dbClient.query(
+      `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, invoice_number`,
-      [userId, client_id || null, client_address || null, date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft']
+      [userId, client_id || null, client_address || null, date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
@@ -857,21 +866,21 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         params.push(item.description || '', qty, unitPrice, itemTotal);
       });
       
-      await client.query(
+      await dbClient.query(
         `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ${values}`,
         params
       );
     }
     
-    await client.query('COMMIT');
+    await dbClient.query('COMMIT');
     console.log(`Invoice ${inv.id} created with ${items?.length || 0} items`);
     res.json({ id: inv.id, invoice_number: inv.invoice_number });
   } catch (err) {
-    await client.query('ROLLBACK');
+    await dbClient.query('ROLLBACK');
     console.error("Invoice creation error:", err);
     res.status(500).json({ error: err.message || "Failed to create invoice" });
   } finally {
-    client.release();
+    dbClient.release();
   }
 });
 
