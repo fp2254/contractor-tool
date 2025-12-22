@@ -1678,18 +1678,18 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, quote_date, quote_number, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
   const client = await pgPool.connect();
   try {
     await client.query('BEGIN');
     
-    // Insert quote
+    // Insert quote - use correct column names that match database schema
     const quoteResult = await client.query(
-      `INSERT INTO quotes (user_id, client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO quotes (user_id, client_id, client_address, issue_date, valid_until, quote_number, notes, template, subtotal, tax_amount, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, quote_number`,
-      [userId, client_id || null, client_name, quote_date || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
+      [userId, client_id || null, client_address || null, quote_date || new Date().toISOString().split('T')[0], valid_until || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
     );
     
     const quote = quoteResult.rows[0];
@@ -1732,7 +1732,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const quoteId = req.params.id;
-  const { client_id, client_name, quote_date, notes, template, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
   // Verify quote belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -1746,15 +1746,16 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     return res.status(404).json({ error: "Quote not found" });
   }
 
-  // Update quote
+  // Update quote - use correct column names that match database schema
   const { data: quote, error: errQuote } = await supabaseAdmin
     .from("quotes")
     .update({
       client_id,
-      client_name,
-      quote_date: quote_date || null,
+      client_address: client_address || null,
+      issue_date: quote_date || null,
+      valid_until: valid_until || null,
       subtotal,
-      tax,
+      tax_amount: tax,
       total,
       notes,
       template: template || "basic_clean"
