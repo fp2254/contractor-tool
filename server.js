@@ -1004,7 +1004,12 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    items = result.rows;
+    // Map database columns to frontend expected names
+    items = result.rows.map(item => ({
+      ...item,
+      qty: item.quantity,
+      price: item.unit_price
+    }));
     console.log(`Fetched ${items.length} line items for invoice ${invoiceId}`);
   } catch (itemErr) {
     console.error("Error fetching invoice items:", itemErr);
@@ -1929,13 +1934,20 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
     return res.status(404).json({ error: "Quote not found" });
   }
 
-  const { data: items, error: errItems } = await supabaseAdmin
+  const { data: rawItems, error: errItems } = await supabaseAdmin
     .from("quote_items")
     .select("*")
     .eq("quote_id", quoteId)
     .order("created_at", { ascending: true });
 
   if (errItems) return res.status(500).json({ error: errItems.message });
+  
+  // Map database columns to frontend expected names
+  const items = (rawItems || []).map(item => ({
+    ...item,
+    qty: item.quantity,
+    price: item.unit_price
+  }));
 
   let client = null;
   if (quote.client_id) {
