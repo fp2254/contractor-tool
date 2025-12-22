@@ -1014,25 +1014,35 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const invoiceId = req.params.id;
+  const invoiceIdParam = req.params.id;
 
-  const { data: invoice, error: errInv } = await supabaseAdmin
-    .from("invoices")
-    .select("*")
-    .eq("id", invoiceId)
-    .eq("user_id", userId)
-    .single();
-
-  if (errInv) {
-    if (errInv.code === "PGRST116") {
-      return res.status(404).json({ error: "Invoice not found" });
-    }
-    return res.status(500).json({ error: errInv.message });
+  // Try UUID first, then invoice_number
+  let invoice = null;
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+  
+  if (isUUID) {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .select("*")
+      .eq("id", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    if (!error) invoice = data;
+  } else {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .select("*")
+      .eq("invoice_number", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    if (!error) invoice = data;
   }
 
-  if (!invoice || invoice.user_id !== userId) {
+  if (!invoice) {
     return res.status(404).json({ error: "Invoice not found" });
   }
+  
+  const invoiceId = invoice.id; // Use actual UUID for related queries
 
   const { data: items, error: errItems } = await supabaseAdmin
     .from("invoice_items")
@@ -1075,7 +1085,7 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   const { data: attachments } = await supabaseAdmin
     .from("invoice_attachments")
     .select("*")
-    .eq("invoice_id", invoiceId);
+    .eq("invoice_id", invoice.id);
 
   res.json({ ...invoice, items: items || [], client: client || null, job: job || null, attachments: attachments || [] });
 });
@@ -1125,16 +1135,42 @@ app.post(
   }
 );
 
+// Helper function to resolve invoice ID (UUID or invoice_number)
+async function resolveInvoiceId(invoiceIdParam, userId) {
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+  
+  if (isUUID) {
+    const { data } = await supabaseAdmin
+      .from("invoices")
+      .select("id")
+      .eq("id", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    return data?.id || null;
+  } else {
+    const { data } = await supabaseAdmin
+      .from("invoices")
+      .select("id")
+      .eq("invoice_number", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    return data?.id || null;
+  }
+}
+
 // ARCHIVE INVOICE
 app.post("/api/invoices/:id/archive", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
+    const invoiceId = await resolveInvoiceId(req.params.id, userId);
+    if (!invoiceId) return res.status(404).json({ error: "Invoice not found" });
+    
     const { data, error } = await supabaseAdmin
       .from("invoices")
       .update({ archived: true })
-      .eq("id", req.params.id)
+      .eq("id", invoiceId)
       .eq("user_id", userId)
       .select()
       .single();
@@ -1153,10 +1189,13 @@ app.post("/api/invoices/:id/unarchive", requireSubscription, async (req, res) =>
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
+    const invoiceId = await resolveInvoiceId(req.params.id, userId);
+    if (!invoiceId) return res.status(404).json({ error: "Invoice not found" });
+    
     const { data, error } = await supabaseAdmin
       .from("invoices")
       .update({ archived: false })
-      .eq("id", req.params.id)
+      .eq("id", invoiceId)
       .eq("user_id", userId)
       .select()
       .single();
@@ -1176,27 +1215,45 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  const invoiceId = req.params.id;
-  console.log("Delete invoice request - invoiceId:", invoiceId, "userId:", userId);
+  const invoiceIdParam = req.params.id;
+  console.log("Delete invoice request - invoiceIdParam:", invoiceIdParam, "userId:", userId);
   
-  if (!invoiceId) {
+  if (!invoiceIdParam) {
     return res.status(400).json({ error: "Invalid invoice ID" });
   }
 
   try {
     // First verify the invoice exists and belongs to this user
-    const { data: invoice, error: findError } = await supabaseAdmin
-      .from("invoices")
-      .select("id")
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .single();
-
-    console.log("Find result - invoice:", invoice, "error:", findError);
-
-    if (findError || !invoice) {
-      return res.status(404).json({ error: "Invoice not found", details: findError?.message });
+    // Try UUID first, then invoice_number
+    let invoice = null;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    
+    if (isUUID) {
+      const { data } = await supabaseAdmin
+        .from("invoices")
+        .select("id")
+        .eq("id", invoiceIdParam)
+        .eq("user_id", userId)
+        .single();
+      invoice = data;
+    } else {
+      // Try looking up by invoice_number
+      const { data } = await supabaseAdmin
+        .from("invoices")
+        .select("id")
+        .eq("invoice_number", invoiceIdParam)
+        .eq("user_id", userId)
+        .single();
+      invoice = data;
     }
+
+    console.log("Find result - invoice:", invoice);
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    
+    const invoiceId = invoice.id; // Use the actual UUID
 
     // Delete related items and attachments
     await supabaseAdmin
