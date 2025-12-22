@@ -921,9 +921,9 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const itemsPayload = items.map((i) => ({
       invoice_id: inv.id,
       description: i.description,
-      qty: i.qty,
-      unit_price: i.unit_price,
-      line_total: i.line_total,
+      quantity: i.qty || i.quantity || 1,
+      unit_price: i.unit_price || i.price || 0,
+      total: i.line_total || i.total || ((i.qty || i.quantity || 1) * (i.unit_price || i.price || 0)),
     }));
 
     const { error: errItems } = await supabaseAdmin
@@ -1013,9 +1013,9 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const itemsPayload = items.map((i) => ({
       invoice_id: inv.id,
       description: i.description,
-      qty: i.qty,
-      unit_price: i.unit_price,
-      line_total: i.line_total,
+      quantity: i.qty || i.quantity || 1,
+      unit_price: i.unit_price || i.price || 0,
+      total: i.line_total || i.total || ((i.qty || i.quantity || 1) * (i.unit_price || i.price || 0)),
     }));
 
     const { error: errItems } = await supabaseAdmin
@@ -4367,8 +4367,8 @@ async function executeVoiceToolCall(toolName, args, userId) {
         const items = line_items.map(item => ({
           invoice_id: invoice.id,
           description: item.description,
-          qty: item.quantity || 1,
-          price: item.unit_price || 0,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
           total: (item.quantity || 1) * (item.unit_price || 0)
         }));
         
