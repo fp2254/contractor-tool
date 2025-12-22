@@ -926,20 +926,37 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const invoiceId = req.params.id;
+  const invoiceIdParam = req.params.id;
   const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
-  // Verify invoice belongs to user
-  const { data: existing, error: errCheck } = await supabaseAdmin
-    .from("invoices")
-    .select("id, user_id")
-    .eq("id", invoiceId)
-    .eq("user_id", userId)
-    .single();
+  // Verify invoice belongs to user - try UUID first, then invoice_number
+  let existing = null;
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+  
+  if (isUUID) {
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .select("id, user_id")
+      .eq("id", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    existing = data;
+  } else {
+    // Try looking up by invoice_number
+    const { data, error } = await supabaseAdmin
+      .from("invoices")
+      .select("id, user_id")
+      .eq("invoice_number", invoiceIdParam)
+      .eq("user_id", userId)
+      .single();
+    existing = data;
+  }
 
-  if (errCheck || !existing) {
+  if (!existing) {
     return res.status(404).json({ error: "Invoice not found" });
   }
+  
+  const invoiceId = existing.id; // Use the actual UUID
 
   // Update invoice
   const { data: inv, error: errInv } = await supabaseAdmin
@@ -967,8 +984,10 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   }
 
   // Delete old items and insert new ones using direct SQL
+  // Use inv.id (the actual UUID) not invoiceId (which may be invoice number from frontend)
+  const actualInvoiceId = inv.id;
   try {
-    await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
+    await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [actualInvoiceId]);
     
     if (Array.isArray(items) && items.length) {
       for (const i of items) {
@@ -978,10 +997,10 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
         
         await pgPool.query(
           `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-          [inv.id, i.description || '', qty, unitPrice, itemTotal]
+          [actualInvoiceId, i.description || '', qty, unitPrice, itemTotal]
         );
       }
-      console.log(`Updated ${items.length} invoice items for invoice ${inv.id}`);
+      console.log(`Updated ${items.length} invoice items for invoice ${actualInvoiceId}`);
     }
   } catch (itemErr) {
     console.error("Invoice items update error:", itemErr);
