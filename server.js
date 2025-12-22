@@ -5935,8 +5935,19 @@ app.get("/view/quote/:id", async (req, res) => {
   }
 });
 
+// Force Supabase PostgREST to refresh its schema cache
+async function refreshSupabaseSchemaCache() {
+  try {
+    await pgPool.query("NOTIFY pgrst, 'reload schema'");
+    console.log("Supabase schema cache refresh triggered");
+  } catch (err) {
+    console.error("Could not refresh schema cache:", err.message);
+  }
+}
+
 // START
 app.listen(port, '0.0.0.0', async () => {
   console.log(`TradeBase server running on http://0.0.0.0:${port}`);
+  await refreshSupabaseSchemaCache();
   await initializeStorageBuckets();
 });
