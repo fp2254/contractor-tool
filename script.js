@@ -3493,6 +3493,9 @@ async function viewInvoiceDetail(invoiceId) {
       ` : ''}
 
       <div class="detail-actions">
+        <button class="btn-sm" id="view-invoice-btn-${invoice.id}" style="background: #6366f1; color: white;">
+          <i class="fa-solid fa-eye"></i> View Invoice
+        </button>
         <button class="btn-sm" id="edit-invoice-btn-${invoice.id}" style="background: var(--accent); color: var(--text-inverse);">
           <i class="fa-solid fa-pen"></i> Edit Invoice
         </button>
@@ -3560,6 +3563,11 @@ async function viewInvoiceDetail(invoiceId) {
     // Wire up schedule button
     document.getElementById(`schedule-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
       scheduleEventFromInvoice(invoice.id, invoice.client_name || invoice.client?.name || 'Unknown');
+    });
+    
+    // Wire up view button - opens public invoice view in new tab
+    document.getElementById(`view-invoice-btn-${invoice.id}`)?.addEventListener('click', () => {
+      window.open(`/view/invoice/${invoice.id}`, '_blank');
     });
     
     // Wire up edit button
