@@ -34,8 +34,8 @@ function renderInvoiceTemplate(invoiceData, isQuote = false) {
   template.innerHTML = '';
   
   const type = isQuote ? 'QUOTE' : 'INVOICE';
-  const numberField = isQuote ? 'quote_number' : 'number';
-  const dateField = isQuote ? 'quote_date' : 'date';
+  const numberField = isQuote ? 'quote_number' : 'invoice_number';
+  const dateField = 'issue_date';
   
   // Use template from invoice/quote data if available, otherwise fall back to current global template
   const templateToUse = invoiceData.template || currentTemplate;
@@ -98,8 +98,8 @@ function renderBasicClean(data, type, numberField, dateField) {
           ${data.items?.map(item => `
             <tr style="border: 1px solid #ccc;">
               <td style="padding: 8px; border: 1px solid #ccc; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
-              <td style="padding: 8px; text-align: center; border: 1px solid #ccc; white-space: nowrap;">${item.qty}</td>
-              <td style="padding: 8px; text-align: right; border: 1px solid #ccc; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 8px; text-align: center; border: 1px solid #ccc; white-space: nowrap;">${item.quantity}</td>
+              <td style="padding: 8px; text-align: right; border: 1px solid #ccc; white-space: nowrap;">$${parseFloat(item.unit_price).toFixed(2)}</td>
               <td style="padding: 8px; text-align: right; border: 1px solid #ccc; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
@@ -113,7 +113,7 @@ function renderBasicClean(data, type, numberField, dateField) {
         </div>
         <div style="margin-bottom: 5px;">
           <span style="display: inline-block; width: 150px; text-align: left; color: #666;">Tax:</span>
-          <span>$${parseFloat(data.tax || 0).toFixed(2)}</span>
+          <span>$${parseFloat(data.tax_amount || 0).toFixed(2)}</span>
         </div>
         <div style="border-top: 2px solid #000; padding-top: 8px; margin-top: 10px; font-weight: bold; font-size: 14px;">
           <span style="display: inline-block; width: 150px; text-align: left;">TOTAL:</span>
@@ -173,8 +173,8 @@ function renderModernPro(data, type, numberField, dateField) {
           ${data.items?.map((item, i) => `
             <tr style="background: ${i % 2 === 0 ? '#f8f9fa' : 'white'}; border-bottom: 1px solid #e9ecef;">
               <td style="padding: 10px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
-              <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.qty}</td>
-              <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.quantity}</td>
+              <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.unit_price).toFixed(2)}</td>
               <td style="padding: 10px; text-align: right; font-weight: 600; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
@@ -188,7 +188,7 @@ function renderModernPro(data, type, numberField, dateField) {
         </div>
         <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid #2c3e50;">
           <span style="display: inline-block; width: 150px; text-align: left; color: #666;">Tax:</span>
-          <span>$${parseFloat(data.tax || 0).toFixed(2)}</span>
+          <span>$${parseFloat(data.tax_amount || 0).toFixed(2)}</span>
         </div>
         <div style="font-weight: 700; font-size: 16px; color: #2c3e50;">
           <span style="display: inline-block; width: 150px; text-align: left;">TOTAL DUE:</span>
@@ -252,9 +252,9 @@ function renderColorAccent(data, type, numberField, dateField) {
             ${data.items?.map(item => `
               <tr style="border-bottom: 1px solid #e5e7eb;">
                 <td style="padding: 10px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
-                <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.qty}</td>
-                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
-                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${item.total}</td>
+                <td style="padding: 10px; text-align: center; white-space: nowrap;">${item.quantity}</td>
+                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.unit_price).toFixed(2)}</td>
+                <td style="padding: 10px; text-align: right; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
               </tr>
             `).join('') || ''}
           </tbody>
@@ -267,7 +267,7 @@ function renderColorAccent(data, type, numberField, dateField) {
           </div>
           <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
             <span style="display: inline-block; width: 150px; text-align: left; color: #666;">Tax:</span>
-            <span>$${parseFloat(data.tax || 0).toFixed(2)}</span>
+            <span>$${parseFloat(data.tax_amount || 0).toFixed(2)}</span>
           </div>
         </div>
         
@@ -319,8 +319,8 @@ function renderBigTotal(data, type, numberField, dateField) {
           ${data.items?.map(item => `
             <tr style="border-bottom: 1px solid #ddd;">
               <td style="padding: 8px; word-wrap: break-word; overflow-wrap: break-word;">${item.description}</td>
-              <td style="padding: 8px; text-align: center; white-space: nowrap;">${item.qty}</td>
-              <td style="padding: 8px; text-align: right; white-space: nowrap;">$${parseFloat(item.price).toFixed(2)}</td>
+              <td style="padding: 8px; text-align: center; white-space: nowrap;">${item.quantity}</td>
+              <td style="padding: 8px; text-align: right; white-space: nowrap;">$${parseFloat(item.unit_price).toFixed(2)}</td>
               <td style="padding: 8px; text-align: right; white-space: nowrap;">$${parseFloat(item.total).toFixed(2)}</td>
             </tr>
           `).join('') || ''}
@@ -334,7 +334,7 @@ function renderBigTotal(data, type, numberField, dateField) {
         </div>
         <div style="margin-bottom: 20px;">
           <span style="display: inline-block; width: 150px; text-align: left; color: #666;">Tax:</span>
-          <span>$${parseFloat(data.tax || 0).toFixed(2)}</span>
+          <span>$${parseFloat(data.tax_amount || 0).toFixed(2)}</span>
         </div>
       </div>
       

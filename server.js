@@ -824,7 +824,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
 
   const dbClient = await pgPool.connect();
   try {
@@ -839,12 +839,12 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
     
-    // Insert invoice - use correct column names that match database schema
+    // Insert invoice
     const invResult = await dbClient.query(
       `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, invoice_number`,
-      [userId, client_id || null, client_address || null, date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft', invoiceNumber]
+      [userId, client_id || null, client_address || null, issue_date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || null, subtotal || 0, tax_amount || 0, total || 0, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
@@ -852,17 +852,14 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     // Bulk insert line items
     if (Array.isArray(items) && items.length) {
       const values = items.map((item, idx) => {
-        const qty = item.qty || item.quantity || 1;
-        const unitPrice = item.unit_price || item.price || 0;
-        const itemTotal = item.line_total || item.total || (qty * unitPrice);
         return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
       }).join(', ');
       
       const params = [inv.id];
       items.forEach(item => {
-        const qty = item.qty || item.quantity || 1;
-        const unitPrice = item.unit_price || item.price || 0;
-        const itemTotal = item.line_total || item.total || (qty * unitPrice);
+        const qty = item.quantity || 1;
+        const unitPrice = item.unit_price || 0;
+        const itemTotal = item.total || (qty * unitPrice);
         params.push(item.description || '', qty, unitPrice, itemTotal);
       });
       
@@ -890,7 +887,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
-  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
 
   // Verify invoice belongs to user - try UUID first, then invoice_number
   let existing = null;
@@ -921,18 +918,18 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   
   const invoiceId = existing.id; // Use the actual UUID
 
-  // Update invoice - use correct column names that match database schema
+  // Update invoice
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .update({
       client_id,
       client_address: client_address || null,
-      issue_date: date,
+      issue_date,
       notes,
       template: template || "basic_clean",
-      payment_url: payment_url || payment_link || null,
+      payment_url: payment_url || null,
       subtotal,
-      tax_amount: tax,
+      tax_amount,
       total
     })
     .eq("id", invoiceId)
@@ -953,9 +950,9 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     
     if (Array.isArray(items) && items.length) {
       for (const i of items) {
-        const qty = i.qty || i.quantity || 1;
-        const unitPrice = i.unit_price || i.price || 0;
-        const itemTotal = i.line_total || i.total || (qty * unitPrice);
+        const qty = i.quantity || 1;
+        const unitPrice = i.unit_price || 0;
+        const itemTotal = i.total || (qty * unitPrice);
         
         await pgPool.query(
           `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
@@ -969,7 +966,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return res.status(500).json({ error: itemErr.message });
   }
 
-  res.json({ id: inv.id, number: inv.number });
+  res.json({ id: inv.id, invoice_number: inv.invoice_number });
 });
 
 app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
@@ -1013,12 +1010,7 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    // Map database columns to frontend expected names
-    items = result.rows.map(item => ({
-      ...item,
-      qty: item.quantity,
-      price: item.unit_price
-    }));
+    items = result.rows;
     console.log(`Fetched ${items.length} line items for invoice ${invoiceId}`);
   } catch (itemErr) {
     console.error("Error fetching invoice items:", itemErr);
@@ -1061,12 +1053,9 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     .select("*")
     .eq("invoice_id", invoice.id);
 
-  // Map database column names to frontend expected names for compatibility
+  // Return invoice with related data
   res.json({ 
     ...invoice, 
-    date: invoice.issue_date,
-    tax: invoice.tax_amount,
-    payment_link: invoice.payment_url,
     items: items || [], 
     client: client || null, 
     job: job || null, 
@@ -1311,7 +1300,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
     // Save the payment link reference to the invoice
     const { error: updateErr } = await supabaseAdmin
       .from("invoices")
-      .update({ payment_link: paymentUrl })
+      .update({ payment_url: paymentUrl })
       .eq("id", invoiceId)
       .eq("user_id", userId);
 
@@ -1319,7 +1308,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
       console.error("Error saving payment link:", updateErr);
     }
 
-    res.json({ payment_link: paymentUrl });
+    res.json({ payment_url: paymentUrl });
   } catch (error) {
     console.error("Error getting payment link:", error);
     res.status(500).json({ error: "Failed to get payment link" });
@@ -1331,13 +1320,13 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { amount, description, sendMethod, email, name, phone, payment_link } = req.body;
+  const { amount, description, sendMethod, email, name, phone, payment_url } = req.body;
 
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: "Valid amount is required" });
   }
 
-  if (!payment_link) {
+  if (!payment_url) {
     return res.status(400).json({ error: "Payment link is required" });
   }
 
@@ -1351,8 +1340,8 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
     const businessName = profile?.business_name || 'Payment Request';
     const paymentDescription = description || 'Payment Request';
     
-    // Use the payment link passed from client
-    const paymentUrl = payment_link;
+    // Use the payment URL passed from client
+    const paymentUrl = payment_url;
 
     let sendResult = { sent: false };
 
@@ -1388,7 +1377,7 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
     }
 
     res.json({ 
-      payment_link: paymentUrl, 
+      payment_url: paymentUrl, 
       amount: amount,
       description: paymentDescription,
       sendResult
@@ -1943,20 +1932,13 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
     return res.status(404).json({ error: "Quote not found" });
   }
 
-  const { data: rawItems, error: errItems } = await supabaseAdmin
+  const { data: items, error: errItems } = await supabaseAdmin
     .from("quote_items")
     .select("*")
     .eq("quote_id", quoteId)
     .order("created_at", { ascending: true });
 
   if (errItems) return res.status(500).json({ error: errItems.message });
-  
-  // Map database columns to frontend expected names
-  const items = (rawItems || []).map(item => ({
-    ...item,
-    qty: item.quantity,
-    price: item.unit_price
-  }));
 
   let client = null;
   if (quote.client_id) {
@@ -1984,12 +1966,9 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
     }
   }
 
-  // Map database column names to frontend expected names for compatibility
+  // Return quote with related data
   res.json({
     ...quote,
-    quote_date: quote.issue_date,
-    tax: quote.tax_amount,
-    due_date: quote.valid_until,
     items: items || [],
     client,
     job: job || null,
@@ -2891,10 +2870,10 @@ async function generateInvoicePDF(invoice, profile) {
           <span class="totals-label">Subtotal:</span>
           <span class="totals-value">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</span>
         </div>
-        ${invoice.tax > 0 ? `
+        ${invoice.tax_amount > 0 ? `
         <div class="totals-row">
           <span class="totals-label">Tax:</span>
-          <span class="totals-value">$${parseFloat(invoice.tax || 0).toFixed(2)}</span>
+          <span class="totals-value">$${parseFloat(invoice.tax_amount || 0).toFixed(2)}</span>
         </div>
         ` : ''}
         <div class="grand-total">
@@ -2912,7 +2891,7 @@ async function generateInvoicePDF(invoice, profile) {
 
       <div class="footer">
         <p>Thank you for your business!</p>
-        ${invoice.payment_link ? `<p>Pay online: ${invoice.payment_link}</p>` : ''}
+        ${invoice.payment_url ? `<p>Pay online: ${invoice.payment_url}</p>` : ''}
       </div>
     </body>
     </html>
@@ -3358,9 +3337,9 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
             </div>
           </div>
 
-          ${invoice.payment_link ? `
+          ${invoice.payment_url ? `
             <p style="text-align: center;">
-              <a href="${escapeHtml(invoice.payment_link)}" class="button">Pay Invoice Online</a>
+              <a href="${escapeHtml(invoice.payment_url)}" class="button">Pay Invoice Online</a>
             </p>
           ` : ''}
 
@@ -5393,7 +5372,7 @@ app.get("/view/invoice/:id", async (req, res) => {
         </div>
         <div class="info-box" style="text-align: right;">
           <h3>Invoice Details</h3>
-          <p>Date: ${invoice.date || new Date().toLocaleDateString()}</p>
+          <p>Date: ${invoice.issue_date || new Date().toLocaleDateString()}</p>
           <p>Status: <span class="status ${invoice.payment_status === 'paid' ? 'status-paid' : invoice.payment_status === 'pending' ? 'status-pending' : 'status-unpaid'}">${(invoice.payment_status || 'unpaid').toUpperCase()}</span></p>
         </div>
       </div>
@@ -5411,9 +5390,9 @@ app.get("/view/invoice/:id", async (req, res) => {
           ${(items || []).map(item => `
             <tr>
               <td>${item.description || ''}</td>
-              <td style="text-align: center;">${item.qty || item.quantity || 1}</td>
-              <td style="text-align: right;">$${(parseFloat(item.unit_price) || parseFloat(item.price) || 0).toFixed(2)}</td>
-              <td style="text-align: right;">$${(parseFloat(item.line_total) || parseFloat(item.total) || 0).toFixed(2)}</td>
+              <td style="text-align: center;">${item.quantity || 1}</td>
+              <td style="text-align: right;">$${(parseFloat(item.unit_price) || 0).toFixed(2)}</td>
+              <td style="text-align: right;">$${(parseFloat(item.total) || 0).toFixed(2)}</td>
             </tr>
           `).join('')}
           <tr class="total-row">
@@ -5442,8 +5421,7 @@ app.get("/view/invoice/:id", async (req, res) => {
     </div>
     
     <div class="actions">
-      ${invoice.payment_url && invoice.payment_status !== 'paid' ? `<a href="${invoice.payment_url}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
-      ${!invoice.payment_url && (profile?.payment_link || invoice.payment_link) && invoice.payment_status !== 'paid' ? `<a href="${profile?.payment_link || invoice.payment_link}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
+      ${(invoice.payment_url || profile?.payment_link) && invoice.payment_status !== 'paid' ? `<a href="${invoice.payment_url || profile?.payment_link}" class="btn btn-primary">Pay Now - $${total.toFixed(2)}</a>` : ''}
       <a href="javascript:window.print()" class="btn btn-secondary">Print / Save PDF</a>
     </div>
     
@@ -5582,9 +5560,9 @@ app.get("/view/quote/:id", async (req, res) => {
           ${(items || []).map(item => `
             <tr>
               <td>${item.description || ''}</td>
-              <td style="text-align: center;">${item.qty || item.quantity || 1}</td>
-              <td style="text-align: right;">$${(parseFloat(item.unit_price) || parseFloat(item.price) || 0).toFixed(2)}</td>
-              <td style="text-align: right;">$${(parseFloat(item.line_total) || parseFloat(item.total) || 0).toFixed(2)}</td>
+              <td style="text-align: center;">${item.quantity || 1}</td>
+              <td style="text-align: right;">$${(parseFloat(item.unit_price) || 0).toFixed(2)}</td>
+              <td style="text-align: right;">$${(parseFloat(item.total) || 0).toFixed(2)}</td>
             </tr>
           `).join('')}
           <tr class="total-row">

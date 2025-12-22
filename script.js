@@ -72,60 +72,60 @@ const DEMO_DATA = {
   invoices: [
     { 
       id: 1, 
-      number: "INV-1001",
+      invoice_number: "INV-1001",
       client_name: "John Smith",
       client: { name: "John Smith", email: "john@example.com", phone: "(555) 234-5678", address: "456 Oak Ave" },
-      date: "2025-11-15",
+      issue_date: "2025-11-15",
       status: "sent",
       payment_status: "paid",
       paid_at: "2025-11-16T10:30:00Z",
-      payment_link: "https://pay.stripe.com/demo-link-001",
+      payment_url: "https://pay.stripe.com/demo-link-001",
       subtotal: 850.00,
-      tax: 72.25,
+      tax_amount: 72.25,
       total: 922.25,
       notes: "Water heater replacement - emergency service",
       created_at: "2025-11-15T10:00:00Z",
       items: [
-        { description: "New Water Heater Unit", qty: 1, price: 550.00, total: 550.00 },
-        { description: "Installation Labor", qty: 3, price: 100.00, total: 300.00 }
+        { description: "New Water Heater Unit", quantity: 1, unit_price: 550.00, total: 550.00 },
+        { description: "Installation Labor", quantity: 3, unit_price: 100.00, total: 300.00 }
       ]
     },
     { 
       id: 2, 
-      number: "INV-1002",
+      invoice_number: "INV-1002",
       client_name: "Sarah Johnson",
       client: { name: "Sarah Johnson", email: "sarah@example.com", phone: "(555) 345-6789", address: "789 Pine St" },
-      date: "2025-11-18",
+      issue_date: "2025-11-18",
       status: "draft",
       payment_status: "unpaid",
-      payment_link: "https://pay.stripe.com/demo-link-002",
+      payment_url: "https://pay.stripe.com/demo-link-002",
       subtotal: 450.00,
-      tax: 38.25,
+      tax_amount: 38.25,
       total: 488.25,
       notes: "Kitchen sink repair",
       created_at: "2025-11-18T14:30:00Z",
       items: [
-        { description: "Kitchen Faucet Replacement", qty: 1, price: 250.00, total: 250.00 },
-        { description: "Under-Sink Pipe Repair", qty: 1, price: 200.00, total: 200.00 }
+        { description: "Kitchen Faucet Replacement", quantity: 1, unit_price: 250.00, total: 250.00 },
+        { description: "Under-Sink Pipe Repair", quantity: 1, unit_price: 200.00, total: 200.00 }
       ]
     },
     { 
       id: 3, 
-      number: "INV-1003",
+      invoice_number: "INV-1003",
       client_name: "Mike Davis",
       client: { name: "Mike Davis", email: "mike@example.com", phone: "(555) 456-7890", address: "321 Elm Dr" },
-      date: "2025-11-20",
+      issue_date: "2025-11-20",
       status: "sent",
       payment_status: "pending",
-      payment_link: null,
+      payment_url: null,
       subtotal: 325.00,
-      tax: 27.63,
+      tax_amount: 27.63,
       total: 352.63,
       notes: "Drain cleaning service",
       created_at: "2025-11-20T09:00:00Z",
       items: [
-        { description: "Main Line Drain Cleaning", qty: 1, price: 275.00, total: 275.00 },
-        { description: "Camera Inspection", qty: 1, price: 50.00, total: 50.00 }
+        { description: "Main Line Drain Cleaning", quantity: 1, unit_price: 275.00, total: 275.00 },
+        { description: "Camera Inspection", quantity: 1, unit_price: 50.00, total: 50.00 }
       ]
     }
   ],
@@ -135,10 +135,10 @@ const DEMO_DATA = {
       quote_number: "QUO-2001",
       client_name: "Mike Davis",
       client: { name: "Mike Davis", email: "mike@example.com", phone: "(555) 456-7890", address: "321 Elm Dr" },
-      quote_date: "2025-11-20",
+      issue_date: "2025-11-20",
       status: "sent",
       subtotal: 2400.00,
-      tax: 204.00,
+      tax_amount: 204.00,
       total: 2604.00,
       notes: "Bathroom renovation estimate",
       created_at: "2025-11-20T09:00:00Z",
@@ -940,7 +940,7 @@ function renderDemoInvoices() {
         <div class="client-avatar">${initials}</div>
         <div class="list-item-info">
           <div class="list-item-name">${inv.client_name}</div>
-          <div class="list-item-meta">INV #${inv.number} • ${statusIcon} ${statusLabel}</div>
+          <div class="list-item-meta">INV #${inv.invoice_number} • ${statusIcon} ${statusLabel}</div>
         </div>
         <div class="list-item-amount">$${inv.total.toFixed(2)}</div>
       </div>
@@ -984,7 +984,7 @@ function viewDemoInvoiceDetail(invoice) {
   const titleEl = document.getElementById("invoice-detail-title");
   const contentEl = document.getElementById("invoice-detail-content");
   
-  titleEl.textContent = `Invoice #${invoice.number}`;
+  titleEl.textContent = `Invoice #${invoice.invoice_number}`;
   
   const paymentStatus = invoice.payment_status || 'unpaid';
   const paymentBadge = `<span class="payment-status-badge ${paymentStatus}">
@@ -995,8 +995,8 @@ function viewDemoInvoiceDetail(invoice) {
   contentEl.innerHTML = `
     <div class="detail-header">
       <div class="detail-header-left">
-        <h3>Invoice #${invoice.number}</h3>
-        <p><strong>Date:</strong> ${invoice.date}</p>
+        <h3>Invoice #${invoice.invoice_number}</h3>
+        <p><strong>Date:</strong> ${invoice.issue_date}</p>
         <p><strong>Status:</strong> ${invoice.status}</p>
         <p><strong>Payment:</strong> ${paymentBadge}</p>
       </div>
@@ -1035,8 +1035,8 @@ function viewDemoInvoiceDetail(invoice) {
           ${(invoice.items || []).map(item => `
             <tr>
               <td>${item.description || ''}</td>
-              <td style="text-align: center;">${item.qty || 1}</td>
-              <td style="text-align: right;">${formatCurrency(item.price || 0)}</td>
+              <td style="text-align: center;">${item.quantity || 1}</td>
+              <td style="text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
               <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
             </tr>
           `).join('')}
@@ -1048,10 +1048,10 @@ function viewDemoInvoiceDetail(invoice) {
           <span class="detail-totals-label">Subtotal:</span>
           <span class="detail-totals-value">${formatCurrency(invoice.subtotal || 0)}</span>
         </div>
-        ${invoice.tax ? `
+        ${invoice.tax_amount ? `
           <div class="detail-totals-row">
             <span class="detail-totals-label">Tax:</span>
-            <span class="detail-totals-value">${formatCurrency(invoice.tax || 0)}</span>
+            <span class="detail-totals-value">${formatCurrency(invoice.tax_amount || 0)}</span>
           </div>
         ` : ''}
         <div class="detail-totals-row total">
@@ -1084,7 +1084,7 @@ function viewDemoQuoteDetail(quote) {
     <div class="detail-header">
       <div class="detail-header-left">
         <h3>Quote #${quote.quote_number}</h3>
-        <p><strong>Date:</strong> ${quote.quote_date}</p>
+        <p><strong>Date:</strong> ${quote.issue_date}</p>
         <p><strong>Status:</strong> ${quote.status}</p>
       </div>
       <div class="detail-header-right">
@@ -1135,10 +1135,10 @@ function viewDemoQuoteDetail(quote) {
           <span class="detail-totals-label">Subtotal:</span>
           <span class="detail-totals-value">${formatCurrency(quote.subtotal || 0)}</span>
         </div>
-        ${quote.tax ? `
+        ${quote.tax_amount ? `
           <div class="detail-totals-row">
             <span class="detail-totals-label">Tax:</span>
-            <span class="detail-totals-value">${formatCurrency(quote.tax || 0)}</span>
+            <span class="detail-totals-value">${formatCurrency(quote.tax_amount || 0)}</span>
           </div>
         ` : ''}
         <div class="detail-totals-row total">
@@ -1988,7 +1988,7 @@ async function handleQuickPaySubmit(e) {
       // Send email via server
       const res = await apiFetch("/api/quick-pay", {
         method: "POST",
-        body: JSON.stringify({ amount, description, sendMethod: "email", email, name, payment_link: selectedPaymentLink })
+        body: JSON.stringify({ amount, description, sendMethod: "email", email, name, payment_url: selectedPaymentLink })
       });
       
       if (!res.ok) {
@@ -2182,7 +2182,7 @@ function saveLineItemsFromUI() {
   });
 }
 
-function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
+function addLineItemRow(item = { description: "", quantity: 1, unit_price: 0 }) {
   const container = document.getElementById("line-items");
   const row = document.createElement("div");
   row.className = "line-item-row";
@@ -2192,8 +2192,8 @@ function addLineItemRow(item = { description: "", qty: 1, price: 0 }) {
       <input type="text" class="li-desc" placeholder="${t('invoice.line_description_placeholder')}" value="${item.description}" autocomplete="off" />
       <div class="line-item-suggest hidden"></div>
     </div>
-    <input type="number" class="li-qty" min="0" step="0.1" value="${item.qty}" placeholder="${t('invoice.line_qty_placeholder')}" />
-    <input type="number" class="li-price" min="0" step="0.01" value="${item.price}" placeholder="${t('invoice.line_price_placeholder')}" />
+    <input type="number" class="li-qty" min="0" step="0.1" value="${item.quantity}" placeholder="${t('invoice.line_qty_placeholder')}" />
+    <input type="number" class="li-price" min="0" step="0.01" value="${item.unit_price}" placeholder="${t('invoice.line_price_placeholder')}" />
     <button type="button" class="btn-remove-line">&times;</button>
   `;
 
@@ -2397,13 +2397,12 @@ async function handleInvoiceSubmit(e) {
     client_id: clientId,
     client_name: clientName,
     client_address: clientAddress,
-    date,
+    issue_date: date,
     notes,
     template,
-    payment_link: paymentLink,
-    payment_url: paymentUrl,
+    payment_url: paymentUrl || paymentLink,
     subtotal,
-    tax,
+    tax_amount: tax,
     total,
     items
   };
@@ -2414,7 +2413,7 @@ async function handleInvoiceSubmit(e) {
     if (!navigator.onLine && !isEditing) {
       const offlineId = generateOfflineId();
       invoiceData.id = offlineId;
-      invoiceData.number = `INV-${Date.now()}`;
+      invoiceData.invoice_number = `INV-${Date.now()}`;
       invoiceData.status = 'draft';
       invoiceData.payment_status = 'unpaid';
       invoiceData.created_at = new Date().toISOString();
@@ -2458,7 +2457,7 @@ async function handleInvoiceSubmit(e) {
     const invoiceId = isEditing ? editingInvoiceId : data.id;
     
     invoiceData.id = invoiceId;
-    invoiceData.number = data.number || data.invoice_number;
+    invoiceData.invoice_number = data.invoice_number;
     await tradebaseDB.saveInvoice(invoiceData);
 
     if (pendingPhotos.length) {
@@ -2509,7 +2508,7 @@ function editInvoice(invoice) {
   if (addressField) {
     addressField.value = invoice.client_address || (invoice.client ? invoice.client.address : '') || '';
   }
-  document.getElementById("invoice-date").value = invoice.date || new Date().toISOString().split('T')[0];
+  document.getElementById("invoice-date").value = invoice.issue_date || new Date().toISOString().split('T')[0];
   document.getElementById("invoice-notes").value = invoice.notes || '';
   
   // Set template if exists
@@ -2519,7 +2518,7 @@ function editInvoice(invoice) {
   }
   
   // Populate and set payment link selector
-  populateInvoiceLinkSelector(invoice.payment_link || null);
+  populateInvoiceLinkSelector(invoice.payment_url || null);
   
   // Set payment URL if exists
   const paymentUrlField = document.getElementById("invoice-payment-url");
@@ -2536,8 +2535,8 @@ function editInvoice(invoice) {
     items.forEach(item => {
       addLineItemRow({
         description: item.description || '',
-        qty: item.quantity || item.qty || 1,
-        price: item.unit_price || item.price || item.rate || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0
       });
     });
   } else {
@@ -2550,7 +2549,7 @@ function editInvoice(invoice) {
   // Update form title AFTER showScreen (so applyLanguage doesn't overwrite it)
   const formTitle = document.querySelector('#new-invoice .screen-title');
   if (formTitle) {
-    formTitle.textContent = `Edit Invoice #${invoice.number || invoice.id}`;
+    formTitle.textContent = `Edit Invoice #${invoice.invoice_number || invoice.id}`;
   }
   
   // Update submit button text AFTER showScreen
@@ -2606,7 +2605,7 @@ function editQuote(quote) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
-  document.getElementById("quote-date").value = quote.quote_date || new Date().toISOString().split('T')[0];
+  document.getElementById("quote-date").value = quote.issue_date || new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = quote.notes || '';
   
   // Set valid until date if exists
@@ -2630,8 +2629,8 @@ function editQuote(quote) {
     items.forEach(item => {
       addQuoteLineItemRow({
         description: item.description || '',
-        qty: item.quantity || item.qty || 1,
-        price: item.unit_price || item.price || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0
       });
     });
   } else {
@@ -3282,7 +3281,7 @@ async function loadInvoices(showArchived = false) {
         <div class="client-avatar">${initials}</div>
         <div class="list-item-info">
           <div class="list-item-name">${inv.client_name || "Unknown Client"}</div>
-          <div class="list-item-meta">INV #${inv.number || inv.id} • ${statusIcon} ${paymentStatus}${offlineIcon}</div>
+          <div class="list-item-meta">INV #${inv.invoice_number || inv.id} • ${statusIcon} ${paymentStatus}${offlineIcon}</div>
         </div>
         <div class="list-item-amount">${formatCurrency(inv.total || 0)}</div>
       </div>
@@ -3295,7 +3294,7 @@ async function loadInvoices(showArchived = false) {
       const actions = [
         { icon: "fa-solid fa-box-open", label: "Restore", class: "unarchive-action", handler: () => unarchiveInvoice(inv.id) },
         { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
-          showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
+          showDeleteConfirmModal("invoice", inv.invoice_number || inv.id, () => deleteInvoice(inv.id));
         }}
       ];
       const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
@@ -3306,7 +3305,7 @@ async function loadInvoices(showArchived = false) {
         { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewInvoiceDetail(inv.id) },
         { icon: "fa-solid fa-box-archive", label: "Archive", class: "archive-action", handler: () => archiveInvoice(inv.id) },
         { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
-          showDeleteConfirmModal("invoice", inv.number || inv.id, () => deleteInvoice(inv.id));
+          showDeleteConfirmModal("invoice", inv.invoice_number || inv.id, () => deleteInvoice(inv.id));
         }}
       ];
       const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
@@ -3404,7 +3403,7 @@ async function viewInvoiceDetail(invoiceId) {
     const titleEl = document.getElementById("invoice-detail-title");
     const contentEl = document.getElementById("invoice-detail-content");
     
-    titleEl.textContent = `Invoice #${invoice.number || invoice.id}`;
+    titleEl.textContent = `Invoice #${invoice.invoice_number || invoice.id}`;
     
     const paymentStatus = invoice.payment_status || 'unpaid';
     const paymentBadge = `<span class="payment-status-badge ${paymentStatus}">
@@ -3415,8 +3414,8 @@ async function viewInvoiceDetail(invoiceId) {
     contentEl.innerHTML = `
       <div class="detail-header">
         <div class="detail-header-left">
-          <h3>Invoice #${invoice.number || invoice.id}</h3>
-          <p><strong>Date:</strong> ${invoice.date || new Date().toLocaleDateString()}</p>
+          <h3>Invoice #${invoice.invoice_number || invoice.id}</h3>
+          <p><strong>Date:</strong> ${invoice.issue_date || new Date().toLocaleDateString()}</p>
           <p><strong>Status:</strong> ${invoice.status || 'draft'}</p>
           <p><strong>Payment:</strong> ${paymentBadge}</p>
         </div>
@@ -3455,9 +3454,9 @@ async function viewInvoiceDetail(invoiceId) {
             ${(invoice.items || []).map(item => `
               <tr>
                 <td>${item.description || ''}</td>
-                <td style="text-align: center;">${item.quantity || item.qty || 1}</td>
-                <td style="text-align: right;">${formatCurrency(item.unit_price || item.price || 0)}</td>
-                <td style="text-align: right;">${formatCurrency(item.total || item.line_total || 0)}</td>
+                <td style="text-align: center;">${item.quantity || 1}</td>
+                <td style="text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
+                <td style="text-align: right;">${formatCurrency(item.total || 0)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -3468,10 +3467,10 @@ async function viewInvoiceDetail(invoiceId) {
             <span class="detail-totals-label">Subtotal:</span>
             <span class="detail-totals-value">${formatCurrency(invoice.subtotal || 0)}</span>
           </div>
-          ${invoice.tax ? `
+          ${invoice.tax_amount ? `
             <div class="detail-totals-row">
               <span class="detail-totals-label">Tax:</span>
-              <span class="detail-totals-value">${formatCurrency(invoice.tax || 0)}</span>
+              <span class="detail-totals-value">${formatCurrency(invoice.tax_amount || 0)}</span>
             </div>
           ` : ''}
           <div class="detail-totals-row total">
@@ -3535,8 +3534,8 @@ async function viewInvoiceDetail(invoiceId) {
           <option value="pending" ${paymentStatus === 'pending' ? 'disabled' : ''}>Mark Pending</option>
           <option value="paid" ${paymentStatus === 'paid' ? 'disabled' : ''}>Mark Paid</option>
         </select>
-        ${invoice.payment_link ? `
-          <button class="btn-sm" onclick="copyToClipboard('${invoice.payment_link}', 'Payment link copied!')">
+        ${invoice.payment_url ? `
+          <button class="btn-sm" onclick="copyToClipboard('${invoice.payment_url}', 'Payment link copied!')">
             <i class="fa-solid fa-copy"></i> Copy Payment Link
           </button>
         ` : `
@@ -3644,9 +3643,9 @@ async function viewQuoteDetail(quoteId) {
       <div class="detail-header">
         <div class="detail-header-left">
           <h3>Quote #${quote.quote_number || quote.id.slice(0, 8)}</h3>
-          <p><strong>Date:</strong> ${quote.quote_date || new Date().toLocaleDateString()}</p>
+          <p><strong>Date:</strong> ${quote.issue_date || new Date().toLocaleDateString()}</p>
           <p><strong>Status:</strong> ${quote.status || 'draft'}</p>
-          ${quote.due_date ? `<p><strong>Valid Until:</strong> ${quote.due_date}</p>` : ''}
+          ${quote.valid_until ? `<p><strong>Valid Until:</strong> ${quote.valid_until}</p>` : ''}
         </div>
         <div class="detail-header-right">
           <p><strong>Client:</strong></p>
@@ -3696,10 +3695,10 @@ async function viewQuoteDetail(quoteId) {
             <span class="detail-totals-label">Subtotal:</span>
             <span class="detail-totals-value">${formatCurrency(quote.subtotal || 0)}</span>
           </div>
-          ${quote.tax ? `
+          ${quote.tax_amount ? `
             <div class="detail-totals-row">
               <span class="detail-totals-label">Tax:</span>
-              <span class="detail-totals-value">${formatCurrency(quote.tax || 0)}</span>
+              <span class="detail-totals-value">${formatCurrency(quote.tax_amount || 0)}</span>
             </div>
           ` : ''}
           <div class="detail-totals-row total">
@@ -4069,9 +4068,9 @@ async function previewInvoiceTemplateForText(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity || item.qty || 1,
-        rate: item.unit_price || item.rate || item.price || 0,
-        amount: item.total || item.amount || item.line_total || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total: item.total || 0
       }))
     };
     
@@ -4133,7 +4132,7 @@ function sendInvoiceSMS(invoice) {
   const businessName = businessNameEl?.value || "Your business";
   const total = formatCurrency(invoice.total || 0);
   const invoiceViewLink = `https://trade-base.biz/view/invoice/${invoice.id}`;
-  const paymentUrl = invoice.payment_url || invoice.payment_link;
+  const paymentUrl = invoice.payment_url;
   
   let message = `Invoice from ${businessName} for ${total}.`;
   message += `\n\nView invoice: ${invoiceViewLink}`;
@@ -4328,8 +4327,8 @@ function calculateMonthlyStats(invoicesArray = []) {
   let outstanding = 0;
   
   invoicesArray.forEach(invoice => {
-    // Fallback to invoice.date if created_at is missing
-    const dateStr = invoice.created_at || invoice.date;
+    // Fallback to issue_date if created_at is missing
+    const dateStr = invoice.created_at || invoice.issue_date;
     if (!dateStr) return; // Skip if no date available
     
     const createdDate = new Date(dateStr);
@@ -4931,9 +4930,9 @@ async function downloadInvoice(invoice) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        qty: item.qty || 1,
-        price: item.unit_price || 0,
-        total: item.line_total || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total: item.total || 0
       }))
     };
     
@@ -4951,7 +4950,7 @@ async function downloadInvoice(invoice) {
     template.style.left = "-9999px";
     
     canvas.toBlob((blob) => {
-      downloadBlobAsPng(blob, `invoice-${invoiceData.number || invoiceData.id}.png`, "Invoice");
+      downloadBlobAsPng(blob, `invoice-${invoiceData.invoice_number || invoiceData.id}.png`, "Invoice");
     });
     
   } catch (err) {
@@ -5128,7 +5127,7 @@ function openEmailInvoiceModal(invoice) {
   }
   
   // Set preview text
-  preview.innerHTML = `<strong>Invoice #${invoice.number || invoice.id}</strong> · Total: ${formatCurrency(invoice.total || 0)}`;
+  preview.innerHTML = `<strong>Invoice #${invoice.invoice_number || invoice.id}</strong> · Total: ${formatCurrency(invoice.total || 0)}`;
   
   // Store invoice data for form submission
   form.setAttribute('data-invoice-id', invoice.id);
@@ -5228,9 +5227,9 @@ async function previewInvoiceTemplate(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        qty: item.qty || 1,
-        price: item.unit_price || 0,
-        total: item.line_total || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total: item.total || 0
       }))
     };
     
@@ -5422,9 +5421,9 @@ async function downloadInvoiceWithTemplate(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        qty: item.qty || 1,
-        price: item.unit_price || 0,
-        total: item.line_total || 0
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total: item.total || 0
       }))
     };
     
@@ -5446,7 +5445,7 @@ async function downloadInvoiceWithTemplate(invoice, templateId) {
     setTemplate(originalTemplate);
     
     canvas.toBlob((blob) => {
-      downloadBlobAsPng(blob, `invoice-${invoiceData.number || invoiceData.id}.png`, "Invoice");
+      downloadBlobAsPng(blob, `invoice-${invoiceData.invoice_number || invoiceData.id}.png`, "Invoice");
     });
     
   } catch (err) {
@@ -5662,11 +5661,11 @@ async function handleQuoteSubmit(e) {
 
   const quoteData = {
     client_name: clientName,
-    quote_date: quoteDate,
+    issue_date: quoteDate,
     notes,
     template,
     subtotal,
-    tax,
+    tax_amount: tax,
     total,
     items
   };
@@ -5768,7 +5767,7 @@ function addQuoteLineItemRow(data = {}) {
       <input type="text" placeholder="${t('quote.line_description_placeholder')}" class="item-desc" value="${data.description || ""}" autocomplete="off" />
       <div class="line-item-suggest hidden"></div>
     </div>
-    <input type="number" placeholder="${t('quote.line_qty_placeholder')}" class="item-qty" value="${data.qty || 1}" min="0" step="0.01" />
+    <input type="number" placeholder="${t('quote.line_qty_placeholder')}" class="item-qty" value="${data.quantity || 1}" min="0" step="0.01" />
     <input type="number" placeholder="${t('quote.line_price_placeholder')}" class="item-price" value="${data.unit_price || 0}" min="0" step="0.01" />
     <button type="button" class="btn-sm" onclick="this.parentElement.remove(); updateQuoteTotals()">Remove</button>
   `;
@@ -5943,8 +5942,8 @@ function updateInvoicePreview() {
   const total = subtotal + tax;
   
   const invoiceData = {
-    number: 'INV-PREVIEW',
-    date: date,
+    invoice_number: 'INV-PREVIEW',
+    issue_date: date,
     client_name: clientName || 'Client Name',
     client_address: clientAddress,
     client: { email: '', phone: '', address: clientAddress },
@@ -5952,14 +5951,9 @@ function updateInvoicePreview() {
     address: '',
     phone: '',
     logo_url: '',
-    items: items.map(i => ({
-      description: i.description,
-      qty: i.quantity,
-      price: i.unit_price,
-      total: i.total
-    })),
+    items: items,
     subtotal: subtotal,
-    tax: tax,
+    tax_amount: tax,
     total: total,
     notes: notes,
     template: template
@@ -5968,13 +5962,13 @@ function updateInvoicePreview() {
   // Use the template rendering functions from templates.js
   let html = '';
   if (template === 'basic_clean') {
-    html = renderBasicClean(invoiceData, 'INVOICE', 'number', 'date');
+    html = renderBasicClean(invoiceData, 'INVOICE', 'invoice_number', 'issue_date');
   } else if (template === 'modern_pro') {
-    html = renderModernPro(invoiceData, 'INVOICE', 'number', 'date');
+    html = renderModernPro(invoiceData, 'INVOICE', 'invoice_number', 'issue_date');
   } else if (template === 'color_accent') {
-    html = renderColorAccent(invoiceData, 'INVOICE', 'number', 'date');
+    html = renderColorAccent(invoiceData, 'INVOICE', 'invoice_number', 'issue_date');
   } else if (template === 'big_total') {
-    html = renderBigTotal(invoiceData, 'INVOICE', 'number', 'date');
+    html = renderBigTotal(invoiceData, 'INVOICE', 'invoice_number', 'issue_date');
   }
   
   if (!clientName && items.length === 0) {
@@ -6018,21 +6012,16 @@ function updateQuotePreview() {
   
   const quoteData = {
     quote_number: 'QUO-PREVIEW',
-    quote_date: date,
+    issue_date: date,
     client_name: clientName || 'Client Name',
     client: { email: '', phone: '', address: '' },
     business_name: '',
     address: '',
     phone: '',
     logo_url: '',
-    items: items.map(i => ({
-      description: i.description,
-      qty: i.quantity,
-      price: i.unit_price,
-      total: i.total
-    })),
+    items: items,
     subtotal: subtotal,
-    tax: tax,
+    tax_amount: tax,
     total: total,
     notes: notes,
     template: template
@@ -6041,13 +6030,13 @@ function updateQuotePreview() {
   // Use the template rendering functions from templates.js
   let html = '';
   if (template === 'basic_clean') {
-    html = renderBasicClean(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+    html = renderBasicClean(quoteData, 'QUOTE', 'quote_number', 'issue_date');
   } else if (template === 'modern_pro') {
-    html = renderModernPro(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+    html = renderModernPro(quoteData, 'QUOTE', 'quote_number', 'issue_date');
   } else if (template === 'color_accent') {
-    html = renderColorAccent(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+    html = renderColorAccent(quoteData, 'QUOTE', 'quote_number', 'issue_date');
   } else if (template === 'big_total') {
-    html = renderBigTotal(quoteData, 'QUOTE', 'quote_number', 'quote_date');
+    html = renderBigTotal(quoteData, 'QUOTE', 'quote_number', 'issue_date');
   }
   
   if (!clientName && items.length === 0) {
@@ -6598,7 +6587,7 @@ async function openLinkToJobModal(type, jobId) {
         <div class="list-item" onclick="linkItemToJob('invoice', ${inv.id})" style="cursor: pointer;">
           <div>
             <strong>${inv.invoice_number || 'Invoice #' + inv.id}</strong>
-            <br><span style="color: var(--muted); font-size: 13px;">${inv.client_name || 'No client'} - ${inv.date || ''}</span>
+            <br><span style="color: var(--muted); font-size: 13px;">${inv.client_name || 'No client'} - ${inv.issue_date || ''}</span>
           </div>
           <span style="font-weight: 600;">${formatCurrency(inv.total || 0)}</span>
         </div>
@@ -6608,7 +6597,7 @@ async function openLinkToJobModal(type, jobId) {
         <div class="list-item" onclick="linkItemToJob('quote', ${q.id})" style="cursor: pointer;">
           <div>
             <strong>${q.quote_number || 'Quote #' + q.id}</strong>
-            <br><span style="color: var(--muted); font-size: 13px;">${q.client_name || 'No client'} - ${q.quote_date || ''}</span>
+            <br><span style="color: var(--muted); font-size: 13px;">${q.client_name || 'No client'} - ${q.issue_date || ''}</span>
           </div>
           <span style="font-weight: 600;">${formatCurrency(q.total || 0)}</span>
         </div>
