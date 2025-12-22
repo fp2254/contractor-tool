@@ -5928,6 +5928,7 @@ function updateInvoicePreview() {
   if (!content) return;
   
   const clientName = document.getElementById("invoice-client-name")?.value || '';
+  const clientAddress = document.getElementById("invoice-client-address")?.value || '';
   const date = document.getElementById("invoice-date")?.value || new Date().toISOString().split('T')[0];
   let notes = document.getElementById("invoice-notes")?.value || '';
   const templateSelect = document.getElementById("invoice-template-select");
@@ -5952,7 +5953,8 @@ function updateInvoicePreview() {
     number: 'INV-PREVIEW',
     date: date,
     client_name: clientName || 'Client Name',
-    client: { email: '', phone: '', address: '' },
+    client_address: clientAddress,
+    client: { email: '', phone: '', address: clientAddress },
     business_name: '',
     address: '',
     phone: '',
