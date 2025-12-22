@@ -872,25 +872,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
-
-  // Auto-generate payment_url from profile settings if not provided
-  let finalPaymentUrl = payment_url || null;
-  if (!finalPaymentUrl && total > 0) {
-    try {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("payment_provider, payment_value")
-        .eq("id", userId)
-        .single();
-      
-      if (profile?.payment_provider && profile?.payment_value) {
-        finalPaymentUrl = buildPaymentUrl(profile.payment_provider, profile.payment_value, total, `INV-${Date.now()}`);
-      }
-    } catch (err) {
-      console.log("Could not auto-generate payment URL:", err);
-    }
-  }
+  const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
@@ -903,7 +885,6 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       notes,
       template: template || "basic_clean",
       payment_link: payment_link || null,
-      payment_url: finalPaymentUrl,
       subtotal,
       tax,
       total,
@@ -942,7 +923,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceId = req.params.id;
-  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user
   const { data: existing, error: errCheck } = await supabaseAdmin
@@ -954,24 +935,6 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
 
   if (errCheck || !existing) {
     return res.status(404).json({ error: "Invoice not found" });
-  }
-
-  // Auto-generate payment_url from profile settings if not provided
-  let finalPaymentUrl = payment_url || null;
-  if (!finalPaymentUrl && total > 0) {
-    try {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("payment_provider, payment_value")
-        .eq("id", userId)
-        .single();
-      
-      if (profile?.payment_provider && profile?.payment_value) {
-        finalPaymentUrl = buildPaymentUrl(profile.payment_provider, profile.payment_value, total, `INV-${invoiceId}`);
-      }
-    } catch (err) {
-      console.log("Could not auto-generate payment URL:", err);
-    }
   }
 
   // Update invoice
