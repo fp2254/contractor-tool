@@ -2257,9 +2257,9 @@ function getLineItemsFromUI() {
     if (desc || qty || price) {
       items.push({
         description: desc || "Item",
-        qty,
+        quantity: qty,
         unit_price: price,
-        line_total: qty * price,
+        total: qty * price,
       });
     }
   });
@@ -2269,7 +2269,7 @@ function getLineItemsFromUI() {
 function updateInvoiceTotals() {
   const items = getLineItemsFromUI();
   let subtotal = 0;
-  items.forEach((i) => (subtotal += i.line_total));
+  items.forEach((i) => (subtotal += i.total));
 
   const taxPercent =
     parseFloat(document.getElementById("helper-tax").value) || 0;
@@ -2366,7 +2366,7 @@ async function handleInvoiceSubmit(e) {
   }
 
   let subtotal = 0;
-  items.forEach((i) => (subtotal += i.line_total));
+  items.forEach((i) => (subtotal += i.total));
   const taxPercent =
     parseFloat(document.getElementById("helper-tax").value) || 0;
   const tax = subtotal * (taxPercent / 100);
@@ -4499,7 +4499,7 @@ async function generateInvoicePaymentUrl() {
   
   const items = getLineItemsFromUI();
   let subtotal = 0;
-  items.forEach((i) => (subtotal += i.line_total));
+  items.forEach((i) => (subtotal += i.total));
   const taxPercent = parseFloat(document.getElementById("helper-tax")?.value) || 0;
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
@@ -5753,9 +5753,9 @@ function getQuoteLineItemsFromUI() {
     const price = parseFloat(row.querySelector(".item-price").value) || 0;
     return {
       description: desc,
-      qty,
+      quantity: qty,
       unit_price: price,
-      line_total: qty * price,
+      total: qty * price,
     };
   });
 }
@@ -5827,7 +5827,7 @@ function addQuoteLineItemRow(data = {}) {
 function updateQuoteTotals() {
   const items = getQuoteLineItemsFromUI();
   let subtotal = 0;
-  items.forEach((i) => (subtotal += i.line_total));
+  items.forEach((i) => (subtotal += i.total));
 
   const taxPercent = parseFloat(document.getElementById("quote-tax").value) || 0;
   const tax = subtotal * (taxPercent / 100);
@@ -5942,7 +5942,7 @@ function updateInvoicePreview() {
   
   const items = getLineItemsFromUI();
   let subtotal = 0;
-  items.forEach(i => subtotal += i.line_total);
+  items.forEach(i => subtotal += i.total);
   
   const taxPercent = parseFloat(document.getElementById("helper-tax")?.value) || 0;
   const tax = subtotal * (taxPercent / 100);
@@ -5959,9 +5959,9 @@ function updateInvoicePreview() {
     logo_url: '',
     items: items.map(i => ({
       description: i.description,
-      qty: i.qty,
+      qty: i.quantity,
       price: i.unit_price,
-      total: i.line_total
+      total: i.total
     })),
     subtotal: subtotal,
     tax: tax,
@@ -6015,7 +6015,7 @@ function updateQuotePreview() {
   
   const items = getQuoteLineItemsFromUI();
   let subtotal = 0;
-  items.forEach(i => subtotal += i.line_total);
+  items.forEach(i => subtotal += i.total);
   
   const taxPercent = parseFloat(document.getElementById("quote-tax")?.value) || 0;
   const tax = subtotal * (taxPercent / 100);
@@ -6034,7 +6034,7 @@ function updateQuotePreview() {
       description: i.description,
       qty: i.quantity,
       price: i.unit_price,
-      total: i.line_total
+      total: i.total
     })),
     subtotal: subtotal,
     tax: tax,
