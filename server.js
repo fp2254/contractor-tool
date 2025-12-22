@@ -380,17 +380,12 @@ async function getAIUsageInfo(userId) {
 }
 
 // SUBSCRIPTION MIDDLEWARE FOR PROTECTED ROUTES
+// Simplified: just checks authentication (no Stripe billing integration)
 async function requireSubscription(req, res, next) {
   const userId = req.userId;
   if (!userId) {
     return res.status(401).json({ error: "Not authenticated", needsAuth: true });
   }
-  
-  const hasAccess = await hasActiveSubscription(userId);
-  if (!hasAccess) {
-    return res.status(402).json({ error: "Subscription required", needsSubscription: true });
-  }
-  
   next();
 }
 
@@ -745,25 +740,22 @@ app.post("/api/clients", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const payload = { ...req.body, user_id: userId };
-  console.log("Creating client with payload:", JSON.stringify(payload));
+  const { name, email, phone, address, notes } = req.body;
 
-  const { data, error } = await supabaseAdmin
-    .from("clients")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Client creation error:", error);
-    return res.status(500).json({ 
-      error: error.message,
-      details: error.details || null,
-      hint: error.hint || null,
-      code: error.code || null
-    });
+  try {
+    const result = await pgPool.query(
+      `INSERT INTO clients (user_id, name, email, phone, address, notes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [userId, name, email || null, phone || null, address || null, notes || null]
+    );
+    
+    console.log(`Client ${result.rows[0].id} created for user ${userId}`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Client creation error:", err);
+    res.status(500).json({ error: err.message || "Failed to create client" });
   }
-  res.json(data);
 });
 
 app.put("/api/clients/:id", requireSubscription, async (req, res) => {
@@ -834,51 +826,53 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
 
-  const { data: inv, error: errInv } = await supabaseAdmin
-    .from("invoices")
-    .insert({
-      user_id: userId,
-      client_id,
-      client_name,
-      client_address: client_address || null,
-      date,
-      notes,
-      template: template || "basic_clean",
-      payment_link: payment_link || null,
-      subtotal,
-      tax,
-      total,
-      status: "draft",
-    })
-    .select()
-    .single();
-
-  if (errInv) {
-    console.error("Invoice creation error:", errInv);
-    return res.status(500).json({ error: errInv.message });
-  }
-
-  if (Array.isArray(items) && items.length) {
-    // Use direct SQL to bypass Supabase schema cache issues
-    try {
-      for (const i of items) {
-        const qty = i.qty || i.quantity || 1;
-        const unitPrice = i.unit_price || i.price || 0;
-        const itemTotal = i.line_total || i.total || (qty * unitPrice);
-        
-        await pgPool.query(
-          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-          [inv.id, i.description || '', qty, unitPrice, itemTotal]
-        );
-      }
-      console.log(`Saved ${items.length} invoice items for invoice ${inv.id}`);
-    } catch (itemErr) {
-      console.error("Invoice items insert error:", itemErr);
-      return res.status(500).json({ error: itemErr.message });
+  const client = await pgPool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Insert invoice
+    const invResult = await client.query(
+      `INSERT INTO invoices (user_id, client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id, invoice_number`,
+      [userId, client_id || null, client_name, client_address || null, date, notes || null, template || 'basic_clean', payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft']
+    );
+    
+    const inv = invResult.rows[0];
+    
+    // Bulk insert line items
+    if (Array.isArray(items) && items.length) {
+      const values = items.map((item, idx) => {
+        const qty = item.qty || item.quantity || 1;
+        const unitPrice = item.unit_price || item.price || 0;
+        const itemTotal = item.line_total || item.total || (qty * unitPrice);
+        return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
+      }).join(', ');
+      
+      const params = [inv.id];
+      items.forEach(item => {
+        const qty = item.qty || item.quantity || 1;
+        const unitPrice = item.unit_price || item.price || 0;
+        const itemTotal = item.line_total || item.total || (qty * unitPrice);
+        params.push(item.description || '', qty, unitPrice, itemTotal);
+      });
+      
+      await client.query(
+        `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ${values}`,
+        params
+      );
     }
+    
+    await client.query('COMMIT');
+    console.log(`Invoice ${inv.id} created with ${items?.length || 0} items`);
+    res.json({ id: inv.id, invoice_number: inv.invoice_number });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error("Invoice creation error:", err);
+    res.status(500).json({ error: err.message || "Failed to create invoice" });
+  } finally {
+    client.release();
   }
-
-  res.json({ id: inv.id });
 });
 
 // Update invoice
@@ -1687,43 +1681,50 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
 
   const { client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, items } = req.body;
 
-  const { data: quote, error: errQuote } = await supabaseAdmin
-    .from("quotes")
-    .insert({
-      user_id: userId,
-      client_id,
-      client_name,
-      quote_date: quote_date || null,
-      quote_number: quote_number || null,
-      subtotal,
-      tax,
-      total,
-      notes,
-      template: template || "basic_clean",
-      status: "draft",
-    })
-    .select()
-    .single();
-
-  if (errQuote) return res.status(500).json({ error: errQuote.message });
-
-  if (items && items.length) {
-    const itemRows = items.map((it) => ({
-      quote_id: quote.id,
-      description: it.description,
-      quantity: it.qty || it.quantity,
-      unit_price: it.unit_price,
-      total: it.line_total || it.total,
-    }));
-
-    const { error: errItems } = await supabaseAdmin
-      .from("quote_items")
-      .insert(itemRows);
-
-    if (errItems) return res.status(500).json({ error: errItems.message });
+  const client = await pgPool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Insert quote
+    const quoteResult = await client.query(
+      `INSERT INTO quotes (user_id, client_id, client_name, quote_date, quote_number, notes, template, subtotal, tax, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, quote_number`,
+      [userId, client_id || null, client_name, quote_date || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
+    );
+    
+    const quote = quoteResult.rows[0];
+    
+    // Bulk insert line items
+    if (Array.isArray(items) && items.length) {
+      const values = items.map((item, idx) => {
+        return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
+      }).join(', ');
+      
+      const params = [quote.id];
+      items.forEach(item => {
+        const qty = item.qty || item.quantity || 1;
+        const unitPrice = item.unit_price || item.price || 0;
+        const itemTotal = item.line_total || item.total || (qty * unitPrice);
+        params.push(item.description || '', qty, unitPrice, itemTotal);
+      });
+      
+      await client.query(
+        `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ${values}`,
+        params
+      );
+    }
+    
+    await client.query('COMMIT');
+    console.log(`Quote ${quote.id} created with ${items?.length || 0} items`);
+    res.json({ id: quote.id, quote_number: quote.quote_number });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error("Quote creation error:", err);
+    res.status(500).json({ error: err.message || "Failed to create quote" });
+  } finally {
+    client.release();
   }
-
-  res.json({ id: quote.id });
 });
 
 // Update quote
