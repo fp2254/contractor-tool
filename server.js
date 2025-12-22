@@ -824,18 +824,18 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   const client = await pgPool.connect();
   try {
     await client.query('BEGIN');
     
-    // Insert invoice
+    // Insert invoice - use correct column names that match database schema
     const invResult = await client.query(
-      `INSERT INTO invoices (user_id, client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id, invoice_number`,
-      [userId, client_id || null, client_name, client_address || null, date, notes || null, template || 'basic_clean', payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft']
+      [userId, client_id || null, client_address || null, date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || payment_link || null, subtotal || 0, tax || 0, total || 0, 'draft']
     );
     
     const inv = invResult.rows[0];
@@ -881,7 +881,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
-  const { client_id, client_name, client_address, date, notes, template, payment_link, subtotal, tax, total, items } = req.body;
+  const { client_id, client_name, client_address, date, notes, template, payment_link, payment_url, subtotal, tax, total, items } = req.body;
 
   // Verify invoice belongs to user - try UUID first, then invoice_number
   let existing = null;
@@ -912,19 +912,18 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   
   const invoiceId = existing.id; // Use the actual UUID
 
-  // Update invoice
+  // Update invoice - use correct column names that match database schema
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .update({
       client_id,
-      client_name,
       client_address: client_address || null,
-      date,
+      issue_date: date,
       notes,
       template: template || "basic_clean",
-      payment_link: payment_link || null,
+      payment_url: payment_url || payment_link || null,
       subtotal,
-      tax,
+      tax_amount: tax,
       total
     })
     .eq("id", invoiceId)
