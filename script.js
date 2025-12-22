@@ -2340,12 +2340,28 @@ function handlePhotoSelect(e) {
   });
 }
 
+// Loading state helper
+function setButtonLoading(button, isLoading, originalText = null) {
+  if (!button) return;
+  if (isLoading) {
+    button.disabled = true;
+    button.dataset.originalText = button.innerHTML;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  } else {
+    button.disabled = false;
+    button.innerHTML = button.dataset.originalText || originalText || 'Save';
+  }
+}
+
 // Submit invoice
 
 async function handleInvoiceSubmit(e) {
   e.preventDefault();
   const errorEl = document.getElementById("invoice-error");
   errorEl.textContent = "";
+  
+  const submitBtn = document.getElementById("btn-save-invoice");
+  setButtonLoading(submitBtn, true);
 
   const clientName = document.getElementById("invoice-client-name").value.trim();
   const clientAddress = document.getElementById("invoice-client-address")?.value.trim() || null;
@@ -2358,10 +2374,12 @@ async function handleInvoiceSubmit(e) {
 
   if (!clientName) {
     errorEl.textContent = "Enter a client name.";
+    setButtonLoading(submitBtn, false);
     return;
   }
   if (!items.length) {
     errorEl.textContent = "Add at least one line item.";
+    setButtonLoading(submitBtn, false);
     return;
   }
 
@@ -2403,6 +2421,7 @@ async function handleInvoiceSubmit(e) {
       
       await saveOffline('invoices', invoiceData, '/api/invoices', 'POST');
       
+      setButtonLoading(submitBtn, false);
       showToast("Invoice saved offline. Will sync when online.");
       await loadInvoices();
       showScreen("invoices");
@@ -2432,6 +2451,7 @@ async function handleInvoiceSubmit(e) {
     const data = await res.json();
     if (!res.ok) {
       errorEl.textContent = data.error || "Failed to save invoice.";
+      setButtonLoading(submitBtn, false);
       return;
     }
 
@@ -2449,6 +2469,7 @@ async function handleInvoiceSubmit(e) {
     }
 
     saveLineItemsFromUI();
+    setButtonLoading(submitBtn, false);
     showToast(isEditing ? "Invoice updated." : "Invoice saved.");
     resetInvoiceForm();
     await loadInvoices();
@@ -2456,6 +2477,7 @@ async function handleInvoiceSubmit(e) {
   } catch (err) {
     console.error("Invoice save error:", err);
     errorEl.textContent = "Error saving invoice: " + (err.message || err);
+    setButtonLoading(submitBtn, false);
   }
 }
 
@@ -3109,6 +3131,10 @@ async function unarchiveInvoice(invoiceId) {
 }
 
 async function deleteInvoice(invoiceId) {
+  if (!confirm('Are you sure you want to permanently delete this invoice? This cannot be undone.')) {
+    return;
+  }
+  
   try {
     console.log('Deleting invoice:', invoiceId);
     const res = await apiFetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
@@ -3162,6 +3188,10 @@ async function unarchiveQuote(quoteId) {
 }
 
 async function deleteQuote(quoteId) {
+  if (!confirm('Are you sure you want to permanently delete this quote? This cannot be undone.')) {
+    return;
+  }
+  
   try {
     const res = await apiFetch(`/api/quotes/${quoteId}`, { method: 'DELETE' });
     if (res.ok) {
@@ -5603,6 +5633,9 @@ async function handleQuoteSubmit(e) {
   e.preventDefault();
   const errorEl = document.getElementById("quote-error");
   errorEl.textContent = "";
+  
+  const submitBtn = document.getElementById("btn-save-quote");
+  setButtonLoading(submitBtn, true);
 
   const clientName = document.getElementById("quote-client-name").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
@@ -5612,10 +5645,12 @@ async function handleQuoteSubmit(e) {
 
   if (!clientName) {
     errorEl.textContent = "Enter a client name.";
+    setButtonLoading(submitBtn, false);
     return;
   }
   if (!items.length) {
     errorEl.textContent = "Add at least one line item.";
+    setButtonLoading(submitBtn, false);
     return;
   }
 
@@ -5648,6 +5683,7 @@ async function handleQuoteSubmit(e) {
       
       await saveOffline('quotes', quoteData, '/api/quotes', 'POST');
       
+      setButtonLoading(submitBtn, false);
       showToast("Quote saved offline. Will sync when online.");
       document.getElementById("quote-form").reset();
       clearQuoteLineItems();
@@ -5683,6 +5719,7 @@ async function handleQuoteSubmit(e) {
       }
       
       saveLineItemsFromUI();
+      setButtonLoading(submitBtn, false);
       showToast(isEditing ? "Quote updated!" : "Quote created!");
       resetQuoteForm();
       showScreen("quotes");
@@ -5690,11 +5727,13 @@ async function handleQuoteSubmit(e) {
     } else {
       const data = await res.json();
       errorEl.textContent = data.error || "Failed to save quote.";
+      setButtonLoading(submitBtn, false);
     }
   } catch (err) {
     console.error("Quote submit error:", err);
     console.error("Error details:", JSON.stringify(err, null, 2));
     errorEl.textContent = err.message || "An error occurred.";
+    setButtonLoading(submitBtn, false);
   }
 }
 
@@ -9972,6 +10011,10 @@ function editClient(clientId) {
 }
 
 async function deleteClient(clientId) {
+  if (!confirm('Are you sure you want to delete this client? This cannot be undone.')) {
+    return;
+  }
+  
   try {
     const res = await apiFetch(`/api/clients/${clientId}`, {
       method: "DELETE",
@@ -9991,6 +10034,10 @@ async function deleteClient(clientId) {
 }
 
 async function deleteJob(jobId) {
+  if (!confirm('Are you sure you want to delete this job folder? All linked invoices and quotes will be unlinked. This cannot be undone.')) {
+    return;
+  }
+  
   try {
     const res = await apiFetch(`/api/jobs/${jobId}`, {
       method: "DELETE",
