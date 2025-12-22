@@ -5674,7 +5674,8 @@ app.get("/view/invoice/:id", async (req, res) => {
     const businessName = profile?.business_name || "Business";
     const logoUrl = profile?.logo_url || null;
     const clientName = client?.name || invoice.client_name || "Client";
-    const total = items?.reduce((sum, item) => sum + (parseFloat(item.line_total) || parseFloat(item.total) || 0), 0) || 0;
+    // Use the saved invoice total, not recalculated from items (in case items weren't saved properly)
+    const total = parseFloat(invoice.total) || 0;
     
     // Generate HTML page
     const html = `
