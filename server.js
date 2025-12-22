@@ -1047,7 +1047,17 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     .select("*")
     .eq("invoice_id", invoice.id);
 
-  res.json({ ...invoice, items: items || [], client: client || null, job: job || null, attachments: attachments || [] });
+  // Map database column names to frontend expected names for compatibility
+  res.json({ 
+    ...invoice, 
+    date: invoice.issue_date,
+    tax: invoice.tax_amount,
+    payment_link: invoice.payment_url,
+    items: items || [], 
+    client: client || null, 
+    job: job || null, 
+    attachments: attachments || [] 
+  });
 });
 
 // INVOICE PHOTOS
@@ -1953,8 +1963,12 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
     }
   }
 
+  // Map database column names to frontend expected names for compatibility
   res.json({
     ...quote,
+    quote_date: quote.issue_date,
+    tax: quote.tax_amount,
+    due_date: quote.valid_until,
     items: items || [],
     client,
     job: job || null,
