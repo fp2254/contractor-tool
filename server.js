@@ -899,19 +899,23 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   }
 
   if (Array.isArray(items) && items.length) {
-    const itemsPayload = items.map((i) => ({
-      invoice_id: inv.id,
-      description: i.description,
-      quantity: i.qty || i.quantity || 1,
-      unit_price: i.unit_price || i.price || 0,
-      total: i.line_total || i.total || ((i.qty || i.quantity || 1) * (i.unit_price || i.price || 0)),
-    }));
-
-    const { error: errItems } = await supabaseAdmin
-      .from("invoice_items")
-      .insert(itemsPayload);
-
-    if (errItems) return res.status(500).json({ error: errItems.message });
+    // Use direct SQL to bypass Supabase schema cache issues
+    try {
+      for (const i of items) {
+        const qty = i.qty || i.quantity || 1;
+        const unitPrice = i.unit_price || i.price || 0;
+        const itemTotal = i.line_total || i.total || (qty * unitPrice);
+        
+        await pgPool.query(
+          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          [inv.id, i.description || '', qty, unitPrice, itemTotal]
+        );
+      }
+      console.log(`Saved ${items.length} invoice items for invoice ${inv.id}`);
+    } catch (itemErr) {
+      console.error("Invoice items insert error:", itemErr);
+      return res.status(500).json({ error: itemErr.message });
+    }
   }
 
   res.json({ id: inv.id });
@@ -962,33 +966,26 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return res.status(500).json({ error: errInv.message });
   }
 
-  // Delete old items and insert new ones
-  const { error: errDeleteItems } = await supabaseAdmin
-    .from("invoice_items")
-    .delete()
-    .eq("invoice_id", invoiceId);
-
-  if (errDeleteItems) {
-    console.error("Invoice items delete error:", errDeleteItems);
-  }
-
-  if (Array.isArray(items) && items.length) {
-    const itemsPayload = items.map((i) => ({
-      invoice_id: inv.id,
-      description: i.description,
-      quantity: i.qty || i.quantity || 1,
-      unit_price: i.unit_price || i.price || 0,
-      total: i.line_total || i.total || ((i.qty || i.quantity || 1) * (i.unit_price || i.price || 0)),
-    }));
-
-    const { error: errItems } = await supabaseAdmin
-      .from("invoice_items")
-      .insert(itemsPayload);
-
-    if (errItems) {
-      console.error("Invoice items insert error:", errItems);
-      return res.status(500).json({ error: errItems.message });
+  // Delete old items and insert new ones using direct SQL
+  try {
+    await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
+    
+    if (Array.isArray(items) && items.length) {
+      for (const i of items) {
+        const qty = i.qty || i.quantity || 1;
+        const unitPrice = i.unit_price || i.price || 0;
+        const itemTotal = i.line_total || i.total || (qty * unitPrice);
+        
+        await pgPool.query(
+          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          [inv.id, i.description || '', qty, unitPrice, itemTotal]
+        );
+      }
+      console.log(`Updated ${items.length} invoice items for invoice ${inv.id}`);
     }
+  } catch (itemErr) {
+    console.error("Invoice items update error:", itemErr);
+    return res.status(500).json({ error: itemErr.message });
   }
 
   res.json({ id: inv.id, number: inv.number });
