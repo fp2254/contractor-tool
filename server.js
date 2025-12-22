@@ -1044,12 +1044,19 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   
   const invoiceId = invoice.id; // Use actual UUID for related queries
 
-  const { data: items, error: errItems } = await supabaseAdmin
-    .from("invoice_items")
-    .select("*")
-    .eq("invoice_id", invoiceId);
-
-  if (errItems) return res.status(500).json({ error: errItems.message });
+  // Use direct SQL to bypass Supabase PostgREST schema cache issue
+  let items = [];
+  try {
+    const result = await pgPool.query(
+      `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
+      [invoiceId]
+    );
+    items = result.rows;
+    console.log(`Fetched ${items.length} line items for invoice ${invoiceId}`);
+  } catch (itemErr) {
+    console.error("Error fetching invoice items:", itemErr);
+    return res.status(500).json({ error: "Failed to fetch invoice items" });
+  }
 
   let client = null;
   if (invoice.client_id) {
