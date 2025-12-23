@@ -979,92 +979,77 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
 
   const invoiceIdParam = req.params.id;
 
-  // Try UUID first, then invoice_number
-  let invoice = null;
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
-  
-  if (isUUID) {
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .select("*")
-      .eq("id", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    if (!error) invoice = data;
-  } else {
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .select("*")
-      .eq("invoice_number", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    if (!error) invoice = data;
-  }
-
-  if (!invoice) {
-    return res.status(404).json({ error: "Invoice not found" });
-  }
-  
-  const invoiceId = invoice.id; // Use actual UUID for related queries
-
-  // Use direct SQL to bypass Supabase PostgREST schema cache issue
-  let items = [];
   try {
-    const result = await pgPool.query(
+    // Use direct SQL to bypass Supabase schema cache issues
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    
+    // Fetch invoice with client info joined
+    const invoiceQuery = isUUID
+      ? `SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
+         FROM invoices i
+         LEFT JOIN clients c ON i.client_id = c.id
+         WHERE i.id = $1 AND i.user_id = $2`
+      : `SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
+         FROM invoices i
+         LEFT JOIN clients c ON i.client_id = c.id
+         WHERE i.invoice_number = $1 AND i.user_id = $2`;
+    
+    const { rows: invoices } = await pgPool.query(invoiceQuery, [invoiceIdParam, userId]);
+    
+    if (!invoices.length) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    
+    const invoice = invoices[0];
+    const invoiceId = invoice.id;
+
+    // Fetch line items
+    const { rows: items } = await pgPool.query(
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    items = result.rows;
     console.log(`Fetched ${items.length} line items for invoice ${invoiceId}`);
-  } catch (itemErr) {
-    console.error("Error fetching invoice items:", itemErr);
-    return res.status(500).json({ error: "Failed to fetch invoice items" });
-  }
 
-  let client = null;
-  if (invoice.client_id) {
-    const { data: clientData, error: errClient } = await supabaseAdmin
-      .from("clients")
-      .select("*")
-      .eq("id", invoice.client_id)
-      .eq("user_id", userId)
-      .single();
-
-    if (errClient && errClient.code !== "PGRST116") {
-      return res.status(500).json({ error: errClient.message });
+    // Build client object from joined data
+    let client = null;
+    if (invoice.client_id) {
+      client = {
+        id: invoice.client_id,
+        name: invoice.client_name,
+        email: invoice.client_email,
+        phone: invoice.client_phone,
+        address: invoice.client_full_address
+      };
     }
-    client = clientData;
-  }
 
-  // Fetch job data if linked
-  let job = null;
-  if (invoice.job_id) {
-    const { data: jobData, error: errJob } = await supabaseAdmin
-      .from("jobs")
-      .select("id, client_name, address, job_type, status")
-      .eq("id", invoice.job_id)
-      .eq("user_id", userId)
-      .single();
-
-    if (!errJob && jobData) {
-      job = jobData;
+    // Fetch job data if linked
+    let job = null;
+    if (invoice.job_id) {
+      const { rows: jobs } = await pgPool.query(
+        `SELECT id, client_name, address, job_type, status FROM jobs WHERE id = $1 AND user_id = $2`,
+        [invoice.job_id, userId]
+      );
+      if (jobs.length) job = jobs[0];
     }
+
+    // Fetch attachments/photos
+    const { rows: attachments } = await pgPool.query(
+      `SELECT * FROM invoice_attachments WHERE invoice_id = $1`,
+      [invoiceId]
+    );
+
+    // Return invoice with related data
+    res.json({ 
+      ...invoice, 
+      items: items || [], 
+      client: client || null, 
+      job: job || null, 
+      attachments: attachments || [] 
+    });
+  } catch (err) {
+    console.error("Error fetching invoice detail:", err);
+    res.status(500).json({ error: err.message });
   }
-
-  // Fetch attachments/photos
-  const { data: attachments } = await supabaseAdmin
-    .from("invoice_attachments")
-    .select("*")
-    .eq("invoice_id", invoice.id);
-
-  // Return invoice with related data
-  res.json({ 
-    ...invoice, 
-    items: items || [], 
-    client: client || null, 
-    job: job || null, 
-    attachments: attachments || [] 
-  });
 });
 
 // INVOICE PHOTOS
