@@ -1185,60 +1185,30 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
   }
 
   try {
-    // First verify the invoice exists and belongs to this user
-    // Try UUID first, then invoice_number
-    let invoice = null;
+    // First verify the invoice exists and belongs to this user using pgPool
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     
-    if (isUUID) {
-      const { data } = await supabaseAdmin
-        .from("invoices")
-        .select("id")
-        .eq("id", invoiceIdParam)
-        .eq("user_id", userId)
-        .single();
-      invoice = data;
-    } else {
-      // Try looking up by invoice_number
-      const { data } = await supabaseAdmin
-        .from("invoices")
-        .select("id")
-        .eq("invoice_number", invoiceIdParam)
-        .eq("user_id", userId)
-        .single();
-      invoice = data;
-    }
+    const findQuery = isUUID 
+      ? `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`
+      : `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
+    
+    const { rows } = await pgPool.query(findQuery, [invoiceIdParam, userId]);
+    console.log("Find result - invoice:", rows[0] || null);
 
-    console.log("Find result - invoice:", invoice);
-
-    if (!invoice) {
+    if (!rows.length) {
       return res.status(404).json({ error: "Invoice not found" });
     }
     
-    const invoiceId = invoice.id; // Use the actual UUID
+    const invoiceId = rows[0].id; // Use the actual UUID
 
-    // Delete related items and attachments
-    await supabaseAdmin
-      .from("invoice_items")
-      .delete()
-      .eq("invoice_id", invoiceId);
-    
-    await supabaseAdmin
-      .from("invoice_attachments")
-      .delete()
-      .eq("invoice_id", invoiceId);
+    // Delete related items and attachments using pgPool
+    await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
+    await pgPool.query(`DELETE FROM invoice_attachments WHERE invoice_id = $1`, [invoiceId]);
 
     // Then delete the invoice
-    const { error } = await supabaseAdmin
-      .from("invoices")
-      .delete()
-      .eq("id", invoiceId)
-      .eq("user_id", userId);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    await pgPool.query(`DELETE FROM invoices WHERE id = $1 AND user_id = $2`, [invoiceId, userId]);
     
+    console.log("Invoice deleted successfully:", invoiceId);
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting invoice:", err);
