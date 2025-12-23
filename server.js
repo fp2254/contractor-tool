@@ -5242,42 +5242,46 @@ app.get("/view/invoice/:id", async (req, res) => {
   try {
     const invoiceId = req.params.id;
     
-    // Get invoice with items
-    const { data: invoice, error: invoiceError } = await supabaseAdmin
-      .from("invoices")
-      .select("*")
-      .eq("id", invoiceId)
-      .single();
+    // Use direct SQL to bypass Supabase schema cache issues
+    const { rows: invoices } = await pgPool.query(
+      `SELECT * FROM invoices WHERE id = $1`,
+      [invoiceId]
+    );
     
-    if (invoiceError || !invoice) {
+    if (!invoices.length) {
       return res.status(404).send("<h1>Invoice not found</h1>");
     }
     
+    const invoice = invoices[0];
+    
     // Get invoice items
-    const { data: items } = await supabaseAdmin
-      .from("invoice_items")
-      .select("*")
-      .eq("invoice_id", invoiceId);
+    const { rows: items } = await pgPool.query(
+      `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
+      [invoiceId]
+    );
     
     // Get business profile (including payment_link)
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("business_name, email, phone, address, logo_url, payment_link")
-      .eq("id", invoice.user_id)
-      .single();
+    const { rows: profiles } = await pgPool.query(
+      `SELECT business_name, email, phone, address, logo_url, payment_link FROM profiles WHERE id = $1`,
+      [invoice.user_id]
+    );
+    const profile = profiles[0] || null;
     
     // Get client info
-    const { data: client } = await supabaseAdmin
-      .from("clients")
-      .select("name, email, phone, address")
-      .eq("id", invoice.client_id)
-      .single();
+    let client = null;
+    if (invoice.client_id) {
+      const { rows: clients } = await pgPool.query(
+        `SELECT name, email, phone, address FROM clients WHERE id = $1`,
+        [invoice.client_id]
+      );
+      client = clients[0] || null;
+    }
     
     // Get invoice attachments/photos
-    const { data: attachments } = await supabaseAdmin
-      .from("invoice_attachments")
-      .select("*")
-      .eq("invoice_id", invoiceId);
+    const { rows: attachments } = await pgPool.query(
+      `SELECT * FROM invoice_attachments WHERE invoice_id = $1`,
+      [invoiceId]
+    );
     
     const businessName = profile?.business_name || "Business";
     const logoUrl = profile?.logo_url || null;
