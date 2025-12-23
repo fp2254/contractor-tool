@@ -3973,10 +3973,10 @@ async function executeVoiceToolCall(toolName, args, userId) {
       
       // Create the invoice using direct SQL (bypasses Supabase schema cache issues)
       const { rows: invoices } = await pgPool.query(
-        `INSERT INTO invoices (user_id, client_id, client_name, invoice_number, issue_date, notes, subtotal, tax_amount, total, status, payment_status, template)
+        `INSERT INTO invoices (user_id, client_id, client_address, invoice_number, issue_date, notes, subtotal, tax_amount, total, status, payment_status, template)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING *`,
-        [userId, clientId, client_name, invoiceNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "unpaid", "basic_clean"]
+        [userId, clientId, address, invoiceNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "unpaid", "basic_clean"]
       );
       
       const invoice = invoices[0];
