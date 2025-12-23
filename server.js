@@ -5262,7 +5262,7 @@ app.get("/view/invoice/:id", async (req, res) => {
     
     // Get business profile (including payment_link)
     const { rows: profiles } = await pgPool.query(
-      `SELECT business_name, email, phone, address, logo_url, payment_link FROM profiles WHERE id = $1`,
+      `SELECT business_name, business_email as email, business_phone as phone, business_address as address, logo_url, payment_link FROM profiles WHERE id = $1`,
       [invoice.user_id]
     );
     const profile = profiles[0] || null;
