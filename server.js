@@ -3891,10 +3891,10 @@ async function executeVoiceToolCall(toolName, args, userId) {
           client_id: clientId,
           client_name: client_name,
           quote_number: quoteNumber,
-          quote_date: new Date().toISOString().split("T")[0],
+          issue_date: new Date().toISOString().split("T")[0],
           notes,
           subtotal,
-          tax,
+          tax_amount: tax,
           total,
           status: "draft",
           template: "basic_clean"
@@ -3971,19 +3971,27 @@ async function executeVoiceToolCall(toolName, args, userId) {
       const tax = 0;
       const total = subtotal + tax;
       
+      // Generate invoice number: INV-YYYYMMDD-XXX (consistent with main API)
+      const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const { rows: countRows } = await pgPool.query(
+        `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
+        [userId, `INV-${dateStr}-%`]
+      );
+      const seqNum = (parseInt(countRows[0].cnt) + 1).toString().padStart(3, '0');
+      const invoiceNumber = `INV-${dateStr}-${seqNum}`;
+      
       // Create the invoice
-      const invoiceNumber = `INV-${Date.now()}`;
       const { data: invoice, error: invoiceError } = await supabaseAdmin
         .from("invoices")
         .insert({
           user_id: userId,
           client_id: clientId,
           client_name: client_name,
-          number: invoiceNumber,
-          date: new Date().toISOString().split("T")[0],
+          invoice_number: invoiceNumber,
+          issue_date: new Date().toISOString().split("T")[0],
           notes,
           subtotal,
-          tax,
+          tax_amount: tax,
           total,
           status: "draft",
           payment_status: "unpaid",
