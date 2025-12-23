@@ -803,21 +803,25 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 
   const showArchived = req.query.archived === 'true';
   
-  let query = supabaseAdmin
-    .from("invoices")
-    .select("*")
-    .eq("user_id", userId);
-  
-  if (showArchived) {
-    query = query.eq("archived", true);
-  } else {
-    query = query.or("archived.is.null,archived.eq.false");
+  try {
+    // Use direct SQL to join with clients table and get client_name
+    const archivedCondition = showArchived 
+      ? "AND i.archived = true" 
+      : "AND (i.archived IS NULL OR i.archived = false)";
+    
+    const { rows: invoices } = await pgPool.query(`
+      SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone
+      FROM invoices i
+      LEFT JOIN clients c ON i.client_id = c.id
+      WHERE i.user_id = $1 ${archivedCondition}
+      ORDER BY i.created_at DESC
+    `, [userId]);
+    
+    res.json(invoices);
+  } catch (err) {
+    console.error("Error fetching invoices:", err);
+    res.status(500).json({ error: err.message });
   }
-  
-  const { data, error } = await query.order("created_at", { ascending: false });
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
