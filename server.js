@@ -5241,12 +5241,24 @@ async function initializeStorageBuckets() {
 app.get("/view/invoice/:id", async (req, res) => {
   try {
     const invoiceId = req.params.id;
+    console.log(`Public invoice view requested for: ${invoiceId}`);
+    
+    // Handle "undefined" string or invalid IDs
+    if (!invoiceId || invoiceId === 'undefined' || invoiceId === 'null') {
+      console.log('Invalid invoice ID received:', invoiceId);
+      return res.status(404).send("<h1>Invoice not found</h1>");
+    }
     
     // Use direct SQL to bypass Supabase schema cache issues
-    const { rows: invoices } = await pgPool.query(
-      `SELECT * FROM invoices WHERE id = $1`,
-      [invoiceId]
-    );
+    // Try by UUID first, then by invoice_number
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceId);
+    
+    const query = isUUID 
+      ? `SELECT * FROM invoices WHERE id = $1`
+      : `SELECT * FROM invoices WHERE invoice_number = $1`;
+    
+    const { rows: invoices } = await pgPool.query(query, [invoiceId]);
+    console.log(`Found ${invoices.length} invoices for ID: ${invoiceId}`);
     
     if (!invoices.length) {
       return res.status(404).send("<h1>Invoice not found</h1>");
