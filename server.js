@@ -1187,10 +1187,18 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
   try {
     // First verify the invoice exists and belongs to this user using pgPool
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    const isInteger = /^\d+$/.test(invoiceIdParam);
     
-    const findQuery = isUUID 
-      ? `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`
-      : `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
+    let findQuery;
+    if (isUUID) {
+      findQuery = `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`;
+    } else if (isInteger) {
+      // Old invoices might have integer IDs stored as the id column value
+      // Try casting the id column to text and comparing, or use invoice_number
+      findQuery = `SELECT id FROM invoices WHERE (id::text = $1 OR invoice_number = $1) AND user_id = $2`;
+    } else {
+      findQuery = `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
+    }
     
     const { rows } = await pgPool.query(findQuery, [invoiceIdParam, userId]);
     console.log("Find result - invoice:", rows[0] || null);
