@@ -3938,30 +3938,21 @@ async function executeVoiceToolCall(toolName, args, userId) {
     case "create_invoice": {
       const { client_name, address = "", line_items = [], notes = "" } = args;
       
-      // First, find or create the client
+      // First, find or create the client using direct SQL
       let clientId = null;
-      const { data: existingClient } = await supabaseAdmin
-        .from("clients")
-        .select("id")
-        .eq("user_id", userId)
-        .ilike("name", client_name)
-        .single();
+      const { rows: existingClients } = await pgPool.query(
+        `SELECT id FROM clients WHERE user_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1`,
+        [userId, client_name]
+      );
       
-      if (existingClient) {
-        clientId = existingClient.id;
+      if (existingClients.length > 0) {
+        clientId = existingClients[0].id;
       } else {
-        const { data: newClient, error: clientError } = await supabaseAdmin
-          .from("clients")
-          .insert({
-            user_id: userId,
-            name: client_name,
-            address: address
-          })
-          .select()
-          .single();
-        
-        if (clientError) throw new Error(`Failed to create client: ${clientError.message}`);
-        clientId = newClient.id;
+        const { rows: newClients } = await pgPool.query(
+          `INSERT INTO clients (user_id, name, address) VALUES ($1, $2, $3) RETURNING id`,
+          [userId, client_name, address]
+        );
+        clientId = newClients[0].id;
       }
       
       // Calculate totals
@@ -3980,39 +3971,27 @@ async function executeVoiceToolCall(toolName, args, userId) {
       const seqNum = (parseInt(countRows[0].cnt) + 1).toString().padStart(3, '0');
       const invoiceNumber = `INV-${dateStr}-${seqNum}`;
       
-      // Create the invoice
-      const { data: invoice, error: invoiceError } = await supabaseAdmin
-        .from("invoices")
-        .insert({
-          user_id: userId,
-          client_id: clientId,
-          client_name: client_name,
-          invoice_number: invoiceNumber,
-          issue_date: new Date().toISOString().split("T")[0],
-          notes,
-          subtotal,
-          tax_amount: tax,
-          total,
-          status: "draft",
-          payment_status: "unpaid",
-          template: "basic_clean"
-        })
-        .select()
-        .single();
+      // Create the invoice using direct SQL (bypasses Supabase schema cache issues)
+      const { rows: invoices } = await pgPool.query(
+        `INSERT INTO invoices (user_id, client_id, client_name, invoice_number, issue_date, notes, subtotal, tax_amount, total, status, payment_status, template)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING *`,
+        [userId, clientId, client_name, invoiceNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "unpaid", "basic_clean"]
+      );
       
-      if (invoiceError) throw new Error(`Failed to create invoice: ${invoiceError.message}`);
+      const invoice = invoices[0];
       
-      // Add line items
+      // Add line items using direct SQL
       if (line_items.length > 0) {
-        const items = line_items.map(item => ({
-          invoice_id: invoice.id,
-          description: item.description,
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price || 0,
-          total: (item.quantity || 1) * (item.unit_price || 0)
-        }));
-        
-        await supabaseAdmin.from("invoice_items").insert(items);
+        for (const item of line_items) {
+          const qty = item.quantity || 1;
+          const unitPrice = item.unit_price || 0;
+          const itemTotal = qty * unitPrice;
+          await pgPool.query(
+            `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            [invoice.id, item.description, qty, unitPrice, itemTotal]
+          );
+        }
       }
       
       return {
