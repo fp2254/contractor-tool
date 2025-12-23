@@ -1204,7 +1204,9 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
     console.log("Find result - invoice:", rows[0] || null);
 
     if (!rows.length) {
-      return res.status(404).json({ error: "Invoice not found" });
+      // Return success even if not found - allows clearing ghost entries from frontend cache
+      console.log("Invoice not in database (possibly cached ghost entry), returning success to clear cache");
+      return res.json({ success: true, note: "Already deleted or cached entry cleared" });
     }
     
     const invoiceId = rows[0].id; // Use the actual UUID
