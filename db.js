@@ -161,6 +161,14 @@ class TradeBaseDB {
     return this.delete(STORES.INVOICES, invoiceId);
   }
 
+  async clearInvoices(userId) {
+    // Clear all invoices for a specific user
+    const invoices = await this.getInvoices(userId);
+    for (const inv of invoices) {
+      await this.delete(STORES.INVOICES, inv.id);
+    }
+  }
+
   async saveQuote(quote) {
     quote.updated_at = new Date().toISOString();
     return this.put(STORES.QUOTES, quote);

@@ -3236,18 +3236,13 @@ async function loadInvoices(showArchived = false) {
       
       if (apiInvoices && Array.isArray(apiInvoices)) {
         if (!showArchived) {
+          // Clear local cache and replace with API data (source of truth)
+          await tradebaseDB.clearInvoices(currentUser.id);
           for (const inv of apiInvoices) {
             await tradebaseDB.saveInvoice(inv);
           }
-          
-          const mergedMap = new Map();
-          apiInvoices.forEach(inv => mergedMap.set(inv.id, inv));
-          invoices.forEach(inv => {
-            if (!mergedMap.has(inv.id)) {
-              mergedMap.set(inv.id, inv);
-            }
-          });
-          invoices = Array.from(mergedMap.values());
+          // Use only API invoices - they are the source of truth
+          invoices = apiInvoices;
         } else {
           invoices = apiInvoices;
         }
