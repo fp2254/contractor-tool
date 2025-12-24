@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 105;
+const BUILD_VERSION = 107;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -45,8 +45,9 @@ console.log('[Skippy Stack] API_BASE_URL forced to:', JSON.stringify(window.API_
   }
 })();
 
-// SERVICE WORKER REGISTRATION
-if ('serviceWorker' in navigator) {
+// SERVICE WORKER REGISTRATION - DISABLED (self-destruct mode)
+// Re-enable once caching issues are resolved
+if (false && 'serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js');
