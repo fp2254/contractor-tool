@@ -1,0 +1,39 @@
+We need to lock down our architecture going forward and eliminate this recurring friction.
+
+IMMEDIATE ISSUE / ROOT CAUSE:
+- The error "The string did not match the expected pattern" is a PostgREST error, which means something is STILL hitting Supabase/PostgREST directly during the invoice save flow.
+- Even after converting the main POST/PUT invoice routes to pgPool, there were hidden SupabaseAdmin writes firing later in the flow (attachments, photo upload, helpers, etc.).
+- This confirms the issue is not frontend validation — it is backend routing and data contract enforcement.
+
+REQUIRED FIX (NOW):
+- Perform a FULL end-to-end audit of the invoice save lifecycle, including:
+  • invoice creation
+  • post-save hooks
+  • photo/attachment inserts
+  • helpers (resolveInvoiceId, background/offline sync, etc.)
+- Identify and REMOVE any remaining `supabaseAdmin.from()` calls involved in writes.
+- Replace ALL write paths with Express → pgPool only.
+
+NON-NEGOTIABLE ARCHITECTURE RULES (GOING FORWARD):
+1) Supabase client (sb) is AUTH ONLY.
+   - No database reads or writes from frontend Supabase.
+2) ZERO `supabaseAdmin.from()` calls for writes anywhere in the app.
+3) ALL database writes must go through:
+   Frontend → apiFetch → Express → pgPool
+
+DATA CONTRACT RULE (THIS CAUSED THE UUID FAILURES):
+- The UI allows free-text input for customer name, address, date, etc.
+- Backend must NEVER assume UUIDs for optional fields.
+- Any optional *_id field must follow ONE of these patterns:
+  A) Auto-create related records and store valid UUIDs, OR
+  B) Allow NULL and store typed values in text columns
+- Empty strings ("") or invalid UUIDs must NEVER be sent to the database.
+
+ENFORCEMENT:
+- Before ANY future feature is added, confirm:
+  • which fields are optional
+  • which fields require UUIDs
+  • how free-text is persisted
+- If a feature touches invoices, it must be audited across the full execution path — not just the main route.
+
+Goal: One write path. One data contract. Zero hidden Supabase writes.

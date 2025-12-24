@@ -68,8 +68,48 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
   - Public invoice page shows "Pay Now" button redirecting to invoice.payment_url
 - **Mobile Download Improvement**: Uses navigator.share() API on mobile for native sharing, with data URL fallback for iOS long-press save.
 
+## Architecture Rules (NON-NEGOTIABLE)
+
+### Data Flow Architecture
+All database writes follow ONE path only:
+```
+Frontend → apiFetch() → Express API → pgPool → PostgreSQL
+```
+
+### Supabase Usage Policy
+| Component | Allowed | NOT Allowed |
+|-----------|---------|-------------|
+| `sb` (frontend) | Auth only (getSession, signIn, signOut) | Database reads/writes |
+| `supabaseAdmin` (backend) | Storage only (file uploads) | Database writes (insert/update/delete) |
+| `pgPool` (backend) | All database operations | - |
+
+### UUID Field Contract
+- **Required UUIDs**: `user_id` (always present from auth)
+- **Optional UUIDs**: `client_id`, `job_id` - MUST be validated
+- **Sanitization Rule**: Empty strings (`""`) and invalid UUIDs → `NULL`
+- **Never send**: Raw text to UUID columns
+
+### Invoice Flow (Fully Converted to pgPool as of Dec 2024)
+All invoice operations use pgPool exclusively:
+- POST /api/invoices (create)
+- PUT /api/invoices/:id (update)
+- DELETE /api/invoices/:id
+- POST /api/invoices/:id/photos
+- POST /api/invoices/:id/archive
+- POST /api/invoices/:id/unarchive
+- POST /api/invoices/:id/payment-link
+- PATCH /api/invoices/:id/payment-status
+- Voice command undo (create_invoice case)
+
+### Before Adding Features
+1. Identify which fields are optional vs required
+2. Identify which fields require UUIDs
+3. Audit the FULL execution path (not just main route)
+4. Ensure all writes go through pgPool
+
 ## External Dependencies
-- **Supabase**: PostgreSQL Database, Authentication, and File Storage.
+- **Supabase**: Authentication and File Storage ONLY (no database writes via supabaseAdmin).
+- **PostgreSQL via pgPool**: ALL database operations.
 - **Stripe**: Payment processing for subscriptions and one-time invoice payments via Payment Links and webhooks.
 - **Resend (Email Service)**: For sending transactional emails with PDF attachments.
 - **Node.js + Express.js**: Backend framework.
