@@ -1,3 +1,46 @@
+// BUILD VERSION - Used for cache busting
+const BUILD_VERSION = 100;
+window.__BUILD_VERSION__ = BUILD_VERSION;
+console.log('[Skippy Stack] Build version:', BUILD_VERSION);
+
+// Automatic version check and cache bust
+(async function checkVersionAndBust() {
+  try {
+    const res = await fetch('/api/version', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      const serverVersion = data.version;
+      console.log('[Version Check] Client:', BUILD_VERSION, 'Server:', serverVersion);
+      
+      if (serverVersion > BUILD_VERSION) {
+        console.log('[Version Check] Stale code detected! Forcing cache clear...');
+        
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const reg of registrations) {
+            await reg.unregister();
+          }
+        }
+        
+        // Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          for (const name of cacheNames) {
+            await caches.delete(name);
+          }
+        }
+        
+        // Force hard reload
+        window.location.reload(true);
+        return;
+      }
+    }
+  } catch (e) {
+    console.log('[Version Check] Could not check version:', e);
+  }
+})();
+
 // SERVICE WORKER REGISTRATION
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {

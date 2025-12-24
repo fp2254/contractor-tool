@@ -4,6 +4,31 @@
   <meta charset="UTF-8" />
   <title>Skippy Stack - Invoice & Quote App for Contractors | Works Offline</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- INLINE VERSION CHECK - Runs before any cached JS -->
+  <script>
+  (async function() {
+    const EXPECTED_VERSION = 100;
+    try {
+      const res = await fetch('/api/version', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.version > EXPECTED_VERSION) {
+          console.log('[INLINE VERSION CHECK] Stale code! Server:', data.version, 'Client:', EXPECTED_VERSION);
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+          }
+          if ('caches' in window) {
+            const names = await caches.keys();
+            for (const n of names) await caches.delete(n);
+          }
+          window.location.reload(true);
+        }
+      }
+    } catch(e) { console.log('[INLINE VERSION CHECK] Error:', e); }
+  })();
+  </script>
   <meta name="description" content="Professional invoicing and billing app for tradespeople. Create quotes, invoices, and job folders from your phone in minutes. Works offline!" />
   <meta name="keywords" content="invoice app, contractor invoicing, tradesperson billing, quote software, plumber invoice, electrician billing, HVAC invoicing, handyman app, offline invoicing, mobile invoicing" />
   <meta name="theme-color" content="#4f8cff" />
@@ -517,6 +542,7 @@
           <p class="trust-line" id="trust-line">
             <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
           </p>
+          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v100</p>
 
           <!-- HERO CTA -->
           <button class="tile tile-hero" id="btn-quick-pay">

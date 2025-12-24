@@ -389,6 +389,13 @@ async function requireSubscription(req, res, next) {
   next();
 }
 
+// VERSION ENDPOINT - For cache busting
+const BUILD_VERSION = 100;
+app.get("/api/version", (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.json({ version: BUILD_VERSION });
+});
+
 // PROFILE ROUTES
 
 app.get("/api/profile", async (req, res) => {
@@ -834,7 +841,8 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
 
-  console.log("Invoice creation - received client_id:", client_id, "validClientId:", validClientId);
+  console.log("[INVOICE CREATE] userId:", userId, "client_id:", client_id, "validClientId:", validClientId);
+  console.log("[INVOICE CREATE] Full request body:", JSON.stringify(req.body, null, 2));
 
   const dbClient = await pgPool.connect();
   try {
@@ -884,7 +892,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     res.json({ id: inv.id, invoice_number: inv.invoice_number });
   } catch (err) {
     await dbClient.query('ROLLBACK');
-    console.error("Invoice creation error:", err);
+    console.error("[INVOICE CREATE ERROR] Full error:", err);
+    console.error("[INVOICE CREATE ERROR] Error message:", err.message);
+    console.error("[INVOICE CREATE ERROR] Error code:", err.code);
+    console.error("[INVOICE CREATE ERROR] Error detail:", err.detail);
     res.status(500).json({ error: err.message || "Failed to create invoice" });
   } finally {
     dbClient.release();
