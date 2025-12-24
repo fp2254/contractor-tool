@@ -515,6 +515,23 @@ async function syncPendingChanges() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Update visible build version on dashboard - fetch dynamic BUILD_ID from server
+  const buildVersionEl = document.getElementById('build-version');
+  if (buildVersionEl) {
+    try {
+      const versionRes = await fetch('/api/version', { cache: 'no-store' });
+      if (versionRes.ok) {
+        const versionData = await versionRes.json();
+        buildVersionEl.textContent = `Build v${versionData.version} | ${versionData.buildId}`;
+        console.log('[BUILD_ID] Displaying:', versionData.buildId);
+      } else {
+        buildVersionEl.textContent = `Build v${BUILD_VERSION}`;
+      }
+    } catch (e) {
+      buildVersionEl.textContent = `Build v${BUILD_VERSION}`;
+    }
+  }
+  
   loadTheme();
   wireLandingPageUI();
   wireAuthUI();

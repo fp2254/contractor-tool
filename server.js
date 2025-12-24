@@ -13,6 +13,11 @@ const { Pool } = pg;
 
 dotenv.config();
 
+// VERSION CONSTANTS - Must be defined early for middleware
+const BUILD_VERSION = 117;
+const BUILD_TIMESTAMP = "2024-12-24-v117-cache-bust";
+const BUILD_ID = "v117-cache-bust-" + Date.now();
+
 // Lazy-loaded chromium path (cached after first call)
 let cachedChromiumPath = undefined;
 
@@ -115,6 +120,14 @@ const __dirname = path.dirname(__filename);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+// ADD DIAGNOSTIC HEADERS TO ALL /api/ ROUTES
+app.use('/api', (req, res, next) => {
+  res.setHeader('X-Hit-Express', 'YES-v117');
+  res.setHeader('X-Tradebase-Server', BUILD_ID);
+  res.setHeader('X-Build-ID', BUILD_ID);
+  next();
+});
+
 // Health check endpoint - responds immediately for deployment checks
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: Date.now() });
@@ -125,8 +138,13 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "landing.html"));
 });
 
-// App login/dashboard at /app
+// App login/dashboard at /app - STRICT NO-CACHE for HTML
 app.get("/app", (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('X-Build-Version', '117');
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
@@ -433,9 +451,6 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 117;
-const BUILD_TIMESTAMP = "2024-12-24-v117-cache-bust";
-const BUILD_ID = "v117-cache-bust-" + Date.now();
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('X-Build-ID', BUILD_ID);

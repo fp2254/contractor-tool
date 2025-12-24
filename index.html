@@ -57,7 +57,7 @@
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 112;
+    const EXPECTED_VERSION = 117;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
@@ -109,7 +109,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
   
-  <link rel="stylesheet" href="style.css?v=108" />
+  <link rel="stylesheet" href="style.css?v=117" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   
@@ -591,7 +591,7 @@
           <p class="trust-line" id="trust-line">
             <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
           </p>
-          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v105</p>
+          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v117</p>
 
           <!-- HERO CTA -->
           <button class="tile tile-hero" id="btn-quick-pay">
