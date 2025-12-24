@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 108;
-const BUILD_TIMESTAMP = "2024-12-24-v9-full-debug";
+const BUILD_VERSION = 109;
+const BUILD_TIMESTAMP = "2024-12-24-v109-canary";
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });
@@ -833,13 +833,14 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  console.error("🔥🔥🔥 HIT INVOICE SAVE ROUTE — PROD v108 🔥🔥🔥");
+  const BUILD_TAG = "v109-canary-" + Date.now();
+  console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
   console.error("🔥 Body:", JSON.stringify(req.body, null, 2));
   
   // DIAGNOSTIC HEADERS - proves request hit Express
   res.setHeader('X-Hit-Express', 'true');
-  res.setHeader('X-Tradebase-Server', 'v108');
+  res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool');
   
   const userId = req.userId;
@@ -941,9 +942,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
 // Update invoice - CONVERTED TO PGPOOL
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  console.error("🔥🔥🔥 HIT INVOICE UPDATE ROUTE — PROD v108 🔥🔥🔥");
+  const BUILD_TAG = "v109-canary-" + Date.now();
+  console.error(`🔥🔥🔥 HIT INVOICE UPDATE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   res.setHeader('X-Hit-Express', 'true');
-  res.setHeader('X-Tradebase-Server', 'v108');
+  res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
   
   const userId = req.userId;
