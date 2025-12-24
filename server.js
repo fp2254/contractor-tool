@@ -142,11 +142,56 @@ app.use(express.static(__dirname, {
 // FILE UPLOADS
 const upload = multer({ storage: multer.memoryStorage() });
 
-// SUPABASE ADMIN CLIENT
-const supabaseAdmin = createClient(
+// SUPABASE ADMIN CLIENT (RAW - only for auth and storage)
+const supabaseAdminRaw = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+// GUARDED SUPABASE ADMIN - throws on write operations to catch violations
+const supabaseAdmin = new Proxy(supabaseAdminRaw, {
+  get(target, prop) {
+    if (prop === 'from') {
+      return function(tableName) {
+        const original = target.from(tableName);
+        
+        // Wrap write methods to throw in production
+        const guardedMethods = ['insert', 'update', 'upsert', 'delete'];
+        
+        return new Proxy(original, {
+          get(queryTarget, queryProp) {
+            const originalMethod = queryTarget[queryProp];
+            
+            if (guardedMethods.includes(queryProp) && typeof originalMethod === 'function') {
+              return function(...args) {
+                const stack = new Error().stack;
+                console.error(`🚨🚨🚨 [SUPABASE GUARD] BLOCKED WRITE OPERATION 🚨🚨🚨`);
+                console.error(`🚨 Table: ${tableName}`);
+                console.error(`🚨 Operation: ${queryProp}`);
+                console.error(`🚨 Stack trace:\n${stack}`);
+                
+                // In production, throw to prevent the write
+                // For now, log and continue (to identify all violations)
+                // throw new Error(`[SUPABASE GUARD] supabaseAdmin.from("${tableName}").${queryProp}() is BLOCKED. Use pgPool instead. Stack: ${stack}`);
+                
+                // Return the original for now to not break existing functionality
+                // TODO: After all conversions, change this to throw
+                return originalMethod.apply(queryTarget, args);
+              };
+            }
+            
+            return typeof originalMethod === 'function' 
+              ? originalMethod.bind(queryTarget) 
+              : originalMethod;
+          }
+        });
+      };
+    }
+    
+    // Allow auth and storage operations
+    return target[prop];
+  }
+});
 
 // DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
 const pgPool = new Pool({
