@@ -5,10 +5,24 @@
   <title>Skippy Stack - Invoice & Quote App for Contractors | Works Offline</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <!-- FORCE API_BASE_URL - Clear any cached config BEFORE scripts load -->
+  <script>
+  (function() {
+    try {
+      localStorage.removeItem('API_BASE_URL');
+      sessionStorage.removeItem('API_BASE_URL');
+      localStorage.removeItem('apiBaseUrl');
+      sessionStorage.removeItem('apiBaseUrl');
+    } catch(e) {}
+    window.API_BASE_URL = "";
+    console.log('[FORCE API] Cleared cached API URLs, set to empty string');
+  })();
+  </script>
+  
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 102;
+    const EXPECTED_VERSION = 103;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
@@ -542,7 +556,7 @@
           <p class="trust-line" id="trust-line">
             <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
           </p>
-          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v102</p>
+          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v103</p>
 
           <!-- HERO CTA -->
           <button class="tile tile-hero" id="btn-quick-pay">
