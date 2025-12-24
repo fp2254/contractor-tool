@@ -997,6 +997,52 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   console.log("[INVOICE CREATE v112] Sanitized values:", JSON.stringify(sanitized, null, 2));
 
+  // ========== HARD FAIL UUID VALIDATION ==========
+  // Validates every UUID column BEFORE pgPool INSERT
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidColumns = {
+    user_id: userId,
+    client_id: sanitized.client_id,
+    job_id: sanitized.job_id
+  };
+  
+  console.error("🔴🔴🔴 [HARD FAIL CHECK] Invoice CREATE - UUID Column Validation 🔴🔴🔴");
+  for (const [colName, colValue] of Object.entries(uuidColumns)) {
+    console.error(`  📍 ${colName}: value=${JSON.stringify(colValue)}, typeof=${typeof colValue}`);
+    
+    // NULL is allowed for optional UUID columns (client_id, job_id)
+    if (colValue === null || colValue === undefined) {
+      if (colName === 'user_id') {
+        console.error(`  ❌ HARD FAIL: ${colName} is NULL but required!`);
+        return res.status(400).json({ error: `UUID validation failed: ${colName} is required but received null` });
+      }
+      console.error(`  ✅ ${colName}: null (allowed for optional field)`);
+      continue;
+    }
+    
+    // Check for empty string
+    if (colValue === "") {
+      console.error(`  ❌ HARD FAIL: ${colName} is empty string!`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} received empty string ""` });
+    }
+    
+    // Check for non-string
+    if (typeof colValue !== 'string') {
+      console.error(`  ❌ HARD FAIL: ${colName} is not a string! typeof=${typeof colValue}`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a string (typeof=${typeof colValue})` });
+    }
+    
+    // Check UUID regex
+    if (!UUID_REGEX.test(colValue)) {
+      console.error(`  ❌ HARD FAIL: ${colName} failed UUID regex! value="${colValue}"`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID (value="${colValue}")` });
+    }
+    
+    console.error(`  ✅ ${colName}: valid UUID`);
+  }
+  console.error("🔴🔴🔴 [HARD FAIL CHECK] All UUID columns passed validation 🔴🔴🔴");
+  // ========== END HARD FAIL UUID VALIDATION ==========
+
   const dbClient = await pgPool.connect();
   try {
     await dbClient.query('BEGIN');
@@ -1126,6 +1172,64 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
 
   console.log("[INVOICE UPDATE v112] userId:", userId, "invoiceIdParam:", invoiceIdParam);
   console.log("[INVOICE UPDATE v112] Sanitized payload:", JSON.stringify(sanitized, null, 2));
+
+  // ========== HARD FAIL UUID VALIDATION ==========
+  // Validates every UUID column BEFORE pgPool UPDATE
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidColumns = {
+    user_id: userId,
+    client_id: sanitized.client_id,
+    job_id: sanitized.job_id,
+    invoice_id_param: invoiceIdParam
+  };
+  
+  console.error("🔴🔴🔴 [HARD FAIL CHECK] Invoice UPDATE - UUID Column Validation 🔴🔴🔴");
+  for (const [colName, colValue] of Object.entries(uuidColumns)) {
+    console.error(`  📍 ${colName}: value=${JSON.stringify(colValue)}, typeof=${typeof colValue}`);
+    
+    // NULL is allowed for optional UUID columns (client_id, job_id)
+    if (colValue === null || colValue === undefined) {
+      if (colName === 'user_id') {
+        console.error(`  ❌ HARD FAIL: ${colName} is NULL but required!`);
+        return res.status(400).json({ error: `UUID validation failed: ${colName} is required but received null` });
+      }
+      console.error(`  ✅ ${colName}: null (allowed for optional field)`);
+      continue;
+    }
+    
+    // Check for empty string
+    if (colValue === "") {
+      console.error(`  ❌ HARD FAIL: ${colName} is empty string!`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} received empty string ""` });
+    }
+    
+    // Check for non-string
+    if (typeof colValue !== 'string') {
+      console.error(`  ❌ HARD FAIL: ${colName} is not a string! typeof=${typeof colValue}`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a string (typeof=${typeof colValue})` });
+    }
+    
+    // For invoice_id_param, allow invoice numbers (not just UUIDs)
+    if (colName === 'invoice_id_param') {
+      // Invoice ID can be UUID or invoice_number like INV-20241224-001
+      if (!UUID_REGEX.test(colValue) && !colValue.startsWith('INV-')) {
+        console.error(`  ❌ HARD FAIL: ${colName} is not a valid UUID or invoice number! value="${colValue}"`);
+        return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID or invoice number (value="${colValue}")` });
+      }
+      console.error(`  ✅ ${colName}: valid identifier`);
+      continue;
+    }
+    
+    // Check UUID regex
+    if (!UUID_REGEX.test(colValue)) {
+      console.error(`  ❌ HARD FAIL: ${colName} failed UUID regex! value="${colValue}"`);
+      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID (value="${colValue}")` });
+    }
+    
+    console.error(`  ✅ ${colName}: valid UUID`);
+  }
+  console.error("🔴🔴🔴 [HARD FAIL CHECK] All UUID columns passed validation 🔴🔴🔴");
+  // ========== END HARD FAIL UUID VALIDATION ==========
 
   const dbClient = await pgPool.connect();
   try {
