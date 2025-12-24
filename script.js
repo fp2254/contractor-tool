@@ -2994,16 +2994,18 @@ async function loadClients() {
   }
   
   if (currentUser) {
-    const localClients = await tradebaseDB.getClients(currentUser.id);
-    clients = localClients || [];
-    
-    // Auto-purge: Detect and remove stale clients with non-UUID IDs (legacy data)
+    // First check ALL cached clients for stale data (not just current user's)
+    const allCachedClients = await tradebaseDB.getAllClientsRaw() || [];
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const hasStaleData = clients.some(c => !uuidRegex.test(c.id));
+    const hasStaleData = allCachedClients.some(c => !uuidRegex.test(c.id));
+    
     if (hasStaleData) {
-      console.log('Auto-purging stale client cache with non-UUID IDs...');
+      console.log('Auto-purging stale client cache with non-UUID IDs...', allCachedClients.length, 'clients found');
       await tradebaseDB.clear('clients'); // Clear entire store
       clients = []; // Reset to empty, let API be source of truth
+    } else {
+      const localClients = await tradebaseDB.getClients(currentUser.id);
+      clients = localClients || [];
     }
   }
   
@@ -3220,16 +3222,18 @@ async function loadInvoices(showArchived = false) {
   }
   
   if (currentUser && !showArchived) {
-    const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
-    invoices = localInvoices || [];
-    
-    // Auto-purge: Detect and remove stale invoices with non-UUID IDs (legacy data)
+    // First check ALL cached invoices for stale data (not just current user's)
+    const allCachedInvoices = await tradebaseDB.getAllInvoicesRaw() || [];
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const hasStaleData = invoices.some(inv => !uuidRegex.test(inv.id) || (inv.client_id && !uuidRegex.test(inv.client_id)));
+    const hasStaleData = allCachedInvoices.some(inv => !uuidRegex.test(inv.id) || (inv.client_id && !uuidRegex.test(inv.client_id)));
+    
     if (hasStaleData) {
-      console.log('Auto-purging stale invoice cache with non-UUID IDs...');
-      await tradebaseDB.clear('invoices'); // Clear entire store, not just by user
+      console.log('Auto-purging stale invoice cache with non-UUID IDs...', allCachedInvoices.length, 'invoices found');
+      await tradebaseDB.clear('invoices'); // Clear entire store
       invoices = []; // Reset to empty, let API be source of truth
+    } else {
+      const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
+      invoices = localInvoices || [];
     }
   }
   

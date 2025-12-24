@@ -157,6 +157,16 @@ class TradeBaseDB {
     return this.getAll(STORES.INVOICES, 'user_id', userId);
   }
 
+  async getAllInvoicesRaw() {
+    // Get ALL invoices without filtering - for stale data detection
+    return this.getAll(STORES.INVOICES);
+  }
+
+  async getAllClientsRaw() {
+    // Get ALL clients without filtering - for stale data detection
+    return this.getAll(STORES.CLIENTS);
+  }
+
   async deleteInvoice(invoiceId) {
     return this.delete(STORES.INVOICES, invoiceId);
   }
