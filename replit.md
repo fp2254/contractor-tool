@@ -99,9 +99,12 @@ All invoice operations use pgPool exclusively:
 - POST /api/invoices/:id/unarchive
 - POST /api/invoices/:id/payment-link
 - PATCH /api/invoices/:id/payment-status
+- PATCH /api/invoices/:id/job (link to job folder)
+- POST /api/invoices/:id/send-email (mark as sent)
 - GET /api/payments/stats (dashboard totals)
 - Voice command undo (create_invoice case)
 - logActivityAction() - activity logging for voice commands
+- activity_logs update (mark undone)
 
 ### Remaining supabaseAdmin.from() Calls (NOT invoice-related)
 These are for OTHER features and do NOT affect invoice operations:

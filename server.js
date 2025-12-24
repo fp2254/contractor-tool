@@ -392,7 +392,7 @@ async function requireSubscription(req, res, next) {
 // VERSION ENDPOINT - For cache busting
 const BUILD_VERSION = 112;
 const BUILD_TIMESTAMP = "2024-12-24-v112-uuid-debug";
-const BUILD_ID = "v113-diagnostic-" + Date.now();
+const BUILD_ID = "v114-pgpool-complete-" + Date.now();
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('X-Build-ID', BUILD_ID);
@@ -1939,7 +1939,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   res.json({ id: quote.id, quote_number: quote.quote_number });
 });
 
-// Link/unlink invoice to job
+// Link/unlink invoice to job - CONVERTED TO PGPOOL
 app.patch("/api/invoices/:id/job", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1947,43 +1947,54 @@ app.patch("/api/invoices/:id/job", requireAuth, async (req, res) => {
   const invoiceId = req.params.id;
   const { job_id } = req.body;
 
-  // Verify invoice belongs to user
-  const { data: existing, error: errCheck } = await supabaseAdmin
-    .from("invoices")
-    .select("id, user_id")
-    .eq("id", invoiceId)
-    .single();
-
-  if (errCheck || !existing || existing.user_id !== userId) {
-    return res.status(404).json({ error: "Invoice not found" });
+  // UUID validation
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (!isValidUUID.test(invoiceId)) {
+    return res.status(400).json({ error: "Invalid invoice ID format" });
   }
+  
+  // Sanitize job_id: empty string or invalid UUID becomes null
+  const sanitizedJobId = (!job_id || job_id === "" || !isValidUUID.test(job_id)) ? null : job_id;
 
-  // If job_id provided, verify it belongs to user
-  if (job_id) {
-    const { data: job, error: errJob } = await supabaseAdmin
-      .from("jobs")
-      .select("id, user_id")
-      .eq("id", job_id)
-      .single();
+  try {
+    // Verify invoice belongs to user
+    const { rows: invoiceRows } = await pgPool.query(
+      `SELECT id, user_id FROM invoices WHERE id = $1`,
+      [invoiceId]
+    );
 
-    if (errJob || !job || job.user_id !== userId) {
-      return res.status(404).json({ error: "Job not found" });
+    if (!invoiceRows.length || invoiceRows[0].user_id !== userId) {
+      return res.status(404).json({ error: "Invoice not found" });
     }
+
+    // If job_id provided, verify it belongs to user
+    if (sanitizedJobId) {
+      const { rows: jobRows } = await pgPool.query(
+        `SELECT id, user_id FROM jobs WHERE id = $1`,
+        [sanitizedJobId]
+      );
+
+      if (!jobRows.length || jobRows[0].user_id !== userId) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+    }
+
+    // Update invoice job_id
+    const { rows } = await pgPool.query(
+      `UPDATE invoices SET job_id = $1 WHERE id = $2 AND user_id = $3 RETURNING *`,
+      [sanitizedJobId, invoiceId, userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error linking invoice to job:", err);
+    res.status(500).json({ error: err.message || "Failed to update invoice" });
   }
-
-  // Update invoice job_id
-  const { data, error } = await supabaseAdmin
-    .from("invoices")
-    .update({ job_id: job_id || null })
-    .eq("id", invoiceId)
-    .select()
-    .single();
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-
-  res.json(data);
 });
 
 // Link/unlink quote to job
@@ -3515,14 +3526,16 @@ app.post("/api/invoices/:id/send-email", requireSubscription, async (req, res) =
       return res.status(500).json({ error: "Failed to send email. Please try again later." });
     }
 
-    // Update invoice to mark as sent
-    await supabaseAdmin
-      .from("invoices")
-      .update({ 
-        sent_at: new Date().toISOString(),
-        sent_to: recipientEmail
-      })
-      .eq("id", id);
+    // Update invoice to mark as sent - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE invoices SET sent_at = $1, sent_to = $2 WHERE id = $3`,
+        [new Date().toISOString(), recipientEmail, id]
+      );
+    } catch (updateErr) {
+      console.error("[SEND EMAIL] Failed to update invoice sent status:", updateErr);
+      // Non-critical - email was already sent, don't fail the request
+    }
 
     res.json({ 
       success: true, 
@@ -4646,12 +4659,16 @@ app.post("/api/activity-log/undo", requireAuth, async (req, res) => {
       }
     }
     
-    // Mark actions as undone
-    await supabaseAdmin
-      .from("activity_logs")
-      .update({ is_undone: true })
-      .eq("action_set_id", targetSetId)
-      .eq("user_id", userId);
+    // Mark actions as undone - CONVERTED TO PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE activity_logs SET is_undone = true WHERE action_set_id = $1 AND user_id = $2`,
+        [targetSetId, userId]
+      );
+    } catch (undoMarkErr) {
+      console.error("[UNDO] Failed to mark actions as undone:", undoMarkErr);
+      // Non-critical - entities were already deleted
+    }
     
     res.json({
       status: "ok",
