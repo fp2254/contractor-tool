@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 109;
-const BUILD_TIMESTAMP = "2024-12-24-v109-canary";
+const BUILD_VERSION = 110;
+const BUILD_TIMESTAMP = "2024-12-24-v110-force-express";
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });
@@ -833,15 +833,16 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v109-canary-" + Date.now();
+  const BUILD_TAG = "v110-force-express-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
   console.error("🔥 Body:", JSON.stringify(req.body, null, 2));
   
   // DIAGNOSTIC HEADERS - proves request hit Express
-  res.setHeader('X-Hit-Express', 'true');
+  res.setHeader('X-Hit-Express', 'YES-v110');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool');
+  res.setHeader('X-Route-Match', 'POST-/api/invoices');
   
   const userId = req.userId;
   if (!userId) {
@@ -942,11 +943,12 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
 // Update invoice - CONVERTED TO PGPOOL
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v109-canary-" + Date.now();
+  const BUILD_TAG = "v110-force-express-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE UPDATE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
-  res.setHeader('X-Hit-Express', 'true');
+  res.setHeader('X-Hit-Express', 'YES-v110');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
+  res.setHeader('X-Route-Match', 'PUT-/api/invoices/:id');
   
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });

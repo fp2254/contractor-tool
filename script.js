@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 109;
+const BUILD_VERSION = 110;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
