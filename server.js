@@ -938,12 +938,7 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  // ============ TEMPORARY 418 TEST - REMOVE AFTER CONFIRMING ==============
-  // If you see this response, the request IS hitting Express
-  return res.status(418).json({ error: "HIT_EXPRESS_INVOICE_ROUTE", timestamp: Date.now(), build: "v117-418-test" });
-  // ============ END TEMPORARY TEST ==============
-  
-  const BUILD_TAG = "v112-uuid-debug-" + Date.now();
+  const BUILD_TAG = "v117-uuid-audit-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
   console.error("🔥 Raw Body:", JSON.stringify(req.body, null, 2));
@@ -1111,10 +1106,36 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     res.json({ id: inv.id, invoice_number: inv.invoice_number });
   } catch (err) {
     await dbClient.query('ROLLBACK');
-    console.error("[INVOICE CREATE ERROR] Full error:", err);
-    console.error("[INVOICE CREATE ERROR] Error message:", err.message);
-    console.error("[INVOICE CREATE ERROR] Error code:", err.code);
-    console.error("[INVOICE CREATE ERROR] Error detail:", err.detail);
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("🔴🔴🔴 [INVOICE CREATE ERROR] FULL DIAGNOSTIC DUMP 🔴🔴🔴");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("📍 err.message:", err.message);
+    console.error("📍 err.detail:", err.detail);
+    console.error("📍 err.constraint:", err.constraint);
+    console.error("📍 err.column:", err.column);
+    console.error("📍 err.table:", err.table);
+    console.error("📍 err.code:", err.code);
+    console.error("📍 err.hint:", err.hint);
+    console.error("📍 err.where:", err.where);
+    console.error("📍 err.schema:", err.schema);
+    console.error("📍 err.dataType:", err.dataType);
+    console.error("📍 err.routine:", err.routine);
+    console.error("───────────────────────────────────────────────────────────");
+    console.error("📍 VALUES BEING INSERTED:");
+    console.error("   user_id:", JSON.stringify(userId), "typeof:", typeof userId);
+    console.error("   client_id:", JSON.stringify(sanitized.client_id), "typeof:", typeof sanitized.client_id);
+    console.error("   job_id:", JSON.stringify(sanitized.job_id), "typeof:", typeof sanitized.job_id);
+    console.error("   client_address:", JSON.stringify(sanitized.client_address));
+    console.error("   issue_date:", JSON.stringify(sanitized.issue_date));
+    console.error("   notes:", JSON.stringify(sanitized.notes));
+    console.error("   template:", JSON.stringify(sanitized.template));
+    console.error("   payment_url:", JSON.stringify(sanitized.payment_url));
+    console.error("   subtotal:", sanitized.subtotal, "typeof:", typeof sanitized.subtotal);
+    console.error("   tax_amount:", sanitized.tax_amount, "typeof:", typeof sanitized.tax_amount);
+    console.error("   total:", sanitized.total, "typeof:", typeof sanitized.total);
+    console.error("───────────────────────────────────────────────────────────");
+    console.error("📍 Full error object:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+    console.error("═══════════════════════════════════════════════════════════");
     res.status(500).json({ error: err.message || "Failed to create invoice" });
   } finally {
     dbClient.release();
