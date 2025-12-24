@@ -837,11 +837,34 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
 
+  // SANITIZATION: Convert "" to null, ensure proper types
+  const toNull = (v) => (v === "" || v === undefined) ? null : v;
+  const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
+  const toDate = (v) => {
+    if (!v || v === "") return new Date().toISOString().split('T')[0];
+    // Handle various date formats
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
+  };
+
   // Validate client_id is a valid UUID or null (reject old integer IDs)
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
 
-  console.log("[INVOICE CREATE] userId:", userId, "client_id:", client_id, "validClientId:", validClientId);
+  // Sanitize all fields
+  const sanitized = {
+    client_id: validClientId,
+    client_address: toNull(client_address),
+    issue_date: toDate(issue_date),
+    notes: toNull(notes),
+    template: template || 'basic_clean',
+    payment_url: toNull(payment_url),
+    subtotal: toNumber(subtotal),
+    tax_amount: toNumber(tax_amount),
+    total: toNumber(total)
+  };
+
+  console.log("[INVOICE CREATE] userId:", userId, "raw client_id:", client_id, "sanitized:", JSON.stringify(sanitized));
   console.log("[INVOICE CREATE] Full request body:", JSON.stringify(req.body, null, 2));
 
   const dbClient = await pgPool.connect();
@@ -857,17 +880,17 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
     
-    // Insert invoice
+    // Insert invoice using sanitized values
     const invResult = await dbClient.query(
       `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, invoice_number`,
-      [userId, validClientId, client_address || null, issue_date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || null, subtotal || 0, tax_amount || 0, total || 0, 'draft', invoiceNumber]
+      [userId, sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
     
-    // Bulk insert line items
+    // Bulk insert line items with sanitization
     if (Array.isArray(items) && items.length) {
       const values = items.map((item, idx) => {
         return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
@@ -875,10 +898,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       
       const params = [inv.id];
       items.forEach(item => {
-        const qty = item.quantity || 1;
-        const unitPrice = item.unit_price || 0;
-        const itemTotal = item.total || (qty * unitPrice);
-        params.push(item.description || '', qty, unitPrice, itemTotal);
+        const qty = toNumber(item.quantity) || 1;
+        const unitPrice = toNumber(item.unit_price);
+        const itemTotal = toNumber(item.total) || (qty * unitPrice);
+        params.push(toNull(item.description) || '', qty, unitPrice, itemTotal);
       });
       
       await dbClient.query(
