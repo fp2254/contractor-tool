@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 107;
+const BUILD_VERSION = 108;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -2548,8 +2548,13 @@ Error: ${data.error || JSON.stringify(data)}`;
     await loadInvoices();
     showScreen("invoices");
   } catch (err) {
-    console.error("Invoice save error:", err);
-    errorEl.textContent = "Error saving invoice: " + (err.message || err);
+    console.error("SAVE INVOICE ERROR FULL:", err);
+    console.error("Error name:", err?.name);
+    console.error("Error message:", err?.message);
+    console.error("Error stack:", err?.stack);
+    const msg = err?.message || err?.error?.message || JSON.stringify(err, null, 2);
+    errorEl.textContent = "Error saving invoice: " + msg;
+    alert("INVOICE SAVE ERROR:\n" + msg);
     setButtonLoading(submitBtn, false);
   }
 }

@@ -1,0 +1,67 @@
+Here’s the situation in plain terms:
+
+- UI is stable now (version loop fixed), but invoice still won’t save.
+- Error shown to the user is still: “The string did not match the expected pattern.”
+- That is almost always Supabase/PostgREST rejecting a value for a UUID column (or a constraint), and it can be coming from either:
+  1) the invoices insert
+  2) the invoice line-items insert (if we do a second insert)
+- Customer IS attached, so don’t assume customer_id is blank. The bad value is likely in another *_id field (user_id/created_by/org_id/company_id/invoice_id/job_id/estimate_id) or in line items.
+
+What I need you to do (this ends the guessing):
+
+1) Log EXACT payload + EXACT Supabase error object (not just error.message)
+   - Right before inserting the invoice:
+     - console.log("INVOICE INSERT PAYLOAD:", payload)
+   - After insert:
+     - console.log("INVOICE INSERT ERROR:", error)
+
+   Example pattern:
+   const { data, error } = await supabase
+     .from("invoices")
+     .insert(payload)
+     .select()
+     .single();
+
+   console.log("INVOICE INSERT PAYLOAD:", payload);
+   console.log("INVOICE INSERT ERROR FULL:", error);
+   if (error) throw error;
+
+2) If we insert line items separately, do the same for invoice_items:
+   console.log("ITEMS INSERT PAYLOAD:", itemsPayload);
+   console.log("ITEMS INSERT ERROR FULL:", itemsError);
+
+   One of those two calls is failing — we need to know which.
+
+3) Add a UUID validator that warns which field is invalid BEFORE the insert:
+   const UUID_RE =
+     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+   function warnBadIds(obj) {
+     for (const [k, v] of Object.entries(obj || {})) {
+       if (!k.toLowerCase().includes("id")) continue;
+       if (v === "" || v === "undefined" || v === "null") {
+         console.warn("EMPTY ID FIELD (should be null):", k, v);
+       } else if (v && typeof v === "string" && !UUID_RE.test(v)) {
+         console.warn("BAD UUID FIELD:", k, v);
+       }
+     }
+   }
+
+   warnBadIds(payload);
+   warnBadIds(itemsPayload); // if applicable
+
+4) Temporarily surface the FULL error to the UI so I can screenshot it:
+   In the catch handler:
+     console.error("SAVE INVOICE ERROR FULL:", err);
+     const msg = err?.message || err?.error?.message || JSON.stringify(err, null, 2);
+     alert(msg); // temporary diagnostic
+
+5) Verify whether Save Invoice is going through Express or directly to Supabase:
+   - If Save Invoice is still doing supabase.from("invoices").insert(...) in the browser, server-side sanitization/diagnostics won’t apply.
+   - If the intention is to go through POST /api/invoices, confirm the frontend is calling /api/invoices and not Supabase.
+
+Goal:
+Within 1 test, we should know:
+- which insert is failing (invoice vs items)
+- the exact field name and value that does not match the expected pattern
+Then we fix that one field (uuid must be real UUID or null; never "" or placeholders).
