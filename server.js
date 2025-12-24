@@ -830,6 +830,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
   const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
 
+  // Validate client_id is a valid UUID or null (reject old integer IDs)
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
+
   const dbClient = await pgPool.connect();
   try {
     await dbClient.query('BEGIN');
@@ -848,7 +852,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
       `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, invoice_number`,
-      [userId, client_id || null, client_address || null, issue_date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || null, subtotal || 0, tax_amount || 0, total || 0, 'draft', invoiceNumber]
+      [userId, validClientId, client_address || null, issue_date || new Date().toISOString().split('T')[0], notes || null, template || 'basic_clean', payment_url || null, subtotal || 0, tax_amount || 0, total || 0, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
@@ -892,6 +896,10 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
 
   const invoiceIdParam = req.params.id;
   const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
+  
+  // Validate client_id is a valid UUID or null (reject old integer IDs)
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
 
   // Verify invoice belongs to user - try UUID first, then invoice_number
   let existing = null;
@@ -926,7 +934,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   const { data: inv, error: errInv } = await supabaseAdmin
     .from("invoices")
     .update({
-      client_id,
+      client_id: validClientId,
       client_address: client_address || null,
       issue_date,
       notes,

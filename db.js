@@ -195,6 +195,14 @@ class TradeBaseDB {
     return this.delete(STORES.CLIENTS, clientId);
   }
 
+  async clearClients(userId) {
+    // Clear all clients for a specific user
+    const clients = await this.getClients(userId);
+    for (const client of clients) {
+      await this.delete(STORES.CLIENTS, client.id);
+    }
+  }
+
   async saveInventory(item) {
     item.updated_at = new Date().toISOString();
     return this.put(STORES.INVENTORY, item);

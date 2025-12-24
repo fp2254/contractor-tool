@@ -3001,29 +3001,13 @@ async function loadClients() {
       const apiClients = await res.json();
       
       if (apiClients && Array.isArray(apiClients)) {
-        // Clear old cached clients that no longer exist on the server
-        const apiClientIds = new Set(apiClients.map(c => c.id));
-        for (const localClient of clients) {
-          if (!apiClientIds.has(localClient.id) && !isOfflineId(localClient.id)) {
-            await tradebaseDB.deleteClient(localClient.id);
-          }
-        }
-        
-        // Save fresh API data to cache
+        // Clear local cache and replace with API data (source of truth)
+        await tradebaseDB.clearClients(currentUser.id);
         for (const client of apiClients) {
           await tradebaseDB.saveClient(client);
         }
-        
-        // Use API data as source of truth, only keep local offline items
-        const mergedMap = new Map();
-        apiClients.forEach(client => mergedMap.set(client.id, client));
-        clients.forEach(client => {
-          // Only keep offline items (not yet synced) that don't exist in API
-          if (isOfflineId(client.id) && !mergedMap.has(client.id)) {
-            mergedMap.set(client.id, client);
-          }
-        });
-        clients = Array.from(mergedMap.values());
+        // Use only API clients - they are the source of truth
+        clients = apiClients;
       }
     } catch (error) {
       console.log('Using offline clients:', error.message);
