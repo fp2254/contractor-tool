@@ -1121,22 +1121,35 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     console.error("📍 err.dataType:", err.dataType);
     console.error("📍 err.routine:", err.routine);
     console.error("───────────────────────────────────────────────────────────");
-    console.error("📍 VALUES BEING INSERTED:");
-    console.error("   user_id:", JSON.stringify(userId), "typeof:", typeof userId);
-    console.error("   client_id:", JSON.stringify(sanitized.client_id), "typeof:", typeof sanitized.client_id);
-    console.error("   job_id:", JSON.stringify(sanitized.job_id), "typeof:", typeof sanitized.job_id);
-    console.error("   client_address:", JSON.stringify(sanitized.client_address));
-    console.error("   issue_date:", JSON.stringify(sanitized.issue_date));
-    console.error("   notes:", JSON.stringify(sanitized.notes));
-    console.error("   template:", JSON.stringify(sanitized.template));
-    console.error("   payment_url:", JSON.stringify(sanitized.payment_url));
-    console.error("   subtotal:", sanitized.subtotal, "typeof:", typeof sanitized.subtotal);
-    console.error("   tax_amount:", sanitized.tax_amount, "typeof:", typeof sanitized.tax_amount);
-    console.error("   total:", sanitized.total, "typeof:", typeof sanitized.total);
+    const insertedValues = {
+      user_id: { value: userId, type: typeof userId },
+      client_id: { value: sanitized.client_id, type: typeof sanitized.client_id },
+      job_id: { value: sanitized.job_id, type: typeof sanitized.job_id },
+      client_address: sanitized.client_address,
+      issue_date: sanitized.issue_date,
+      notes: sanitized.notes,
+      template: sanitized.template,
+      payment_url: sanitized.payment_url,
+      subtotal: { value: sanitized.subtotal, type: typeof sanitized.subtotal },
+      tax_amount: { value: sanitized.tax_amount, type: typeof sanitized.tax_amount },
+      total: { value: sanitized.total, type: typeof sanitized.total }
+    };
+    console.error("📍 VALUES BEING INSERTED:", JSON.stringify(insertedValues, null, 2));
     console.error("───────────────────────────────────────────────────────────");
     console.error("📍 Full error object:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
     console.error("═══════════════════════════════════════════════════════════");
-    res.status(500).json({ error: err.message || "Failed to create invoice" });
+    
+    // Return structured error with full diagnostic info
+    res.status(500).json({ 
+      error: err.message || "Failed to create invoice",
+      detail: err.detail || null,
+      column: err.column || null,
+      table: err.table || null,
+      constraint: err.constraint || null,
+      code: err.code || null,
+      hint: err.hint || null,
+      values: insertedValues
+    });
   } finally {
     dbClient.release();
   }

@@ -704,23 +704,45 @@ async function apiFetch(path, options = {}) {
   console.log('🔍 [apiFetch v113] X-Tradebase-Handler:', response.headers.get('X-Tradebase-Handler') || 'NOT PRESENT');
   console.log('🔍 [apiFetch v113] X-Build-ID:', response.headers.get('X-Build-ID') || 'NOT PRESENT');
   
-  // If error, log response body preview
+  // If error, ALWAYS read and surface the raw response body
   if (!response.ok) {
+    let errorText = '';
+    let errorDetail = null;
     try {
-      const errClone = response.clone();
-      const errBody = await errClone.text();
-      console.error('🚨 [apiFetch v113] ERROR RESPONSE BODY:', errBody.substring(0, 500));
+      errorText = await response.text();
+      console.error('🚨 [apiFetch v117] ERROR RESPONSE BODY:', errorText);
+      
+      // Try to parse as JSON for structured error info
+      try {
+        errorDetail = JSON.parse(errorText);
+        console.error('🚨 [apiFetch v117] Parsed error:', JSON.stringify(errorDetail, null, 2));
+        if (errorDetail.column) console.error('🚨 FAILING COLUMN:', errorDetail.column);
+        if (errorDetail.constraint) console.error('🚨 CONSTRAINT:', errorDetail.constraint);
+        if (errorDetail.detail) console.error('🚨 DETAIL:', errorDetail.detail);
+        if (errorDetail.values) console.error('🚨 VALUES:', JSON.stringify(errorDetail.values));
+      } catch (parseErr) {
+        // Not JSON, use raw text
+      }
       
       // Check if this is a PostgREST error
-      if (errBody.includes('did not match the expected pattern')) {
-        console.error('🚨🚨🚨 [apiFetch v113] POSTGREST UUID ERROR DETECTED! 🚨🚨🚨');
-        console.error('🚨 This request is hitting Supabase/PostgREST instead of Express!');
+      if (errorText.includes('did not match the expected pattern')) {
+        console.error('🚨🚨🚨 [apiFetch v117] POSTGREST UUID ERROR DETECTED! 🚨🚨🚨');
+        console.error('🚨 This request may be hitting Supabase/PostgREST instead of Express!');
         console.error('🚨 URL:', fullUrl);
         console.error('🚨 X-Hit-Express:', response.headers.get('X-Hit-Express') || 'NOT PRESENT');
       }
-    } catch (e) {}
+    } catch (e) {
+      errorText = `${response.status} ${response.statusText}`;
+    }
+    console.log('🔍 [apiFetch v117] ===========================');
+    
+    // For non-special status codes, throw with actual error detail
+    if (response.status !== 402 && response.status !== 429) {
+      const errorMessage = errorDetail?.error || errorDetail?.message || errorText || `${response.status} ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
   }
-  console.log('🔍 [apiFetch v113] ===========================');
+  console.log('🔍 [apiFetch v117] ===========================');
 
   // Handle subscription required error
   if (response.status === 402) {
