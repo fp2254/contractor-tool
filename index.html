@@ -8,7 +8,7 @@
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 100;
+    const EXPECTED_VERSION = 101;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
@@ -542,7 +542,7 @@
           <p class="trust-line" id="trust-line">
             <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
           </p>
-          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v100</p>
+          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v101</p>
 
           <!-- HERO CTA -->
           <button class="tile tile-hero" id="btn-quick-pay">

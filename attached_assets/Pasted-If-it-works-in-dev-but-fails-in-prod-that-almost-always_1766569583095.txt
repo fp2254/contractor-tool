@@ -1,0 +1,66 @@
+If it works in dev but fails in prod, that almost always means your production environment isn’t actually the same as dev. The error you’re seeing (“string did not match expected pattern”) is still a data/type mismatch, but prod is enforcing something dev isn’t.
+
+Here are the real culprits, in order.
+
+1) Prod database schema is different than dev
+
+Most common: in prod a column is uuid/date/numeric, but in dev it’s text (or nullable in dev but NOT NULL in prod).
+
+What to do (fast):
+	•	In Supabase prod → Table Editor → invoices → check column types + required fields
+	•	Compare to dev project.
+
+If Replit can’t compare easily: run the save again with logging and look at the payload vs the prod column types.
+
+2) Prod RLS policies / permissions differ
+
+Sometimes dev has permissive RLS or you’re using a service role in dev, but prod uses anon key + stricter policies.
+Usually this throws “permission denied” not “pattern”, but it can surface weirdly depending on the failing column (like auth.uid() being null → you insert empty string into uuid field).
+
+Check:
+	•	Supabase prod → Authentication → are you logged in the same way?
+	•	Supabase prod → Table → RLS on/off, and policies for insert.
+
+3) Different environment variables / wrong Supabase project in prod
+
+You might think prod is pointing to prod, but it’s pointing to a different project (or vice versa), or missing keys so fallback values are being inserted.
+
+Check in prod build:
+	•	NEXT_PUBLIC_SUPABASE_URL
+	•	NEXT_PUBLIC_SUPABASE_ANON_KEY
+(or your framework equivalents)
+
+Also log them (only partially) to confirm:
+	•	URL domain matches the intended Supabase project.
+
+4) Timezone / date formatting differences in prod build
+
+Dev might be using your local timezone/locale and prod could be generating MM/DD/YYYY or a different string if you’re formatting with toLocaleDateString() anywhere.
+
+Rule: Never save locale-formatted dates. Always save:
+	•	YYYY-MM-DD for date
+	•	new Date().toISOString() for timestamptz
+
+If you have any toLocaleDateString() feeding payload → that’s a smoking gun.
+
+5) Caching / old bundle in prod
+
+Prod might still be running old code that sends the wrong field (like "INV-PREVIEW" into a uuid column).
+
+Confirm:
+	•	Add a console.log("SAVE VERSION: 2025-12-24-1") and verify you see it in prod.
+	•	Hard refresh / clear cache / redeploy.
+
+⸻
+
+The clean diagnostic that ends the guessing
+
+Do this in prod:
+	1.	Log the exact payload right before insert (like I gave you).
+	2.	Open DevTools → Network → failing request → read the Response JSON.
+	3.	In Supabase prod → Logs (or API logs) you’ll see the rejected request details sometimes.
+
+Then you’ll know if it’s:
+	•	A specific field type mismatch (date/uuid)
+	•	A missing required field (NOT NULL)
+	•	A policy/auth mismatch
