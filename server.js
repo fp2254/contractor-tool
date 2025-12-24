@@ -2137,32 +2137,22 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     return res.status(500).json({ error: errQuote.message });
   }
 
-  // Delete old items and insert new ones
-  const { error: errDeleteItems } = await supabaseAdmin
-    .from("quote_items")
-    .delete()
-    .eq("quote_id", quoteId);
-
-  if (errDeleteItems) {
-    console.error("Quote items delete error:", errDeleteItems);
+  // Delete old items and insert new ones - USING PGPOOL
+  try {
+    await pgPool.query(`DELETE FROM quote_items WHERE quote_id = $1`, [quoteId]);
+  } catch (deleteErr) {
+    console.error("Quote items delete error:", deleteErr);
   }
 
   if (items && items.length) {
-    const itemRows = items.map((it) => ({
-      quote_id: quote.id,
-      description: it.description,
-      quantity: it.qty || it.quantity,
-      unit_price: it.unit_price,
-      total: it.line_total || it.total,
-    }));
-
-    const { error: errItems } = await supabaseAdmin
-      .from("quote_items")
-      .insert(itemRows);
-
-    if (errItems) {
-      console.error("Quote items insert error:", errItems);
-      return res.status(500).json({ error: errItems.message });
+    for (const it of items) {
+      const qty = it.qty || it.quantity || 1;
+      const unitPrice = it.unit_price || 0;
+      const itemTotal = it.line_total || it.total || (qty * unitPrice);
+      await pgPool.query(
+        `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+        [quote.id, it.description, qty, unitPrice, itemTotal]
+      );
     }
   }
 
@@ -2629,22 +2619,21 @@ app.post("/api/jobs", requireAuth, async (req, res) => {
   const sanitize = (str) => (str || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
   const folderName = `${sanitize(client_name)}_${sanitize(address)}_${dateStr}_${sanitize(job_type)}`;
 
-  const { data, error } = await supabaseAdmin
-    .from("jobs")
-    .insert({
-      user_id: userId,
-      client_name,
-      address: address || '',
-      job_type: job_type || '',
-      folder_name: folderName,
-      notes: notes || '',
-      status: 'open'
-    })
-    .select()
-    .single();
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  // Create job - USING PGPOOL
+  try {
+    const { rows } = await pgPool.query(
+      `INSERT INTO jobs (user_id, client_name, address, job_type, folder_name, notes, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [userId, client_name, address || '', job_type || '', folderName, notes || '', 'open']
+    );
+    
+    if (!rows.length) return res.status(500).json({ error: "Failed to create job" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Job creation error:", err);
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // Get single job with related invoices, quotes, and voice notes
@@ -2853,76 +2842,97 @@ app.post("/api/calendar-events", requireAuth, async (req, res) => {
 
     console.log("Creating calendar event:", { userId, title, event_datetime, client_id });
     
-    const { data, error } = await supabaseAdmin
-      .from("calendar_events")
-      .insert({
-        user_id: userId,
-        title,
-        event_datetime,
-        client_id: client_id || null,
-        related_job_id: related_job_id || null,
-        related_quote_id: related_quote_id || null,
-        related_invoice_id: related_invoice_id || null,
-        reminder_datetime: reminder_datetime || null,
-        notes: notes || null
-      })
-      .select()
-      .single();
+    // UUID sanitization for optional fields
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const toUUID = (v) => (!v || v === "" || !isValidUUID.test(v)) ? null : v;
+    
+    // Create calendar event - USING PGPOOL
+    const { rows } = await pgPool.query(
+      `INSERT INTO calendar_events (user_id, title, event_datetime, client_id, related_job_id, related_quote_id, related_invoice_id, reminder_datetime, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [userId, title, event_datetime, toUUID(client_id), toUUID(related_job_id), toUUID(related_quote_id), toUUID(related_invoice_id), reminder_datetime || null, notes || null]
+    );
 
-    if (error) {
-      console.error("Calendar event creation error:", error);
-      return res.status(500).json({ 
-        error: error.message,
-        details: error.details || null,
-        hint: error.hint || null,
-        code: error.code || null
-      });
+    if (!rows.length) {
+      console.error("Calendar event creation error: no rows returned");
+      return res.status(500).json({ error: "Failed to create calendar event" });
     }
-    console.log("Calendar event created successfully:", { id: data?.id, title: data?.title, event_datetime: data?.event_datetime });
-    res.status(201).json(data);
+    console.log("Calendar event created successfully:", { id: rows[0]?.id, title: rows[0]?.title, event_datetime: rows[0]?.event_datetime });
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error("Error creating calendar event:", err);
     res.status(500).json({ error: "Failed to create calendar event" });
   }
 });
 
-// Update calendar event
+// Update calendar event - USING PGPOOL
 app.patch("/api/calendar-events/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
     const updates = req.body;
+    const eventId = req.params.id;
     
-    const { data, error } = await supabaseAdmin
-      .from("calendar_events")
-      .update(updates)
-      .eq("id", req.params.id)
-      .eq("user_id", userId)
-      .select()
-      .single();
+    // UUID validation
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!isValidUUID.test(eventId)) {
+      return res.status(400).json({ error: "Invalid event ID" });
+    }
+    
+    // Build dynamic UPDATE query
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    const allowedFields = ['title', 'event_datetime', 'client_id', 'related_job_id', 'related_quote_id', 'related_invoice_id', 'reminder_datetime', 'notes'];
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        fields.push(`${field} = $${paramIndex}`);
+        values.push(updates[field] === "" ? null : updates[field]);
+        paramIndex++;
+      }
+    }
+    
+    if (fields.length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+    
+    values.push(eventId, userId);
+    const { rows } = await pgPool.query(
+      `UPDATE calendar_events SET ${fields.join(', ')} WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1} RETURNING *`,
+      values
+    );
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    if (!rows.length) return res.status(404).json({ error: "Event not found" });
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error updating calendar event:", err);
     res.status(500).json({ error: "Failed to update calendar event" });
   }
 });
 
-// Delete calendar event
+// Delete calendar event - USING PGPOOL
 app.delete("/api/calendar-events/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const { error } = await supabaseAdmin
-      .from("calendar_events")
-      .delete()
-      .eq("id", req.params.id)
-      .eq("user_id", userId);
+    const eventId = req.params.id;
+    
+    // UUID validation
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!isValidUUID.test(eventId)) {
+      return res.status(400).json({ error: "Invalid event ID" });
+    }
+    
+    const { rowCount } = await pgPool.query(
+      `DELETE FROM calendar_events WHERE id = $1 AND user_id = $2`,
+      [eventId, userId]
+    );
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (rowCount === 0) return res.status(404).json({ error: "Event not found" });
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting calendar event:", err);
@@ -4341,34 +4351,29 @@ async function executeVoiceToolCall(toolName, args, userId) {
     case "create_calendar_event": {
       const { title, event_datetime, client_name = "", notes = "" } = args;
       
-      // Optionally find client if provided
+      // Optionally find client if provided - USING PGPOOL
       let clientId = null;
       if (client_name) {
-        const { data: existingClient } = await supabaseAdmin
-          .from("clients")
-          .select("id")
-          .eq("user_id", userId)
-          .ilike("name", client_name)
-          .single();
+        const { rows: existingClients } = await pgPool.query(
+          `SELECT id FROM clients WHERE user_id = $1 AND LOWER(name) = LOWER($2) LIMIT 1`,
+          [userId, client_name]
+        );
         
-        if (existingClient) {
-          clientId = existingClient.id;
+        if (existingClients.length > 0) {
+          clientId = existingClients[0].id;
         }
       }
       
-      const { data: event, error: eventError } = await supabaseAdmin
-        .from("calendar_events")
-        .insert({
-          user_id: userId,
-          title,
-          event_datetime,
-          client_id: clientId,
-          notes
-        })
-        .select()
-        .single();
+      // Create calendar event - USING PGPOOL
+      const { rows: eventRows } = await pgPool.query(
+        `INSERT INTO calendar_events (user_id, title, event_datetime, client_id, notes)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [userId, title, event_datetime, clientId, notes]
+      );
       
-      if (eventError) throw new Error(`Failed to create calendar event: ${eventError.message}`);
+      if (!eventRows.length) throw new Error(`Failed to create calendar event`);
+      const event = eventRows[0];
       
       const eventDate = new Date(event_datetime);
       const dateStr = eventDate.toLocaleDateString("en-US", { 
@@ -5346,22 +5351,20 @@ app.post("/api/ai/create-calendar-event", requireAI, upload.single("audio"), asy
       return res.status(400).json({ error: "Could not extract event details from voice" });
     }
 
-    // STEP 3: Try to match client
+    // STEP 3: Try to match client - USING PGPOOL
     let clientId = null;
     if (eventData.client_name) {
-      const { data: clients } = await supabaseAdmin
-        .from("clients")
-        .select("id, name")
-        .eq("user_id", userId)
-        .ilike("name", `%${eventData.client_name}%`)
-        .limit(1);
+      const { rows: clients } = await pgPool.query(
+        `SELECT id, name FROM clients WHERE user_id = $1 AND LOWER(name) LIKE LOWER($2) LIMIT 1`,
+        [userId, `%${eventData.client_name}%`]
+      );
       
       if (clients && clients.length > 0) {
         clientId = clients[0].id;
       }
     }
 
-    // STEP 4: Create the calendar event
+    // STEP 4: Create the calendar event - USING PGPOOL
     const eventDatetime = new Date(`${eventData.date}T${eventData.time}:00`).toISOString();
     let reminderDatetime = null;
     
@@ -5371,23 +5374,18 @@ app.post("/api/ai/create-calendar-event", requireAI, upload.single("audio"), asy
       reminderDatetime = reminderDate.toISOString();
     }
 
-    const { data: createdEvent, error: eventError } = await supabaseAdmin
-      .from("calendar_events")
-      .insert({
-        user_id: userId,
-        title: eventData.title,
-        event_datetime: eventDatetime,
-        client_id: clientId,
-        reminder_datetime: reminderDatetime,
-        notes: eventData.notes || null
-      })
-      .select()
-      .single();
+    const { rows: eventRows } = await pgPool.query(
+      `INSERT INTO calendar_events (user_id, title, event_datetime, client_id, reminder_datetime, notes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [userId, eventData.title, eventDatetime, clientId, reminderDatetime, eventData.notes || null]
+    );
 
-    if (eventError) {
-      console.error("Error creating calendar event:", eventError);
+    if (!eventRows.length) {
+      console.error("Error creating calendar event: no rows returned");
       return res.status(500).json({ error: "Failed to create calendar event" });
     }
+    const createdEvent = eventRows[0];
 
     res.json({
       success: true,
@@ -5462,47 +5460,38 @@ app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (
       return res.status(400).json({ error: "Could not extract client name from voice" });
     }
 
-    // STEP 3: Create or find job folder
+    // STEP 3: Create or find job folder - USING PGPOOL
     const dateStr = quoteData.quote_date || new Date().toISOString().split('T')[0];
     const sanitize = (str) => (str || '').replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
     const folderName = `${sanitize(quoteData.client_name)}_${sanitize(quoteData.address || '')}_${dateStr}_${sanitize(quoteData.job_type || '')}`;
 
-    // Find or create job
+    // Find or create job - USING PGPOOL
     let job;
-    const { data: existingJobs } = await supabaseAdmin
-      .from("jobs")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("folder_name", folderName)
-      .limit(1);
+    const { rows: existingJobs } = await pgPool.query(
+      `SELECT * FROM jobs WHERE user_id = $1 AND folder_name = $2 LIMIT 1`,
+      [userId, folderName]
+    );
 
     if (existingJobs && existingJobs.length > 0) {
       job = existingJobs[0];
     } else {
-      const { data: newJob, error: jobError } = await supabaseAdmin
-        .from("jobs")
-        .insert({
-          user_id: userId,
-          client_name: quoteData.client_name,
-          address: quoteData.address || '',
-          job_type: quoteData.job_type || '',
-          folder_name: folderName,
-          notes: quoteData.description || '',
-          status: 'open'
-        })
-        .select()
-        .single();
+      const { rows: newJobRows } = await pgPool.query(
+        `INSERT INTO jobs (user_id, client_name, address, job_type, folder_name, notes, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [userId, quoteData.client_name, quoteData.address || '', quoteData.job_type || '', folderName, quoteData.description || '', 'open']
+      );
 
-      if (jobError) throw new Error(`Job creation failed: ${jobError.message}`);
-      job = newJob;
+      if (!newJobRows.length) throw new Error(`Job creation failed`);
+      job = newJobRows[0];
     }
 
-    // STEP 4: Create quote
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("tax_rate")
-      .eq("id", userId)
-      .single();
+    // STEP 4: Create quote - USING PGPOOL
+    const { rows: profileRows } = await pgPool.query(
+      `SELECT tax_rate FROM profiles WHERE id = $1`,
+      [userId]
+    );
+    const profile = profileRows[0];
 
     const items = quoteData.line_items || [];
     const subtotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
@@ -5510,39 +5499,28 @@ app.post("/api/ai/create-quote-full", requireAI, upload.single("audio"), async (
     const tax = (subtotal * taxRate) / 100;
     const total = subtotal + tax;
 
-    const { data: quote, error: quoteError } = await supabaseAdmin
-      .from("quotes")
-      .insert({
-        user_id: userId,
-        job_id: job.id,
-        client_name: quoteData.client_name,
-        quote_date: quoteData.quote_date || null,
-        quote_number: `QUO-${Date.now()}`,
-        notes: quoteData.description || '',
-        template: quoteData.template || 'basic_clean',
-        subtotal,
-        tax,
-        total,
-        status: 'draft'
-      })
-      .select()
-      .single();
+    const quoteNumber = `QUO-${Date.now()}`;
+    const { rows: quoteRows } = await pgPool.query(
+      `INSERT INTO quotes (user_id, job_id, client_name, quote_date, quote_number, notes, template, subtotal, tax_amount, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [userId, job.id, quoteData.client_name, quoteData.quote_date || null, quoteNumber, quoteData.description || '', quoteData.template || 'basic_clean', subtotal, tax, total, 'draft']
+    );
 
-    if (quoteError) throw new Error(`Quote creation failed: ${quoteError.message}`);
+    if (!quoteRows.length) throw new Error(`Quote creation failed`);
+    const quote = quoteRows[0];
 
-    // Add line items
+    // Add line items - USING PGPOOL
     if (items.length > 0) {
-      const itemRows = items.map(it => ({
-        quote_id: quote.id,
-        description: it.description,
-        quantity: it.quantity || 1,
-        unit_price: it.unit_price,
-        total: it.unit_price * (it.quantity || 1)
-      }));
-
-      await supabaseAdmin
-        .from("quote_items")
-        .insert(itemRows);
+      for (const it of items) {
+        const qty = it.quantity || 1;
+        const unitPrice = it.unit_price || 0;
+        const itemTotal = unitPrice * qty;
+        await pgPool.query(
+          `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          [quote.id, it.description, qty, unitPrice, itemTotal]
+        );
+      }
     }
 
     res.json({
