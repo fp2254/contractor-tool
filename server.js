@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 101;
-const BUILD_TIMESTAMP = "2024-12-24-v2";
+const BUILD_VERSION = 102;
+const BUILD_TIMESTAMP = "2024-12-24-v3";
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });

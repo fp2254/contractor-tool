@@ -1,7 +1,11 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 101;
+const BUILD_VERSION = 102;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
+
+// FORCE API_BASE_URL to be empty (same-origin) - prevents any cached config issues
+window.API_BASE_URL = "";
+console.log('[Skippy Stack] API_BASE_URL forced to:', JSON.stringify(window.API_BASE_URL));
 
 // Automatic version check and cache bust
 (async function checkVersionAndBust() {
@@ -621,7 +625,11 @@ async function apiFetch(path, options = {}) {
     headers["Authorization"] = `Bearer ${session.access_token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const apiBase = window.API_BASE_URL || API_BASE_URL || "";
+  const fullUrl = `${apiBase}${path}`;
+  console.log('[apiFetch] Calling:', fullUrl, 'Method:', options.method || 'GET');
+  
+  const response = await fetch(fullUrl, {
     credentials: "include",
     ...options,
     headers,
