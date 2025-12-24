@@ -106,12 +106,26 @@ All invoice operations use pgPool exclusively:
 - logActivityAction() - activity logging for voice commands
 - activity_logs update (mark undone)
 
-### Remaining supabaseAdmin.from() Calls (NOT invoice-related)
-These are for OTHER features and do NOT affect invoice operations:
-- profiles (admin flag update)
-- quote_items, quotes (voice command quote creation/undo)
-- jobs (voice command job creation)
-- clients, inventory_items, calendar_events (undo for non-invoice entities)
+### Hard Guard Enforcement (v116 - December 2024)
+A Proxy wrapper on supabaseAdmin throws on ANY write operation (insert/update/delete/upsert).
+All database writes are now routed through pgPool. Zero exceptions.
+
+**Converted Entities (ALL use pgPool):**
+- profiles (upsert, AI usage, invites, referral codes)
+- clients (create, update, delete)
+- invoices & invoice_items (all CRUD operations)
+- quotes & quote_items (voice commands, undo)
+- inventory_items (create, update, delete, smart stack)
+- jobs (voice command creation)
+- calendar_events (creation, undo)
+- voice_notes (transcript updates)
+- ai_usage_logs (usage tracking)
+- system_messages (mark read)
+- activity_logs (voice command logging)
+
+**Remaining supabaseAdmin.from() Calls (READ-ONLY):**
+- SELECT operations for fetching data (safe, no PostgREST writes)
+- Storage operations (file uploads to buckets)
 
 ### Before Adding Features
 1. Identify which fields are optional vs required
