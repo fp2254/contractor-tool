@@ -939,96 +939,110 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   }
 });
 
-// Update invoice
+// Update invoice - CONVERTED TO PGPOOL
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
+  console.error("🔥🔥🔥 HIT INVOICE UPDATE ROUTE — PROD v108 🔥🔥🔥");
+  res.setHeader('X-Hit-Express', 'true');
+  res.setHeader('X-Tradebase-Server', 'v108');
+  res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
+  
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
   const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
   
+  // SANITIZATION: Convert "" to null, ensure proper types
+  const toNull = (v) => (v === "" || v === undefined) ? null : v;
+  const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
+  const toDate = (v) => {
+    if (!v || v === "") return new Date().toISOString().split('T')[0];
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
+  };
+  
   // Validate client_id is a valid UUID or null (reject old integer IDs)
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
 
-  // Verify invoice belongs to user - try UUID first, then invoice_number
-  let existing = null;
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
-  
-  if (isUUID) {
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .select("id, user_id")
-      .eq("id", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    existing = data;
-  } else {
-    // Try looking up by invoice_number
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .select("id, user_id")
-      .eq("invoice_number", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    existing = data;
-  }
+  // Sanitize all fields
+  const sanitized = {
+    client_id: validClientId,
+    client_address: toNull(client_address),
+    issue_date: toDate(issue_date),
+    notes: toNull(notes),
+    template: template || 'basic_clean',
+    payment_url: toNull(payment_url),
+    subtotal: toNumber(subtotal),
+    tax_amount: toNumber(tax_amount),
+    total: toNumber(total)
+  };
 
-  if (!existing) {
-    return res.status(404).json({ error: "Invoice not found" });
-  }
-  
-  const invoiceId = existing.id; // Use the actual UUID
+  console.log("[INVOICE UPDATE] userId:", userId, "invoiceIdParam:", invoiceIdParam);
+  console.log("[INVOICE UPDATE] Sanitized payload:", JSON.stringify(sanitized));
 
-  // Update invoice
-  const { data: inv, error: errInv } = await supabaseAdmin
-    .from("invoices")
-    .update({
-      client_id: validClientId,
-      client_address: client_address || null,
-      issue_date,
-      notes,
-      template: template || "basic_clean",
-      payment_url: payment_url || null,
-      subtotal,
-      tax_amount,
-      total
-    })
-    .eq("id", invoiceId)
-    .eq("user_id", userId)
-    .select()
-    .single();
-
-  if (errInv) {
-    console.error("Invoice update error:", errInv);
-    return res.status(500).json({ error: errInv.message });
-  }
-
-  // Delete old items and insert new ones using direct SQL
-  // Use inv.id (the actual UUID) not invoiceId (which may be invoice number from frontend)
-  const actualInvoiceId = inv.id;
+  const dbClient = await pgPool.connect();
   try {
-    await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [actualInvoiceId]);
+    await dbClient.query('BEGIN');
+    
+    // Verify invoice belongs to user - try UUID first, then invoice_number
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    
+    const lookupQuery = isUUID
+      ? `SELECT id, user_id, invoice_number FROM invoices WHERE id = $1 AND user_id = $2`
+      : `SELECT id, user_id, invoice_number FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
+    
+    const { rows: existingRows } = await dbClient.query(lookupQuery, [invoiceIdParam, userId]);
+    
+    if (!existingRows.length) {
+      await dbClient.query('ROLLBACK');
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    
+    const existing = existingRows[0];
+    const invoiceId = existing.id;
+    const invoiceNumber = existing.invoice_number;
+
+    // Update invoice using pgPool
+    await dbClient.query(
+      `UPDATE invoices SET 
+        client_id = $1, client_address = $2, issue_date = $3, notes = $4, 
+        template = $5, payment_url = $6, subtotal = $7, tax_amount = $8, total = $9
+       WHERE id = $10 AND user_id = $11`,
+      [sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+       sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
+       invoiceId, userId]
+    );
+
+    // Delete old items and insert new ones
+    await dbClient.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
     
     if (Array.isArray(items) && items.length) {
       for (const i of items) {
-        const qty = i.quantity || 1;
-        const unitPrice = i.unit_price || 0;
-        const itemTotal = i.total || (qty * unitPrice);
+        const qty = toNumber(i.quantity) || 1;
+        const unitPrice = toNumber(i.unit_price);
+        const itemTotal = toNumber(i.total) || (qty * unitPrice);
         
-        await pgPool.query(
+        await dbClient.query(
           `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-          [actualInvoiceId, i.description || '', qty, unitPrice, itemTotal]
+          [invoiceId, toNull(i.description) || '', qty, unitPrice, itemTotal]
         );
       }
-      console.log(`Updated ${items.length} invoice items for invoice ${actualInvoiceId}`);
+      console.log(`Updated ${items.length} invoice items for invoice ${invoiceId}`);
     }
-  } catch (itemErr) {
-    console.error("Invoice items update error:", itemErr);
-    return res.status(500).json({ error: itemErr.message });
+    
+    await dbClient.query('COMMIT');
+    console.log(`Invoice ${invoiceId} updated successfully`);
+    res.json({ id: invoiceId, invoice_number: invoiceNumber });
+  } catch (err) {
+    await dbClient.query('ROLLBACK');
+    console.error("[INVOICE UPDATE ERROR] Full error:", err);
+    console.error("[INVOICE UPDATE ERROR] Error message:", err.message);
+    console.error("[INVOICE UPDATE ERROR] Error code:", err.code);
+    res.status(500).json({ error: err.message || "Failed to update invoice" });
+  } finally {
+    dbClient.release();
   }
-
-  res.json({ id: inv.id, invoice_number: inv.invoice_number });
 });
 
 app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
