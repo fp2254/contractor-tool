@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 103;
-const BUILD_TIMESTAMP = "2024-12-24-v4";
+const BUILD_VERSION = 104;
+const BUILD_TIMESTAMP = "2024-12-24-v5";
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });
@@ -833,9 +833,19 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
+  console.log('[INVOICE ROUTE HIT v103] Request received at:', new Date().toISOString());
+  console.log('[INVOICE ROUTE HIT v103] Headers:', JSON.stringify(req.headers, null, 2));
+  
+  res.setHeader('X-Tradebase-Server', 'v103');
+  res.setHeader('X-Tradebase-Handler', 'express-pgpool');
+  
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+  if (!userId) {
+    console.log('[INVOICE ROUTE HIT v103] No userId - returning 401');
+    return res.status(401).json({ error: "Not authenticated" });
+  }
 
+  console.log('[INVOICE ROUTE HIT v103] userId:', userId);
   const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
 
   // SANITIZATION: Convert "" to null, ensure proper types
