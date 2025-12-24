@@ -3355,55 +3355,77 @@ async function loadInvoices(showArchived = false) {
   if (tourMode) return;
   
   const list = document.getElementById("invoices-list");
-  list.innerHTML = "";
+  if (!list) {
+    console.error('[loadInvoices] invoices-list element not found');
+    return;
+  }
+  
+  // Show loading state immediately
+  list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading...</p></div>';
   
   let invoices = [];
   
-  if (!currentUser) {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-    }
-  }
-  
-  if (currentUser && !showArchived) {
-    // First check ALL cached invoices for stale data (not just current user's)
-    const allCachedInvoices = await tradebaseDB.getAllInvoicesRaw() || [];
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const hasStaleData = allCachedInvoices.some(inv => !uuidRegex.test(inv.id) || (inv.client_id && !uuidRegex.test(inv.client_id)));
-    
-    if (hasStaleData) {
-      console.log('Auto-purging stale invoice cache with non-UUID IDs...', allCachedInvoices.length, 'invoices found');
-      await tradebaseDB.clear('invoices'); // Clear entire store
-      invoices = []; // Reset to empty, let API be source of truth
-    } else {
-      const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
-      invoices = localInvoices || [];
-    }
-  }
-  
-  if (navigator.onLine) {
-    try {
-      const url = showArchived ? "/api/invoices?archived=true" : "/api/invoices";
-      const res = await apiFetch(url);
-      const apiInvoices = await res.json();
-      
-      if (apiInvoices && Array.isArray(apiInvoices)) {
-        if (!showArchived) {
-          // Clear local cache and replace with API data (source of truth)
-          await tradebaseDB.clearInvoices(currentUser.id);
-          for (const inv of apiInvoices) {
-            await tradebaseDB.saveInvoice(inv);
-          }
-          // Use only API invoices - they are the source of truth
-          invoices = apiInvoices;
-        } else {
-          invoices = apiInvoices;
-        }
+  try {
+    if (!currentUser) {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
       }
-    } catch (error) {
-      console.log('Using offline invoices:', error.message);
     }
+    
+    if (currentUser && !showArchived) {
+      // First check ALL cached invoices for stale data (not just current user's)
+      try {
+        const allCachedInvoices = await tradebaseDB.getAllInvoicesRaw() || [];
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const hasStaleData = allCachedInvoices.some(inv => !uuidRegex.test(inv.id) || (inv.client_id && !uuidRegex.test(inv.client_id)));
+        
+        if (hasStaleData) {
+          console.log('Auto-purging stale invoice cache with non-UUID IDs...', allCachedInvoices.length, 'invoices found');
+          await tradebaseDB.clear('invoices'); // Clear entire store
+          invoices = []; // Reset to empty, let API be source of truth
+        } else {
+          const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
+          invoices = localInvoices || [];
+        }
+      } catch (cacheErr) {
+        console.error('[loadInvoices] Cache error:', cacheErr);
+        invoices = [];
+      }
+    }
+    
+    if (navigator.onLine) {
+      try {
+        const url = showArchived ? "/api/invoices?archived=true" : "/api/invoices";
+        const res = await apiFetch(url);
+        const apiInvoices = await res.json();
+        
+        if (apiInvoices && Array.isArray(apiInvoices)) {
+          if (!showArchived && currentUser) {
+            // Clear local cache and replace with API data (source of truth)
+            try {
+              await tradebaseDB.clearInvoices(currentUser.id);
+              for (const inv of apiInvoices) {
+                await tradebaseDB.saveInvoice(inv);
+              }
+            } catch (saveErr) {
+              console.error('[loadInvoices] Cache save error:', saveErr);
+            }
+            // Use only API invoices - they are the source of truth
+            invoices = apiInvoices;
+          } else {
+            invoices = apiInvoices;
+          }
+        } else if (apiInvoices?.error) {
+          console.error('[loadInvoices] API error:', apiInvoices.error);
+        }
+      } catch (error) {
+        console.log('[loadInvoices] Using offline invoices:', error.message);
+      }
+    }
+  } catch (outerErr) {
+    console.error('[loadInvoices] Unexpected error:', outerErr);
+    invoices = [];
   }
 
   invoices.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
