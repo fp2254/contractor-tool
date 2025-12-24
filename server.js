@@ -938,6 +938,11 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
+  // ============ TEMPORARY 418 TEST - REMOVE AFTER CONFIRMING ==============
+  // If you see this response, the request IS hitting Express
+  return res.status(418).json({ error: "HIT_EXPRESS_INVOICE_ROUTE", timestamp: Date.now(), build: "v117-418-test" });
+  // ============ END TEMPORARY TEST ==============
+  
   const BUILD_TAG = "v112-uuid-debug-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
