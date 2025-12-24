@@ -170,13 +170,9 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
                 console.error(`🚨 Operation: ${queryProp}`);
                 console.error(`🚨 Stack trace:\n${stack}`);
                 
-                // In production, throw to prevent the write
-                // For now, log and continue (to identify all violations)
-                // throw new Error(`[SUPABASE GUARD] supabaseAdmin.from("${tableName}").${queryProp}() is BLOCKED. Use pgPool instead. Stack: ${stack}`);
-                
-                // Return the original for now to not break existing functionality
-                // TODO: After all conversions, change this to throw
-                return originalMethod.apply(queryTarget, args);
+                // HARD GUARD: Throw to prevent all supabaseAdmin writes
+                // ALL writes must go through pgPool - NO EXCEPTIONS
+                throw new Error(`[SUPABASE GUARD] BLOCKED: supabaseAdmin.from("${tableName}").${queryProp}() is NOT ALLOWED. Use pgPool instead.\nStack: ${stack}`);
               };
             }
             
@@ -316,14 +312,15 @@ async function requireAI(req, res, next) {
   const monthsPassed = (now.getFullYear() - cycleStart.getFullYear()) * 12 + (now.getMonth() - cycleStart.getMonth());
   
   if (monthsPassed >= 1) {
-    // Reset the billing cycle
-    await supabaseAdmin
-      .from("profiles")
-      .update({
-        ai_actions_used: 0,
-        ai_billing_cycle_start: now.toISOString()
-      })
-      .eq("id", userId);
+    // Reset the billing cycle - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE profiles SET ai_actions_used = 0, ai_billing_cycle_start = $1 WHERE id = $2`,
+        [now.toISOString(), userId]
+      );
+    } catch (resetErr) {
+      console.error("[requireAI] Failed to reset billing cycle:", resetErr);
+    }
     
     req.aiActionsUsed = 0;
     req.aiActionsLimit = profile.ai_actions_limit || 300;
@@ -369,22 +366,23 @@ async function logAIUsage(userId, toolType) {
     const currentUsage = profile?.ai_actions_used || 0;
     const newUsage = currentUsage + 1;
     
-    const { error: updateError } = await supabaseAdmin
-      .from("profiles")
-      .update({ ai_actions_used: newUsage })
-      .eq("id", userId);
-    
-    if (updateError) {
-      console.error("Failed to update AI usage:", updateError);
-    } else {
+    // Update AI usage - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE profiles SET ai_actions_used = $1 WHERE id = $2`,
+        [newUsage, userId]
+      );
       console.log(`AI usage updated: ${currentUsage} -> ${newUsage}`);
+    } catch (updateError) {
+      console.error("Failed to update AI usage:", updateError);
     }
     
-    // Also try to log to ai_usage_logs table (optional, don't fail if it doesn't exist)
+    // Also try to log to ai_usage_logs table - USING PGPOOL
     try {
-      await supabaseAdmin
-        .from("ai_usage_logs")
-        .insert({ user_id: userId, tool_type: toolType });
+      await pgPool.query(
+        `INSERT INTO ai_usage_logs (user_id, tool_type) VALUES ($1, $2)`,
+        [userId, toolType]
+      );
     } catch (logErr) {
       // Table might not exist, that's okay
     }
@@ -437,7 +435,7 @@ async function requireSubscription(req, res, next) {
 // VERSION ENDPOINT - For cache busting
 const BUILD_VERSION = 112;
 const BUILD_TIMESTAMP = "2024-12-24-v112-uuid-debug";
-const BUILD_ID = "v114-pgpool-complete-" + Date.now();
+const BUILD_ID = "v116-pgpool-complete-final-" + Date.now();
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('X-Build-ID', BUILD_ID);
@@ -509,19 +507,35 @@ app.post("/api/profile", async (req, res) => {
     payload.ai_billing_cycle_start = existing.ai_billing_cycle_start;
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .upsert({
-      ...payload,
-      preferred_language: payload.preferred_language || existing?.preferred_language || 'en',
-      preferred_template: payload.preferred_template || existing?.preferred_template || 'basic_clean',
-      stripe_connect_enabled: true
-    })
-    .select()
-    .single();
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  // UPSERT profile - USING PGPOOL
+  const finalPayload = {
+    ...payload,
+    preferred_language: payload.preferred_language || existing?.preferred_language || 'en',
+    preferred_template: payload.preferred_template || existing?.preferred_template || 'basic_clean',
+    stripe_connect_enabled: true
+  };
+  
+  try {
+    // Build column list and values for upsert
+    const columns = Object.keys(finalPayload);
+    const values = Object.values(finalPayload);
+    const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+    const updateSet = columns.filter(c => c !== 'id').map((col, i) => `${col} = EXCLUDED.${col}`).join(', ');
+    
+    const query = `
+      INSERT INTO profiles (${columns.join(', ')})
+      VALUES (${placeholders})
+      ON CONFLICT (id) DO UPDATE SET ${updateSet}
+      RETURNING *
+    `;
+    
+    const { rows } = await pgPool.query(query, values);
+    if (!rows.length) return res.status(500).json({ error: "Failed to save profile" });
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Profile upsert error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // UPLOAD LOGO
@@ -835,16 +849,32 @@ app.put("/api/clients/:id", requireSubscription, async (req, res) => {
   delete updates.id;
   delete updates.user_id;
 
-  const { data, error } = await supabaseAdmin
-    .from("clients")
-    .update(updates)
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select()
-    .single();
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  // Build dynamic UPDATE - USING PGPOOL
+  try {
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    for (const [key, value] of Object.entries(updates)) {
+      setClauses.push(`${key} = $${paramIndex}`);
+      values.push(value);
+      paramIndex++;
+    }
+    
+    if (!setClauses.length) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+    
+    values.push(id, userId);
+    const query = `UPDATE clients SET ${setClauses.join(', ')} WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1} RETURNING *`;
+    
+    const { rows } = await pgPool.query(query, values);
+    if (!rows.length) return res.status(404).json({ error: "Client not found" });
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Client update error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.delete("/api/clients/:id", requireSubscription, async (req, res) => {
@@ -853,14 +883,14 @@ app.delete("/api/clients/:id", requireSubscription, async (req, res) => {
 
   const { id } = req.params;
 
-  const { error } = await supabaseAdmin
-    .from("clients")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+  // Delete client - USING PGPOOL
+  try {
+    await pgPool.query(`DELETE FROM clients WHERE id = $1 AND user_id = $2`, [id, userId]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Client delete error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // INVOICES
@@ -1707,54 +1737,51 @@ app.post("/api/inventory", requireSubscription, async (req, res) => {
         );
         
         if (matchingItem) {
-          // Add to existing item's quantity
+          // Add to existing item's quantity - USING PGPOOL
           const existingQty = parseFloat(matchingItem.quantity) || 0;
           const updatedQty = existingQty + newQuantity;
           
-          const { data: updatedItem, error: updateError } = await supabaseAdmin
-            .from("inventory_items")
-            .update({ quantity: updatedQty })
-            .eq("id", matchingItem.id)
-            .eq("user_id", userId)
-            .select()
-            .single();
-          
-          if (updateError) {
+          try {
+            const { rows } = await pgPool.query(
+              `UPDATE inventory_items SET quantity = $1 WHERE id = $2 AND user_id = $3 RETURNING *`,
+              [updatedQty, matchingItem.id, userId]
+            );
+            
+            if (!rows.length) {
+              return res.status(500).json({ error: "Failed to update inventory" });
+            }
+            
+            // Return with stacked flag so frontend knows it was merged
+            return res.json({
+              ...rows[0],
+              stacked: true,
+              previous_quantity: existingQty,
+              added_quantity: newQuantity
+            });
+          } catch (updateError) {
             return res.status(500).json({ error: updateError.message });
           }
-          
-          // Return with stacked flag so frontend knows it was merged
-          return res.json({
-            ...updatedItem,
-            stacked: true,
-            previous_quantity: existingQty,
-            added_quantity: newQuantity
-          });
         }
       }
     }
     
-    // No existing item found or smart_stack disabled - create new
-    const { data, error } = await supabaseAdmin
-      .from("inventory_items")
-      .insert({
-        user_id: userId,
-        name,
-        description: description || null,
-        quantity: newQuantity,
-        unit_price: unit_price || 0,
-        category: category || null,
-        unit_type: unit_type || 'each',
-        low_stock_threshold: low_stock_threshold || 0,
-      })
-      .select()
-      .single();
+    // No existing item found or smart_stack disabled - create new - USING PGPOOL
+    try {
+      const { rows } = await pgPool.query(
+        `INSERT INTO inventory_items (user_id, name, description, quantity, unit_price, category, unit_type, low_stock_threshold)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [userId, name, description || null, newQuantity, unit_price || 0, category || null, unit_type || 'each', low_stock_threshold || 0]
+      );
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+      if (!rows.length) {
+        return res.status(500).json({ error: "Failed to create inventory item" });
+      }
+      const data = rows[0];
+      res.json({ ...data, stacked: false });
+    } catch (error) {
+      console.error("Error creating inventory item:", error);
+      res.status(500).json({ error: "Failed to create inventory item" });
     }
-
-    res.json({ ...data, stacked: false });
   } catch (error) {
     console.error("Error creating inventory item:", error);
     res.status(500).json({ error: "Failed to create inventory item" });
@@ -1783,23 +1810,27 @@ app.patch("/api/inventory/:id", requireSubscription, async (req, res) => {
     if (unit_type !== undefined) updateData.unit_type = unit_type;
     if (low_stock_threshold !== undefined) updateData.low_stock_threshold = low_stock_threshold;
 
-    const { data, error } = await supabaseAdmin
-      .from("inventory_items")
-      .update(updateData)
-      .eq("id", itemId)
-      .eq("user_id", userId)
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    // Build dynamic update query - USING PGPOOL
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    for (const [key, value] of Object.entries(updateData)) {
+      setClauses.push(`${key} = $${paramIndex}`);
+      values.push(value);
+      paramIndex++;
     }
+    
+    values.push(itemId, userId);
+    const query = `UPDATE inventory_items SET ${setClauses.join(', ')} WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1} RETURNING *`;
+    
+    const { rows } = await pgPool.query(query, values);
 
-    if (!data) {
+    if (!rows.length) {
       return res.status(404).json({ error: "Inventory item not found" });
     }
 
-    res.json(data);
+    res.json(rows[0]);
   } catch (error) {
     console.error("Error updating inventory item:", error);
     res.status(500).json({ error: "Failed to update inventory item" });
@@ -1814,15 +1845,11 @@ app.delete("/api/inventory/:id", requireSubscription, async (req, res) => {
   const itemId = req.params.id;
 
   try {
-    const { error } = await supabaseAdmin
-      .from("inventory_items")
-      .delete()
-      .eq("id", itemId)
-      .eq("user_id", userId);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    // Delete inventory item - USING PGPOOL
+    await pgPool.query(
+      `DELETE FROM inventory_items WHERE id = $1 AND user_id = $2`,
+      [itemId, userId]
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -2838,15 +2865,15 @@ app.post("/api/invites/send", requireAuth, async (req, res) => {
       bonusDays += 60;
     }
 
-    const { error: updateErr } = await supabaseAdmin
-      .from("profiles")
-      .update({ 
-        invites_sent: invitesSent,
-        referral_bonus_days: bonusDays
-      })
-      .eq("id", userId);
-
-    if (updateErr) return res.status(500).json({ error: updateErr.message });
+    // Update invite tracking - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE profiles SET invites_sent = $1, referral_bonus_days = $2 WHERE id = $3`,
+        [invitesSent, bonusDays, userId]
+      );
+    } catch (updateErr) {
+      return res.status(500).json({ error: updateErr.message });
+    }
 
     res.json({ 
       success: true, 
@@ -2907,27 +2934,31 @@ app.get("/api/referrals/summary", async (req, res) => {
   }
 
   if (!profile) {
-    // create bare profile
+    // create bare profile - USING PGPOOL
     const refCode = makeReferralCode(userId);
-    const { data: newProf, error: errNew } = await supabaseAdmin
-      .from("profiles")
-      .upsert({ id: userId, referral_code: refCode })
-      .select("id, referral_code")
-      .single();
-
-    if (errNew) return res.status(500).json({ error: errNew.message });
-    profile = newProf;
+    try {
+      const { rows } = await pgPool.query(
+        `INSERT INTO profiles (id, referral_code) VALUES ($1, $2) 
+         ON CONFLICT (id) DO UPDATE SET referral_code = EXCLUDED.referral_code
+         RETURNING id, referral_code`,
+        [userId, refCode]
+      );
+      profile = rows[0];
+    } catch (errNew) {
+      return res.status(500).json({ error: errNew.message });
+    }
   } else if (!profile.referral_code) {
     const refCode = makeReferralCode(userId);
-    const { data: upd, error: errUpd } = await supabaseAdmin
-      .from("profiles")
-      .update({ referral_code: refCode })
-      .eq("id", userId)
-      .select("id, referral_code")
-      .single();
-
-    if (errUpd) return res.status(500).json({ error: errUpd.message });
-    profile = upd;
+    // Update referral code - USING PGPOOL
+    try {
+      const { rows } = await pgPool.query(
+        `UPDATE profiles SET referral_code = $1 WHERE id = $2 RETURNING id, referral_code`,
+        [refCode, userId]
+      );
+      profile = rows[0];
+    } catch (errUpd) {
+      return res.status(500).json({ error: errUpd.message });
+    }
   }
 
   const { data: earnings, error: errEarn } = await supabaseAdmin
@@ -3619,9 +3650,13 @@ app.get("/api/admin/check", requireAuth, async (req, res) => {
       const userEmail = (authUser?.user?.email || "").toLowerCase();
       isEnvAdmin = adminEmails.includes(userEmail);
       
-      // Auto-set is_admin in DB if in env list
+      // Auto-set is_admin in DB if in env list - USING PGPOOL
       if (isEnvAdmin && !profile?.is_admin) {
-        await supabaseAdmin.from("profiles").update({ is_admin: true }).eq("id", userId);
+        try {
+          await pgPool.query(`UPDATE profiles SET is_admin = true WHERE id = $1`, [userId]);
+        } catch (adminErr) {
+          console.error("[ADMIN CHECK] Failed to update admin status:", adminErr);
+        }
       }
     }
 
@@ -3660,13 +3695,26 @@ app.post("/api/admin/send-message", requireAdmin, async (req, res) => {
   const { title, content, message_type, target_users } = req.body;
 
   try {
-    const messages = target_users && target_users.length
-      ? target_users.map(uid => ({ target_user_id: uid, title, content, type: message_type, is_global: false }))
-      : [{ target_user_id: null, title, content, type: message_type, is_global: true }];
-
-    const { error } = await supabaseAdmin
-      .from("system_messages")
-      .insert(messages);
+    // Insert system messages - USING PGPOOL
+    try {
+      if (target_users && target_users.length) {
+        for (const uid of target_users) {
+          await pgPool.query(
+            `INSERT INTO system_messages (target_user_id, title, content, type, is_global) VALUES ($1, $2, $3, $4, false)`,
+            [uid, title, content, message_type]
+          );
+        }
+      } else {
+        await pgPool.query(
+          `INSERT INTO system_messages (target_user_id, title, content, type, is_global) VALUES (NULL, $1, $2, $3, true)`,
+          [title, content, message_type]
+        );
+      }
+    } catch (insertErr) {
+      console.error("[ADMIN SEND-MESSAGE] Insert error:", insertErr);
+      return res.status(500).json({ error: insertErr.message });
+    }
+    const error = null;
 
     if (error) {
       console.error("Error inserting system message:", error);
@@ -3687,18 +3735,11 @@ app.post("/api/admin/enable-ai", requireAdmin, async (req, res) => {
   const { target_user_id, enabled } = req.body;
 
   try {
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({ 
-        ai_enabled: enabled !== false, 
-        ai_plan: enabled !== false ? 'admin_granted' : null 
-      })
-      .eq("id", target_user_id);
-
-    if (error) {
-      console.error("Error updating AI status:", error);
-      return res.status(500).json({ error: error.message });
-    }
+    // Update AI status - USING PGPOOL
+    await pgPool.query(
+      `UPDATE profiles SET ai_enabled = $1, ai_plan = $2 WHERE id = $3`,
+      [enabled !== false, enabled !== false ? 'admin_granted' : null, target_user_id]
+    );
 
     res.json({ success: true, ai_enabled: enabled !== false });
   } catch (error) {
@@ -3723,20 +3764,15 @@ app.post("/api/admin/grant-lifetime", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Update their profile to lifetime
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({ 
-        subscription_status: "active",
-        subscription_plan: "lifetime_early",
-        trial_ends_at: null,
-        subscription_ends_at: null
-      })
-      .eq("id", user.id);
-
-    if (error) {
-      console.error("Error granting lifetime:", error);
-      return res.status(500).json({ error: error.message });
+    // Update their profile to lifetime - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE profiles SET subscription_status = 'active', subscription_plan = 'lifetime_early', trial_ends_at = NULL, subscription_ends_at = NULL WHERE id = $1`,
+        [user.id]
+      );
+    } catch (updateErr) {
+      console.error("Error granting lifetime:", updateErr);
+      return res.status(500).json({ error: updateErr.message });
     }
 
     res.json({ success: true, message: `Lifetime membership granted to ${email}` });
@@ -3770,17 +3806,18 @@ app.get("/api/ai/status", requireAuth, async (req, res) => {
     let actionsUsed = profile?.ai_actions_used || 0;
     let billingCycleStart = cycleStart;
     
-    // Reset if billing cycle has passed
+    // Reset if billing cycle has passed - USING PGPOOL
     if (monthsPassed >= 1 && profile?.ai_enabled) {
       actionsUsed = 0;
       billingCycleStart = now;
-      await supabaseAdmin
-        .from("profiles")
-        .update({
-          ai_actions_used: 0,
-          ai_billing_cycle_start: now.toISOString()
-        })
-        .eq("id", userId);
+      try {
+        await pgPool.query(
+          `UPDATE profiles SET ai_actions_used = 0, ai_billing_cycle_start = $1 WHERE id = $2`,
+          [now.toISOString(), userId]
+        );
+      } catch (resetErr) {
+        console.error("[AI STATUS] Failed to reset billing cycle:", resetErr);
+      }
     }
 
     const resetDate = new Date(billingCycleStart);
@@ -3944,25 +3981,18 @@ async function executeVoiceToolCall(toolName, args, userId) {
     case "create_client": {
       const { name, phone = "", email = "", address = "", notes = "" } = args;
       
-      const { data, error } = await supabaseAdmin
-        .from("clients")
-        .insert({
-          user_id: userId,
-          name,
-          phone,
-          email,
-          address,
-          notes
-        })
-        .select()
-        .single();
+      // Create client - USING PGPOOL
+      const { rows } = await pgPool.query(
+        `INSERT INTO clients (user_id, name, phone, email, address, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [userId, name, phone, email, address, notes]
+      );
       
-      if (error) throw new Error(`Failed to create client: ${error.message}`);
+      if (!rows.length) throw new Error("Failed to create client");
       
       return {
         type: "create_client",
         success: true,
-        data: data,
+        data: rows[0],
         summary: `Created client "${name}"${phone ? ` (${phone})` : ""}`
       };
     }
@@ -3970,7 +4000,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
     case "add_inventory_item": {
       const { name, quantity = 1, unit_price = 0, category = "Other" } = args;
       
-      // Check if item already exists to potentially stack
+      // Check if item already exists to potentially stack - READ ONLY
       const { data: existing } = await supabaseAdmin
         .from("inventory_items")
         .select("*")
@@ -3980,20 +4010,15 @@ async function executeVoiceToolCall(toolName, args, userId) {
       
       let data;
       if (existing) {
-        // Stack onto existing item
+        // Stack onto existing item - USING PGPOOL
         const newQuantity = (existing.quantity || 0) + quantity;
-        const { data: updated, error } = await supabaseAdmin
-          .from("inventory_items")
-          .update({ 
-            quantity: newQuantity,
-            unit_price: unit_price || existing.unit_price
-          })
-          .eq("id", existing.id)
-          .select()
-          .single();
+        const { rows } = await pgPool.query(
+          `UPDATE inventory_items SET quantity = $1, unit_price = $2 WHERE id = $3 RETURNING *`,
+          [newQuantity, unit_price || existing.unit_price, existing.id]
+        );
         
-        if (error) throw new Error(`Failed to update inventory: ${error.message}`);
-        data = updated;
+        if (!rows.length) throw new Error("Failed to update inventory");
+        data = rows[0];
         
         return {
           type: "add_inventory_item",
@@ -4002,21 +4027,14 @@ async function executeVoiceToolCall(toolName, args, userId) {
           summary: `Added ${quantity} "${name}" to inventory (now ${newQuantity} total)`
         };
       } else {
-        // Create new item
-        const { data: created, error } = await supabaseAdmin
-          .from("inventory_items")
-          .insert({
-            user_id: userId,
-            name,
-            quantity,
-            unit_price,
-            category
-          })
-          .select()
-          .single();
+        // Create new item - USING PGPOOL
+        const { rows } = await pgPool.query(
+          `INSERT INTO inventory_items (user_id, name, quantity, unit_price, category) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [userId, name, quantity, unit_price, category]
+        );
         
-        if (error) throw new Error(`Failed to add inventory: ${error.message}`);
-        data = created;
+        if (!rows.length) throw new Error("Failed to add inventory");
+        data = rows[0];
         
         return {
           type: "add_inventory_item",
@@ -4042,19 +4060,14 @@ async function executeVoiceToolCall(toolName, args, userId) {
       if (existingClient) {
         clientId = existingClient.id;
       } else {
-        // Create the client
-        const { data: newClient, error: clientError } = await supabaseAdmin
-          .from("clients")
-          .insert({
-            user_id: userId,
-            name: client_name,
-            address: address
-          })
-          .select()
-          .single();
+        // Create the client - USING PGPOOL
+        const { rows: newClientRows } = await pgPool.query(
+          `INSERT INTO clients (user_id, name, address) VALUES ($1, $2, $3) RETURNING *`,
+          [userId, client_name, address]
+        );
         
-        if (clientError) throw new Error(`Failed to create client: ${clientError.message}`);
-        clientId = newClient.id;
+        if (!newClientRows.length) throw new Error("Failed to create client");
+        clientId = newClientRows[0].id;
       }
       
       // Calculate totals
@@ -4064,50 +4077,33 @@ async function executeVoiceToolCall(toolName, args, userId) {
       const tax = 0;
       const total = subtotal + tax;
       
-      // Create the quote
+      // Create the quote - USING PGPOOL
       const quoteNumber = `QT-${Date.now()}`;
-      const { data: quote, error: quoteError } = await supabaseAdmin
-        .from("quotes")
-        .insert({
-          user_id: userId,
-          client_id: clientId,
-          client_name: client_name,
-          quote_number: quoteNumber,
-          issue_date: new Date().toISOString().split("T")[0],
-          notes,
-          subtotal,
-          tax_amount: tax,
-          total,
-          status: "draft",
-          template: "basic_clean"
-        })
-        .select()
-        .single();
+      const { rows: quoteRows } = await pgPool.query(
+        `INSERT INTO quotes (user_id, client_id, client_name, quote_number, issue_date, notes, subtotal, tax_amount, total, status, template)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [userId, clientId, client_name, quoteNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "basic_clean"]
+      );
       
-      if (quoteError) throw new Error(`Failed to create quote: ${quoteError.message}`);
+      if (!quoteRows.length) throw new Error("Failed to create quote");
+      const quote = quoteRows[0];
       
-      // Add line items
+      // Add line items - USING PGPOOL
       if (line_items.length > 0) {
-        const items = line_items.map(item => ({
-          quote_id: quote.id,
-          description: item.description,
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price || 0
-        }));
-        
-        await supabaseAdmin.from("quote_items").insert(items);
+        for (const item of line_items) {
+          await pgPool.query(
+            `INSERT INTO quote_items (quote_id, description, quantity, unit_price) VALUES ($1, $2, $3, $4)`,
+            [quote.id, item.description, item.quantity || 1, item.unit_price || 0]
+          );
+        }
       }
       
-      // Create job folder
+      // Create job folder - USING PGPOOL
       const folderName = `${client_name}_${address || "NoAddress"}_${new Date().toISOString().split("T")[0]}_${job_type || "Quote"}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-      await supabaseAdmin.from("jobs").insert({
-        user_id: userId,
-        client_name,
-        address,
-        job_type: job_type || "Quote",
-        folder_name: folderName,
-        status: "pending"
-      });
+      await pgPool.query(
+        `INSERT INTO jobs (user_id, client_name, address, job_type, folder_name, status) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [userId, client_name, address, job_type || "Quote", folderName, "pending"]
+      );
       
       return {
         type: "create_quote",
@@ -4674,18 +4670,19 @@ app.post("/api/activity-log/undo", requireAuth, async (req, res) => {
         const entityId = action.entity_id;
         if (!entityId) continue;
         
+        // ALL UNDO DELETES USE PGPOOL
         switch (action.action_type) {
           case "create_client":
-            await supabaseAdmin.from("clients").delete().eq("id", entityId).eq("user_id", userId);
+            await pgPool.query(`DELETE FROM clients WHERE id = $1 AND user_id = $2`, [entityId, userId]);
             undoResults.push({ type: action.action_type, success: true, summary: `Removed client` });
             break;
           case "add_inventory_item":
-            await supabaseAdmin.from("inventory_items").delete().eq("id", entityId).eq("user_id", userId);
+            await pgPool.query(`DELETE FROM inventory_items WHERE id = $1 AND user_id = $2`, [entityId, userId]);
             undoResults.push({ type: action.action_type, success: true, summary: `Removed inventory item` });
             break;
           case "create_quote":
-            await supabaseAdmin.from("quote_items").delete().eq("quote_id", entityId);
-            await supabaseAdmin.from("quotes").delete().eq("id", entityId).eq("user_id", userId);
+            await pgPool.query(`DELETE FROM quote_items WHERE quote_id = $1`, [entityId]);
+            await pgPool.query(`DELETE FROM quotes WHERE id = $1 AND user_id = $2`, [entityId, userId]);
             undoResults.push({ type: action.action_type, success: true, summary: `Removed quote` });
             break;
           case "create_invoice":
@@ -4694,7 +4691,7 @@ app.post("/api/activity-log/undo", requireAuth, async (req, res) => {
             undoResults.push({ type: action.action_type, success: true, summary: `Removed invoice` });
             break;
           case "create_calendar_event":
-            await supabaseAdmin.from("calendar_events").delete().eq("id", entityId).eq("user_id", userId);
+            await pgPool.query(`DELETE FROM calendar_events WHERE id = $1 AND user_id = $2`, [entityId, userId]);
             undoResults.push({ type: action.action_type, success: true, summary: `Removed calendar event` });
             break;
         }
@@ -4754,12 +4751,15 @@ app.post("/api/voice-transcribe", requireAI, async (req, res) => {
       model: "whisper-1"
     });
 
-    const { error: updateErr } = await supabaseAdmin
-      .from("voice_notes")
-      .update({ transcript: transcription.text })
-      .eq("id", voice_note_id);
-
-    if (updateErr) return res.status(500).json({ error: updateErr.message });
+    // Update voice note with transcript - USING PGPOOL
+    try {
+      await pgPool.query(
+        `UPDATE voice_notes SET transcript = $1 WHERE id = $2`,
+        [transcription.text, voice_note_id]
+      );
+    } catch (updateErr) {
+      return res.status(500).json({ error: updateErr.message });
+    }
 
     res.json({ transcript: transcription.text });
   } catch (error) {
