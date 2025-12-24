@@ -628,13 +628,82 @@ async function apiFetch(path, options = {}) {
 
   const apiBase = window.API_BASE_URL || API_BASE_URL || "";
   const fullUrl = `${apiBase}${path}`;
-  console.log('[apiFetch] Calling:', fullUrl, 'Method:', options.method || 'GET');
+  
+  // DIAGNOSTIC LOGGING v113 - Log every request with all _id fields
+  const method = options.method || 'GET';
+  console.log('🔍 [apiFetch v113] ====== REQUEST START ======');
+  console.log('🔍 [apiFetch v113] URL:', fullUrl);
+  console.log('🔍 [apiFetch v113] Method:', method);
+  
+  // Log payload and extract all _id fields
+  if (options.body && !(options.body instanceof FormData)) {
+    try {
+      const payload = JSON.parse(options.body);
+      console.log('🔍 [apiFetch v113] Full Payload:', JSON.stringify(payload, null, 2));
+      
+      // Extract and log ALL fields ending in _id
+      const idFields = {};
+      for (const key of Object.keys(payload)) {
+        if (key.endsWith('_id') || key === 'id') {
+          idFields[key] = {
+            value: payload[key],
+            type: typeof payload[key],
+            isNull: payload[key] === null,
+            isEmpty: payload[key] === "",
+            isUndefined: payload[key] === undefined
+          };
+        }
+      }
+      console.log('🔍 [apiFetch v113] ALL _id FIELDS:', JSON.stringify(idFields, null, 2));
+      
+      // CRITICAL: Check for empty strings in UUID fields
+      for (const [key, info] of Object.entries(idFields)) {
+        if (info.isEmpty) {
+          console.error(`🚨 [apiFetch v113] EMPTY STRING IN ${key}! This will cause PostgREST error!`);
+        }
+        if (info.type === 'string' && info.value && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(info.value)) {
+          console.error(`🚨 [apiFetch v113] INVALID UUID FORMAT IN ${key}: "${info.value}"`);
+        }
+      }
+    } catch (e) {
+      console.log('🔍 [apiFetch v113] Body (non-JSON):', options.body);
+    }
+  } else if (options.body instanceof FormData) {
+    console.log('🔍 [apiFetch v113] Body: [FormData]');
+  }
+  console.log('🔍 [apiFetch v113] ============================');
   
   const response = await fetch(fullUrl, {
     credentials: "include",
     ...options,
     headers,
   });
+
+  // DIAGNOSTIC LOGGING v113 - Log response headers
+  console.log('🔍 [apiFetch v113] ====== RESPONSE ======');
+  console.log('🔍 [apiFetch v113] Status:', response.status);
+  console.log('🔍 [apiFetch v113] X-Hit-Express:', response.headers.get('X-Hit-Express') || 'NOT PRESENT');
+  console.log('🔍 [apiFetch v113] X-Tradebase-Server:', response.headers.get('X-Tradebase-Server') || 'NOT PRESENT');
+  console.log('🔍 [apiFetch v113] X-Tradebase-Handler:', response.headers.get('X-Tradebase-Handler') || 'NOT PRESENT');
+  console.log('🔍 [apiFetch v113] X-Build-ID:', response.headers.get('X-Build-ID') || 'NOT PRESENT');
+  
+  // If error, log response body preview
+  if (!response.ok) {
+    try {
+      const errClone = response.clone();
+      const errBody = await errClone.text();
+      console.error('🚨 [apiFetch v113] ERROR RESPONSE BODY:', errBody.substring(0, 500));
+      
+      // Check if this is a PostgREST error
+      if (errBody.includes('did not match the expected pattern')) {
+        console.error('🚨🚨🚨 [apiFetch v113] POSTGREST UUID ERROR DETECTED! 🚨🚨🚨');
+        console.error('🚨 This request is hitting Supabase/PostgREST instead of Express!');
+        console.error('🚨 URL:', fullUrl);
+        console.error('🚨 X-Hit-Express:', response.headers.get('X-Hit-Express') || 'NOT PRESENT');
+      }
+    } catch (e) {}
+  }
+  console.log('🔍 [apiFetch v113] ===========================');
 
   // Handle subscription required error
   if (response.status === 402) {

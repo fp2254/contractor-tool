@@ -392,7 +392,7 @@ async function requireSubscription(req, res, next) {
 // VERSION ENDPOINT - For cache busting
 const BUILD_VERSION = 112;
 const BUILD_TIMESTAMP = "2024-12-24-v112-uuid-debug";
-const BUILD_ID = "v111-" + Math.random().toString(36).substring(2, 8);
+const BUILD_ID = "v113-diagnostic-" + Date.now();
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.setHeader('X-Build-ID', BUILD_ID);
