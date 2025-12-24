@@ -1559,20 +1559,16 @@ app.patch("/api/invoices/:id/payment-status", requireSubscription, async (req, r
   }
 });
 
-// Get payment statistics
+// Get payment statistics - CONVERTED TO PGPOOL
 app.get("/api/payments/stats", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.json({ outstanding: 0, paid_month: 0, pending: 0 });
 
   try {
-    const { data: invoices, error } = await supabaseAdmin
-      .from("invoices")
-      .select("total, payment_status, paid_at")
-      .eq("user_id", userId);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    const { rows: invoices } = await pgPool.query(
+      `SELECT total, payment_status, paid_at FROM invoices WHERE user_id = $1`,
+      [userId]
+    );
 
     const now = new Date();
     const thisMonth = now.getMonth();

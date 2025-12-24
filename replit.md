@@ -99,8 +99,16 @@ All invoice operations use pgPool exclusively:
 - POST /api/invoices/:id/unarchive
 - POST /api/invoices/:id/payment-link
 - PATCH /api/invoices/:id/payment-status
+- GET /api/payments/stats (dashboard totals)
 - Voice command undo (create_invoice case)
 - logActivityAction() - activity logging for voice commands
+
+### Remaining supabaseAdmin.from() Calls (NOT invoice-related)
+These are for OTHER features and do NOT affect invoice operations:
+- profiles (admin flag update)
+- quote_items, quotes (voice command quote creation/undo)
+- jobs (voice command job creation)
+- clients, inventory_items, calendar_events (undo for non-invoice entities)
 
 ### Before Adding Features
 1. Identify which fields are optional vs required
