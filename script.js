@@ -4363,20 +4363,26 @@ function calculateMonthlyStats(invoicesArray = []) {
 function renderDashboardStats(invoicesArray = []) {
   const stats = calculateMonthlyStats(invoicesArray);
   
-  const invoicedMonthEl = document.getElementById('stat-invoiced-month');
-  const paidMonthEl = document.getElementById('stat-paid-month');
-  const outstandingEl = document.getElementById('stat-outstanding');
+  // Use correct element IDs from HTML
+  const outstandingEl = document.getElementById('dashboard-outstanding');
+  const paidMonthEl = document.getElementById('dashboard-paid-month');
+  const pendingEl = document.getElementById('dashboard-pending');
   
-  if (invoicedMonthEl) {
-    invoicedMonthEl.textContent = `$${stats.invoicedMonth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (outstandingEl) {
+    outstandingEl.textContent = `$${stats.outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   
   if (paidMonthEl) {
     paidMonthEl.textContent = `$${stats.paidMonth.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   
-  if (outstandingEl) {
-    outstandingEl.textContent = `$${stats.outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Calculate pending (invoices with 'pending' status)
+  const pendingTotal = invoicesArray
+    .filter(inv => inv.payment_status === 'pending')
+    .reduce((sum, inv) => sum + (inv.total || 0), 0);
+  
+  if (pendingEl) {
+    pendingEl.textContent = `$${pendingTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 }
 
