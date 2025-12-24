@@ -2461,7 +2461,15 @@ async function handleInvoiceSubmit(e) {
     
     invoiceData.id = invoiceId;
     invoiceData.invoice_number = data.invoice_number;
-    await tradebaseDB.saveInvoice(invoiceData);
+    
+    // Save to local cache (non-blocking - don't fail invoice save if cache fails)
+    try {
+      if (invoiceId) {
+        await tradebaseDB.saveInvoice(invoiceData);
+      }
+    } catch (cacheErr) {
+      console.warn('Could not cache invoice locally:', cacheErr);
+    }
 
     if (pendingPhotos.length) {
       await uploadInvoicePhotos(invoiceId, pendingPhotos);

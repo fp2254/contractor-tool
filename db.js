@@ -82,6 +82,13 @@ class TradeBaseDB {
   async put(storeName, data) {
     await this.ensureDB();
     if (!this.db) return null;
+    
+    // Validate that the data has a valid id (required keyPath)
+    if (!data || !data.id) {
+      console.warn('Skipping IndexedDB put - missing id field');
+      return null;
+    }
+    
     const transaction = this.db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
     return new Promise((resolve, reject) => {
