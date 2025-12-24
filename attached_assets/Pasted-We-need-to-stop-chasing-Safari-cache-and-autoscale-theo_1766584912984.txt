@@ -1,0 +1,62 @@
+We need to stop chasing Safari cache and autoscale theories — the behavior points to a routing / origin issue, not a browser issue.
+
+Key correction:
+Safari cannot magically reroute a POST request to Supabase. A cached response also cannot fabricate a Supabase UUID error for a new POST body. That’s not how HTTP caching works.
+
+If the request is “somehow going to Supabase instead of Express,” then ONE of the following is true:
+
+1) The frontend is still calling Supabase directly at runtime
+   - Possibly via a compiled bundle
+   - Possibly via a shared util/import
+   - Possibly via an old build artifact still deployed
+   - Possibly via a dynamic import or fallback path not covered by script.js
+
+2) The frontend and backend are on different origins, and the frontend is pointing at Supabase as the primary write target in production
+   - /api/version resolving proves the backend exists
+   - It does NOT prove the Save Invoice button is calling it
+
+3) There is a production rewrite/proxy rule sending /api/invoices somewhere else (or not to Express at all)
+
+Safari cache and autoscaling are red herrings here.
+
+CONCLUSIVE NEXT STEPS (no speculation):
+
+STEP 1 — Network Proof
+Open DevTools → Network → click “Save Invoice” → failing request.
+We need:
+- Full Request URL
+- Method
+- Host
+If the URL is:
+https://*.supabase.co/rest/v1/invoices
+then the client is bypassing Express — full stop.
+
+STEP 2 — Kill Switch Test
+Temporarily replace the Save Invoice handler with:
+fetch("/api/version").then(r => r.json()).then(console.log)
+
+If clicking Save does NOT hit Express, routing/origin is wrong.
+
+STEP 3 — Canary Header
+Add this to Express /api/invoices:
+res.setHeader("x-hit-express", "true");
+
+If that header never appears in the failing response, Express is not in the path.
+
+IMPORTANT:
+The fact that “no direct Supabase calls exist in script.js” does NOT prove anything.
+They could exist in:
+- a built bundle
+- another module
+- an old deploy
+- a shared client
+- or a fallback save path
+
+Bottom line:
+This is not a UUID sanitization problem.
+This is not a Safari cache problem.
+This is not an autoscale problem.
+
+This is a production request path problem.
+
+Once we prove which endpoint the Save button is actually calling in production, the fix will be obvious and immediate.

@@ -2503,7 +2503,18 @@ async function handleInvoiceSubmit(e) {
     
     const data = await res.json();
     if (!res.ok) {
-      errorEl.textContent = data.error || "Failed to save invoice.";
+      // DIAGNOSTIC: Show full URL and response headers for debugging
+      const hitExpress = res.headers.get('X-Hit-Express') || 'NOT PRESENT';
+      const serverVersion = res.headers.get('X-Tradebase-Server') || 'NOT PRESENT';
+      const handler = res.headers.get('X-Tradebase-Handler') || 'NOT PRESENT';
+      const diagnosticInfo = `
+URL: ${res.url}
+X-Hit-Express: ${hitExpress}
+X-Tradebase-Server: ${serverVersion}
+X-Tradebase-Handler: ${handler}
+Error: ${data.error || JSON.stringify(data)}`;
+      console.error('[INVOICE SAVE DIAGNOSTIC]', diagnosticInfo);
+      errorEl.textContent = `Error saving invoice: ${data.error || "Failed to save invoice."}\n\n[DEBUG]\nURL: ${res.url}\nX-Hit-Express: ${hitExpress}`;
       setButtonLoading(submitBtn, false);
       return;
     }
