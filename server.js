@@ -4239,20 +4239,46 @@ function generateActionPreview(toolName, args) {
   }
 }
 
-// Log action to activity_logs table
+// Log action to activity_logs table - CONVERTED TO PGPOOL
 async function logActivityAction(userId, actionSetId, action) {
   try {
-    await supabaseAdmin.from("activity_logs").insert({
-      user_id: userId,
-      action_set_id: actionSetId,
-      action_type: action.type,
-      action_data: action.data || {},
-      entity_id: action.data?.id || null,
-      entity_type: action.type.replace("create_", "").replace("add_", ""),
-      summary: action.summary
-    });
+    // UUID validation - only allow valid UUIDs, convert everything else to null
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    const toUUID = (v, fieldName) => {
+      if (!v || v === "" || v === undefined || v === null) {
+        return null;
+      }
+      if (isValidUUID.test(v)) {
+        return v;
+      }
+      console.warn(`[logActivityAction] Invalid UUID for ${fieldName}: "${v}" -> null`);
+      return null;
+    };
+    
+    // Validate ALL UUID fields
+    const sanitizedUserId = toUUID(userId, 'user_id');
+    const sanitizedActionSetId = toUUID(actionSetId, 'action_set_id');
+    const sanitizedEntityId = toUUID(action.data?.id, 'entity_id');
+    
+    if (!sanitizedUserId || !sanitizedActionSetId) {
+      console.error("[logActivityAction] Missing required UUID - userId:", userId, "actionSetId:", actionSetId);
+      return;
+    }
+    
+    const entityType = (action.type || '').replace("create_", "").replace("add_", "") || null;
+    const summary = action.summary || null;
+    const actionData = action.data || {};
+    
+    await pgPool.query(
+      `INSERT INTO activity_logs (user_id, action_set_id, action_type, action_data, entity_id, entity_type, summary)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [sanitizedUserId, sanitizedActionSetId, action.type, JSON.stringify(actionData), sanitizedEntityId, entityType, summary]
+    );
+    
+    console.log("[logActivityAction] Logged via pgPool:", action.type, "entity_id:", sanitizedEntityId);
   } catch (err) {
-    console.error("Failed to log activity:", err);
+    console.error("[logActivityAction] Failed to log activity:", err);
   }
 }
 

@@ -1,0 +1,61 @@
+This needs to stop looping. Here is the reality:
+
+The error:
+"The string did not match the expected pattern"
+IS A POSTGREST ERROR.
+It does NOT come from PostgreSQL / pgPool.
+
+That means — without debate — that SOME invoice-related request is STILL hitting Supabase/PostgREST directly.
+
+Facts you cannot ignore:
+1) X-Hit-Express IS PRESENT on the main POST/PUT /api/invoices routes.
+   → Those routes are NOT the source of the error.
+2) The error persists.
+   → Therefore a SECONDARY write is firing during invoice save.
+3) PostgREST errors ONLY occur when Supabase is being used for DB writes.
+   → There is still at least ONE supabaseAdmin.from() call in the invoice save flow.
+
+This is NOT a frontend validation problem.
+This is NOT a UUID regex problem.
+This is NOT Safari cache.
+This is NOT a service worker issue.
+
+This IS an architectural violation.
+
+What is happening:
+- The UI allows optional inputs (customer, address, job, photos, undo, activity log, offline sync).
+- One of those paths is still:
+  supabaseAdmin.from(...).insert/update(...)
+- When ANY optional UUID field is empty or contains text, Supabase throws PostgREST:
+  "string did not match expected pattern"
+
+What must be done — no shortcuts:
+
+1) FIND AND REMOVE every remaining supabaseAdmin.from() call involved in:
+   - invoice attachments
+   - undo/redo
+   - activity logging
+   - background hooks
+   - offline sync
+   - post-save helpers
+
+2) ENFORCE ONE WRITE PATH ONLY:
+   Frontend → apiFetch → Express → pgPool
+   Supabase is AUTH + STORAGE ONLY.
+   Supabase must NEVER write invoice-related rows.
+
+3) BEFORE ANY DB WRITE:
+   - Convert "" / undefined → NULL
+   - Validate UUID format
+   - Log ALL *_id fields with field name + value
+   - Throw explicit errors naming the exact failing column
+
+4) If a feature cannot comply with this rule, it does NOT ship.
+
+This is not a bug.
+This is a consistency failure.
+
+Until there are ZERO Supabase writes anywhere near invoice save,
+this error will keep reappearing in different forms.
+
+Fix the architecture, not the symptom.

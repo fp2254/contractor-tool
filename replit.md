@@ -100,6 +100,7 @@ All invoice operations use pgPool exclusively:
 - POST /api/invoices/:id/payment-link
 - PATCH /api/invoices/:id/payment-status
 - Voice command undo (create_invoice case)
+- logActivityAction() - activity logging for voice commands
 
 ### Before Adding Features
 1. Identify which fields are optional vs required
