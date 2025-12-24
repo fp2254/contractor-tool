@@ -57,7 +57,7 @@
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 111;
+    const EXPECTED_VERSION = 112;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {

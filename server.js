@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 111;
-const BUILD_TIMESTAMP = "2024-12-24-v111-routing-fix";
+const BUILD_VERSION = 112;
+const BUILD_TIMESTAMP = "2024-12-24-v112-uuid-debug";
 const BUILD_ID = "v111-" + Math.random().toString(36).substring(2, 8);
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -848,13 +848,13 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v111-" + Date.now();
+  const BUILD_TAG = "v112-uuid-debug-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
-  console.error("🔥 Body:", JSON.stringify(req.body, null, 2));
+  console.error("🔥 Raw Body:", JSON.stringify(req.body, null, 2));
   
   // DIAGNOSTIC HEADERS - proves request hit Express
-  res.setHeader('X-Hit-Express', 'YES-v111');
+  res.setHeader('X-Hit-Express', 'YES-v112');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool');
   res.setHeader('X-Route-Match', 'POST-/api/invoices');
@@ -862,30 +862,54 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   
   const userId = req.userId;
   if (!userId) {
-    console.log('[INVOICE ROUTE HIT v103] No userId - returning 401');
+    console.log('[INVOICE v112] No userId - returning 401');
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  console.log('[INVOICE ROUTE HIT v103] userId:', userId);
-  const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
+  console.log('[INVOICE v112] userId:', userId);
+  
+  // Extract ALL fields from request body, including any _id fields
+  const { 
+    client_id, job_id, address_id, customer_id, org_id,  // ALL potential UUID fields
+    client_name, client_address, issue_date, notes, template, payment_url, 
+    subtotal, tax_amount, total, items 
+  } = req.body;
+  
+  // LOG ALL _id FIELDS FOR DEBUGGING
+  console.error("🔍 [UUID AUDIT] client_id:", JSON.stringify(client_id), "type:", typeof client_id);
+  console.error("🔍 [UUID AUDIT] job_id:", JSON.stringify(job_id), "type:", typeof job_id);
+  console.error("🔍 [UUID AUDIT] address_id:", JSON.stringify(address_id), "type:", typeof address_id);
+  console.error("🔍 [UUID AUDIT] customer_id:", JSON.stringify(customer_id), "type:", typeof customer_id);
+  console.error("🔍 [UUID AUDIT] org_id:", JSON.stringify(org_id), "type:", typeof org_id);
 
   // SANITIZATION: Convert "" to null, ensure proper types
-  const toNull = (v) => (v === "" || v === undefined) ? null : v;
+  const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
   const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
   const toDate = (v) => {
     if (!v || v === "") return new Date().toISOString().split('T')[0];
-    // Handle various date formats
     const d = new Date(v);
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
-
-  // Validate client_id is a valid UUID or null (reject old integer IDs)
+  
+  // UUID VALIDATION: Only allow valid UUIDs, convert everything else to null
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
+  const toUUID = (v, fieldName) => {
+    if (!v || v === "" || v === undefined || v === null) {
+      console.log(`[UUID SANITIZE] ${fieldName}: empty/null -> null`);
+      return null;
+    }
+    if (isValidUUID.test(v)) {
+      console.log(`[UUID SANITIZE] ${fieldName}: valid UUID`);
+      return v;
+    }
+    console.warn(`[UUID SANITIZE] ${fieldName}: INVALID UUID "${v}" -> null`);
+    return null;
+  };
 
-  // Sanitize all fields
+  // Sanitize ALL fields including ALL potential UUID fields
   const sanitized = {
-    client_id: validClientId,
+    client_id: toUUID(client_id, 'client_id'),
+    job_id: toUUID(job_id, 'job_id'),
     client_address: toNull(client_address),
     issue_date: toDate(issue_date),
     notes: toNull(notes),
@@ -896,8 +920,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     total: toNumber(total)
   };
 
-  console.log("[INVOICE CREATE] userId:", userId, "raw client_id:", client_id, "sanitized:", JSON.stringify(sanitized));
-  console.log("[INVOICE CREATE] Full request body:", JSON.stringify(req.body, null, 2));
+  console.log("[INVOICE CREATE v112] Sanitized values:", JSON.stringify(sanitized, null, 2));
 
   const dbClient = await pgPool.connect();
   try {
@@ -959,9 +982,10 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
 // Update invoice - CONVERTED TO PGPOOL
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v111-" + Date.now();
+  const BUILD_TAG = "v112-uuid-debug-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE UPDATE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
-  res.setHeader('X-Hit-Express', 'YES-v111');
+  console.error("🔥 Raw Body:", JSON.stringify(req.body, null, 2));
+  res.setHeader('X-Hit-Express', 'YES-v112');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
   res.setHeader('X-Route-Match', 'PUT-/api/invoices/:id');
@@ -971,10 +995,24 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
-  const { client_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, items } = req.body;
+  
+  // Extract ALL fields from request body, including any _id fields
+  const { 
+    client_id, job_id, address_id, customer_id, org_id,  // ALL potential UUID fields
+    client_name, client_address, issue_date, notes, template, payment_url, 
+    subtotal, tax_amount, total, items 
+  } = req.body;
+  
+  // LOG ALL _id FIELDS FOR DEBUGGING
+  console.error("🔍 [UUID AUDIT UPDATE] invoiceIdParam:", JSON.stringify(invoiceIdParam), "type:", typeof invoiceIdParam);
+  console.error("🔍 [UUID AUDIT UPDATE] client_id:", JSON.stringify(client_id), "type:", typeof client_id);
+  console.error("🔍 [UUID AUDIT UPDATE] job_id:", JSON.stringify(job_id), "type:", typeof job_id);
+  console.error("🔍 [UUID AUDIT UPDATE] address_id:", JSON.stringify(address_id), "type:", typeof address_id);
+  console.error("🔍 [UUID AUDIT UPDATE] customer_id:", JSON.stringify(customer_id), "type:", typeof customer_id);
+  console.error("🔍 [UUID AUDIT UPDATE] org_id:", JSON.stringify(org_id), "type:", typeof org_id);
   
   // SANITIZATION: Convert "" to null, ensure proper types
-  const toNull = (v) => (v === "" || v === undefined) ? null : v;
+  const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
   const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
   const toDate = (v) => {
     if (!v || v === "") return new Date().toISOString().split('T')[0];
@@ -982,13 +1020,25 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  // Validate client_id is a valid UUID or null (reject old integer IDs)
+  // UUID VALIDATION: Only allow valid UUIDs, convert everything else to null
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
+  const toUUID = (v, fieldName) => {
+    if (!v || v === "" || v === undefined || v === null) {
+      console.log(`[UUID SANITIZE] ${fieldName}: empty/null -> null`);
+      return null;
+    }
+    if (isValidUUID.test(v)) {
+      console.log(`[UUID SANITIZE] ${fieldName}: valid UUID`);
+      return v;
+    }
+    console.warn(`[UUID SANITIZE] ${fieldName}: INVALID UUID "${v}" -> null`);
+    return null;
+  };
 
-  // Sanitize all fields
+  // Sanitize ALL fields including ALL potential UUID fields
   const sanitized = {
-    client_id: validClientId,
+    client_id: toUUID(client_id, 'client_id'),
+    job_id: toUUID(job_id, 'job_id'),
     client_address: toNull(client_address),
     issue_date: toDate(issue_date),
     notes: toNull(notes),
@@ -999,8 +1049,8 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     total: toNumber(total)
   };
 
-  console.log("[INVOICE UPDATE] userId:", userId, "invoiceIdParam:", invoiceIdParam);
-  console.log("[INVOICE UPDATE] Sanitized payload:", JSON.stringify(sanitized));
+  console.log("[INVOICE UPDATE v112] userId:", userId, "invoiceIdParam:", invoiceIdParam);
+  console.log("[INVOICE UPDATE v112] Sanitized payload:", JSON.stringify(sanitized, null, 2));
 
   const dbClient = await pgPool.connect();
   try {
