@@ -390,11 +390,26 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 110;
-const BUILD_TIMESTAMP = "2024-12-24-v110-force-express";
+const BUILD_VERSION = 111;
+const BUILD_TIMESTAMP = "2024-12-24-v111-routing-fix";
+const BUILD_ID = "v111-" + Math.random().toString(36).substring(2, 8);
 app.get("/api/version", (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('X-Build-ID', BUILD_ID);
+  res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, buildId: BUILD_ID, sanitization: true, timestamp: Date.now() });
+});
+
+// DIAGNOSTIC ENDPOINT - Proves Express is handling requests
+app.get("/api/express-check", (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('X-Express-Proof', 'CONFIRMED-v111');
+  res.json({ 
+    express: true, 
+    version: BUILD_VERSION, 
+    buildId: BUILD_ID,
+    timestamp: Date.now(),
+    message: "This response ONLY comes from Express. If you see this, routing is correct."
+  });
 });
 
 // PROFILE ROUTES
@@ -833,16 +848,17 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v110-force-express-" + Date.now();
+  const BUILD_TAG = "v111-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
   console.error("🔥 Request received at:", new Date().toISOString());
   console.error("🔥 Body:", JSON.stringify(req.body, null, 2));
   
   // DIAGNOSTIC HEADERS - proves request hit Express
-  res.setHeader('X-Hit-Express', 'YES-v110');
+  res.setHeader('X-Hit-Express', 'YES-v111');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool');
   res.setHeader('X-Route-Match', 'POST-/api/invoices');
+  res.setHeader('X-Build-ID', BUILD_ID);
   
   const userId = req.userId;
   if (!userId) {
@@ -943,12 +959,13 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
 // Update invoice - CONVERTED TO PGPOOL
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v110-force-express-" + Date.now();
+  const BUILD_TAG = "v111-" + Date.now();
   console.error(`🔥🔥🔥 HIT INVOICE UPDATE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
-  res.setHeader('X-Hit-Express', 'YES-v110');
+  res.setHeader('X-Hit-Express', 'YES-v111');
   res.setHeader('X-Tradebase-Server', BUILD_TAG);
   res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
   res.setHeader('X-Route-Match', 'PUT-/api/invoices/:id');
+  res.setHeader('X-Build-ID', BUILD_ID);
   
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
