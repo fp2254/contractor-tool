@@ -16,13 +16,28 @@
     } catch(e) {}
     window.API_BASE_URL = "";
     console.log('[FORCE API] Cleared cached API URLs, set to empty string');
+    
+    // CRITICAL: Clear IndexedDB sync queue to remove stale Supabase-targeted entries
+    try {
+      const req = indexedDB.open('TradeBaseDB', 1);
+      req.onsuccess = function(e) {
+        const db = e.target.result;
+        if (db.objectStoreNames.contains('sync_queue')) {
+          const tx = db.transaction(['sync_queue'], 'readwrite');
+          const store = tx.objectStore('sync_queue');
+          store.clear();
+          console.log('[FORCE API] Cleared IndexedDB sync_queue');
+        }
+        db.close();
+      };
+    } catch(e) { console.log('[FORCE API] IndexedDB clear failed:', e); }
   })();
   </script>
   
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 104;
+    const EXPECTED_VERSION = 105;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
@@ -556,7 +571,7 @@
           <p class="trust-line" id="trust-line">
             <i class="fa-solid fa-lock"></i> Secure payments. Funds go directly to your account.
           </p>
-          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v104</p>
+          <p style="font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px;" id="build-version">Build v105</p>
 
           <!-- HERO CTA -->
           <button class="tile tile-hero" id="btn-quick-pay">

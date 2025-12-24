@@ -390,8 +390,8 @@ async function requireSubscription(req, res, next) {
 }
 
 // VERSION ENDPOINT - For cache busting
-const BUILD_VERSION = 104;
-const BUILD_TIMESTAMP = "2024-12-24-v5";
+const BUILD_VERSION = 105;
+const BUILD_TIMESTAMP = "2024-12-24-v6";
 app.get("/api/version", (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({ version: BUILD_VERSION, build: BUILD_TIMESTAMP, sanitization: true });
@@ -833,10 +833,11 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  console.log('[INVOICE ROUTE HIT v103] Request received at:', new Date().toISOString());
-  console.log('[INVOICE ROUTE HIT v103] Headers:', JSON.stringify(req.headers, null, 2));
+  console.error("🔥🔥🔥 HIT INVOICE SAVE ROUTE — PROD v105 🔥🔥🔥");
+  console.error("🔥 Request received at:", new Date().toISOString());
+  console.error("🔥 Body:", JSON.stringify(req.body, null, 2));
   
-  res.setHeader('X-Tradebase-Server', 'v103');
+  res.setHeader('X-Tradebase-Server', 'v105');
   res.setHeader('X-Tradebase-Handler', 'express-pgpool');
   
   const userId = req.userId;
