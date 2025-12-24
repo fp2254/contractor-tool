@@ -1,143 +1,39 @@
-const CACHE_NAME = 'tradebase-v106';
-const RUNTIME_CACHE = 'tradebase-runtime-v106';
-
-const APP_SHELL = [
-  '/app',
-  '/index.html',
-  '/landing.html',
-  '/landing.css',
-  '/style.css',
-  '/script.js',
-  '/config.js',
-  '/db.js',
-  '/languages.js',
-  '/templates.js',
-  '/manifest.json',
-  '/icon.svg',
-  '/apple-touch-icon.png',
-  '/icon-180.png',
-  '/icon-192.png',
-  '/icon-512.png'
-];
+// SELF-DESTRUCT SERVICE WORKER v107
+// This SW immediately unregisters itself and clears ALL caches
+// No caching, no fetch handling - pure network-only mode
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
-    })
-  );
+  console.log('[SW v107] Installing self-destruct version');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('[SW v107] Activating - NUKING all caches and unregistering');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((cacheName) => {
-            return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE;
-          })
-          .map((cacheName) => caches.delete(cacheName))
-      );
-    })
+    (async () => {
+      // Delete ALL caches
+      const cacheNames = await caches.keys();
+      console.log('[SW v107] Found caches to delete:', cacheNames);
+      await Promise.all(cacheNames.map(name => {
+        console.log('[SW v107] Deleting cache:', name);
+        return caches.delete(name);
+      }));
+      
+      // Claim clients
+      await self.clients.claim();
+      console.log('[SW v107] Claimed clients');
+      
+      // Tell all clients to reload
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(client => {
+        client.postMessage({ type: 'SW_NUKED', reload: true });
+      });
+      
+      // Unregister this service worker
+      await self.registration.unregister();
+      console.log('[SW v107] Self-destructed');
+    })()
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  if (request.method !== 'GET') {
-    return;
-  }
-
-  // Always use network-first for critical files to ensure fresh content
-  if (url.pathname === '/' || url.pathname === '/app') {
-    event.respondWith(networkFirstStrategy(request));
-  } else if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstStrategy(request));
-  } else if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
-    // ALWAYS use network-first for JS/CSS to prevent stale code issues
-    event.respondWith(networkFirstStrategy(request));
-  } else if (APP_SHELL.includes(url.pathname)) {
-    event.respondWith(cacheFirstStrategy(request));
-  } else {
-    event.respondWith(networkFirstStrategy(request));
-  }
-});
-
-async function cacheFirstStrategy(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    if (request.destination === 'document') {
-      return caches.match('/index.html');
-    }
-    throw error;
-  }
-}
-
-async function networkFirstStrategy(request) {
-  try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok && request.method === 'GET') {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    if (request.url.includes('/api/')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'offline', 
-          message: 'You are offline. Changes will sync when you reconnect.' 
-        }),
-        { 
-          status: 503, 
-          headers: { 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    throw error;
-  }
-}
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(syncPendingData());
-  }
-});
-
-async function syncPendingData() {
-  const clients = await self.clients.matchAll();
-  clients.forEach(client => {
-    client.postMessage({
-      type: 'SYNC_REQUESTED'
-    });
-  });
-}
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+// NO FETCH HANDLER - all requests go straight to network
