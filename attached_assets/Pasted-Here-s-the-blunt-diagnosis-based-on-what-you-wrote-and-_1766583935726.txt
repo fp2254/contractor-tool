@@ -1,0 +1,56 @@
+Here’s the blunt diagnosis based on what you wrote (and what we’re seeing in prod). Please read this as a binary debug path, not “try more cache tricks.”
+
+KEY POINT:
+“The string did not match the expected pattern” is commonly an INVALID UUID error from Supabase/PostgREST — but you can’t assume which UUID/field (or even that it’s hitting our server) until we prove the request path.
+
+We are in ONE of two states:
+
+STATE A (MOST LIKELY):
+The failing “Save Invoice” request in production is NOT hitting our Express server at all.
+Meaning:
+- The server-side sanitization/UUID validation you added is NOT running
+- The error is being thrown BEFORE the API route
+- There is still a client-side direct Supabase insert happening somewhere
+This explains the “paradox”:
+- /api/version returns v104 (backend deployed) ✅
+- But the save error persists unchanged ❌
+=> because the failing request never touches the backend you updated.
+
+STATE B (LESS LIKELY):
+The request DOES hit Express, but a UUID field is still invalid — and it’s not necessarily invoice.id.
+Common culprits:
+- user_id / created_by
+- org_id / company_id
+- customer_id
+- invoice_id from localStorage
+- ANY FK/UUID field being sent as "" / "undefined" / "INV-PREVIEW"
+
+CONCLUSIVE TEST (NO GUESSING):
+Add this as the FIRST LINE of the production invoice save route handler:
+
+console.error("🔥 HIT INVOICE SAVE ROUTE — PROD 🔥");
+
+Deploy. Test “Save Invoice” in production.
+
+RESULTS:
+- If that log DOES NOT appear in prod logs:
+  => We are in STATE A. The request isn’t reaching Express. There is still a client-side supabase.from("invoices").insert(...) path (or routing/proxy isn’t pointing to Express for that endpoint). Fix is to remove/disable client-side writes and route ALL inserts through /api/invoices.
+- If that log DOES appear:
+  => We are in STATE B. Now we must identify WHICH field is failing.
+
+IF LOG APPEARS (STATE B):
+Right before the insert, log every id-like field:
+
+for (const [k, v] of Object.entries(payload)) {
+  if (k.toLowerCase().includes("id")) {
+    console.log("UUID FIELD:", k, v);
+  }
+}
+
+One of these will be an invalid UUID value ("" / "INV-PREVIEW" / "undefined" / stale localStorage).
+
+IMPORTANT:
+Supabase can also throw “string did not match expected pattern” for constraint/domain/enum patterns, so also verify prod table constraints + column types match dev. But first prove STATE A vs STATE B with the “🔥 HIT ROUTE” log.
+
+Bottom line:
+Stop iterating cache/version/localStorage clearing until we confirm whether the save request actually hits Express. The route-hit log proves it immediately.
