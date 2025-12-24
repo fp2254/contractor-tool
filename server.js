@@ -935,12 +935,12 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
     
-    // Insert invoice using sanitized values
+    // Insert invoice using sanitized values (including job_id)
     const invResult = await dbClient.query(
-      `INSERT INTO invoices (user_id, client_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO invoices (user_id, client_id, job_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING id, invoice_number`,
-      [userId, sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
+      [userId, sanitized.client_id, sanitized.job_id, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
@@ -1074,13 +1074,13 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoiceId = existing.id;
     const invoiceNumber = existing.invoice_number;
 
-    // Update invoice using pgPool
+    // Update invoice using pgPool (including job_id)
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, client_address = $2, issue_date = $3, notes = $4, 
-        template = $5, payment_url = $6, subtotal = $7, tax_amount = $8, total = $9
-       WHERE id = $10 AND user_id = $11`,
-      [sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+        client_id = $1, job_id = $2, client_address = $3, issue_date = $4, notes = $5, 
+        template = $6, payment_url = $7, subtotal = $8, tax_amount = $9, total = $10
+       WHERE id = $11 AND user_id = $12`,
+      [sanitized.client_id, sanitized.job_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
        sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
        invoiceId, userId]
     );
@@ -1195,7 +1195,7 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   }
 });
 
-// INVOICE PHOTOS
+// INVOICE PHOTOS - CONVERTED TO PGPOOL
 
 app.post(
   "/api/invoices/:id/photos",
@@ -1204,15 +1204,25 @@ app.post(
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-    const invoiceId = req.params.id;
+    const invoiceIdParam = req.params.id;
     const files = req.files || [];
     if (!files.length) return res.json({ ok: true });
+    
+    // Validate invoice_id is a valid UUID
+    const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!isValidUUID.test(invoiceIdParam)) {
+      console.error("[PHOTO UPLOAD] Invalid invoice_id UUID:", invoiceIdParam);
+      return res.status(400).json({ error: "Invalid invoice ID format" });
+    }
+    
+    const invoiceId = invoiceIdParam;
 
     for (const file of files) {
       const pathKey = `${userId}/${invoiceId}/${Date.now()}-${
         file.originalname
       }`;
 
+      // Storage upload still uses supabaseAdmin (that's for file storage, not PostgREST)
       const { error: uploadErr } = await supabaseAdmin.storage
         .from("invoice-photos")
         .upload(pathKey, file.buffer, {
@@ -1221,7 +1231,7 @@ app.post(
         });
 
       if (uploadErr) {
-        console.error(uploadErr);
+        console.error("[PHOTO UPLOAD] Storage error:", uploadErr);
         continue;
       }
 
@@ -1229,41 +1239,47 @@ app.post(
         data: { publicUrl },
       } = supabaseAdmin.storage.from("invoice-photos").getPublicUrl(pathKey);
 
-      await supabaseAdmin.from("invoice_attachments").insert({
-        invoice_id: invoiceId,
-        file_url: publicUrl,
-        file_name: file.originalname,
-      });
+      // USE PGPOOL instead of supabaseAdmin for database insert
+      try {
+        await pgPool.query(
+          `INSERT INTO invoice_attachments (invoice_id, file_url, file_name) VALUES ($1, $2, $3)`,
+          [invoiceId, publicUrl, file.originalname]
+        );
+        console.log("[PHOTO UPLOAD] Attachment saved via pgPool for invoice:", invoiceId);
+      } catch (dbErr) {
+        console.error("[PHOTO UPLOAD] Database error:", dbErr);
+      }
     }
 
     res.json({ ok: true });
   }
 );
 
-// Helper function to resolve invoice ID (UUID or invoice_number)
+// Helper function to resolve invoice ID (UUID or invoice_number) - CONVERTED TO PGPOOL
 async function resolveInvoiceId(invoiceIdParam, userId) {
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
   
-  if (isUUID) {
-    const { data } = await supabaseAdmin
-      .from("invoices")
-      .select("id")
-      .eq("id", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    return data?.id || null;
-  } else {
-    const { data } = await supabaseAdmin
-      .from("invoices")
-      .select("id")
-      .eq("invoice_number", invoiceIdParam)
-      .eq("user_id", userId)
-      .single();
-    return data?.id || null;
+  try {
+    if (isUUID) {
+      const { rows } = await pgPool.query(
+        `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`,
+        [invoiceIdParam, userId]
+      );
+      return rows.length ? rows[0].id : null;
+    } else {
+      const { rows } = await pgPool.query(
+        `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`,
+        [invoiceIdParam, userId]
+      );
+      return rows.length ? rows[0].id : null;
+    }
+  } catch (err) {
+    console.error("[resolveInvoiceId] Error:", err);
+    return null;
   }
 }
 
-// ARCHIVE INVOICE
+// ARCHIVE INVOICE - CONVERTED TO PGPOOL
 app.post("/api/invoices/:id/archive", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1272,23 +1288,20 @@ app.post("/api/invoices/:id/archive", requireSubscription, async (req, res) => {
     const invoiceId = await resolveInvoiceId(req.params.id, userId);
     if (!invoiceId) return res.status(404).json({ error: "Invoice not found" });
     
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .update({ archived: true })
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .select()
-      .single();
+    const { rows } = await pgPool.query(
+      `UPDATE invoices SET archived = true WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [invoiceId, userId]
+    );
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    if (!rows.length) return res.status(404).json({ error: "Invoice not found" });
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error archiving invoice:", err);
     res.status(500).json({ error: "Failed to archive invoice" });
   }
 });
 
-// UNARCHIVE INVOICE
+// UNARCHIVE INVOICE - CONVERTED TO PGPOOL
 app.post("/api/invoices/:id/unarchive", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1297,16 +1310,13 @@ app.post("/api/invoices/:id/unarchive", requireSubscription, async (req, res) =>
     const invoiceId = await resolveInvoiceId(req.params.id, userId);
     if (!invoiceId) return res.status(404).json({ error: "Invoice not found" });
     
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .update({ archived: false })
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .select()
-      .single();
+    const { rows } = await pgPool.query(
+      `UPDATE invoices SET archived = false WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [invoiceId, userId]
+    );
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    if (!rows.length) return res.status(404).json({ error: "Invoice not found" });
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error unarchiving invoice:", err);
     res.status(500).json({ error: "Failed to unarchive invoice" });
@@ -1383,36 +1393,39 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
 
 // PAYMENT ENDPOINTS
 
-// Get contractor's payment link for an invoice
+// Get contractor's payment link for an invoice - CONVERTED TO PGPOOL
 app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const invoiceId = req.params.id;
+  const invoiceIdParam = req.params.id;
+  
+  // Validate UUID format
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!isValidUUID.test(invoiceIdParam)) {
+    return res.status(400).json({ error: "Invalid invoice ID format" });
+  }
 
   try {
-    const { data: invoice, error: errInv } = await supabaseAdmin
-      .from("invoices")
-      .select("*")
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .single();
+    const { rows: invoices } = await pgPool.query(
+      `SELECT * FROM invoices WHERE id = $1 AND user_id = $2`,
+      [invoiceIdParam, userId]
+    );
 
-    if (errInv || !invoice) {
+    if (!invoices.length) {
       return res.status(404).json({ error: "Invoice not found" });
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("business_name, payment_link")
-      .eq("id", userId)
-      .single();
+    const { rows: profiles } = await pgPool.query(
+      `SELECT business_name, payment_link FROM profiles WHERE id = $1`,
+      [userId]
+    );
 
-    if (!profile) {
+    if (!profiles.length) {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    // Use contractor's custom payment link
+    const profile = profiles[0];
     const paymentUrl = profile?.payment_link;
     
     if (!paymentUrl) {
@@ -1421,16 +1434,11 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
       });
     }
 
-    // Save the payment link reference to the invoice
-    const { error: updateErr } = await supabaseAdmin
-      .from("invoices")
-      .update({ payment_url: paymentUrl })
-      .eq("id", invoiceId)
-      .eq("user_id", userId);
-
-    if (updateErr) {
-      console.error("Error saving payment link:", updateErr);
-    }
+    // Save the payment link reference to the invoice using pgPool
+    await pgPool.query(
+      `UPDATE invoices SET payment_url = $1 WHERE id = $2 AND user_id = $3`,
+      [paymentUrl, invoiceIdParam, userId]
+    );
 
     res.json({ payment_url: paymentUrl });
   } catch (error) {
@@ -1439,7 +1447,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
   }
 });
 
-// Quick Pay - Use contractor's selected payment link (Venmo, PayPal, etc.)
+// Quick Pay - Use contractor's selected payment link (Venmo, PayPal, etc.) - CONVERTED TO PGPOOL
 app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -1455,11 +1463,11 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   }
 
   try {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("business_name, business_email, business_phone")
-      .eq("id", userId)
-      .single();
+    const { rows: profiles } = await pgPool.query(
+      `SELECT business_name, business_email, business_phone FROM profiles WHERE id = $1`,
+      [userId]
+    );
+    const profile = profiles[0] || {};
 
     const businessName = profile?.business_name || 'Payment Request';
     const paymentDescription = description || 'Payment Request';
@@ -1512,41 +1520,37 @@ app.post("/api/quick-pay", requireSubscription, async (req, res) => {
   }
 });
 
-// Manually update invoice payment status
+// Manually update invoice payment status - CONVERTED TO PGPOOL
 app.patch("/api/invoices/:id/payment-status", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const invoiceId = req.params.id;
+  const invoiceIdParam = req.params.id;
   const { payment_status } = req.body;
+
+  // Validate UUID format
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!isValidUUID.test(invoiceIdParam)) {
+    return res.status(400).json({ error: "Invalid invoice ID format" });
+  }
 
   if (!["unpaid", "paid", "pending"].includes(payment_status)) {
     return res.status(400).json({ error: "Invalid payment status" });
   }
 
   try {
-    const updateData = { payment_status };
-    if (payment_status === "paid") {
-      updateData.paid_at = new Date().toISOString();
-    } else {
-      updateData.paid_at = null;
-    }
+    const paidAt = payment_status === "paid" ? new Date().toISOString() : null;
 
-    const { data, error } = await supabaseAdmin
-      .from("invoices")
-      .update(updateData)
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .select()
-      .single();
+    const { rows } = await pgPool.query(
+      `UPDATE invoices SET payment_status = $1, paid_at = $2 WHERE id = $3 AND user_id = $4 RETURNING *`,
+      [payment_status, paidAt, invoiceIdParam, userId]
+    );
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    if (!data) {
+    if (!rows.length) {
       return res.status(404).json({ error: "Invoice not found" });
     }
+
+    const data = rows[0];
 
     res.json({ success: true, invoice: data });
   } catch (error) {
@@ -4605,8 +4609,8 @@ app.post("/api/activity-log/undo", requireAuth, async (req, res) => {
             undoResults.push({ type: action.action_type, success: true, summary: `Removed quote` });
             break;
           case "create_invoice":
-            await supabaseAdmin.from("invoice_items").delete().eq("invoice_id", entityId);
-            await supabaseAdmin.from("invoices").delete().eq("id", entityId).eq("user_id", userId);
+            await pgPool.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [entityId]);
+            await pgPool.query(`DELETE FROM invoices WHERE id = $1 AND user_id = $2`, [entityId, userId]);
             undoResults.push({ type: action.action_type, success: true, summary: `Removed invoice` });
             break;
           case "create_calendar_event":
