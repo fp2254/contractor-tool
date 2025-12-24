@@ -2391,7 +2391,10 @@ async function handleInvoiceSubmit(e) {
   const total = subtotal + tax;
 
   // Use selectedClientData if available (from datalist selection or inline add)
-  const clientId = selectedClientData?.id || null;
+  // Validate client_id is a proper UUID format (reject old integer IDs from stale cache)
+  const rawClientId = selectedClientData?.id || null;
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clientId = (rawClientId && isValidUUID.test(rawClientId)) ? rawClientId : null;
   
   const invoiceData = {
     client_id: clientId,

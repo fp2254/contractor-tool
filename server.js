@@ -834,6 +834,8 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const validClientId = (client_id && isValidUUID.test(client_id)) ? client_id : null;
 
+  console.log("Invoice creation - received client_id:", client_id, "validClientId:", validClientId);
+
   const dbClient = await pgPool.connect();
   try {
     await dbClient.query('BEGIN');
