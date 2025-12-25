@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 117;
+const BUILD_VERSION = 118;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -68,9 +68,12 @@ document.addEventListener('click', (() => {
   };
 })());
 
-// FORCE API_BASE_URL to be empty (same-origin) - prevents any cached config issues
-window.API_BASE_URL = "";
-console.log('[Skippy Stack] API_BASE_URL forced to:', JSON.stringify(window.API_BASE_URL));
+// API_BASE_URL - use config.js value or default to same-origin for local dev
+// In production, config.js sets this to the correct API domain
+if (typeof window.API_BASE_URL === 'undefined') {
+  window.API_BASE_URL = "";
+}
+console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL));
 
 // Automatic version check and cache bust
 (async function checkVersionAndBust() {
