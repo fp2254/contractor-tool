@@ -918,12 +918,16 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
   
   try {
     // Use direct SQL to join with clients table and get client_name
+    // COALESCE prefers stored client_name, falls back to joined client name
     const archivedCondition = showArchived 
       ? "AND i.archived = true" 
       : "AND (i.archived IS NULL OR i.archived = false)";
     
     const { rows: invoices } = await pgPool.query(`
-      SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone
+      SELECT i.*, 
+        COALESCE(i.client_name, c.name) as client_name,
+        c.email as client_email, 
+        c.phone as client_phone
       FROM invoices i
       LEFT JOIN clients c ON i.client_id = c.id
       WHERE i.user_id = $1 ${archivedCondition}
