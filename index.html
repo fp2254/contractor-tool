@@ -2463,6 +2463,19 @@
     </div>
   </div>
 
+  <!-- Debug Panel (TEMPORARY) -->
+  <div id="debug-panel" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.9); color: #0f0; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-width: 300px; z-index: 99999; display: none;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+      <strong style="color: #ff0;">DEBUG</strong>
+      <button onclick="document.getElementById('debug-panel').style.display='none'" style="background: none; border: none; color: #f00; cursor: pointer;">X</button>
+    </div>
+    <div id="debug-user">user_id: --</div>
+    <div id="debug-local-count">local invoices: --</div>
+    <div id="debug-last-save">last save: --</div>
+    <div id="debug-last-error" style="color: #f55;">last error: --</div>
+    <button onclick="refreshDebugPanel()" style="margin-top: 5px; padding: 3px 8px; font-size: 10px;">Refresh</button>
+  </div>
+
   <!-- SDKs -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

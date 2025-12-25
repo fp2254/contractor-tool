@@ -3,6 +3,71 @@ const BUILD_VERSION = 117;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
+// DEBUG PANEL STATE (TEMPORARY)
+window.debugState = {
+  lastSaveResult: null,
+  lastError: null,
+  lastSyncError: null
+};
+
+function showDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+  if (panel) {
+    panel.style.display = 'block';
+    refreshDebugPanel();
+  }
+}
+
+async function refreshDebugPanel() {
+  try {
+    const userEl = document.getElementById('debug-user');
+    const countEl = document.getElementById('debug-local-count');
+    const saveEl = document.getElementById('debug-last-save');
+    const errorEl = document.getElementById('debug-last-error');
+    
+    // Get current user
+    const userId = currentUser?.id || 'not logged in';
+    if (userEl) userEl.textContent = `user_id: ${userId.substring(0, 8)}...`;
+    
+    // Get local invoice count
+    if (currentUser) {
+      const invoices = await tradebaseDB.getInvoices(currentUser.id);
+      const unsynced = invoices?.filter(i => i.sync_status === 'unsynced') || [];
+      if (countEl) countEl.textContent = `local: ${invoices?.length || 0} (${unsynced.length} unsynced)`;
+    } else {
+      if (countEl) countEl.textContent = 'local: N/A (not logged in)';
+    }
+    
+    // Show last save result
+    if (saveEl) saveEl.textContent = `save: ${window.debugState.lastSaveResult || '--'}`;
+    
+    // Show last error
+    const lastErr = window.debugState.lastError || window.debugState.lastSyncError;
+    if (errorEl) errorEl.textContent = `error: ${lastErr || 'none'}`;
+  } catch (e) {
+    console.error('[Debug Panel]', e);
+  }
+}
+
+// Triple-tap on header to show debug panel
+document.addEventListener('click', (() => {
+  let tapCount = 0;
+  let lastTap = 0;
+  return (e) => {
+    const now = Date.now();
+    if (now - lastTap < 500) {
+      tapCount++;
+      if (tapCount >= 3) {
+        showDebugPanel();
+        tapCount = 0;
+      }
+    } else {
+      tapCount = 1;
+    }
+    lastTap = now;
+  };
+})());
+
 // FORCE API_BASE_URL to be empty (same-origin) - prevents any cached config issues
 window.API_BASE_URL = "";
 console.log('[Skippy Stack] API_BASE_URL forced to:', JSON.stringify(window.API_BASE_URL));
@@ -605,13 +670,17 @@ async function syncInvoicesManually() {
           await tradebaseDB.markInvoiceSynced(invoice.id, data.id);
           syncedCount++;
           console.log(`[SYNC] Invoice ${invoice.id} synced as ${data.id}`);
+          window.debugState.lastSyncError = null;
         } else {
           const errText = await res.text();
           console.error(`[SYNC] Failed to sync invoice ${invoice.id}: HTTP ${res.status}`, errText);
+          window.debugState.lastSyncError = `HTTP ${res.status}: ${errText.substring(0, 80)}`;
           await tradebaseDB.markInvoiceSyncFailed(invoice.id, `HTTP ${res.status}: ${errText.substring(0, 100)}`);
           failedCount++;
         }
       } catch (err) {
+        console.error(`[SYNC] Exception syncing invoice ${invoice.id}:`, err);
+        window.debugState.lastSyncError = `Exception: ${err.message}`;
         await tradebaseDB.markInvoiceSyncFailed(invoice.id, err.message);
         failedCount++;
       }
@@ -2784,6 +2853,10 @@ async function handleInvoiceSubmit(e) {
     // Debug: Log local invoice count to verify storage is working
     const localCount = await tradebaseDB.getInvoices(userId);
     console.log('[OFFLINE-FIRST] Local invoice count after save:', localCount?.length || 0);
+    
+    // Update debug panel
+    window.debugState.lastSaveResult = `OK: ${localInvoice.id.substring(0,15)}... (${localCount?.length} total)`;
+    window.debugState.lastError = null;
 
     // Now attempt to sync to server (non-blocking for user experience)
     let syncSuccess = false;
