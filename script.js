@@ -3849,8 +3849,33 @@ async function loadQuotes(showArchived = false) {
 
 async function viewInvoiceDetail(invoiceId) {
   try {
-    const res = await apiFetch(`/api/invoices/${invoiceId}`);
-    const invoice = await res.json();
+    let invoice;
+    
+    // OFFLINE-FIRST: Check if this is a local invoice (local_* ID)
+    const isLocalId = invoiceId && invoiceId.startsWith('local_');
+    
+    if (isLocalId) {
+      // Load from IndexedDB for local invoices
+      invoice = await tradebaseDB.get('invoices', invoiceId);
+      if (!invoice) {
+        showToast("Invoice not found in local storage");
+        return;
+      }
+      console.log('[viewInvoiceDetail] Loaded local invoice:', invoiceId);
+    } else {
+      // Fetch from API for synced invoices
+      const res = await apiFetch(`/api/invoices/${invoiceId}`);
+      if (!res.ok) {
+        // Try local storage as fallback
+        invoice = await tradebaseDB.get('invoices', invoiceId);
+        if (!invoice) {
+          showToast("Failed to load invoice details");
+          return;
+        }
+      } else {
+        invoice = await res.json();
+      }
+    }
     
     const titleEl = document.getElementById("invoice-detail-title");
     const contentEl = document.getElementById("invoice-detail-content");
