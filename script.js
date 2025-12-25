@@ -3479,6 +3479,9 @@ async function loadInvoices(showArchived = false) {
     return;
   }
 
+  // Clear loading state before rendering items
+  list.innerHTML = '';
+
   invoices.forEach((inv) => {
     const isOffline = isOfflineId(inv.id);
     const initials = getInitials(inv.client_name);
