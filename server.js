@@ -1087,23 +1087,43 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const inv = invResult.rows[0];
     
     // Bulk insert line items with sanitization
+    console.log(`[INVOICE CREATE] About to insert ${items?.length || 0} line items for invoice ${inv.id}`);
+    console.log(`[INVOICE CREATE] Raw items received:`, JSON.stringify(items, null, 2));
+    
     if (Array.isArray(items) && items.length) {
       const values = items.map((item, idx) => {
         return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
       }).join(', ');
       
       const params = [inv.id];
-      items.forEach(item => {
+      const sanitizedItems = [];
+      items.forEach((item, idx) => {
         const qty = toNumber(item.quantity) || 1;
         const unitPrice = toNumber(item.unit_price);
         const itemTotal = toNumber(item.total) || (qty * unitPrice);
-        params.push(toNull(item.description) || '', qty, unitPrice, itemTotal);
+        const desc = toNull(item.description) || '';
+        params.push(desc, qty, unitPrice, itemTotal);
+        sanitizedItems.push({ idx, description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal });
       });
       
-      await dbClient.query(
-        `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ${values}`,
-        params
-      );
+      console.log(`[INVOICE CREATE] Sanitized line items:`, JSON.stringify(sanitizedItems, null, 2));
+      console.log(`[INVOICE CREATE] SQL params count: ${params.length}, values template: ${values}`);
+      
+      try {
+        await dbClient.query(
+          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ${values}`,
+          params
+        );
+        console.log(`[INVOICE CREATE] Successfully inserted ${items.length} line items`);
+      } catch (itemErr) {
+        console.error(`[INVOICE CREATE] LINE ITEM INSERT FAILED:`, itemErr.message);
+        console.error(`[INVOICE CREATE] LINE ITEM ERROR DETAIL:`, itemErr.detail);
+        console.error(`[INVOICE CREATE] LINE ITEM ERROR CODE:`, itemErr.code);
+        console.error(`[INVOICE CREATE] LINE ITEM PARAMS:`, JSON.stringify(params));
+        throw itemErr; // Re-throw to trigger rollback
+      }
+    } else {
+      console.log(`[INVOICE CREATE] No items to insert (items=${typeof items}, length=${items?.length})`);
     }
     
     await dbClient.query('COMMIT');
@@ -1325,20 +1345,35 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     );
 
     // Delete old items and insert new ones
+    console.log(`[INVOICE UPDATE] About to update line items for invoice ${invoiceId}`);
+    console.log(`[INVOICE UPDATE] Raw items received:`, JSON.stringify(items, null, 2));
+    
     await dbClient.query(`DELETE FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
+    console.log(`[INVOICE UPDATE] Deleted old line items for invoice ${invoiceId}`);
     
     if (Array.isArray(items) && items.length) {
+      const sanitizedItems = [];
       for (const i of items) {
         const qty = toNumber(i.quantity) || 1;
         const unitPrice = toNumber(i.unit_price);
         const itemTotal = toNumber(i.total) || (qty * unitPrice);
+        const desc = toNull(i.description) || '';
+        sanitizedItems.push({ description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal });
         
-        await dbClient.query(
-          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-          [invoiceId, toNull(i.description) || '', qty, unitPrice, itemTotal]
-        );
+        try {
+          await dbClient.query(
+            `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            [invoiceId, desc, qty, unitPrice, itemTotal]
+          );
+        } catch (itemErr) {
+          console.error(`[INVOICE UPDATE] LINE ITEM INSERT FAILED for item:`, JSON.stringify({ description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal }));
+          console.error(`[INVOICE UPDATE] LINE ITEM ERROR:`, itemErr.message, itemErr.detail, itemErr.code);
+          throw itemErr;
+        }
       }
-      console.log(`Updated ${items.length} invoice items for invoice ${invoiceId}`);
+      console.log(`[INVOICE UPDATE] Successfully inserted ${items.length} line items:`, JSON.stringify(sanitizedItems, null, 2));
+    } else {
+      console.log(`[INVOICE UPDATE] No items to insert (items=${typeof items}, length=${items?.length})`);
     }
     
     await dbClient.query('COMMIT');
@@ -2067,24 +2102,41 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
     
     const quote = quoteResult.rows[0];
     
-    // Bulk insert line items
+    // Bulk insert line items with logging
+    console.log(`[QUOTE CREATE] About to insert ${items?.length || 0} line items for quote ${quote.id}`);
+    console.log(`[QUOTE CREATE] Raw items received:`, JSON.stringify(items, null, 2));
+    
     if (Array.isArray(items) && items.length) {
       const values = items.map((item, idx) => {
         return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
       }).join(', ');
       
       const params = [quote.id];
-      items.forEach(item => {
+      const sanitizedItems = [];
+      items.forEach((item, idx) => {
         const qty = item.qty || item.quantity || 1;
         const unitPrice = item.unit_price || item.price || 0;
         const itemTotal = item.line_total || item.total || (qty * unitPrice);
-        params.push(item.description || '', qty, unitPrice, itemTotal);
+        const desc = item.description || '';
+        params.push(desc, qty, unitPrice, itemTotal);
+        sanitizedItems.push({ idx, description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal });
       });
       
-      await client.query(
-        `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ${values}`,
-        params
-      );
+      console.log(`[QUOTE CREATE] Sanitized line items:`, JSON.stringify(sanitizedItems, null, 2));
+      
+      try {
+        await client.query(
+          `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ${values}`,
+          params
+        );
+        console.log(`[QUOTE CREATE] Successfully inserted ${items.length} line items`);
+      } catch (itemErr) {
+        console.error(`[QUOTE CREATE] LINE ITEM INSERT FAILED:`, itemErr.message, itemErr.detail, itemErr.code);
+        console.error(`[QUOTE CREATE] LINE ITEM PARAMS:`, JSON.stringify(params));
+        throw itemErr;
+      }
+    } else {
+      console.log(`[QUOTE CREATE] No items to insert (items=${typeof items}, length=${items?.length})`);
     }
     
     await client.query('COMMIT');
@@ -2092,7 +2144,8 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
     res.json({ id: quote.id, quote_number: quote.quote_number });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error("Quote creation error:", err);
+    console.error("Quote creation error:", err.message, err.detail, err.code);
+    console.error("Quote creation full error:", err);
     res.status(500).json({ error: err.message || "Failed to create quote" });
   } finally {
     client.release();
@@ -2178,18 +2231,35 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     }
     
     // Delete old items and insert new ones within the transaction
+    console.log(`[QUOTE UPDATE] About to update line items for quote ${quote.id}`);
+    console.log(`[QUOTE UPDATE] Raw items received:`, JSON.stringify(items, null, 2));
+    
     await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [sanitizedQuoteId]);
+    console.log(`[QUOTE UPDATE] Deleted old line items for quote ${sanitizedQuoteId}`);
 
     if (items && items.length) {
+      const sanitizedItems = [];
       for (const it of items) {
         const qty = it.qty || it.quantity || 1;
         const unitPrice = it.unit_price || 0;
         const itemTotal = it.line_total || it.total || (qty * unitPrice);
-        await dbClient.query(
-          `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-          [quote.id, it.description || '', qty, unitPrice, itemTotal]
-        );
+        const desc = it.description || '';
+        sanitizedItems.push({ description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal });
+        
+        try {
+          await dbClient.query(
+            `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            [quote.id, desc, qty, unitPrice, itemTotal]
+          );
+        } catch (itemErr) {
+          console.error(`[QUOTE UPDATE] LINE ITEM INSERT FAILED for item:`, JSON.stringify({ description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal }));
+          console.error(`[QUOTE UPDATE] LINE ITEM ERROR:`, itemErr.message, itemErr.detail, itemErr.code);
+          throw itemErr;
+        }
       }
+      console.log(`[QUOTE UPDATE] Successfully inserted ${items.length} line items:`, JSON.stringify(sanitizedItems, null, 2));
+    } else {
+      console.log(`[QUOTE UPDATE] No items to insert (items=${typeof items}, length=${items?.length})`);
     }
 
     await dbClient.query('COMMIT');
@@ -2197,7 +2267,8 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     res.json({ id: quote.id, quote_number: quote.quote_number });
   } catch (err) {
     await dbClient.query('ROLLBACK');
-    console.error("Quote update error:", err);
+    console.error("Quote update error:", err.message, err.detail, err.code);
+    console.error("Quote update full error:", err);
     res.status(500).json({ error: err.message || "Failed to update quote" });
   } finally {
     dbClient.release();

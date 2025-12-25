@@ -452,6 +452,26 @@ async function syncPendingChanges() {
           delete payload.updated_at;
         }
         
+        // SANITIZE UUID FIELDS - convert empty strings to null before sending to server
+        const uuidFields = ['client_id', 'job_id', 'address_id', 'customer_id', 'org_id', 'quote_id', 'invoice_id'];
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        uuidFields.forEach(field => {
+          if (payload[field] !== undefined) {
+            if (!payload[field] || payload[field] === "" || !isValidUUID.test(payload[field])) {
+              console.log(`[SYNC] Sanitizing ${field}: "${payload[field]}" -> null`);
+              payload[field] = null;
+            }
+          }
+        });
+        
+        // Ensure items array exists and is valid for invoices/quotes
+        if ((item.storeName === 'invoices' || item.storeName === 'quotes') && !Array.isArray(payload.items)) {
+          console.log(`[SYNC] Converting items to empty array (was ${typeof payload.items})`);
+          payload.items = [];
+        }
+        
+        console.log(`[SYNC] Sending to ${item.endpoint}:`, JSON.stringify(payload, null, 2));
+        
         const response = await apiFetch(item.endpoint, {
           method: item.method,
           body: JSON.stringify(payload)
