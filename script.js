@@ -2834,25 +2834,50 @@ async function handleInvoiceSubmit(e) {
     if (res.status === 201) {
       const data = await res.json();
       console.log('[INVOICE v118] Created:', data.invoice_number, data.id);
+      
+      // Clear any error state immediately on success
+      errorEl.textContent = "";
+      
       showToast("Invoice saved!");
       resetInvoiceForm();
-      await loadInvoices();
+      
+      // Secondary requests in isolated try/catch - failures here should NOT show as save errors
+      try {
+        await loadInvoices();
+      } catch (refreshErr) {
+        console.warn('[INVOICE v118] Refresh failed (invoice was saved):', refreshErr);
+      }
+      
       showScreen("invoices");
     } else {
       // Error response
-      let errorMsg = "Failed to save invoice";
+      let errorMsg = "Failed to save invoice. Please try again.";
       try {
         const errData = await res.json();
-        errorMsg = errData.error || errorMsg;
+        if (errData.error) {
+          // Sanitize server errors - don't expose technical details
+          errorMsg = errData.error.includes('getaddrinfo') || errData.error.includes('ECONNREFUSED') 
+            ? "Connection issue. Please try again." 
+            : errData.error;
+        }
       } catch (parseErr) {
-        errorMsg = `Server error (${res.status})`;
+        errorMsg = `Server error. Please try again.`;
       }
       errorEl.textContent = errorMsg;
       console.error('[INVOICE v118] Error:', errorMsg);
     }
   } catch (err) {
     console.error('[INVOICE v118] Exception:', err);
-    errorEl.textContent = err.message || "Network error. Please try again.";
+    // User-friendly error messages - never show raw technical errors
+    const rawMsg = err.message || '';
+    const isTechnicalError = rawMsg.includes('getaddrinfo') || 
+                              rawMsg.includes('ECONNREFUSED') || 
+                              rawMsg.includes('ETIMEDOUT') ||
+                              rawMsg.includes('EAI_AGAIN') ||
+                              rawMsg.includes('fetch');
+    errorEl.textContent = isTechnicalError 
+      ? "Connection issue. Please try again." 
+      : "Unable to save invoice. Please try again.";
   } finally {
     setButtonLoading(submitBtn, false);
   }
