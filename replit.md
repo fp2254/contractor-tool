@@ -32,6 +32,15 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 - **Multi-Language System**: UI translation in 5 languages (English, Spanish, French, German, Portuguese) using `data-i18n` attributes and a dynamic `applyLanguage()` function.
 - **Invoice Template System**: 4 distinct, professional invoice templates defined in `templates.js`, rendered dynamically. All templates include "Powered by Skippy Stack" footer.
 - **Offline PWA**: Progressive Web App with an offline-first architecture using Service Worker and IndexedDB.
+- **Offline-First Invoice System** (December 2024): Invoices ALWAYS save to IndexedDB first, cloud sync is secondary. Features:
+  - Save flow: Local save → immediate success → background sync attempt
+  - Manual Sync: "Sync" button with unsynced count badge on invoice list screen
+  - Status badges: 📱 Local Only / ☁️ Synced shown on each invoice card
+  - Logout guard: Warns user about unsynced invoices before allowing logout
+  - Auto-sync: Triggers when coming back online via handleOnline() event
+  - Invoice list merges local unsynced invoices with server data (local takes precedence)
+  - PDF generation works immediately after local save (no cloud dependency)
+  - tradebaseDB stores: sync_status (unsynced/synced), remote_id, sync_error, items array embedded
 - **Job Folders**: Automatic job organization by ClientName_Address_Date_JobType, linking invoices, quotes, photos, and voice notes.
 - **Notification Center**: In-app system for system messages and announcements.
 - **Database Schema**: Utilizes `profiles`, `clients`, `invoices`, `invoice_items`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, `system_messages`, `calendar_events`, `ai_usage_logs`, and `payment_links` tables.
