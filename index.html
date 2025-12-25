@@ -57,7 +57,7 @@
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 117;
+    const EXPECTED_VERSION = 118;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
@@ -109,7 +109,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
   
-  <link rel="stylesheet" href="style.css?v=117" />
+  <link rel="stylesheet" href="style.css?v=118" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   

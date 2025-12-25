@@ -14,9 +14,9 @@ const { Pool } = pg;
 dotenv.config();
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 117;
-const BUILD_TIMESTAMP = "2024-12-24-v117-cache-bust";
-const BUILD_ID = "v117-cache-bust-" + Date.now();
+const BUILD_VERSION = 118;
+const BUILD_TIMESTAMP = "2024-12-25-v118-offline-first";
+const BUILD_ID = "v118-offline-first-" + Date.now();
 
 // Lazy-loaded chromium path (cached after first call)
 let cachedChromiumPath = undefined;
