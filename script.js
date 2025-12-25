@@ -2610,7 +2610,16 @@ async function handleInvoiceSubmit(e) {
       });
     }
     
-    const data = await res.json();
+    // Parse response - handle both JSON and plain text errors
+    let data;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await res.json();
+    } else {
+      const textBody = await res.text();
+      data = { error: textBody || 'Unknown error', raw: true };
+    }
+    
     if (!res.ok) {
       // DIAGNOSTIC: Show full URL and response headers for debugging
       const hitExpress = res.headers.get('X-Hit-Express') || 'NOT PRESENT';
@@ -2623,7 +2632,7 @@ X-Tradebase-Server: ${serverVersion}
 X-Tradebase-Handler: ${handler}
 Error: ${data.error || JSON.stringify(data)}`;
       console.error('[INVOICE SAVE DIAGNOSTIC]', diagnosticInfo);
-      errorEl.textContent = `Error saving invoice: ${data.error || "Failed to save invoice."}\n\n[DEBUG]\nURL: ${res.url}\nX-Hit-Express: ${hitExpress}`;
+      errorEl.textContent = `Error: ${data.error || "Failed to save invoice."}\n\n[DEBUG]\nX-Hit-Express: ${hitExpress}\nServer: ${serverVersion}`;
       setButtonLoading(submitBtn, false);
       return;
     }
