@@ -2766,189 +2766,94 @@ function setButtonLoading(button, isLoading, originalText = null) {
   }
 }
 
-// Submit invoice
+// Submit invoice - v118 CLEAN REWRITE
+// Minimal, reliable invoice save. One request. One response. No side effects.
 
 async function handleInvoiceSubmit(e) {
   e.preventDefault();
-  const errorEl = document.getElementById("invoice-error");
-  errorEl.textContent = "";
   
-  const submitBtn = document.getElementById("btn-save-invoice");
+  const errorEl = document.getElementById("invoice-error");
+  const submitBtn = document.querySelector('#invoice-form button[type="submit"]');
+  
+  errorEl.textContent = "";
   setButtonLoading(submitBtn, true);
 
-  const clientName = document.getElementById("invoice-client-name").value.trim();
-  const clientAddress = document.getElementById("invoice-client-address")?.value.trim() || null;
-  const date = document.getElementById("invoice-date").value;
-  const notes = document.getElementById("invoice-notes").value;
-  const template = document.getElementById("invoice-template-select").value || "basic_clean";
-  const paymentLink = document.getElementById("invoice-payment-link-select")?.value || null;
-  const paymentUrl = document.getElementById("invoice-payment-url")?.value.trim() || null;
-  const items = getLineItemsFromUI();
-
-  if (!clientName) {
-    errorEl.textContent = "Enter a client name.";
-    setButtonLoading(submitBtn, false);
-    return;
-  }
-  if (!items.length) {
-    errorEl.textContent = "Add at least one line item.";
-    setButtonLoading(submitBtn, false);
-    return;
-  }
-
-  let subtotal = 0;
-  items.forEach((i) => (subtotal += i.total));
-  const taxPercent =
-    parseFloat(document.getElementById("helper-tax").value) || 0;
-  const tax = subtotal * (taxPercent / 100);
-  const total = subtotal + tax;
-
-  // Use selectedClientData if available (from datalist selection or inline add)
-  // Validate client_id is a proper UUID format (reject old integer IDs from stale cache)
-  const rawClientId = selectedClientData?.id || null;
-  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const clientId = (rawClientId && isValidUUID.test(rawClientId)) ? rawClientId : null;
-  
-  const invoiceData = {
-    client_id: clientId,
-    client_name: clientName,
-    client_address: clientAddress,
-    issue_date: date,
-    notes,
-    template,
-    payment_url: paymentUrl || paymentLink,
-    subtotal,
-    tax_amount: tax,
-    total,
-    items
-  };
-
-  const isEditing = editingInvoiceId !== null;
-
   try {
-    // Get current user for offline-first save
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session?.user) {
-      errorEl.textContent = "Please log in to save invoices.";
+    // Get form values
+    const clientName = document.getElementById("invoice-client-name").value.trim();
+    const clientAddress = document.getElementById("invoice-client-address")?.value.trim() || null;
+    const issueDate = document.getElementById("invoice-date").value || new Date().toISOString().split('T')[0];
+    const notes = document.getElementById("invoice-notes").value.trim() || null;
+    const template = document.getElementById("invoice-template-select")?.value || "basic_clean";
+    const paymentUrl = document.getElementById("invoice-payment-url")?.value.trim() || null;
+    
+    // Basic validation
+    if (!clientName) {
+      errorEl.textContent = "Enter a client name.";
       setButtonLoading(submitBtn, false);
       return;
     }
-    const userId = session.user.id;
 
-    // OFFLINE-FIRST: Always save locally FIRST
-    invoiceData.status = invoiceData.status || 'draft';
-    invoiceData.payment_status = invoiceData.payment_status || 'unpaid';
-    invoiceData.created_at = invoiceData.created_at || new Date().toISOString();
-    
-    let localInvoice;
-    if (isEditing) {
-      // For edits, preserve the existing id but mark as unsynced
-      invoiceData.id = editingInvoiceId;
-      localInvoice = await tradebaseDB.saveInvoiceOfflineFirst(invoiceData, userId);
+    // Calculate totals from line items UI
+    const items = getLineItemsFromUI();
+    let subtotal = 0;
+    items.forEach(i => subtotal += (i.total || 0));
+    const taxPercent = parseFloat(document.getElementById("helper-tax")?.value) || 0;
+    const taxAmount = subtotal * (taxPercent / 100);
+    const total = subtotal + taxAmount;
+
+    // Get client_id if selected (optional, must be valid UUID)
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const rawClientId = selectedClientData?.id || null;
+    const clientId = (rawClientId && UUID_REGEX.test(rawClientId)) ? rawClientId : null;
+
+    // Build payload - matches backend spec exactly
+    const payload = {
+      client_id: clientId,
+      job_id: null,
+      client_name: clientName,
+      client_address: clientAddress,
+      issue_date: issueDate,
+      notes: notes,
+      template: template,
+      payment_url: paymentUrl,
+      subtotal: subtotal,
+      tax_amount: taxAmount,
+      total: total
+    };
+
+    console.log('[INVOICE v118] Submitting:', payload);
+
+    // Single API call
+    const res = await apiFetch("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    // Handle response
+    if (res.status === 201) {
+      const data = await res.json();
+      console.log('[INVOICE v118] Created:', data.invoice_number, data.id);
+      showToast("Invoice saved!");
+      resetInvoiceForm();
+      await loadInvoices();
+      showScreen("invoices");
     } else {
-      // For new invoices, generate local id and invoice number
-      invoiceData.invoice_number = `INV-${Date.now()}`;
-      localInvoice = await tradebaseDB.saveInvoiceOfflineFirst(invoiceData, userId);
-    }
-    
-    console.log('[OFFLINE-FIRST] Invoice saved locally:', localInvoice.id, 'sync_status:', localInvoice.sync_status);
-    
-    // Debug: Log local invoice count to verify storage is working
-    const localCount = await tradebaseDB.getInvoices(userId);
-    console.log('[OFFLINE-FIRST] Local invoice count after save:', localCount?.length || 0);
-    
-    // Update debug panel
-    window.debugState.lastSaveResult = `OK: ${localInvoice.id.substring(0,15)}... (${localCount?.length} total)`;
-    window.debugState.lastError = null;
-
-    // Now attempt to sync to server (non-blocking for user experience)
-    let syncSuccess = false;
-    let remoteId = null;
-    let remoteInvoiceNumber = null;
-    
-    if (navigator.onLine) {
+      // Error response
+      let errorMsg = "Failed to save invoice";
       try {
-        let res;
-        const syncPayload = { ...invoiceData };
-        delete syncPayload.id; // Don't send local_id to server
-        delete syncPayload.local_id;
-        delete syncPayload.remote_id;
-        delete syncPayload.sync_status;
-        delete syncPayload.sync_error;
-        delete syncPayload.user_id;
-        
-        if (isEditing && !localInvoice.local_id?.startsWith('local_')) {
-          // Editing a previously synced invoice
-          res = await apiFetch(`/api/invoices/${editingInvoiceId}`, {
-            method: "PUT",
-            body: JSON.stringify(syncPayload),
-          });
-        } else {
-          // Creating new or syncing a local-only invoice
-          res = await apiFetch("/api/invoices", {
-            method: "POST",
-            body: JSON.stringify(syncPayload),
-          });
-        }
-        
-        if (res.ok) {
-          const contentType = res.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const data = await res.json();
-            remoteId = data.id;
-            remoteInvoiceNumber = data.invoice_number;
-            syncSuccess = true;
-            
-            // Update local record with server data
-            await tradebaseDB.markInvoiceSynced(localInvoice.id, remoteId);
-            console.log('[OFFLINE-FIRST] Invoice synced to server:', remoteId);
-          }
-        } else {
-          const errorText = await res.text();
-          console.warn('[OFFLINE-FIRST] Server sync failed:', res.status, errorText);
-          await tradebaseDB.markInvoiceSyncFailed(localInvoice.id, `HTTP ${res.status}: ${errorText.substring(0, 100)}`);
-        }
-      } catch (syncErr) {
-        console.warn('[OFFLINE-FIRST] Network error during sync:', syncErr.message);
-        await tradebaseDB.markInvoiceSyncFailed(localInvoice.id, syncErr.message);
+        const errData = await res.json();
+        errorMsg = errData.error || errorMsg;
+      } catch (parseErr) {
+        errorMsg = `Server error (${res.status})`;
       }
-    } else {
-      console.log('[OFFLINE-FIRST] Offline - skipping server sync');
+      errorEl.textContent = errorMsg;
+      console.error('[INVOICE v118] Error:', errorMsg);
     }
-
-    // Handle photos (only if synced successfully)
-    const finalInvoiceId = remoteId || localInvoice.id;
-    if (pendingPhotos.length && syncSuccess && remoteId) {
-      try {
-        await uploadInvoicePhotos(remoteId, pendingPhotos);
-      } catch (photoErr) {
-        console.warn('Photo upload failed:', photoErr.message);
-      }
-      pendingPhotos = [];
-      document.getElementById("photo-preview").innerHTML = "";
-      document.getElementById("invoice-photos").value = "";
-    }
-
-    saveLineItemsFromUI();
-    setButtonLoading(submitBtn, false);
-    
-    // Show appropriate message based on sync status
-    if (syncSuccess) {
-      showToast(isEditing ? "Invoice updated." : "Invoice saved.");
-    } else {
-      showToast("Invoice saved locally. Will sync when online.", "warning");
-    }
-    
-    resetInvoiceForm();
-    await loadInvoices();
-    showScreen("invoices");
   } catch (err) {
-    console.error("SAVE INVOICE ERROR FULL:", err);
-    console.error("Error name:", err?.name);
-    console.error("Error message:", err?.message);
-    console.error("Error stack:", err?.stack);
-    const msg = err?.message || err?.error?.message || JSON.stringify(err, null, 2);
-    errorEl.textContent = "Error saving invoice: " + msg;
+    console.error('[INVOICE v118] Exception:', err);
+    errorEl.textContent = err.message || "Network error. Please try again.";
+  } finally {
     setButtonLoading(submitBtn, false);
   }
 }

@@ -942,241 +942,111 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v117-uuid-audit-" + Date.now();
-  console.error(`🔥🔥🔥 HIT INVOICE SAVE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
-  console.error("🔥 Request received at:", new Date().toISOString());
-  console.error("🔥 Raw Body:", JSON.stringify(req.body, null, 2));
-  
-  // DIAGNOSTIC HEADERS - proves request hit Express
-  res.setHeader('X-Hit-Express', 'YES-v112');
-  res.setHeader('X-Tradebase-Server', BUILD_TAG);
-  res.setHeader('X-Tradebase-Handler', 'express-pgpool');
-  res.setHeader('X-Route-Match', 'POST-/api/invoices');
-  res.setHeader('X-Build-ID', BUILD_ID);
+  // v118 CLEAN REWRITE - Minimal, reliable invoice creation
+  // One insert. One response. No side effects.
   
   const userId = req.userId;
   if (!userId) {
-    console.log('[INVOICE v112] No userId - returning 401');
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  console.log('[INVOICE v112] userId:', userId);
-  
-  // Extract ALL fields from request body, including any _id fields
+  // Extract only the fields we accept
   const { 
-    client_id, job_id, address_id, customer_id, org_id,  // ALL potential UUID fields
-    client_name, client_address, issue_date, notes, template, payment_url, 
-    subtotal, tax_amount, total, items 
+    client_id, job_id, client_name, client_address, 
+    issue_date, notes, template, payment_url, 
+    subtotal, tax_amount, total 
   } = req.body;
-  
-  // LOG ALL _id FIELDS FOR DEBUGGING
-  console.error("🔍 [UUID AUDIT] client_id:", JSON.stringify(client_id), "type:", typeof client_id);
-  console.error("🔍 [UUID AUDIT] job_id:", JSON.stringify(job_id), "type:", typeof job_id);
-  console.error("🔍 [UUID AUDIT] address_id:", JSON.stringify(address_id), "type:", typeof address_id);
-  console.error("🔍 [UUID AUDIT] customer_id:", JSON.stringify(customer_id), "type:", typeof customer_id);
-  console.error("🔍 [UUID AUDIT] org_id:", JSON.stringify(org_id), "type:", typeof org_id);
 
-  // SANITIZATION: Convert "" to null, ensure proper types
-  const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
-  const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
-  const toDate = (v) => {
-    if (!v || v === "") return new Date().toISOString().split('T')[0];
+  // === SANITIZATION HELPERS ===
+  const trimString = (v) => {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'string') return v.trim() || null;
+    return null;
+  };
+  
+  const toFiniteNumber = (v) => {
+    if (v === null || v === undefined || v === '') return 0;
+    const num = Number(v);
+    return Number.isFinite(num) ? num : 0;
+  };
+  
+  const toValidDate = (v) => {
+    if (!v || v === '') return new Date().toISOString().split('T')[0];
     const d = new Date(v);
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  // UUID VALIDATION: Only allow valid UUIDs, convert everything else to null
-  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const toUUID = (v, fieldName) => {
-    if (!v || v === "" || v === undefined || v === null) {
-      console.log(`[UUID SANITIZE] ${fieldName}: empty/null -> null`);
-      return null;
-    }
-    if (isValidUUID.test(v)) {
-      console.log(`[UUID SANITIZE] ${fieldName}: valid UUID`);
-      return v;
-    }
-    console.warn(`[UUID SANITIZE] ${fieldName}: INVALID UUID "${v}" -> null`);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const toUUID = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'string' && UUID_REGEX.test(v)) return v;
     return null;
   };
 
-  // Sanitize ALL fields including ALL potential UUID fields
+  // === SANITIZE ALL INPUTS ===
   const sanitized = {
-    client_id: toUUID(client_id, 'client_id'),
-    job_id: toUUID(job_id, 'job_id'),
-    client_name: toNull(client_name),
-    client_address: toNull(client_address),
-    issue_date: toDate(issue_date),
-    notes: toNull(notes),
-    template: template || 'basic_clean',
-    payment_url: toNull(payment_url),
-    subtotal: toNumber(subtotal),
-    tax_amount: toNumber(tax_amount),
-    total: toNumber(total)
+    client_id: toUUID(client_id),
+    job_id: toUUID(job_id),
+    client_name: trimString(client_name),
+    client_address: trimString(client_address),
+    issue_date: toValidDate(issue_date),
+    notes: trimString(notes),
+    template: trimString(template) || 'basic_clean',
+    payment_url: trimString(payment_url),
+    subtotal: toFiniteNumber(subtotal),
+    tax_amount: toFiniteNumber(tax_amount),
+    total: toFiniteNumber(total)
   };
 
-  console.log("[INVOICE CREATE v112] Sanitized values:", JSON.stringify(sanitized, null, 2));
-
-  // ========== HARD FAIL UUID VALIDATION ==========
-  // Validates every UUID column BEFORE pgPool INSERT
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const uuidColumns = {
-    user_id: userId,
-    client_id: sanitized.client_id,
-    job_id: sanitized.job_id
-  };
-  
-  console.error("🔴🔴🔴 [HARD FAIL CHECK] Invoice CREATE - UUID Column Validation 🔴🔴🔴");
-  for (const [colName, colValue] of Object.entries(uuidColumns)) {
-    console.error(`  📍 ${colName}: value=${JSON.stringify(colValue)}, typeof=${typeof colValue}`);
-    
-    // NULL is allowed for optional UUID columns (client_id, job_id)
-    if (colValue === null || colValue === undefined) {
-      if (colName === 'user_id') {
-        console.error(`  ❌ HARD FAIL: ${colName} is NULL but required!`);
-        return res.status(400).json({ error: `UUID validation failed: ${colName} is required but received null` });
-      }
-      console.error(`  ✅ ${colName}: null (allowed for optional field)`);
-      continue;
-    }
-    
-    // Check for empty string
-    if (colValue === "") {
-      console.error(`  ❌ HARD FAIL: ${colName} is empty string!`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} received empty string ""` });
-    }
-    
-    // Check for non-string
-    if (typeof colValue !== 'string') {
-      console.error(`  ❌ HARD FAIL: ${colName} is not a string! typeof=${typeof colValue}`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a string (typeof=${typeof colValue})` });
-    }
-    
-    // Check UUID regex
-    if (!UUID_REGEX.test(colValue)) {
-      console.error(`  ❌ HARD FAIL: ${colName} failed UUID regex! value="${colValue}"`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID (value="${colValue}")` });
-    }
-    
-    console.error(`  ✅ ${colName}: valid UUID`);
-  }
-  console.error("🔴🔴🔴 [HARD FAIL CHECK] All UUID columns passed validation 🔴🔴🔴");
-  // ========== END HARD FAIL UUID VALIDATION ==========
-
-  const dbClient = await pgPool.connect();
   try {
-    await dbClient.query('BEGIN');
-    
     // Generate invoice number: INV-YYYYMMDD-XXX
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const countResult = await dbClient.query(
+    const countResult = await pgPool.query(
       `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
       [userId, `INV-${dateStr}-%`]
     );
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
-    
-    // Insert invoice using sanitized values (including job_id and client_name)
-    const invResult = await dbClient.query(
-      `INSERT INTO invoices (user_id, client_id, job_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       RETURNING id, invoice_number`,
-      [userId, sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
+
+    // Single INSERT - no transaction needed for one statement
+    const result = await pgPool.query(
+      `INSERT INTO invoices (
+        user_id, client_id, job_id, client_name, client_address, 
+        issue_date, notes, template, payment_url, 
+        subtotal, tax_amount, total, status, invoice_number
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING id, invoice_number`,
+      [
+        userId, 
+        sanitized.client_id, 
+        sanitized.job_id, 
+        sanitized.client_name, 
+        sanitized.client_address,
+        sanitized.issue_date, 
+        sanitized.notes, 
+        sanitized.template, 
+        sanitized.payment_url,
+        sanitized.subtotal, 
+        sanitized.tax_amount, 
+        sanitized.total, 
+        'draft', 
+        invoiceNumber
+      ]
     );
+
+    const inv = result.rows[0];
+    console.log(`[INVOICE v118] Created: ${inv.invoice_number} (${inv.id})`);
     
-    const inv = invResult.rows[0];
+    // Single response - 201 Created
+    return res.status(201).json({ id: inv.id, invoice_number: inv.invoice_number });
     
-    // Bulk insert line items with sanitization
-    console.log(`[INVOICE CREATE] About to insert ${items?.length || 0} line items for invoice ${inv.id}`);
-    console.log(`[INVOICE CREATE] Raw items received:`, JSON.stringify(items, null, 2));
-    
-    if (Array.isArray(items) && items.length) {
-      const values = items.map((item, idx) => {
-        return `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${idx * 4 + 5})`;
-      }).join(', ');
-      
-      const params = [inv.id];
-      const sanitizedItems = [];
-      items.forEach((item, idx) => {
-        const qty = toNumber(item.quantity) || 1;
-        const unitPrice = toNumber(item.unit_price);
-        const itemTotal = toNumber(item.total) || (qty * unitPrice);
-        const desc = toNull(item.description) || '';
-        params.push(desc, qty, unitPrice, itemTotal);
-        sanitizedItems.push({ idx, description: desc, quantity: qty, unit_price: unitPrice, total: itemTotal });
-      });
-      
-      console.log(`[INVOICE CREATE] Sanitized line items:`, JSON.stringify(sanitizedItems, null, 2));
-      console.log(`[INVOICE CREATE] SQL params count: ${params.length}, values template: ${values}`);
-      
-      try {
-        await dbClient.query(
-          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ${values}`,
-          params
-        );
-        console.log(`[INVOICE CREATE] Successfully inserted ${items.length} line items`);
-      } catch (itemErr) {
-        console.error(`[INVOICE CREATE] LINE ITEM INSERT FAILED:`, itemErr.message);
-        console.error(`[INVOICE CREATE] LINE ITEM ERROR DETAIL:`, itemErr.detail);
-        console.error(`[INVOICE CREATE] LINE ITEM ERROR CODE:`, itemErr.code);
-        console.error(`[INVOICE CREATE] LINE ITEM PARAMS:`, JSON.stringify(params));
-        throw itemErr; // Re-throw to trigger rollback
-      }
-    } else {
-      console.log(`[INVOICE CREATE] No items to insert (items=${typeof items}, length=${items?.length})`);
-    }
-    
-    await dbClient.query('COMMIT');
-    console.log(`Invoice ${inv.id} created with ${items?.length || 0} items`);
-    res.json({ id: inv.id, invoice_number: inv.invoice_number });
   } catch (err) {
-    await dbClient.query('ROLLBACK');
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("🔴🔴🔴 [INVOICE CREATE ERROR] FULL DIAGNOSTIC DUMP 🔴🔴🔴");
-    console.error("═══════════════════════════════════════════════════════════");
-    console.error("📍 err.message:", err.message);
-    console.error("📍 err.detail:", err.detail);
-    console.error("📍 err.constraint:", err.constraint);
-    console.error("📍 err.column:", err.column);
-    console.error("📍 err.table:", err.table);
-    console.error("📍 err.code:", err.code);
-    console.error("📍 err.hint:", err.hint);
-    console.error("📍 err.where:", err.where);
-    console.error("📍 err.schema:", err.schema);
-    console.error("📍 err.dataType:", err.dataType);
-    console.error("📍 err.routine:", err.routine);
-    console.error("───────────────────────────────────────────────────────────");
-    const insertedValues = {
-      user_id: { value: userId, type: typeof userId },
-      client_id: { value: sanitized.client_id, type: typeof sanitized.client_id },
-      job_id: { value: sanitized.job_id, type: typeof sanitized.job_id },
-      client_address: sanitized.client_address,
-      issue_date: sanitized.issue_date,
-      notes: sanitized.notes,
-      template: sanitized.template,
-      payment_url: sanitized.payment_url,
-      subtotal: { value: sanitized.subtotal, type: typeof sanitized.subtotal },
-      tax_amount: { value: sanitized.tax_amount, type: typeof sanitized.tax_amount },
-      total: { value: sanitized.total, type: typeof sanitized.total }
-    };
-    console.error("📍 VALUES BEING INSERTED:", JSON.stringify(insertedValues, null, 2));
-    console.error("───────────────────────────────────────────────────────────");
-    console.error("📍 Full error object:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
-    console.error("═══════════════════════════════════════════════════════════");
-    
-    // Return structured error with full diagnostic info
-    res.status(500).json({ 
-      error: err.message || "Failed to create invoice",
-      detail: err.detail || null,
-      column: err.column || null,
-      table: err.table || null,
-      constraint: err.constraint || null,
-      code: err.code || null,
-      hint: err.hint || null,
-      values: insertedValues
+    console.error(`[INVOICE v118 ERROR] ${err.message}`, { 
+      code: err.code, 
+      detail: err.detail,
+      column: err.column 
     });
-  } finally {
-    dbClient.release();
+    return res.status(500).json({ error: err.message || "Failed to create invoice" });
   }
 });
 
