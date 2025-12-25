@@ -2778,6 +2778,10 @@ async function handleInvoiceSubmit(e) {
     }
     
     console.log('[OFFLINE-FIRST] Invoice saved locally:', localInvoice.id, 'sync_status:', localInvoice.sync_status);
+    
+    // Debug: Log local invoice count to verify storage is working
+    const localCount = await tradebaseDB.getInvoices(userId);
+    console.log('[OFFLINE-FIRST] Local invoice count after save:', localCount?.length || 0);
 
     // Now attempt to sync to server (non-blocking for user experience)
     let syncSuccess = false;
@@ -3617,19 +3621,31 @@ async function loadInvoices(showArchived = false) {
     }
     
     if (currentUser && !showArchived) {
-      // First check ALL cached invoices for stale data (not just current user's)
+      // OFFLINE-FIRST: Load local invoices first (including unsynced ones)
       try {
         const allCachedInvoices = await tradebaseDB.getAllInvoicesRaw() || [];
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const hasStaleData = allCachedInvoices.some(inv => !uuidRegex.test(inv.id) || (inv.client_id && !uuidRegex.test(inv.client_id)));
+        const localIdRegex = /^local_\d+_[a-z0-9]+$/i; // Valid local offline IDs
+        
+        // Only purge truly stale data (old integer IDs), NOT local_ prefixed IDs
+        const hasStaleData = allCachedInvoices.some(inv => {
+          const id = inv.id;
+          const isValidUUID = uuidRegex.test(id);
+          const isValidLocalId = localIdRegex.test(id);
+          const isStale = !isValidUUID && !isValidLocalId;
+          // Also check client_id if present (but only if it's not null/empty)
+          const hasStaleClientId = inv.client_id && inv.client_id !== '' && !uuidRegex.test(inv.client_id);
+          return isStale || hasStaleClientId;
+        });
         
         if (hasStaleData) {
-          console.log('Auto-purging stale invoice cache with non-UUID IDs...', allCachedInvoices.length, 'invoices found');
+          console.log('[loadInvoices] Auto-purging stale invoice cache with invalid IDs...', allCachedInvoices.length, 'invoices found');
           await tradebaseDB.clear('invoices'); // Clear entire store
           invoices = []; // Reset to empty, let API be source of truth
         } else {
           const localInvoices = await tradebaseDB.getInvoices(currentUser.id);
           invoices = localInvoices || [];
+          console.log(`[loadInvoices] Loaded ${invoices.length} invoices from local store (user: ${currentUser.id})`);
         }
       } catch (cacheErr) {
         console.error('[loadInvoices] Cache error:', cacheErr);
