@@ -1000,6 +1000,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const sanitized = {
     client_id: toUUID(client_id, 'client_id'),
     job_id: toUUID(job_id, 'job_id'),
+    client_name: toNull(client_name),
     client_address: toNull(client_address),
     issue_date: toDate(issue_date),
     notes: toNull(notes),
@@ -1071,12 +1072,12 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
     
-    // Insert invoice using sanitized values (including job_id)
+    // Insert invoice using sanitized values (including job_id and client_name)
     const invResult = await dbClient.query(
-      `INSERT INTO invoices (user_id, client_id, job_id, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO invoices (user_id, client_id, job_id, client_name, client_address, issue_date, notes, template, payment_url, subtotal, tax_amount, total, status, invoice_number)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id, invoice_number`,
-      [userId, sanitized.client_id, sanitized.job_id, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
+      [userId, sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes, sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total, 'draft', invoiceNumber]
     );
     
     const inv = invResult.rows[0];
@@ -1214,6 +1215,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
   const sanitized = {
     client_id: toUUID(client_id, 'client_id'),
     job_id: toUUID(job_id, 'job_id'),
+    client_name: toNull(client_name),
     client_address: toNull(client_address),
     issue_date: toDate(issue_date),
     notes: toNull(notes),
@@ -1307,13 +1309,13 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoiceId = existing.id;
     const invoiceNumber = existing.invoice_number;
 
-    // Update invoice using pgPool (including job_id)
+    // Update invoice using pgPool (including job_id and client_name)
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, job_id = $2, client_address = $3, issue_date = $4, notes = $5, 
-        template = $6, payment_url = $7, subtotal = $8, tax_amount = $9, total = $10
-       WHERE id = $11 AND user_id = $12`,
-      [sanitized.client_id, sanitized.job_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+        client_id = $1, job_id = $2, client_name = $3, client_address = $4, issue_date = $5, notes = $6, 
+        template = $7, payment_url = $8, subtotal = $9, tax_amount = $10, total = $11
+       WHERE id = $12 AND user_id = $13`,
+      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes,
        sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
        invoiceId, userId]
     );
