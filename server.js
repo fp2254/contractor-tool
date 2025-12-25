@@ -2099,7 +2099,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   }
 });
 
-// Update quote
+// Update quote - CONVERTED TO PGPOOL
 app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -2107,62 +2107,100 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   const quoteId = req.params.id;
   const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
-  // Verify quote belongs to user
-  const { data: existing, error: errCheck } = await supabaseAdmin
-    .from("quotes")
-    .select("id, user_id")
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .single();
+  // UUID sanitization - convert empty strings to null
+  const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const toUUID = (v) => {
+    if (!v || v === "" || v === undefined || v === null) return null;
+    if (isValidUUID.test(v)) return v;
+    console.warn(`[QUOTE UPDATE] Invalid UUID rejected: "${v}"`);
+    return null;
+  };
 
-  if (errCheck || !existing) {
-    return res.status(404).json({ error: "Quote not found" });
+  const sanitizedClientId = toUUID(client_id);
+  const sanitizedQuoteId = toUUID(quoteId);
+  
+  if (!sanitizedQuoteId) {
+    return res.status(400).json({ error: "Invalid quote ID" });
   }
 
-  // Update quote - use correct column names that match database schema
-  const { data: quote, error: errQuote } = await supabaseAdmin
-    .from("quotes")
-    .update({
-      client_id,
-      client_address: client_address || null,
-      issue_date: quote_date || null,
-      valid_until: valid_until || null,
-      subtotal,
-      tax_amount: tax,
-      total,
-      notes,
-      template: template || "basic_clean"
-    })
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .select()
-    .single();
-
-  if (errQuote) {
-    console.error("Quote update error:", errQuote);
-    return res.status(500).json({ error: errQuote.message });
-  }
-
-  // Delete old items and insert new ones - USING PGPOOL
+  const dbClient = await pgPool.connect();
   try {
-    await pgPool.query(`DELETE FROM quote_items WHERE quote_id = $1`, [quoteId]);
-  } catch (deleteErr) {
-    console.error("Quote items delete error:", deleteErr);
-  }
-
-  if (items && items.length) {
-    for (const it of items) {
-      const qty = it.qty || it.quantity || 1;
-      const unitPrice = it.unit_price || 0;
-      const itemTotal = it.line_total || it.total || (qty * unitPrice);
-      await pgPool.query(
-        `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
-        [quote.id, it.description, qty, unitPrice, itemTotal]
-      );
+    await dbClient.query('BEGIN');
+    
+    // Verify quote belongs to user
+    const { rows: existing } = await dbClient.query(
+      'SELECT id FROM quotes WHERE id = $1 AND user_id = $2',
+      [sanitizedQuoteId, userId]
+    );
+    
+    if (!existing.length) {
+      await dbClient.query('ROLLBACK');
+      dbClient.release();
+      return res.status(404).json({ error: "Quote not found" });
     }
-  }
 
-  res.json({ id: quote.id, quote_number: quote.quote_number });
+    // Update quote using pgPool with sanitized values
+    const { rows: updated } = await dbClient.query(
+      `UPDATE quotes SET 
+        client_id = $1,
+        client_address = $2,
+        issue_date = $3,
+        valid_until = $4,
+        subtotal = $5,
+        tax_amount = $6,
+        total = $7,
+        notes = $8,
+        template = $9
+       WHERE id = $10 AND user_id = $11
+       RETURNING *`,
+      [
+        sanitizedClientId,
+        toNull(client_address),
+        toNull(quote_date) || new Date().toISOString().split('T')[0],
+        toNull(valid_until),
+        subtotal || 0,
+        tax || 0,
+        total || 0,
+        toNull(notes),
+        template || 'basic_clean',
+        sanitizedQuoteId,
+        userId
+      ]
+    );
+
+    const quote = updated[0];
+    if (!quote) {
+      await dbClient.query('ROLLBACK');
+      dbClient.release();
+      return res.status(500).json({ error: "Failed to update quote" });
+    }
+    
+    // Delete old items and insert new ones within the transaction
+    await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [sanitizedQuoteId]);
+
+    if (items && items.length) {
+      for (const it of items) {
+        const qty = it.qty || it.quantity || 1;
+        const unitPrice = it.unit_price || 0;
+        const itemTotal = it.line_total || it.total || (qty * unitPrice);
+        await dbClient.query(
+          `INSERT INTO quote_items (quote_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          [quote.id, it.description || '', qty, unitPrice, itemTotal]
+        );
+      }
+    }
+
+    await dbClient.query('COMMIT');
+    console.log(`Quote ${quote.id} updated via pgPool with ${items?.length || 0} items`);
+    res.json({ id: quote.id, quote_number: quote.quote_number });
+  } catch (err) {
+    await dbClient.query('ROLLBACK');
+    console.error("Quote update error:", err);
+    res.status(500).json({ error: err.message || "Failed to update quote" });
+  } finally {
+    dbClient.release();
+  }
 });
 
 // Link/unlink invoice to job - CONVERTED TO PGPOOL
