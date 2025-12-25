@@ -2141,29 +2141,30 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     }
 
     // Update quote using pgPool with sanitized values
+    // Use COALESCE to preserve existing values when not provided
     const { rows: updated } = await dbClient.query(
       `UPDATE quotes SET 
         client_id = $1,
-        client_address = $2,
-        issue_date = $3,
-        valid_until = $4,
+        client_address = COALESCE($2, client_address),
+        issue_date = COALESCE($3, issue_date),
+        valid_until = COALESCE($4, valid_until),
         subtotal = $5,
         tax_amount = $6,
         total = $7,
-        notes = $8,
-        template = $9
+        notes = COALESCE($8, notes),
+        template = COALESCE($9, template)
        WHERE id = $10 AND user_id = $11
        RETURNING *`,
       [
         sanitizedClientId,
         toNull(client_address),
-        toNull(quote_date) || new Date().toISOString().split('T')[0],
+        toNull(quote_date),
         toNull(valid_until),
         subtotal || 0,
         tax || 0,
         total || 0,
         toNull(notes),
-        template || 'basic_clean',
+        template || null,
         sanitizedQuoteId,
         userId
       ]
