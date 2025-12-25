@@ -122,7 +122,7 @@ app.use(express.json());
 
 // ADD DIAGNOSTIC HEADERS TO ALL /api/ ROUTES
 app.use('/api', (req, res, next) => {
-  res.setHeader('X-Hit-Express', 'YES-v117');
+  res.setHeader('X-Hit-Express', `YES-v${BUILD_VERSION}`);
   res.setHeader('X-Tradebase-Server', BUILD_ID);
   res.setHeader('X-Build-ID', BUILD_ID);
   next();
@@ -144,7 +144,7 @@ app.get("/app", (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
-  res.setHeader('X-Build-Version', '117');
+  res.setHeader('X-Build-Version', String(BUILD_VERSION));
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
