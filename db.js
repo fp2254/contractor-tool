@@ -1,5 +1,5 @@
 const DB_NAME = 'TradeBaseDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Upgraded for offline-first sync status tracking
 
 const STORES = {
   INVOICES: 'invoices',
@@ -26,17 +26,33 @@ class TradeBaseDB {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        const oldVersion = event.oldVersion;
 
         if (!db.objectStoreNames.contains(STORES.INVOICES)) {
           const invoiceStore = db.createObjectStore(STORES.INVOICES, { keyPath: 'id' });
           invoiceStore.createIndex('user_id', 'user_id', { unique: false });
           invoiceStore.createIndex('updated_at', 'updated_at', { unique: false });
+          invoiceStore.createIndex('sync_status', 'sync_status', { unique: false });
+        } else if (oldVersion < 2) {
+          // Upgrade existing store to add sync_status index
+          const transaction = event.target.transaction;
+          const invoiceStore = transaction.objectStore(STORES.INVOICES);
+          if (!invoiceStore.indexNames.contains('sync_status')) {
+            invoiceStore.createIndex('sync_status', 'sync_status', { unique: false });
+          }
         }
 
         if (!db.objectStoreNames.contains(STORES.QUOTES)) {
           const quoteStore = db.createObjectStore(STORES.QUOTES, { keyPath: 'id' });
           quoteStore.createIndex('user_id', 'user_id', { unique: false });
           quoteStore.createIndex('updated_at', 'updated_at', { unique: false });
+          quoteStore.createIndex('sync_status', 'sync_status', { unique: false });
+        } else if (oldVersion < 2) {
+          const transaction = event.target.transaction;
+          const quoteStore = transaction.objectStore(STORES.QUOTES);
+          if (!quoteStore.indexNames.contains('sync_status')) {
+            quoteStore.createIndex('sync_status', 'sync_status', { unique: false });
+          }
         }
 
         if (!db.objectStoreNames.contains(STORES.CLIENTS)) {
@@ -158,6 +174,67 @@ class TradeBaseDB {
   async saveInvoice(invoice) {
     invoice.updated_at = new Date().toISOString();
     return this.put(STORES.INVOICES, invoice);
+  }
+
+  async saveInvoiceOfflineFirst(invoice, userId) {
+    const now = new Date().toISOString();
+    const localId = invoice.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const enrichedInvoice = {
+      ...invoice,
+      id: localId,
+      local_id: localId,
+      remote_id: invoice.remote_id || null,
+      user_id: userId,
+      sync_status: 'unsynced',
+      sync_error: null,
+      updated_at: now,
+      created_at: invoice.created_at || now
+    };
+    
+    await this.put(STORES.INVOICES, enrichedInvoice);
+    return enrichedInvoice;
+  }
+
+  async markInvoiceSynced(localId, remoteId) {
+    const invoice = await this.get(STORES.INVOICES, localId);
+    if (invoice) {
+      invoice.remote_id = remoteId;
+      invoice.sync_status = 'synced';
+      invoice.sync_error = null;
+      invoice.updated_at = new Date().toISOString();
+      
+      // If remote_id is different from local_id, update the id to remote_id
+      // and delete the old local entry
+      if (remoteId && remoteId !== localId) {
+        await this.delete(STORES.INVOICES, localId);
+        invoice.id = remoteId;
+      }
+      
+      await this.put(STORES.INVOICES, invoice);
+    }
+    return invoice;
+  }
+
+  async markInvoiceSyncFailed(localId, errorMessage) {
+    const invoice = await this.get(STORES.INVOICES, localId);
+    if (invoice) {
+      invoice.sync_status = 'unsynced';
+      invoice.sync_error = errorMessage;
+      invoice.updated_at = new Date().toISOString();
+      await this.put(STORES.INVOICES, invoice);
+    }
+    return invoice;
+  }
+
+  async getUnsyncedInvoices(userId) {
+    const invoices = await this.getInvoices(userId);
+    return invoices.filter(inv => inv.sync_status === 'unsynced');
+  }
+
+  async getUnsyncedCount(userId) {
+    const unsynced = await this.getUnsyncedInvoices(userId);
+    return unsynced.length;
   }
 
   async getInvoices(userId) {

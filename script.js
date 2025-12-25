@@ -534,6 +534,153 @@ async function syncPendingChanges() {
   }
 }
 
+// OFFLINE-FIRST: Sync unsynced invoices to server
+async function syncInvoicesManually() {
+  if (!navigator.onLine) {
+    showToast('You are offline. Connect to sync invoices.', 'warning');
+    return;
+  }
+  
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session?.user) {
+    showToast('Please log in to sync invoices.', 'error');
+    return;
+  }
+  const userId = session.user.id;
+  
+  const syncBtn = document.getElementById('btn-sync-invoices');
+  const syncIcon = document.getElementById('sync-icon');
+  if (syncBtn) syncBtn.classList.add('syncing');
+  
+  try {
+    const unsyncedInvoices = await tradebaseDB.getUnsyncedInvoices(userId);
+    console.log(`[SYNC] Found ${unsyncedInvoices.length} unsynced invoices`);
+    
+    if (!unsyncedInvoices.length) {
+      showToast('All invoices are already synced!', 'success');
+      return;
+    }
+    
+    let syncedCount = 0;
+    let failedCount = 0;
+    
+    for (const invoice of unsyncedInvoices) {
+      try {
+        // Build sync payload - explicitly include items array
+        const syncPayload = {
+          client_id: invoice.client_id,
+          client_name: invoice.client_name,
+          client_address: invoice.client_address,
+          issue_date: invoice.issue_date,
+          notes: invoice.notes,
+          template: invoice.template,
+          payment_url: invoice.payment_url,
+          subtotal: invoice.subtotal,
+          tax_amount: invoice.tax_amount,
+          total: invoice.total,
+          status: invoice.status || 'draft',
+          payment_status: invoice.payment_status || 'unpaid',
+          items: invoice.items || [] // CRITICAL: Include line items!
+        };
+        
+        // Sanitize UUID fields
+        const uuidFields = ['client_id', 'job_id'];
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        uuidFields.forEach(field => {
+          if (syncPayload[field] && !isValidUUID.test(syncPayload[field])) {
+            syncPayload[field] = null;
+          }
+        });
+        
+        console.log(`[SYNC] Syncing invoice with ${syncPayload.items?.length || 0} line items`);
+        
+        const res = await apiFetch('/api/invoices', {
+          method: 'POST',
+          body: JSON.stringify(syncPayload)
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          await tradebaseDB.markInvoiceSynced(invoice.id, data.id);
+          syncedCount++;
+          console.log(`[SYNC] Invoice ${invoice.id} synced as ${data.id}`);
+        } else {
+          const errText = await res.text();
+          await tradebaseDB.markInvoiceSyncFailed(invoice.id, `HTTP ${res.status}: ${errText.substring(0, 100)}`);
+          failedCount++;
+        }
+      } catch (err) {
+        await tradebaseDB.markInvoiceSyncFailed(invoice.id, err.message);
+        failedCount++;
+      }
+    }
+    
+    if (syncedCount > 0) {
+      showToast(`Synced ${syncedCount} invoice(s) to cloud!`, 'success');
+    }
+    if (failedCount > 0) {
+      showToast(`${failedCount} invoice(s) failed to sync`, 'error');
+    }
+    
+    // Refresh invoice list to show updated sync status
+    await loadInvoices();
+    updateSyncBadge();
+    
+  } catch (err) {
+    console.error('[SYNC] Error:', err);
+    showToast('Sync failed: ' + err.message, 'error');
+  } finally {
+    if (syncBtn) syncBtn.classList.remove('syncing');
+  }
+}
+
+// Update the sync count badge
+async function updateSyncBadge() {
+  const badge = document.getElementById('sync-count-badge');
+  if (!badge) return;
+  
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) {
+      badge.style.display = 'none';
+      return;
+    }
+    
+    const unsyncedCount = await tradebaseDB.getUnsyncedCount(session.user.id);
+    if (unsyncedCount > 0) {
+      badge.textContent = unsyncedCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('[updateSyncBadge] Error:', err);
+    badge.style.display = 'none';
+  }
+}
+
+// Check for unsynced invoices before logout
+async function checkUnsyncedBeforeLogout() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) return true; // Allow logout if no session
+    
+    const unsyncedCount = await tradebaseDB.getUnsyncedCount(session.user.id);
+    if (unsyncedCount > 0) {
+      const proceed = confirm(
+        `You have ${unsyncedCount} invoice(s) not synced to the cloud.\n\n` +
+        `If you log out now, these invoices will only exist on this device.\n\n` +
+        `Do you want to log out anyway?`
+      );
+      return proceed;
+    }
+    return true;
+  } catch (err) {
+    console.error('[checkUnsyncedBeforeLogout] Error:', err);
+    return true; // Allow logout on error
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Update visible build version on dashboard - fetch dynamic BUILD_ID from server
   const buildVersionEl = document.getElementById('build-version');
@@ -1792,6 +1939,12 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
+  // Check for unsynced invoices before logout
+  const canLogout = await checkUnsyncedBeforeLogout();
+  if (!canLogout) {
+    return; // User chose not to logout
+  }
+  
   // Clear all cached data to prevent cross-account data leakage
   try {
     await tradebaseDB.clearAll();
@@ -2324,6 +2477,12 @@ function wireInvoiceUI() {
   }
   document.getElementById("invoice-notes").addEventListener("input", updateInvoicePreview);
 
+  // Wire up sync button for offline-first invoice syncing
+  const syncBtn = document.getElementById("btn-sync-invoices");
+  if (syncBtn) {
+    syncBtn.addEventListener("click", syncInvoicesManually);
+  }
+
   addLineItemRow();
 }
 
@@ -2593,86 +2752,96 @@ async function handleInvoiceSubmit(e) {
   const isEditing = editingInvoiceId !== null;
 
   try {
-    if (!navigator.onLine && !isEditing) {
-      const offlineId = generateOfflineId();
-      invoiceData.id = offlineId;
-      invoiceData.invoice_number = `INV-${Date.now()}`;
-      invoiceData.status = 'draft';
-      invoiceData.payment_status = 'unpaid';
-      invoiceData.created_at = new Date().toISOString();
-      
-      await saveOffline('invoices', invoiceData, '/api/invoices', 'POST');
-      
+    // Get current user for offline-first save
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) {
+      errorEl.textContent = "Please log in to save invoices.";
       setButtonLoading(submitBtn, false);
-      showToast("Invoice saved offline. Will sync when online.");
-      await loadInvoices();
-      showScreen("invoices");
-      
-      pendingPhotos = [];
-      document.getElementById("photo-preview").innerHTML = "";
-      document.getElementById("invoice-photos").value = "";
       return;
     }
+    const userId = session.user.id;
 
-    let res;
+    // OFFLINE-FIRST: Always save locally FIRST
+    invoiceData.status = invoiceData.status || 'draft';
+    invoiceData.payment_status = invoiceData.payment_status || 'unpaid';
+    invoiceData.created_at = invoiceData.created_at || new Date().toISOString();
+    
+    let localInvoice;
     if (isEditing) {
-      res = await apiFetch(`/api/invoices/${editingInvoiceId}`, {
-        method: "PUT",
-        body: JSON.stringify(invoiceData),
-      });
+      // For edits, preserve the existing id but mark as unsynced
+      invoiceData.id = editingInvoiceId;
+      localInvoice = await tradebaseDB.saveInvoiceOfflineFirst(invoiceData, userId);
     } else {
-      invoiceData.status = 'draft';
-      invoiceData.payment_status = 'unpaid';
-      invoiceData.created_at = new Date().toISOString();
-      res = await apiFetch("/api/invoices", {
-        method: "POST",
-        body: JSON.stringify(invoiceData),
-      });
+      // For new invoices, generate local id and invoice number
+      invoiceData.invoice_number = `INV-${Date.now()}`;
+      localInvoice = await tradebaseDB.saveInvoiceOfflineFirst(invoiceData, userId);
     }
     
-    // Parse response - handle both JSON and plain text errors
-    let data;
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      data = await res.json();
-    } else {
-      const textBody = await res.text();
-      data = { error: textBody || 'Unknown error', raw: true };
-    }
-    
-    if (!res.ok) {
-      // DIAGNOSTIC: Show full URL and response headers for debugging
-      const hitExpress = res.headers.get('X-Hit-Express') || 'NOT PRESENT';
-      const serverVersion = res.headers.get('X-Tradebase-Server') || 'NOT PRESENT';
-      const handler = res.headers.get('X-Tradebase-Handler') || 'NOT PRESENT';
-      const diagnosticInfo = `
-URL: ${res.url}
-X-Hit-Express: ${hitExpress}
-X-Tradebase-Server: ${serverVersion}
-X-Tradebase-Handler: ${handler}
-Error: ${data.error || JSON.stringify(data)}`;
-      console.error('[INVOICE SAVE DIAGNOSTIC]', diagnosticInfo);
-      errorEl.textContent = `Error: ${data.error || "Failed to save invoice."}\n\n[DEBUG]\nX-Hit-Express: ${hitExpress}\nServer: ${serverVersion}`;
-      setButtonLoading(submitBtn, false);
-      return;
-    }
+    console.log('[OFFLINE-FIRST] Invoice saved locally:', localInvoice.id, 'sync_status:', localInvoice.sync_status);
 
-    const invoiceId = isEditing ? editingInvoiceId : data.id;
+    // Now attempt to sync to server (non-blocking for user experience)
+    let syncSuccess = false;
+    let remoteId = null;
+    let remoteInvoiceNumber = null;
     
-    invoiceData.id = invoiceId;
-    invoiceData.invoice_number = data.invoice_number;
-    
-    // Save to local cache (non-blocking - don't fail invoice save if cache fails)
-    try {
-      if (invoiceId) {
-        await tradebaseDB.saveInvoice(invoiceData);
+    if (navigator.onLine) {
+      try {
+        let res;
+        const syncPayload = { ...invoiceData };
+        delete syncPayload.id; // Don't send local_id to server
+        delete syncPayload.local_id;
+        delete syncPayload.remote_id;
+        delete syncPayload.sync_status;
+        delete syncPayload.sync_error;
+        delete syncPayload.user_id;
+        
+        if (isEditing && !localInvoice.local_id?.startsWith('local_')) {
+          // Editing a previously synced invoice
+          res = await apiFetch(`/api/invoices/${editingInvoiceId}`, {
+            method: "PUT",
+            body: JSON.stringify(syncPayload),
+          });
+        } else {
+          // Creating new or syncing a local-only invoice
+          res = await apiFetch("/api/invoices", {
+            method: "POST",
+            body: JSON.stringify(syncPayload),
+          });
+        }
+        
+        if (res.ok) {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await res.json();
+            remoteId = data.id;
+            remoteInvoiceNumber = data.invoice_number;
+            syncSuccess = true;
+            
+            // Update local record with server data
+            await tradebaseDB.markInvoiceSynced(localInvoice.id, remoteId);
+            console.log('[OFFLINE-FIRST] Invoice synced to server:', remoteId);
+          }
+        } else {
+          const errorText = await res.text();
+          console.warn('[OFFLINE-FIRST] Server sync failed:', res.status, errorText);
+          await tradebaseDB.markInvoiceSyncFailed(localInvoice.id, `HTTP ${res.status}: ${errorText.substring(0, 100)}`);
+        }
+      } catch (syncErr) {
+        console.warn('[OFFLINE-FIRST] Network error during sync:', syncErr.message);
+        await tradebaseDB.markInvoiceSyncFailed(localInvoice.id, syncErr.message);
       }
-    } catch (cacheErr) {
-      console.warn('Could not cache invoice locally:', cacheErr);
+    } else {
+      console.log('[OFFLINE-FIRST] Offline - skipping server sync');
     }
 
-    if (pendingPhotos.length) {
-      await uploadInvoicePhotos(invoiceId, pendingPhotos);
+    // Handle photos (only if synced successfully)
+    const finalInvoiceId = remoteId || localInvoice.id;
+    if (pendingPhotos.length && syncSuccess && remoteId) {
+      try {
+        await uploadInvoicePhotos(remoteId, pendingPhotos);
+      } catch (photoErr) {
+        console.warn('Photo upload failed:', photoErr.message);
+      }
       pendingPhotos = [];
       document.getElementById("photo-preview").innerHTML = "";
       document.getElementById("invoice-photos").value = "";
@@ -2680,7 +2849,14 @@ Error: ${data.error || JSON.stringify(data)}`;
 
     saveLineItemsFromUI();
     setButtonLoading(submitBtn, false);
-    showToast(isEditing ? "Invoice updated." : "Invoice saved.");
+    
+    // Show appropriate message based on sync status
+    if (syncSuccess) {
+      showToast(isEditing ? "Invoice updated." : "Invoice saved.");
+    } else {
+      showToast("Invoice saved locally. Will sync when online.", "warning");
+    }
+    
     resetInvoiceForm();
     await loadInvoices();
     showScreen("invoices");
@@ -2691,7 +2867,6 @@ Error: ${data.error || JSON.stringify(data)}`;
     console.error("Error stack:", err?.stack);
     const msg = err?.message || err?.error?.message || JSON.stringify(err, null, 2);
     errorEl.textContent = "Error saving invoice: " + msg;
-    alert("INVOICE SAVE ERROR:\n" + msg);
     setButtonLoading(submitBtn, false);
   }
 }
@@ -3470,17 +3645,28 @@ async function loadInvoices(showArchived = false) {
         
         if (apiInvoices && Array.isArray(apiInvoices)) {
           if (!showArchived && currentUser) {
-            // Clear local cache and replace with API data (source of truth)
+            // OFFLINE-FIRST: Preserve local unsynced invoices, merge with server data
             try {
-              await tradebaseDB.clearInvoices(currentUser.id);
+              const localInvoices = await tradebaseDB.getInvoices(currentUser.id) || [];
+              const unsyncedLocal = localInvoices.filter(inv => inv.sync_status === 'unsynced');
+              
+              // Update synced invoices from server (they are source of truth for synced data)
               for (const inv of apiInvoices) {
+                inv.sync_status = 'synced';
+                inv.remote_id = inv.id;
                 await tradebaseDB.saveInvoice(inv);
               }
+              
+              // Build merged list: server invoices + local unsynced invoices
+              const serverIds = new Set(apiInvoices.map(inv => inv.id));
+              const uniqueUnsynced = unsyncedLocal.filter(inv => !serverIds.has(inv.id) && !serverIds.has(inv.remote_id));
+              
+              invoices = [...apiInvoices, ...uniqueUnsynced];
+              console.log(`[loadInvoices] Merged ${apiInvoices.length} server + ${uniqueUnsynced.length} local unsynced invoices`);
             } catch (saveErr) {
-              console.error('[loadInvoices] Cache save error:', saveErr);
+              console.error('[loadInvoices] Cache merge error:', saveErr);
+              invoices = apiInvoices;
             }
-            // Use only API invoices - they are the source of truth
-            invoices = apiInvoices;
           } else {
             invoices = apiInvoices;
           }
@@ -3513,17 +3699,22 @@ async function loadInvoices(showArchived = false) {
 
   invoices.forEach((inv) => {
     const isOffline = isOfflineId(inv.id);
+    const isUnsynced = inv.sync_status === 'unsynced' || isOffline;
     const initials = getInitials(inv.client_name);
     const paymentStatus = inv.payment_status || 'unpaid';
     const statusIcon = paymentStatus === 'paid' ? '🟢' : paymentStatus === 'pending' ? '🟡' : '🔴';
-    const offlineIcon = isOffline ? ' 📱' : '';
+    
+    // Sync status badge
+    const syncBadge = isUnsynced 
+      ? '<span class="sync-badge unsynced" title="Not synced to cloud">📱 Local</span>'
+      : '<span class="sync-badge synced" title="Synced to cloud">☁️</span>';
     
     const content = `
       <div class="list-item-simple">
         <div class="client-avatar">${initials}</div>
         <div class="list-item-info">
-          <div class="list-item-name">${inv.client_name || "Unknown Client"}</div>
-          <div class="list-item-meta">INV #${inv.invoice_number || inv.id} • ${statusIcon} ${paymentStatus}${offlineIcon}</div>
+          <div class="list-item-name">${inv.client_name || "Unknown Client"} ${syncBadge}</div>
+          <div class="list-item-meta">INV #${inv.invoice_number || inv.id} • ${statusIcon} ${paymentStatus}</div>
         </div>
         <div class="list-item-amount">${formatCurrency(inv.total || 0)}</div>
       </div>
@@ -3557,6 +3748,7 @@ async function loadInvoices(showArchived = false) {
   
   if (!showArchived) {
     renderDashboardStats(invoices);
+    updateSyncBadge(); // Update sync badge count
   }
   applyLanguage();
 }

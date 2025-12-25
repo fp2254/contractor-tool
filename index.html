@@ -872,7 +872,10 @@
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="common.back">Back</span></button>
             <h2 data-i18n="invoice.invoices">Invoices</h2>
-            <button class="btn-primary" id="btn-new-invoice" data-i18n="invoice.new_invoice">+ New Invoice</button>
+            <div class="header-actions">
+              <button class="btn-secondary btn-sync" id="btn-sync-invoices" title="Sync unsynced invoices"><i class="fa-solid fa-sync" id="sync-icon"></i> <span id="sync-count-badge" class="sync-count-badge" style="display:none;">0</span></button>
+              <button class="btn-primary" id="btn-new-invoice" data-i18n="invoice.new_invoice">+ New Invoice</button>
+            </div>
           </div>
           <div class="tabs" style="margin: 0 16px 16px;">
             <button class="tab-btn active" id="tab-invoices-active" onclick="switchInvoiceTab('active')">Active</button>
