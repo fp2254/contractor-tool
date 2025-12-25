@@ -593,6 +593,7 @@ async function syncInvoicesManually() {
         });
         
         console.log(`[SYNC] Syncing invoice with ${syncPayload.items?.length || 0} line items`);
+        console.log('[SYNC] Full payload:', JSON.stringify(syncPayload, null, 2));
         
         const res = await apiFetch('/api/invoices', {
           method: 'POST',
@@ -606,6 +607,7 @@ async function syncInvoicesManually() {
           console.log(`[SYNC] Invoice ${invoice.id} synced as ${data.id}`);
         } else {
           const errText = await res.text();
+          console.error(`[SYNC] Failed to sync invoice ${invoice.id}: HTTP ${res.status}`, errText);
           await tradebaseDB.markInvoiceSyncFailed(invoice.id, `HTTP ${res.status}: ${errText.substring(0, 100)}`);
           failedCount++;
         }
