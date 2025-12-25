@@ -208,10 +208,40 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
 });
 
 // DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
+// Enhanced config for DNS resilience
 const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10
 });
+
+// Retry wrapper for database operations - handles intermittent DNS failures
+async function pgQueryWithRetry(queryText, values, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await pgPool.query(queryText, values);
+    } catch (err) {
+      lastError = err;
+      const isDnsError = err.message && (
+        err.message.includes('getaddrinfo') ||
+        err.message.includes('EAI_AGAIN') ||
+        err.message.includes('ECONNREFUSED') ||
+        err.message.includes('ETIMEDOUT')
+      );
+      
+      if (isDnsError && attempt < maxRetries) {
+        console.warn(`[pgPool] DNS/connection error on attempt ${attempt}, retrying in ${attempt * 500}ms...`);
+        await new Promise(r => setTimeout(r, attempt * 500));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
 
 
 // AUTH MIDDLEWARE: VALIDATE SUPABASE JWT TOKEN
@@ -1001,15 +1031,15 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   try {
     // Generate invoice number: INV-YYYYMMDD-XXX
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const countResult = await pgPool.query(
+    const countResult = await pgQueryWithRetry(
       `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
       [userId, `INV-${dateStr}-%`]
     );
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // Single INSERT - no transaction needed for one statement
-    const result = await pgPool.query(
+    // Single INSERT with retry for DNS resilience
+    const result = await pgQueryWithRetry(
       `INSERT INTO invoices (
         user_id, client_id, job_id, client_name, client_address, 
         issue_date, notes, template, payment_url, 
