@@ -209,12 +209,23 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
 
 // DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
 // Enhanced config for DNS resilience
+const dbUrl = process.env.DATABASE_URL;
+const dbHost = dbUrl ? new URL(dbUrl).hostname : 'UNKNOWN';
+console.log(`[DB STARTUP] Connecting to host: ${dbHost}`);
+
 const pgPool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000,
+  connectionString: dbUrl,
+  ssl: dbHost.includes('neon') || dbHost.includes('supabase') ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 30000,
   max: 10
+});
+
+// Test connection at startup
+pgPool.query('SELECT 1').then(() => {
+  console.log(`[DB STARTUP] Connected successfully to ${dbHost}`);
+}).catch(err => {
+  console.error(`[DB STARTUP] Connection FAILED to ${dbHost}:`, err.message);
 });
 
 // Retry wrapper for database operations - handles intermittent DNS failures
