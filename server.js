@@ -13,6 +13,7 @@ const { Pool } = pg;
 
 dotenv.config();
 
+
 // VERSION CONSTANTS - Must be defined early for middleware
 const BUILD_VERSION = 118;
 const BUILD_TIMESTAMP = "2024-12-25-v118-offline-first";
@@ -256,11 +257,32 @@ if (dbUrl.includes('@helium')) {
   console.warn('[DB STARTUP] Using dev-only "helium" host - will fail in production');
 }
 
+// Extract username for debugging
+let dbUser = 'unknown';
+try {
+  const parsedUrl = new URL(dbUrl);
+  dbUser = parsedUrl.username;
+} catch (e) {
+  const userMatch = dbUrl.match(/postgresql:\/\/([^:@]+)/);
+  if (userMatch) dbUser = userMatch[1];
+}
+
 console.log(`[DB STARTUP] Connecting to host: ${dbHost}`);
+console.log(`[DB STARTUP] Using username: ${dbUser}`);
+
+// For Supabase pooler: use SSL but don't verify certificates 
+// (Supabase uses a certificate chain that may not be trusted in all environments)
+const useSSL = dbHost.includes('supabase') || dbHost.includes('pooler');
+console.log(`[DB STARTUP] SSL mode: ${useSSL ? 'enabled (rejectUnauthorized: false)' : 'disabled'}`);
+
+// Workaround for Supabase certificate chain issues in some environments
+if (useSSL) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
 
 const pgPool = new Pool({
   connectionString: dbUrl,
-  ssl: { rejectUnauthorized: false },
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 30000,
   max: 10
