@@ -209,14 +209,37 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
 
 // DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
 // Priority: SUPABASE_DB_URL > DATABASE_URL (allows production override)
-const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+let dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
 if (!dbUrl) {
   console.error('FATAL: No database URL configured (need SUPABASE_DB_URL or DATABASE_URL)');
   process.exit(1);
 }
 
-const dbHost = new URL(dbUrl).hostname;
+// Handle passwords with special characters that break URL parsing
+// Extract and URL-encode the password portion if it contains special chars
+const pwdMatch = dbUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.+)$/);
+if (pwdMatch) {
+  const [, prefix, rawPassword, suffix] = pwdMatch;
+  // Check if password has chars that need encoding (not already encoded)
+  if (/[^a-zA-Z0-9._~-]/.test(rawPassword) && !rawPassword.includes('%')) {
+    const encodedPassword = encodeURIComponent(rawPassword);
+    dbUrl = prefix + encodedPassword + suffix;
+    console.log('[DB STARTUP] Password contained special characters - URL encoded');
+  }
+}
+
+// Extract hostname safely
+let dbHost = 'unknown';
+try {
+  dbHost = new URL(dbUrl).hostname;
+} catch (e) {
+  // Fallback: extract hostname with regex
+  const hostMatch = dbUrl.match(/@([^:\/]+)/);
+  if (hostMatch) {
+    dbHost = hostMatch[1];
+  }
+}
 
 // PRODUCTION GUARD: Crash if production uses dev-only "helium" hostname
 if (process.env.NODE_ENV === 'production' && dbUrl.includes('@helium')) {
