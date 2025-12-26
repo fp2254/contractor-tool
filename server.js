@@ -1427,7 +1427,22 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       attachments: attachments || [] 
     });
   } catch (err) {
-    console.error("Error fetching invoice detail:", err);
+    console.error("Error fetching invoice detail:", err.message, err.code, err.detail);
+    res.status(500).json({ error: err.message || "Failed to fetch invoice" });
+  }
+});
+
+// Debug endpoint to check database schema
+app.get("/api/debug/schema", async (req, res) => {
+  try {
+    const { rows } = await pgPool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'invoices' AND table_schema = 'public'
+      ORDER BY ordinal_position
+    `);
+    res.json({ columns: rows, dbHost: process.env.SUPABASE_DB_URL ? 'supabase' : 'replit' });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
