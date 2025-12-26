@@ -279,6 +279,33 @@ pgPool.query('SELECT 1').then(() => {
   console.error(`[DB] Connection FAILED:`, err.message);
 });
 
+// Retry wrapper for database operations - handles intermittent DNS/connection failures
+async function pgQueryWithRetry(queryText, values, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await pgPool.query(queryText, values);
+    } catch (err) {
+      lastError = err;
+      const isTransientError = err.message && (
+        err.message.includes('getaddrinfo') ||
+        err.message.includes('EAI_AGAIN') ||
+        err.message.includes('ECONNREFUSED') ||
+        err.message.includes('ETIMEDOUT') ||
+        err.message.includes('Connection terminated')
+      );
+      
+      if (isTransientError && attempt < maxRetries) {
+        console.warn(`[DB] Transient error on attempt ${attempt}, retrying...`);
+        await new Promise(r => setTimeout(r, attempt * 500));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 
 // AUTH MIDDLEWARE: VALIDATE SUPABASE JWT TOKEN
 app.use(async (req, res, next) => {
