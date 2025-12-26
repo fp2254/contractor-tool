@@ -208,14 +208,36 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
 });
 
 // DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
-// Enhanced config for DNS resilience
-const dbUrl = process.env.DATABASE_URL;
-const dbHost = dbUrl ? new URL(dbUrl).hostname : 'UNKNOWN';
+// Priority: SUPABASE_DB_URL > DATABASE_URL (allows production override)
+const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+
+if (!dbUrl) {
+  console.error('FATAL: No database URL configured (need SUPABASE_DB_URL or DATABASE_URL)');
+  process.exit(1);
+}
+
+const dbHost = new URL(dbUrl).hostname;
+
+// PRODUCTION GUARD: Crash if production uses dev-only "helium" hostname
+if (process.env.NODE_ENV === 'production' && dbUrl.includes('@helium')) {
+  console.error('='.repeat(60));
+  console.error('FATAL: Production cannot use dev-only database host "helium"');
+  console.error('Set SUPABASE_DB_URL to your Supabase direct connection string');
+  console.error('Find it at: Supabase Dashboard → Settings → Database → Connection string');
+  console.error('='.repeat(60));
+  process.exit(1);
+}
+
+// WARN in dev if using helium (works but FYI)
+if (dbUrl.includes('@helium')) {
+  console.warn('[DB STARTUP] Using dev-only "helium" host - will fail in production');
+}
+
 console.log(`[DB STARTUP] Connecting to host: ${dbHost}`);
 
 const pgPool = new Pool({
   connectionString: dbUrl,
-  ssl: dbHost.includes('neon') || dbHost.includes('supabase') ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 30000,
   max: 10
