@@ -208,78 +208,62 @@ const supabaseAdmin = new Proxy(supabaseAdminRaw, {
   }
 });
 
-// DIRECT POSTGRES POOL (bypasses Supabase PostgREST cache)
-// Priority: SUPABASE_DB_URL > DATABASE_URL (allows production override)
+// ============================================================================
+// DATABASE CONFIGURATION - SINGLE SOURCE OF TRUTH
+// ============================================================================
+// RULE: Production MUST use Supabase Connection Pooler (host contains .pooler.supabase.com)
+// RULE: SUPABASE_DB_URL overrides Replit's auto-populated DATABASE_URL
+// Note: Replit auto-populates DATABASE_URL with internal "helium" host which only works in dev
+
+const env = process.env.NODE_ENV || "development";
+
+// Priority: SUPABASE_DB_URL (user-controlled) > DATABASE_URL (Replit-managed)
 let dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
 if (!dbUrl) {
-  console.error('FATAL: No database URL configured (need SUPABASE_DB_URL or DATABASE_URL)');
-  process.exit(1);
+  throw new Error("No database URL configured - set SUPABASE_DB_URL in Replit Secrets");
 }
 
 // Handle passwords with special characters that break URL parsing
-// Extract and URL-encode the password portion if it contains special chars
 const pwdMatch = dbUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.+)$/);
 if (pwdMatch) {
   const [, prefix, rawPassword, suffix] = pwdMatch;
-  // Check if password has chars that need encoding (not already encoded)
   if (/[^a-zA-Z0-9._~-]/.test(rawPassword) && !rawPassword.includes('%')) {
-    const encodedPassword = encodeURIComponent(rawPassword);
-    dbUrl = prefix + encodedPassword + suffix;
-    console.log('[DB STARTUP] Password contained special characters - URL encoded');
+    dbUrl = prefix + encodeURIComponent(rawPassword) + suffix;
   }
 }
 
-// Extract hostname safely
-let dbHost = 'unknown';
+// Extract hostname for validation
+let dbHost;
 try {
   dbHost = new URL(dbUrl).hostname;
 } catch (e) {
-  // Fallback: extract hostname with regex
   const hostMatch = dbUrl.match(/@([^:\/]+)/);
-  if (hostMatch) {
-    dbHost = hostMatch[1];
+  dbHost = hostMatch ? hostMatch[1] : 'unknown';
+}
+
+// ============================================================================
+// FAIL-FAST PRODUCTION GUARD - prevents dev-only config from leaking to prod
+// ============================================================================
+if (env === "production") {
+  if (dbHost === "helium" || dbHost === "localhost") {
+    throw new Error(`Prod DB misconfigured: host=${dbHost}`);
   }
+  if (!dbHost.includes("pooler.supabase.com")) {
+    throw new Error(`Prod must use Supabase pooler, got ${dbHost}`);
+  }
+  console.log(`[DB] Production validated: using Supabase pooler at ${dbHost}`);
+} else {
+  console.log(`[DB] Development mode: connecting to ${dbHost}`);
 }
 
-// PRODUCTION GUARD: Crash if production uses dev-only "helium" hostname
-if (process.env.NODE_ENV === 'production' && dbUrl.includes('@helium')) {
-  console.error('='.repeat(60));
-  console.error('FATAL: Production cannot use dev-only database host "helium"');
-  console.error('Set SUPABASE_DB_URL to your Supabase direct connection string');
-  console.error('Find it at: Supabase Dashboard → Settings → Database → Connection string');
-  console.error('='.repeat(60));
-  process.exit(1);
-}
-
-// WARN in dev if using helium (works but FYI)
-if (dbUrl.includes('@helium')) {
-  console.warn('[DB STARTUP] Using dev-only "helium" host - will fail in production');
-}
-
-// Extract username for debugging
-let dbUser = 'unknown';
-try {
-  const parsedUrl = new URL(dbUrl);
-  dbUser = parsedUrl.username;
-} catch (e) {
-  const userMatch = dbUrl.match(/postgresql:\/\/([^:@]+)/);
-  if (userMatch) dbUser = userMatch[1];
-}
-
-console.log(`[DB STARTUP] Connecting to host: ${dbHost}`);
-console.log(`[DB STARTUP] Using username: ${dbUser}`);
-
-// For Supabase pooler: use SSL but don't verify certificates 
-// (Supabase uses a certificate chain that may not be trusted in all environments)
+// Supabase requires SSL with relaxed certificate verification
 const useSSL = dbHost.includes('supabase') || dbHost.includes('pooler');
-console.log(`[DB STARTUP] SSL mode: ${useSSL ? 'enabled (rejectUnauthorized: false)' : 'disabled'}`);
-
-// Workaround for Supabase certificate chain issues in some environments
 if (useSSL) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
+// Single source of truth for Postgres pool
 const pgPool = new Pool({
   connectionString: dbUrl,
   ssl: useSSL ? { rejectUnauthorized: false } : false,
@@ -288,38 +272,12 @@ const pgPool = new Pool({
   max: 10
 });
 
-// Test connection at startup
+// Verify connection at startup
 pgPool.query('SELECT 1').then(() => {
-  console.log(`[DB STARTUP] Connected successfully to ${dbHost}`);
+  console.log(`[DB] Connected successfully to ${dbHost}`);
 }).catch(err => {
-  console.error(`[DB STARTUP] Connection FAILED to ${dbHost}:`, err.message);
+  console.error(`[DB] Connection FAILED:`, err.message);
 });
-
-// Retry wrapper for database operations - handles intermittent DNS failures
-async function pgQueryWithRetry(queryText, values, maxRetries = 3) {
-  let lastError;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await pgPool.query(queryText, values);
-    } catch (err) {
-      lastError = err;
-      const isDnsError = err.message && (
-        err.message.includes('getaddrinfo') ||
-        err.message.includes('EAI_AGAIN') ||
-        err.message.includes('ECONNREFUSED') ||
-        err.message.includes('ETIMEDOUT')
-      );
-      
-      if (isDnsError && attempt < maxRetries) {
-        console.warn(`[pgPool] DNS/connection error on attempt ${attempt}, retrying in ${attempt * 500}ms...`);
-        await new Promise(r => setTimeout(r, attempt * 500));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw lastError;
-}
 
 
 // AUTH MIDDLEWARE: VALIDATE SUPABASE JWT TOKEN

@@ -79,6 +79,22 @@ TradeBase is a full-stack web application using Node.js and Express.js for the b
 
 ## Architecture Rules (NON-NEGOTIABLE)
 
+### Database Configuration (December 2024)
+**Single Source of Truth:**
+- `SUPABASE_DB_URL` (user-controlled secret) takes priority over `DATABASE_URL` (Replit-managed)
+- Production MUST use Supabase Connection Pooler (host contains `.pooler.supabase.com`)
+- NEVER use `helium`, `localhost`, or direct Supabase DB host in production
+
+**Fail-Fast Production Guard:**
+- Server crashes immediately if production uses invalid DB host
+- Validates pooler hostname before accepting any requests
+- No silent fallbacks - misconfiguration = instant failure
+
+**Connection String Format (Session mode, port 5432):**
+```
+postgresql://postgres.PROJECT_ID:PASSWORD@aws-X-us-east-2.pooler.supabase.com:5432/postgres
+```
+
 ### Data Flow Architecture
 All database writes follow ONE path only:
 ```
