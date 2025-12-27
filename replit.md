@@ -108,11 +108,25 @@ Frontend → apiFetch() → Express API → pgPool → PostgreSQL
 | `supabaseAdmin` (backend) | Storage only (file uploads) | Database writes (insert/update/delete) |
 | `pgPool` (backend) | All database operations | - |
 
-### UUID Field Contract
-- **Required UUIDs**: `user_id` (always present from auth)
-- **Optional UUIDs**: `client_id`, `job_id` - MUST be validated
-- **Sanitization Rule**: Empty strings (`""`) and invalid UUIDs → `NULL`
-- **Never send**: Raw text to UUID columns
+### Supabase Schema Mapping (v119 - December 2024)
+The Supabase database uses different column names than the original app design. Server code translates between them:
+
+| Supabase Column | Frontend/API Alias | Data Type |
+|-----------------|-------------------|-----------|
+| `number` | `invoice_number` | text |
+| `date` | `issue_date` | date |
+| `tax` | `tax_amount` | numeric |
+| `payment_link` | `payment_url` | text |
+| `id` | `id` | bigint (NOT uuid) |
+| `client_id` | `client_id` | bigint (NOT uuid) |
+| `job_id` | `job_id` | bigint (NOT uuid) |
+
+**Key Rules:**
+- All SELECT queries alias Supabase columns → frontend names for compatibility
+- All INSERT/UPDATE queries use Supabase column names internally
+- Invoice IDs are bigint (numeric) internally, NOT UUIDs
+- Invoice numbers (INV-YYYYMMDD-XXX) are stored in the `number` column, not `invoice_number`
+- The `user_id` column remains UUID (from Supabase Auth)
 
 ### Invoice Flow (Fully Converted to pgPool as of Dec 2024)
 All invoice operations use pgPool exclusively:
