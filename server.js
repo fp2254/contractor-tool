@@ -5657,11 +5657,12 @@ app.get("/view/invoice/:id", async (req, res) => {
     }
     
     const invoice = invoices[0];
+    const numericId = invoice.id; // Use resolved bigint ID for related queries
     
-    // Get invoice items
+    // Get invoice items using the resolved numeric ID
     const { rows: items } = await pgPool.query(
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
-      [invoiceId]
+      [numericId]
     );
     
     // Get business profile (including payment_link)
@@ -5681,10 +5682,10 @@ app.get("/view/invoice/:id", async (req, res) => {
       client = clients[0] || null;
     }
     
-    // Get invoice attachments/photos
+    // Get invoice attachments/photos using the resolved numeric ID
     const { rows: attachments } = await pgPool.query(
       `SELECT * FROM invoice_attachments WHERE invoice_id = $1`,
-      [invoiceId]
+      [numericId]
     );
     
     const businessName = profile?.business_name || "Business";
