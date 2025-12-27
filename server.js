@@ -1010,14 +1010,19 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
   const showArchived = req.query.archived === 'true';
   
   try {
-    // Use direct SQL to join with clients table and get client_name
-    // COALESCE prefers stored client_name, falls back to joined client name
+    // v119: Use Supabase column names with aliases for frontend compatibility
+    // Supabase uses: number, date, tax, payment_link
+    // Frontend expects: invoice_number, issue_date, tax_amount, payment_url
     const archivedCondition = showArchived 
       ? "AND i.archived = true" 
       : "AND (i.archived IS NULL OR i.archived = false)";
     
     const { rows: invoices } = await pgPool.query(`
       SELECT i.*, 
+        i.number as invoice_number,
+        i.date as issue_date,
+        i.tax as tax_amount,
+        i.payment_link as payment_url,
         COALESCE(i.client_name, c.name) as client_name,
         c.email as client_email, 
         c.phone as client_phone
@@ -1035,8 +1040,9 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  // v118 CLEAN REWRITE - Minimal, reliable invoice creation
-  // One insert. One response. No side effects.
+  // v119 SUPABASE SCHEMA FIX - Uses correct column names for Supabase
+  // Columns: number (not invoice_number), date (not issue_date), tax (not tax_amount), payment_link (not payment_url)
+  // IDs: bigint (not UUID) for client_id and job_id
   
   const userId = req.userId;
   if (!userId) {
@@ -1046,8 +1052,8 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   // Extract only the fields we accept
   const { 
     client_id, job_id, client_name, client_address, 
-    issue_date, notes, template, payment_url, 
-    subtotal, tax_amount, total 
+    issue_date, date, notes, template, payment_url, payment_link,
+    subtotal, tax_amount, tax, total 
   } = req.body;
 
   // === SANITIZATION HELPERS ===
@@ -1069,25 +1075,26 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const toUUID = (v) => {
+  // Supabase uses bigint IDs, not UUIDs
+  const toBigIntId = (v) => {
     if (v === null || v === undefined || v === '') return null;
-    if (typeof v === 'string' && UUID_REGEX.test(v)) return v;
-    return null;
+    const num = parseInt(v, 10);
+    return Number.isFinite(num) && num > 0 ? num : null;
   };
 
   // === SANITIZE ALL INPUTS ===
+  // Accept both old and new column names for compatibility
   const sanitized = {
-    client_id: toUUID(client_id),
-    job_id: toUUID(job_id),
+    client_id: toBigIntId(client_id),
+    job_id: toBigIntId(job_id),
     client_name: trimString(client_name),
     client_address: trimString(client_address),
-    issue_date: toValidDate(issue_date),
+    date: toValidDate(date || issue_date),
     notes: trimString(notes),
     template: trimString(template) || 'basic_clean',
-    payment_url: trimString(payment_url),
+    payment_link: trimString(payment_link || payment_url),
     subtotal: toFiniteNumber(subtotal),
-    tax_amount: toFiniteNumber(tax_amount),
+    tax: toFiniteNumber(tax !== undefined ? tax : tax_amount),
     total: toFiniteNumber(total)
   };
 
@@ -1095,32 +1102,32 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     // Generate invoice number: INV-YYYYMMDD-XXX
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const countResult = await pgQueryWithRetry(
-      `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
+      `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND number LIKE $2`,
       [userId, `INV-${dateStr}-%`]
     );
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // Single INSERT with retry for DNS resilience
+    // Single INSERT with Supabase column names
     const result = await pgQueryWithRetry(
       `INSERT INTO invoices (
         user_id, client_id, job_id, client_name, client_address, 
-        issue_date, notes, template, payment_url, 
-        subtotal, tax_amount, total, status, invoice_number
+        date, notes, template, payment_link, 
+        subtotal, tax, total, status, number
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING id, invoice_number`,
+      RETURNING id, number`,
       [
         userId, 
         sanitized.client_id, 
         sanitized.job_id, 
         sanitized.client_name, 
         sanitized.client_address,
-        sanitized.issue_date, 
+        sanitized.date, 
         sanitized.notes, 
         sanitized.template, 
-        sanitized.payment_url,
+        sanitized.payment_link,
         sanitized.subtotal, 
-        sanitized.tax_amount, 
+        sanitized.tax, 
         sanitized.total, 
         'draft', 
         invoiceNumber
@@ -1128,13 +1135,17 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     );
 
     const inv = result.rows[0];
-    console.log(`[INVOICE v118] Created: ${inv.invoice_number} (${inv.id})`);
+    console.log(`[INVOICE v119] Created: ${inv.number} (${inv.id})`);
     
-    // Single response - 201 Created
-    return res.status(201).json({ id: inv.id, invoice_number: inv.invoice_number });
+    // Return both column names for frontend compatibility
+    return res.status(201).json({ 
+      id: inv.id, 
+      invoice_number: inv.number,
+      number: inv.number 
+    });
     
   } catch (err) {
-    console.error(`[INVOICE v118 ERROR] ${err.message}`, { 
+    console.error(`[INVOICE v119 ERROR] ${err.message}`, { 
       code: err.code, 
       detail: err.detail,
       column: err.column 
@@ -1143,38 +1154,27 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   }
 });
 
-// Update invoice - CONVERTED TO PGPOOL
+// Update invoice - v119 SUPABASE SCHEMA FIX
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  const BUILD_TAG = "v112-uuid-debug-" + Date.now();
-  console.error(`🔥🔥🔥 HIT INVOICE UPDATE ROUTE — ${BUILD_TAG} 🔥🔥🔥`);
-  console.error("🔥 Raw Body:", JSON.stringify(req.body, null, 2));
-  res.setHeader('X-Hit-Express', 'YES-v112');
-  res.setHeader('X-Tradebase-Server', BUILD_TAG);
-  res.setHeader('X-Tradebase-Handler', 'express-pgpool-update');
-  res.setHeader('X-Route-Match', 'PUT-/api/invoices/:id');
-  res.setHeader('X-Build-ID', BUILD_ID);
-  
+  // v119: Uses Supabase column names (number, date, tax, payment_link, bigint IDs)
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
   
-  // Extract ALL fields from request body, including any _id fields
+  // Extract fields - accept both old and new column names
   const { 
-    client_id, job_id, address_id, customer_id, org_id,  // ALL potential UUID fields
-    client_name, client_address, issue_date, notes, template, payment_url, 
-    subtotal, tax_amount, total, items 
+    client_id, job_id,
+    client_name, client_address, 
+    issue_date, date,  // Accept both
+    notes, template, 
+    payment_url, payment_link,  // Accept both
+    subtotal, 
+    tax_amount, tax,  // Accept both
+    total, items 
   } = req.body;
   
-  // LOG ALL _id FIELDS FOR DEBUGGING
-  console.error("🔍 [UUID AUDIT UPDATE] invoiceIdParam:", JSON.stringify(invoiceIdParam), "type:", typeof invoiceIdParam);
-  console.error("🔍 [UUID AUDIT UPDATE] client_id:", JSON.stringify(client_id), "type:", typeof client_id);
-  console.error("🔍 [UUID AUDIT UPDATE] job_id:", JSON.stringify(job_id), "type:", typeof job_id);
-  console.error("🔍 [UUID AUDIT UPDATE] address_id:", JSON.stringify(address_id), "type:", typeof address_id);
-  console.error("🔍 [UUID AUDIT UPDATE] customer_id:", JSON.stringify(customer_id), "type:", typeof customer_id);
-  console.error("🔍 [UUID AUDIT UPDATE] org_id:", JSON.stringify(org_id), "type:", typeof org_id);
-  
-  // SANITIZATION: Convert "" to null, ensure proper types
+  // SANITIZATION helpers
   const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
   const toNumber = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v) || 0;
   const toDate = (v) => {
@@ -1183,107 +1183,40 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  // UUID VALIDATION: Only allow valid UUIDs, convert everything else to null
-  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const toUUID = (v, fieldName) => {
-    if (!v || v === "" || v === undefined || v === null) {
-      console.log(`[UUID SANITIZE] ${fieldName}: empty/null -> null`);
-      return null;
-    }
-    if (isValidUUID.test(v)) {
-      console.log(`[UUID SANITIZE] ${fieldName}: valid UUID`);
-      return v;
-    }
-    console.warn(`[UUID SANITIZE] ${fieldName}: INVALID UUID "${v}" -> null`);
-    return null;
+  // Supabase uses bigint IDs, not UUIDs
+  const toBigIntId = (v) => {
+    if (v === null || v === undefined || v === '') return null;
+    const num = parseInt(v, 10);
+    return Number.isFinite(num) && num > 0 ? num : null;
   };
 
-  // Sanitize ALL fields including ALL potential UUID fields
+  // Sanitize fields - use Supabase column names internally
   const sanitized = {
-    client_id: toUUID(client_id, 'client_id'),
-    job_id: toUUID(job_id, 'job_id'),
+    client_id: toBigIntId(client_id),
+    job_id: toBigIntId(job_id),
     client_name: toNull(client_name),
     client_address: toNull(client_address),
-    issue_date: toDate(issue_date),
+    date: toDate(date || issue_date),
     notes: toNull(notes),
     template: template || 'basic_clean',
-    payment_url: toNull(payment_url),
+    payment_link: toNull(payment_link || payment_url),
     subtotal: toNumber(subtotal),
-    tax_amount: toNumber(tax_amount),
+    tax: toNumber(tax !== undefined ? tax : tax_amount),
     total: toNumber(total)
   };
 
-  console.log("[INVOICE UPDATE v112] userId:", userId, "invoiceIdParam:", invoiceIdParam);
-  console.log("[INVOICE UPDATE v112] Sanitized payload:", JSON.stringify(sanitized, null, 2));
-
-  // ========== HARD FAIL UUID VALIDATION ==========
-  // Validates every UUID column BEFORE pgPool UPDATE
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const uuidColumns = {
-    user_id: userId,
-    client_id: sanitized.client_id,
-    job_id: sanitized.job_id,
-    invoice_id_param: invoiceIdParam
-  };
-  
-  console.error("🔴🔴🔴 [HARD FAIL CHECK] Invoice UPDATE - UUID Column Validation 🔴🔴🔴");
-  for (const [colName, colValue] of Object.entries(uuidColumns)) {
-    console.error(`  📍 ${colName}: value=${JSON.stringify(colValue)}, typeof=${typeof colValue}`);
-    
-    // NULL is allowed for optional UUID columns (client_id, job_id)
-    if (colValue === null || colValue === undefined) {
-      if (colName === 'user_id') {
-        console.error(`  ❌ HARD FAIL: ${colName} is NULL but required!`);
-        return res.status(400).json({ error: `UUID validation failed: ${colName} is required but received null` });
-      }
-      console.error(`  ✅ ${colName}: null (allowed for optional field)`);
-      continue;
-    }
-    
-    // Check for empty string
-    if (colValue === "") {
-      console.error(`  ❌ HARD FAIL: ${colName} is empty string!`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} received empty string ""` });
-    }
-    
-    // Check for non-string
-    if (typeof colValue !== 'string') {
-      console.error(`  ❌ HARD FAIL: ${colName} is not a string! typeof=${typeof colValue}`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a string (typeof=${typeof colValue})` });
-    }
-    
-    // For invoice_id_param, allow invoice numbers (not just UUIDs)
-    if (colName === 'invoice_id_param') {
-      // Invoice ID can be UUID or invoice_number like INV-20241224-001
-      if (!UUID_REGEX.test(colValue) && !colValue.startsWith('INV-')) {
-        console.error(`  ❌ HARD FAIL: ${colName} is not a valid UUID or invoice number! value="${colValue}"`);
-        return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID or invoice number (value="${colValue}")` });
-      }
-      console.error(`  ✅ ${colName}: valid identifier`);
-      continue;
-    }
-    
-    // Check UUID regex
-    if (!UUID_REGEX.test(colValue)) {
-      console.error(`  ❌ HARD FAIL: ${colName} failed UUID regex! value="${colValue}"`);
-      return res.status(400).json({ error: `UUID validation failed: ${colName} is not a valid UUID (value="${colValue}")` });
-    }
-    
-    console.error(`  ✅ ${colName}: valid UUID`);
-  }
-  console.error("🔴🔴🔴 [HARD FAIL CHECK] All UUID columns passed validation 🔴🔴🔴");
-  // ========== END HARD FAIL UUID VALIDATION ==========
+  console.log("[INVOICE UPDATE v119] userId:", userId, "invoiceIdParam:", invoiceIdParam);
 
   const dbClient = await pgPool.connect();
   try {
     await dbClient.query('BEGIN');
     
-    // Verify invoice belongs to user - try UUID first, then invoice_number
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    // Supabase uses bigint IDs and 'number' column
+    const isBigInt = /^\d+$/.test(invoiceIdParam);
     
-    const lookupQuery = isUUID
-      ? `SELECT id, user_id, invoice_number FROM invoices WHERE id = $1 AND user_id = $2`
-      : `SELECT id, user_id, invoice_number FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
+    const lookupQuery = isBigInt
+      ? `SELECT id, user_id, number FROM invoices WHERE id = $1 AND user_id = $2`
+      : `SELECT id, user_id, number FROM invoices WHERE number = $1 AND user_id = $2`;
     
     const { rows: existingRows } = await dbClient.query(lookupQuery, [invoiceIdParam, userId]);
     
@@ -1294,16 +1227,16 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     
     const existing = existingRows[0];
     const invoiceId = existing.id;
-    const invoiceNumber = existing.invoice_number;
+    const invoiceNumber = existing.number;
 
-    // Update invoice using pgPool (including job_id and client_name)
+    // Update invoice using Supabase column names
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, job_id = $2, client_name = $3, client_address = $4, issue_date = $5, notes = $6, 
-        template = $7, payment_url = $8, subtotal = $9, tax_amount = $10, total = $11
+        client_id = $1, job_id = $2, client_name = $3, client_address = $4, date = $5, notes = $6, 
+        template = $7, payment_link = $8, subtotal = $9, tax = $10, total = $11
        WHERE id = $12 AND user_id = $13`,
-      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes,
-       sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
+      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.date, sanitized.notes,
+       sanitized.template, sanitized.payment_link, sanitized.subtotal, sanitized.tax, sanitized.total,
        invoiceId, userId]
     );
 
@@ -1360,19 +1293,30 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   const invoiceIdParam = req.params.id;
 
   try {
-    // Use direct SQL to bypass Supabase schema cache issues
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    // v119: Use Supabase column names with aliases for frontend compatibility
+    // Supabase uses: number (not invoice_number), bigint IDs (not UUIDs)
+    const isBigInt = /^\d+$/.test(invoiceIdParam);
     
-    // Fetch invoice with client info joined
-    const invoiceQuery = isUUID
-      ? `SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
+    // Fetch invoice with client info joined, alias columns for frontend
+    const invoiceQuery = isBigInt
+      ? `SELECT i.*, 
+           i.number as invoice_number,
+           i.date as issue_date,
+           i.tax as tax_amount,
+           i.payment_link as payment_url,
+           c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
          WHERE i.id = $1 AND i.user_id = $2`
-      : `SELECT i.*, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
+      : `SELECT i.*, 
+           i.number as invoice_number,
+           i.date as issue_date,
+           i.tax as tax_amount,
+           i.payment_link as payment_url,
+           c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
-         WHERE i.invoice_number = $1 AND i.user_id = $2`;
+         WHERE i.number = $1 AND i.user_id = $2`;
     
     const { rows: invoices } = await pgPool.query(invoiceQuery, [invoiceIdParam, userId]);
     
