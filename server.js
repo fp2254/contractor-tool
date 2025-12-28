@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 122;
+const BUILD_VERSION = 123;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -1010,8 +1010,8 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
   const showArchived = req.query.archived === 'true';
   
   try {
-    // v119: Use Supabase column names with aliases for frontend compatibility
-    // Supabase uses: number, date, tax, payment_link
+    // v123: Use PRODUCTION Supabase column names with aliases for frontend compatibility
+    // Production uses: number, date, tax, payment_link (bigint IDs)
     // Frontend expects: invoice_number, issue_date, tax_amount, payment_url
     const archivedCondition = showArchived 
       ? "AND i.archived = true" 
@@ -1019,6 +1019,10 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
     
     const { rows: invoices } = await pgPool.query(`
       SELECT i.*, 
+        i.number as invoice_number,
+        TO_CHAR(i.date, 'YYYY-MM-DD') as issue_date,
+        i.tax as tax_amount,
+        i.payment_link as payment_url,
         COALESCE(i.client_name, c.name) as client_name,
         c.email as client_email, 
         c.phone as client_phone
@@ -1367,9 +1371,18 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       [invoiceId]
     );
 
-    // Return invoice with related data
+    // v123 FIX: Format date as YYYY-MM-DD string for frontend
+    const formatDate = (d) => {
+      if (!d) return null;
+      if (d instanceof Date) return d.toISOString().split('T')[0];
+      if (typeof d === 'string') return d.split('T')[0];
+      return String(d);
+    };
+
+    // Return invoice with related data, with formatted date
     res.json({ 
-      ...invoice, 
+      ...invoice,
+      issue_date: formatDate(invoice.issue_date),
       items: items || [], 
       client: client || null, 
       job: job || null, 
@@ -5699,6 +5712,15 @@ app.get("/view/invoice/:id", async (req, res) => {
     // Use the saved invoice total, not recalculated from items (in case items weren't saved properly)
     const total = parseFloat(invoice.total) || 0;
     
+    // v123 FIX: Convert Date object to string for display
+    const formatDate = (d) => {
+      if (!d) return new Date().toLocaleDateString();
+      if (d instanceof Date) return d.toISOString().split('T')[0];
+      if (typeof d === 'string') return d.split('T')[0];
+      return String(d);
+    };
+    const displayDate = formatDate(invoice.issue_date);
+    
     // Generate HTML page
     const html = `
 <!DOCTYPE html>
@@ -5762,7 +5784,7 @@ app.get("/view/invoice/:id", async (req, res) => {
         </div>
         <div class="info-box" style="text-align: right;">
           <h3>Invoice Details</h3>
-          <p>Date: ${invoice.issue_date || new Date().toLocaleDateString()}</p>
+          <p>Date: ${displayDate}</p>
           <p>Status: <span class="status ${invoice.payment_status === 'paid' ? 'status-paid' : invoice.payment_status === 'pending' ? 'status-pending' : 'status-unpaid'}">${(invoice.payment_status || 'unpaid').toUpperCase()}</span></p>
         </div>
       </div>
