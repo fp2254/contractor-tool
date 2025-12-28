@@ -1295,11 +1295,13 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
+  console.log(`[INVOICE DETAIL v120] Fetching invoice: ${invoiceIdParam} for user: ${userId}`);
 
   try {
     // Check if it's a UUID or invoice number (INV-...)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
+    console.log(`[INVOICE DETAIL v120] isUUID: ${isUUID}, isInvoiceNumber: ${isInvoiceNumber}`);
     
     // Fetch invoice with client info joined - no column aliasing needed, schema already correct
     const invoiceQuery = isUUID
