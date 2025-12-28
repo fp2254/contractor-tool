@@ -15,9 +15,9 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 120;
-const BUILD_TIMESTAMP = "2024-12-28-v120-schema-fix";
-const BUILD_ID = "v120-schema-fix-" + Date.now();
+const BUILD_VERSION = 121;
+const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
+const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
 // Lazy-loaded chromium path (cached after first call)
 let cachedChromiumPath = undefined;
@@ -1289,32 +1289,39 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
 });
 
 app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
-  // v120 FIXED - Uses actual Supabase column names: invoice_number, issue_date, tax_amount, payment_url
-  // IDs are UUIDs (not bigint)
+  // v121 FIXED - Uses PRODUCTION Supabase column names (number, date, tax, payment_link)
+  // Production uses bigint IDs, not UUIDs
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
-  console.log(`[INVOICE DETAIL v120] Fetching invoice: ${invoiceIdParam} for user: ${userId}`);
+  console.log(`[INVOICE DETAIL v121] Fetching invoice: ${invoiceIdParam} for user: ${userId}`);
 
   try {
-    // Check if it's a UUID or invoice number (INV-...)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
-    const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
-    console.log(`[INVOICE DETAIL v120] isUUID: ${isUUID}, isInvoiceNumber: ${isInvoiceNumber}`);
+    // Production uses bigint IDs
+    const isBigInt = /^\d+$/.test(invoiceIdParam);
+    console.log(`[INVOICE DETAIL v121] isBigInt: ${isBigInt}`);
     
-    // Fetch invoice with client info joined - no column aliasing needed, schema already correct
-    const invoiceQuery = isUUID
+    // Fetch invoice with client info joined, alias Supabase columns for frontend compatibility
+    const invoiceQuery = isBigInt
       ? `SELECT i.*, 
+           i.number as invoice_number,
+           i.date as issue_date,
+           i.tax as tax_amount,
+           i.payment_link as payment_url,
            c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
          WHERE i.id = $1 AND i.user_id = $2`
       : `SELECT i.*, 
+           i.number as invoice_number,
+           i.date as issue_date,
+           i.tax as tax_amount,
+           i.payment_link as payment_url,
            c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
-         WHERE i.invoice_number = $1 AND i.user_id = $2`;
+         WHERE i.number = $1 AND i.user_id = $2`;
     
     const { rows: invoices } = await pgPool.query(invoiceQuery, [invoiceIdParam, userId]);
     
@@ -1388,18 +1395,12 @@ app.post(
     const files = req.files || [];
     if (!files.length) return res.json({ ok: true });
     
-    // v120: Accept UUID or invoice number
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
-    const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
+    // v121: Accept bigint ID or invoice number (production uses bigint, not UUID)
+    const isBigInt = /^\d+$/.test(invoiceIdParam);
     
-    if (!isUUID && !isInvoiceNumber) {
-      console.error("[PHOTO UPLOAD] Invalid invoice ID format:", invoiceIdParam);
-      return res.status(400).json({ error: "Invalid invoice ID format" });
-    }
-    
-    // Resolve to UUID if invoice number was passed
+    // Resolve to ID if invoice number was passed
     let invoiceId = invoiceIdParam;
-    if (!isUUID && isInvoiceNumber) {
+    if (!isBigInt) {
       const resolved = await resolveInvoiceId(invoiceIdParam, userId);
       if (!resolved) return res.status(404).json({ error: "Invoice not found" });
       invoiceId = resolved;
@@ -1443,27 +1444,28 @@ app.post(
   }
 );
 
-// v120 FIXED: Helper function to resolve invoice ID (UUID or invoice number)
+// v121 FIXED: Helper function to resolve invoice ID (bigint or invoice number)
+// Production Supabase uses 'number' column (not 'invoice_number') and bigint IDs
 async function resolveInvoiceId(invoiceIdParam, userId) {
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+  const isBigInt = /^\d+$/.test(invoiceIdParam);
   
   try {
-    if (isUUID) {
+    if (isBigInt) {
       const { rows } = await pgPool.query(
         `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`,
         [invoiceIdParam, userId]
       );
       return rows.length ? rows[0].id : null;
     } else {
-      // Invoice number (e.g., INV-20241225-001) stored in 'invoice_number' column
+      // Invoice number stored in 'number' column in production Supabase
       const { rows } = await pgPool.query(
-        `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`,
+        `SELECT id FROM invoices WHERE number = $1 AND user_id = $2`,
         [invoiceIdParam, userId]
       );
       return rows.length ? rows[0].id : null;
     }
   } catch (err) {
-    console.error("[resolveInvoiceId v120] Error:", err);
+    console.error("[resolveInvoiceId v121] Error:", err);
     return null;
   }
 }

@@ -108,35 +108,32 @@ Frontend → apiFetch() → Express API → pgPool → PostgreSQL
 | `supabaseAdmin` (backend) | Storage only (file uploads) | Database writes (insert/update/delete) |
 | `pgPool` (backend) | All database operations | - |
 
-### Supabase Schema (v120 - December 2024)
-The Supabase database uses the following column names (confirmed from production):
+### Supabase Schema (v121 - December 2024)
+**CRITICAL: Production and Development databases have DIFFERENT schemas!**
 
-| Column Name | Data Type | Description |
-|-------------|-----------|-------------|
-| `id` | uuid | Primary key |
-| `user_id` | uuid | User's Supabase Auth ID |
-| `client_id` | uuid | Foreign key to clients table |
-| `job_id` | uuid | Foreign key to jobs table |
-| `invoice_number` | text | Human-readable invoice number (INV-YYYYMMDD-XXX) |
-| `issue_date` | date | Invoice issue date |
-| `tax_amount` | numeric | Tax amount |
-| `payment_url` | text | Payment link URL |
-| `subtotal` | numeric | Subtotal before tax |
-| `total` | numeric | Total amount |
-| `status` | text | Invoice status (draft, sent, etc.) |
-| `payment_status` | text | Payment status (unpaid, pending, paid) |
-| `template` | text | Invoice template name |
-| `notes` | text | Invoice notes |
-| `client_name` | text | Client name (denormalized) |
-| `client_address` | text | Client address (denormalized) |
-| `archived` | boolean | Whether invoice is archived |
+**Production Supabase (SUPABASE_DB_URL):**
+| Supabase Column | Frontend Alias | Data Type |
+|-----------------|----------------|-----------|
+| `id` | `id` | bigint |
+| `number` | `invoice_number` | text |
+| `date` | `issue_date` | date |
+| `tax` | `tax_amount` | numeric |
+| `payment_link` | `payment_url` | text |
+
+**Development Replit (DATABASE_URL):**
+| Column Name | Data Type |
+|-------------|-----------|
+| `id` | uuid |
+| `invoice_number` | text |
+| `issue_date` | date |
+| `tax_amount` | numeric |
+| `payment_url` | text |
 
 **Key Rules:**
-- All IDs are UUIDs, not bigint/numeric
-- Column names match frontend field names (no aliasing needed)
-- Invoice numbers stored in `invoice_number` column
-- Tax stored in `tax_amount` column
-- Payment URLs stored in `payment_url` column
+- Production uses bigint IDs; Development uses UUIDs
+- Server code MUST alias production columns to frontend names
+- Always test against production schema (SUPABASE_DB_URL) before deploying
+- The SQL tool in Replit queries DATABASE_URL, NOT SUPABASE_DB_URL
 
 ### Invoice Flow (Fully Converted to pgPool as of Dec 2024)
 All invoice operations use pgPool exclusively:
