@@ -1019,10 +1019,6 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
     
     const { rows: invoices } = await pgPool.query(`
       SELECT i.*, 
-        i.number as invoice_number,
-        i.date as issue_date,
-        i.tax as tax_amount,
-        i.payment_link as payment_url,
         COALESCE(i.client_name, c.name) as client_name,
         c.email as client_email, 
         c.phone as client_phone
@@ -1040,20 +1036,18 @@ app.get("/api/invoices", requireSubscription, async (req, res) => {
 });
 
 app.post("/api/invoices", requireSubscription, async (req, res) => {
-  // v119 SUPABASE SCHEMA FIX - Uses correct column names for Supabase
-  // Columns: number (not invoice_number), date (not issue_date), tax (not tax_amount), payment_link (not payment_url)
-  // IDs: bigint (not UUID) for client_id and job_id
+  // v120 FIXED - Uses actual Supabase column names: invoice_number, issue_date, tax_amount, payment_url
+  // IDs are UUIDs (not bigint)
   
   const userId = req.userId;
   if (!userId) {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  // Extract only the fields we accept
   const { 
     client_id, job_id, client_name, client_address, 
-    issue_date, date, notes, template, payment_url, payment_link,
-    subtotal, tax_amount, tax, total, items 
+    issue_date, notes, template, payment_url,
+    subtotal, tax_amount, total, items 
   } = req.body;
 
   // === SANITIZATION HELPERS ===
@@ -1075,26 +1069,24 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  // Supabase uses bigint IDs, not UUIDs
-  const toBigIntId = (v) => {
+  // Supabase uses UUID IDs - validate UUID format or return null
+  const toUUID = (v) => {
     if (v === null || v === undefined || v === '') return null;
-    const num = parseInt(v, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(v) ? v : null;
   };
 
-  // === SANITIZE ALL INPUTS ===
-  // Accept both old and new column names for compatibility
   const sanitized = {
-    client_id: toBigIntId(client_id),
-    job_id: toBigIntId(job_id),
+    client_id: toUUID(client_id),
+    job_id: toUUID(job_id),
     client_name: trimString(client_name),
     client_address: trimString(client_address),
-    date: toValidDate(date || issue_date),
+    issue_date: toValidDate(issue_date),
     notes: trimString(notes),
     template: trimString(template) || 'basic_clean',
-    payment_link: trimString(payment_link || payment_url),
+    payment_url: trimString(payment_url),
     subtotal: toFiniteNumber(subtotal),
-    tax: toFiniteNumber(tax !== undefined ? tax : tax_amount),
+    tax_amount: toFiniteNumber(tax_amount),
     total: toFiniteNumber(total)
   };
 
@@ -1102,32 +1094,32 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     // Generate invoice number: INV-YYYYMMDD-XXX
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const countResult = await pgQueryWithRetry(
-      `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND number LIKE $2`,
+      `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
       [userId, `INV-${dateStr}-%`]
     );
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // Single INSERT with Supabase column names
+    // Single INSERT with correct Supabase column names
     const result = await pgQueryWithRetry(
       `INSERT INTO invoices (
         user_id, client_id, job_id, client_name, client_address, 
-        date, notes, template, payment_link, 
-        subtotal, tax, total, status, number
+        issue_date, notes, template, payment_url, 
+        subtotal, tax_amount, total, status, invoice_number
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING id, number`,
+      RETURNING id, invoice_number`,
       [
         userId, 
         sanitized.client_id, 
         sanitized.job_id, 
         sanitized.client_name, 
         sanitized.client_address,
-        sanitized.date, 
+        sanitized.issue_date, 
         sanitized.notes, 
         sanitized.template, 
-        sanitized.payment_link,
+        sanitized.payment_url,
         sanitized.subtotal, 
-        sanitized.tax, 
+        sanitized.tax_amount, 
         sanitized.total, 
         'draft', 
         invoiceNumber
@@ -1136,11 +1128,11 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
 
     const inv = result.rows[0];
     const invoiceId = inv.id;
-    console.log(`[INVOICE v119] Created: ${inv.number} (${invoiceId})`);
+    console.log(`[INVOICE v120] Created: ${inv.invoice_number} (${invoiceId})`);
     
     // Save line items if provided
     if (items && Array.isArray(items) && items.length > 0) {
-      console.log(`[INVOICE v119] Saving ${items.length} line items`);
+      console.log(`[INVOICE v120] Saving ${items.length} line items`);
       for (const item of items) {
         const desc = (item.description || '').trim() || 'Item';
         const qty = Number(item.quantity) || 1;
@@ -1152,18 +1144,16 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
           [invoiceId, desc, qty, price, itemTotal]
         );
       }
-      console.log(`[INVOICE v119] Saved ${items.length} line items for invoice ${invoiceId}`);
+      console.log(`[INVOICE v120] Saved ${items.length} line items for invoice ${invoiceId}`);
     }
     
-    // Return both column names for frontend compatibility
     return res.status(201).json({ 
       id: invoiceId, 
-      invoice_number: inv.number,
-      number: inv.number 
+      invoice_number: inv.invoice_number
     });
     
   } catch (err) {
-    console.error(`[INVOICE v119 ERROR] ${err.message}`, { 
+    console.error(`[INVOICE v120 ERROR] ${err.message}`, { 
       code: err.code, 
       detail: err.detail,
       column: err.column 
@@ -1172,24 +1162,19 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   }
 });
 
-// Update invoice - v119 SUPABASE SCHEMA FIX
+// Update invoice - v120 FIXED - Uses actual Supabase column names
 app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
-  // v119: Uses Supabase column names (number, date, tax, payment_link, bigint IDs)
+  // v120: Uses actual Supabase column names (invoice_number, issue_date, tax_amount, payment_url, UUID IDs)
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
   
-  // Extract fields - accept both old and new column names
   const { 
     client_id, job_id,
     client_name, client_address, 
-    issue_date, date,  // Accept both
-    notes, template, 
-    payment_url, payment_link,  // Accept both
-    subtotal, 
-    tax_amount, tax,  // Accept both
-    total, items 
+    issue_date, notes, template, payment_url,
+    subtotal, tax_amount, total, items 
   } = req.body;
   
   // SANITIZATION helpers
@@ -1201,40 +1186,39 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     return isNaN(d.getTime()) ? new Date().toISOString().split('T')[0] : d.toISOString().split('T')[0];
   };
   
-  // Supabase uses bigint IDs, not UUIDs
-  const toBigIntId = (v) => {
+  // Supabase uses UUID IDs
+  const toUUID = (v) => {
     if (v === null || v === undefined || v === '') return null;
-    const num = parseInt(v, 10);
-    return Number.isFinite(num) && num > 0 ? num : null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(v) ? v : null;
   };
 
-  // Sanitize fields - use Supabase column names internally
   const sanitized = {
-    client_id: toBigIntId(client_id),
-    job_id: toBigIntId(job_id),
+    client_id: toUUID(client_id),
+    job_id: toUUID(job_id),
     client_name: toNull(client_name),
     client_address: toNull(client_address),
-    date: toDate(date || issue_date),
+    issue_date: toDate(issue_date),
     notes: toNull(notes),
     template: template || 'basic_clean',
-    payment_link: toNull(payment_link || payment_url),
+    payment_url: toNull(payment_url),
     subtotal: toNumber(subtotal),
-    tax: toNumber(tax !== undefined ? tax : tax_amount),
+    tax_amount: toNumber(tax_amount),
     total: toNumber(total)
   };
 
-  console.log("[INVOICE UPDATE v119] userId:", userId, "invoiceIdParam:", invoiceIdParam);
+  console.log("[INVOICE UPDATE v120] userId:", userId, "invoiceIdParam:", invoiceIdParam);
 
   const dbClient = await pgPool.connect();
   try {
     await dbClient.query('BEGIN');
     
-    // Supabase uses bigint IDs and 'number' column
-    const isBigInt = /^\d+$/.test(invoiceIdParam);
+    // Check if it's a UUID or invoice number
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     
-    const lookupQuery = isBigInt
-      ? `SELECT id, user_id, number FROM invoices WHERE id = $1 AND user_id = $2`
-      : `SELECT id, user_id, number FROM invoices WHERE number = $1 AND user_id = $2`;
+    const lookupQuery = isUUID
+      ? `SELECT id, user_id, invoice_number FROM invoices WHERE id = $1 AND user_id = $2`
+      : `SELECT id, user_id, invoice_number FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
     
     const { rows: existingRows } = await dbClient.query(lookupQuery, [invoiceIdParam, userId]);
     
@@ -1245,16 +1229,16 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     
     const existing = existingRows[0];
     const invoiceId = existing.id;
-    const invoiceNumber = existing.number;
+    const invoiceNumber = existing.invoice_number;
 
-    // Update invoice using Supabase column names
+    // Update invoice using correct Supabase column names
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, job_id = $2, client_name = $3, client_address = $4, date = $5, notes = $6, 
-        template = $7, payment_link = $8, subtotal = $9, tax = $10, total = $11
+        client_id = $1, job_id = $2, client_name = $3, client_address = $4, issue_date = $5, notes = $6, 
+        template = $7, payment_url = $8, subtotal = $9, tax_amount = $10, total = $11
        WHERE id = $12 AND user_id = $13`,
-      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.date, sanitized.notes,
-       sanitized.template, sanitized.payment_link, sanitized.subtotal, sanitized.tax, sanitized.total,
+      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+       sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
        invoiceId, userId]
     );
 
@@ -1305,36 +1289,30 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
 });
 
 app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
+  // v120 FIXED - Uses actual Supabase column names: invoice_number, issue_date, tax_amount, payment_url
+  // IDs are UUIDs (not bigint)
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
 
   try {
-    // v119: Use Supabase column names with aliases for frontend compatibility
-    // Supabase uses: number (not invoice_number), bigint IDs (not UUIDs)
-    const isBigInt = /^\d+$/.test(invoiceIdParam);
+    // Check if it's a UUID or invoice number (INV-...)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
+    const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
     
-    // Fetch invoice with client info joined, alias columns for frontend
-    const invoiceQuery = isBigInt
+    // Fetch invoice with client info joined - no column aliasing needed, schema already correct
+    const invoiceQuery = isUUID
       ? `SELECT i.*, 
-           i.number as invoice_number,
-           i.date as issue_date,
-           i.tax as tax_amount,
-           i.payment_link as payment_url,
            c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
          WHERE i.id = $1 AND i.user_id = $2`
       : `SELECT i.*, 
-           i.number as invoice_number,
-           i.date as issue_date,
-           i.tax as tax_amount,
-           i.payment_link as payment_url,
            c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address
          FROM invoices i
          LEFT JOIN clients c ON i.client_id = c.id
-         WHERE i.number = $1 AND i.user_id = $2`;
+         WHERE i.invoice_number = $1 AND i.user_id = $2`;
     
     const { rows: invoices } = await pgPool.query(invoiceQuery, [invoiceIdParam, userId]);
     
@@ -1350,7 +1328,7 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    console.log(`Fetched ${items.length} line items for invoice ${invoiceId}`);
+    console.log(`[INVOICE v120] Fetched ${items.length} line items for invoice ${invoiceId}`);
 
     // Build client object from joined data
     let client = null;
@@ -1408,16 +1386,22 @@ app.post(
     const files = req.files || [];
     if (!files.length) return res.json({ ok: true });
     
-    // v119: Accept bigint ID or invoice number (Supabase schema)
-    const isBigInt = /^\d+$/.test(invoiceIdParam);
+    // v120: Accept UUID or invoice number
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
     
-    if (!isBigInt && !isInvoiceNumber) {
+    if (!isUUID && !isInvoiceNumber) {
       console.error("[PHOTO UPLOAD] Invalid invoice ID format:", invoiceIdParam);
       return res.status(400).json({ error: "Invalid invoice ID format" });
     }
     
-    const invoiceId = invoiceIdParam;
+    // Resolve to UUID if invoice number was passed
+    let invoiceId = invoiceIdParam;
+    if (!isUUID && isInvoiceNumber) {
+      const resolved = await resolveInvoiceId(invoiceIdParam, userId);
+      if (!resolved) return res.status(404).json({ error: "Invoice not found" });
+      invoiceId = resolved;
+    }
 
     for (const file of files) {
       const pathKey = `${userId}/${invoiceId}/${Date.now()}-${
@@ -1457,27 +1441,27 @@ app.post(
   }
 );
 
-// v119: Helper function to resolve invoice ID (bigint or invoice number) - Supabase schema
+// v120 FIXED: Helper function to resolve invoice ID (UUID or invoice number)
 async function resolveInvoiceId(invoiceIdParam, userId) {
-  const isBigInt = /^\d+$/.test(invoiceIdParam);
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
   
   try {
-    if (isBigInt) {
+    if (isUUID) {
       const { rows } = await pgPool.query(
         `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`,
         [invoiceIdParam, userId]
       );
       return rows.length ? rows[0].id : null;
     } else {
-      // Invoice number (e.g., INV-20241225-001) stored in 'number' column
+      // Invoice number (e.g., INV-20241225-001) stored in 'invoice_number' column
       const { rows } = await pgPool.query(
-        `SELECT id FROM invoices WHERE number = $1 AND user_id = $2`,
+        `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`,
         [invoiceIdParam, userId]
       );
       return rows.length ? rows[0].id : null;
     }
   } catch (err) {
-    console.error("[resolveInvoiceId] Error:", err);
+    console.error("[resolveInvoiceId v120] Error:", err);
     return null;
   }
 }
@@ -1541,29 +1525,29 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
   }
 
   try {
-    // v119: Supabase uses bigint IDs and 'number' column (not UUID/invoice_number)
-    const isBigInt = /^\d+$/.test(invoiceIdParam);
+    // v120 FIXED: Uses UUID IDs and 'invoice_number' column
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     
     let rows = [];
     
     // Try to find the invoice - handle different ID formats gracefully
     try {
-      if (isBigInt) {
+      if (isUUID) {
         const result = await pgPool.query(
           `SELECT id FROM invoices WHERE id = $1 AND user_id = $2`,
           [invoiceIdParam, userId]
         );
         rows = result.rows;
       } else {
-        // Try by invoice number (stored in 'number' column)
+        // Try by invoice number (stored in 'invoice_number' column)
         const result = await pgPool.query(
-          `SELECT id FROM invoices WHERE number = $1 AND user_id = $2`,
+          `SELECT id FROM invoices WHERE invoice_number = $1 AND user_id = $2`,
           [invoiceIdParam, userId]
         );
         rows = result.rows;
       }
     } catch (queryErr) {
-      console.log("Query error (likely schema mismatch), treating as not found:", queryErr.message);
+      console.log("Query error, treating as not found:", queryErr.message);
       rows = [];
     }
     
@@ -1596,25 +1580,25 @@ app.delete("/api/invoices/:id", requireSubscription, async (req, res) => {
 
 // PAYMENT ENDPOINTS
 
-// Get contractor's payment link for an invoice - CONVERTED TO PGPOOL
+// Get contractor's payment link for an invoice - v120 FIXED
 app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const invoiceIdParam = req.params.id;
   
-  // v119: Accept bigint ID or invoice number (Supabase schema)
-  const isBigInt = /^\d+$/.test(invoiceIdParam);
+  // v120: Accept UUID or invoice number
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
   const isInvoiceNumber = invoiceIdParam.startsWith('INV-');
   
-  if (!isBigInt && !isInvoiceNumber) {
+  if (!isUUID && !isInvoiceNumber) {
     return res.status(400).json({ error: "Invalid invoice ID format" });
   }
 
   try {
-    const lookupQuery = isBigInt
+    const lookupQuery = isUUID
       ? `SELECT * FROM invoices WHERE id = $1 AND user_id = $2`
-      : `SELECT * FROM invoices WHERE number = $1 AND user_id = $2`;
+      : `SELECT * FROM invoices WHERE invoice_number = $1 AND user_id = $2`;
     
     const { rows: invoices } = await pgPool.query(lookupQuery, [invoiceIdParam, userId]);
 
@@ -1623,7 +1607,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
     }
     
     const invoice = invoices[0];
-    const invoiceId = invoice.id; // Use the bigint ID from database
+    const invoiceId = invoice.id; // UUID
 
     const { rows: profiles } = await pgPool.query(
       `SELECT business_name, payment_link FROM profiles WHERE id = $1`,
@@ -1643,9 +1627,9 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
       });
     }
 
-    // v119: Save the payment link reference using the resolved bigint invoice ID
+    // v120: Save the payment link reference using the correct column name (payment_url)
     await pgPool.query(
-      `UPDATE invoices SET payment_link = $1 WHERE id = $2 AND user_id = $3`,
+      `UPDATE invoices SET payment_url = $1 WHERE id = $2 AND user_id = $3`,
       [paymentUrl, invoiceId, userId]
     );
 
@@ -4359,21 +4343,21 @@ async function executeVoiceToolCall(toolName, args, userId) {
       const tax = 0;
       const total = subtotal + tax;
       
-      // v119: Generate invoice number using Supabase 'number' column
+      // v120 FIXED: Generate invoice number using correct 'invoice_number' column
       const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
       const { rows: countRows } = await pgPool.query(
-        `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND number LIKE $2`,
+        `SELECT COUNT(*) as cnt FROM invoices WHERE user_id = $1 AND invoice_number LIKE $2`,
         [userId, `INV-${dateStr}-%`]
       );
       const seqNum = (parseInt(countRows[0].cnt) + 1).toString().padStart(3, '0');
       const invoiceNumber = `INV-${dateStr}-${seqNum}`;
       
-      // v119: Create invoice using Supabase column names (number, date, tax, payment_link)
+      // v120 FIXED: Create invoice using correct Supabase column names (invoice_number, issue_date, tax_amount, payment_url)
       const { rows: invoices } = await pgPool.query(
-        `INSERT INTO invoices (user_id, client_id, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template)
+        `INSERT INTO invoices (user_id, client_id, client_address, invoice_number, issue_date, notes, subtotal, tax_amount, total, status, payment_status, template)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-         RETURNING *, number as invoice_number`,
-        [userId, clientId, address, invoiceNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "unpaid", "basic_clean"]
+         RETURNING *`,
+        [userId, clientId, address, invoiceNumber, new Date().toISOString().split("T")[0], notes, subtotal, 0, total, "draft", "unpaid", "basic_clean"]
       );
       
       const invoice = invoices[0];
@@ -5649,41 +5633,43 @@ async function initializeStorageBuckets() {
 
 // PUBLIC INVOICE VIEW (no auth required - for clients to view their invoices)
 app.get("/view/invoice/:id", async (req, res) => {
+  // v120 FIXED - Uses actual Supabase column names: invoice_number, issue_date, tax_amount, payment_url
+  // IDs are UUIDs (not bigint)
   try {
-    const invoiceId = req.params.id;
-    console.log(`Public invoice view requested for: ${invoiceId}`);
+    const invoiceIdParam = req.params.id;
+    console.log(`[PUBLIC VIEW v120] Invoice requested: ${invoiceIdParam}`);
     
     // Handle "undefined" string or invalid IDs
-    if (!invoiceId || invoiceId === 'undefined' || invoiceId === 'null') {
-      console.log('Invalid invoice ID received:', invoiceId);
+    if (!invoiceIdParam || invoiceIdParam === 'undefined' || invoiceIdParam === 'null') {
+      console.log('Invalid invoice ID received:', invoiceIdParam);
       return res.status(404).send("<h1>Invoice not found</h1>");
     }
     
-    // v119: Supabase uses bigint IDs and 'number' column (not UUID/invoice_number)
-    const isBigInt = /^\d+$/.test(invoiceId);
+    // Check if it's a UUID or invoice number (INV-...)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceIdParam);
     
-    // Select with aliases for frontend compatibility
-    const query = isBigInt 
-      ? `SELECT *, number as invoice_number, date as issue_date, tax as tax_amount, payment_link as payment_url FROM invoices WHERE id = $1`
-      : `SELECT *, number as invoice_number, date as issue_date, tax as tax_amount, payment_link as payment_url FROM invoices WHERE number = $1`;
+    const query = isUUID 
+      ? `SELECT * FROM invoices WHERE id = $1`
+      : `SELECT * FROM invoices WHERE invoice_number = $1`;
     
-    const { rows: invoices } = await pgPool.query(query, [invoiceId]);
-    console.log(`Found ${invoices.length} invoices for ID: ${invoiceId}`);
+    const { rows: invoices } = await pgPool.query(query, [invoiceIdParam]);
+    console.log(`[PUBLIC VIEW v120] Found ${invoices.length} invoices`);
     
     if (!invoices.length) {
       return res.status(404).send("<h1>Invoice not found</h1>");
     }
     
     const invoice = invoices[0];
-    const numericId = invoice.id; // Use resolved bigint ID for related queries
+    const invoiceId = invoice.id; // UUID
     
-    // Get invoice items using the resolved numeric ID
+    // Get invoice items
     const { rows: items } = await pgPool.query(
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
-      [numericId]
+      [invoiceId]
     );
+    console.log(`[PUBLIC VIEW v120] Found ${items.length} line items`);
     
-    // Get business profile (including payment_link)
+    // Get business profile
     const { rows: profiles } = await pgPool.query(
       `SELECT business_name, business_email as email, business_phone as phone, business_address as address, logo_url, payment_link FROM profiles WHERE id = $1`,
       [invoice.user_id]

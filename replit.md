@@ -108,25 +108,35 @@ Frontend → apiFetch() → Express API → pgPool → PostgreSQL
 | `supabaseAdmin` (backend) | Storage only (file uploads) | Database writes (insert/update/delete) |
 | `pgPool` (backend) | All database operations | - |
 
-### Supabase Schema Mapping (v119 - December 2024)
-The Supabase database uses different column names than the original app design. Server code translates between them:
+### Supabase Schema (v120 - December 2024)
+The Supabase database uses the following column names (confirmed from production):
 
-| Supabase Column | Frontend/API Alias | Data Type |
-|-----------------|-------------------|-----------|
-| `number` | `invoice_number` | text |
-| `date` | `issue_date` | date |
-| `tax` | `tax_amount` | numeric |
-| `payment_link` | `payment_url` | text |
-| `id` | `id` | bigint (NOT uuid) |
-| `client_id` | `client_id` | bigint (NOT uuid) |
-| `job_id` | `job_id` | bigint (NOT uuid) |
+| Column Name | Data Type | Description |
+|-------------|-----------|-------------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | User's Supabase Auth ID |
+| `client_id` | uuid | Foreign key to clients table |
+| `job_id` | uuid | Foreign key to jobs table |
+| `invoice_number` | text | Human-readable invoice number (INV-YYYYMMDD-XXX) |
+| `issue_date` | date | Invoice issue date |
+| `tax_amount` | numeric | Tax amount |
+| `payment_url` | text | Payment link URL |
+| `subtotal` | numeric | Subtotal before tax |
+| `total` | numeric | Total amount |
+| `status` | text | Invoice status (draft, sent, etc.) |
+| `payment_status` | text | Payment status (unpaid, pending, paid) |
+| `template` | text | Invoice template name |
+| `notes` | text | Invoice notes |
+| `client_name` | text | Client name (denormalized) |
+| `client_address` | text | Client address (denormalized) |
+| `archived` | boolean | Whether invoice is archived |
 
 **Key Rules:**
-- All SELECT queries alias Supabase columns → frontend names for compatibility
-- All INSERT/UPDATE queries use Supabase column names internally
-- Invoice IDs are bigint (numeric) internally, NOT UUIDs
-- Invoice numbers (INV-YYYYMMDD-XXX) are stored in the `number` column, not `invoice_number`
-- The `user_id` column remains UUID (from Supabase Auth)
+- All IDs are UUIDs, not bigint/numeric
+- Column names match frontend field names (no aliasing needed)
+- Invoice numbers stored in `invoice_number` column
+- Tax stored in `tax_amount` column
+- Payment URLs stored in `payment_url` column
 
 ### Invoice Flow (Fully Converted to pgPool as of Dec 2024)
 All invoice operations use pgPool exclusively:
