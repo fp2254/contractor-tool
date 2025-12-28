@@ -1053,7 +1053,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
   const { 
     client_id, job_id, client_name, client_address, 
     issue_date, date, notes, template, payment_url, payment_link,
-    subtotal, tax_amount, tax, total 
+    subtotal, tax_amount, tax, total, items 
   } = req.body;
 
   // === SANITIZATION HELPERS ===
@@ -1135,11 +1135,29 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     );
 
     const inv = result.rows[0];
-    console.log(`[INVOICE v119] Created: ${inv.number} (${inv.id})`);
+    const invoiceId = inv.id;
+    console.log(`[INVOICE v119] Created: ${inv.number} (${invoiceId})`);
+    
+    // Save line items if provided
+    if (items && Array.isArray(items) && items.length > 0) {
+      console.log(`[INVOICE v119] Saving ${items.length} line items`);
+      for (const item of items) {
+        const desc = (item.description || '').trim() || 'Item';
+        const qty = Number(item.quantity) || 1;
+        const price = Number(item.unit_price) || 0;
+        const itemTotal = Number(item.total) || (qty * price);
+        
+        await pgQueryWithRetry(
+          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          [invoiceId, desc, qty, price, itemTotal]
+        );
+      }
+      console.log(`[INVOICE v119] Saved ${items.length} line items for invoice ${invoiceId}`);
+    }
     
     // Return both column names for frontend compatibility
     return res.status(201).json({ 
-      id: inv.id, 
+      id: invoiceId, 
       invoice_number: inv.number,
       number: inv.number 
     });
