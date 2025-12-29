@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 124;
+const BUILD_VERSION = 125;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -4720,13 +4720,19 @@ async function loadPaymentStats() {
       const dashPaidMonth = document.getElementById('dashboard-paid-month');
       const dashPending = document.getElementById('dashboard-pending');
       
-      if (outstandingEl) outstandingEl.textContent = `$${stats.outstanding}`;
-      if (paidMonthEl) paidMonthEl.textContent = `$${stats.paid_month}`;
-      if (pendingEl) pendingEl.textContent = `$${stats.pending}`;
+      // v124: Format currency properly with commas and decimals
+      const formatStatCurrency = (val) => {
+        const num = parseFloat(val) || 0;
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
       
-      if (dashOutstanding) dashOutstanding.textContent = `$${stats.outstanding}`;
-      if (dashPaidMonth) dashPaidMonth.textContent = `$${stats.paid_month}`;
-      if (dashPending) dashPending.textContent = `$${stats.pending}`;
+      if (outstandingEl) outstandingEl.textContent = `$${formatStatCurrency(stats.outstanding)}`;
+      if (paidMonthEl) paidMonthEl.textContent = `$${formatStatCurrency(stats.paid_month)}`;
+      if (pendingEl) pendingEl.textContent = `$${formatStatCurrency(stats.pending)}`;
+      
+      if (dashOutstanding) dashOutstanding.textContent = `$${formatStatCurrency(stats.outstanding)}`;
+      if (dashPaidMonth) dashPaidMonth.textContent = `$${formatStatCurrency(stats.paid_month)}`;
+      if (dashPending) dashPending.textContent = `$${formatStatCurrency(stats.pending)}`;
     }
   } catch (error) {
     console.error("Error loading payment stats:", error);

@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 124;
+const BUILD_VERSION = 125;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -1336,12 +1336,22 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoice = invoices[0];
     const invoiceId = invoice.id;
 
-    // Fetch line items
-    const { rows: items } = await pgPool.query(
+    // Fetch line items - use SELECT * and normalize in JS (safer for schema differences)
+    const { rows: rawItems } = await pgPool.query(
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    console.log(`[INVOICE v120] Fetched ${items.length} line items for invoice ${invoiceId}`);
+    // Normalize items: handle both 'unit_price' and 'price' column names
+    const items = rawItems.map(item => ({
+      id: item.id,
+      invoice_id: item.invoice_id,
+      description: item.description || '',
+      quantity: parseFloat(item.quantity) || 1,
+      unit_price: parseFloat(item.unit_price || item.price) || 0,
+      total: parseFloat(item.total) || 0,
+      created_at: item.created_at
+    }));
+    console.log(`[INVOICE v124] Fetched ${items.length} line items for invoice ${invoiceId}:`, JSON.stringify(items.slice(0, 2)));
 
     // Build client object from joined data
     let client = null;
@@ -5695,12 +5705,20 @@ app.get("/view/invoice/:id", async (req, res) => {
     const invoice = invoices[0];
     const invoiceId = invoice.id; // bigint in production
     
-    // Get invoice items
-    const { rows: items } = await pgPool.query(
+    // Get invoice items - use SELECT * and normalize in JS (safer for schema differences)
+    const { rows: rawItems } = await pgPool.query(
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    console.log(`[PUBLIC VIEW v122] Found ${items.length} line items`);
+    // Normalize items: handle both 'unit_price' and 'price' column names
+    const items = rawItems.map(item => ({
+      id: item.id,
+      description: item.description || '',
+      quantity: parseFloat(item.quantity) || 1,
+      unit_price: parseFloat(item.unit_price || item.price) || 0,
+      total: parseFloat(item.total) || 0
+    }));
+    console.log(`[PUBLIC VIEW v124] Found ${items.length} line items:`, JSON.stringify(items.slice(0, 2)));
     
     // Get business profile (v123: removed payment_link - column doesn't exist in production)
     const { rows: profiles } = await pgPool.query(
