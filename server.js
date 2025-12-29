@@ -1104,20 +1104,20 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // v122 FIXED: Uses PRODUCTION Supabase column names (number, date, tax, payment_link)
+    // v127 FIXED: Match voice command pattern - omit client_name/job_id columns (may not exist in production)
+    // Production Supabase uses: user_id, client_id, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template, payment_link
     const result = await pgQueryWithRetry(
       `INSERT INTO invoices (
-        user_id, client_id, job_id, client_name, client_address, 
-        date, notes, template, payment_link, 
-        subtotal, tax, total, status, number
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        user_id, client_id, client_address, 
+        number, date, notes, template, payment_link, 
+        subtotal, tax, total, status, payment_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING id, number as invoice_number`,
       [
         userId, 
         sanitized.client_id, 
-        sanitized.job_id, 
-        sanitized.client_name, 
         sanitized.client_address,
+        invoiceNumber,
         sanitized.issue_date, 
         sanitized.notes, 
         sanitized.template, 
@@ -1125,8 +1125,8 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         sanitized.subtotal, 
         sanitized.tax_amount, 
         sanitized.total, 
-        'draft', 
-        invoiceNumber
+        'draft',
+        'unpaid'
       ]
     );
 
@@ -1235,13 +1235,13 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoiceId = existing.id;
     const invoiceNumber = existing.invoice_number;
 
-    // v122 FIXED: Update invoice using PRODUCTION column names (date, tax, payment_link)
+    // v127 FIXED: Match voice command pattern - omit client_name/job_id columns (may not exist in production)
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, job_id = $2, client_name = $3, client_address = $4, date = $5, notes = $6, 
-        template = $7, payment_link = $8, subtotal = $9, tax = $10, total = $11
-       WHERE id = $12 AND user_id = $13`,
-      [sanitized.client_id, sanitized.job_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+        client_id = $1, client_address = $2, date = $3, notes = $4, 
+        template = $5, payment_link = $6, subtotal = $7, tax = $8, total = $9
+       WHERE id = $10 AND user_id = $11`,
+      [sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
        sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
        invoiceId, userId]
     );
