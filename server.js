@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 123;
+const BUILD_VERSION = 124;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -1622,17 +1622,21 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
     const invoice = invoices[0];
     const invoiceId = invoice.id; // UUID
 
-    const { rows: profiles } = await pgPool.query(
-      `SELECT business_name, payment_link FROM profiles WHERE id = $1`,
+    // v123: payment_link doesn't exist in profiles table - get from payment_links table or use invoice's existing payment_link
+    const { rows: paymentLinks } = await pgPool.query(
+      `SELECT url FROM payment_links WHERE user_id = $1 AND is_default = true LIMIT 1`,
       [userId]
     );
-
-    if (!profiles.length) {
-      return res.status(404).json({ error: "Profile not found" });
+    
+    // Fallback: get first payment link if no default
+    let paymentUrl = paymentLinks.length ? paymentLinks[0].url : null;
+    if (!paymentUrl) {
+      const { rows: anyPaymentLink } = await pgPool.query(
+        `SELECT url FROM payment_links WHERE user_id = $1 LIMIT 1`,
+        [userId]
+      );
+      paymentUrl = anyPaymentLink.length ? anyPaymentLink[0].url : null;
     }
-
-    const profile = profiles[0];
-    const paymentUrl = profile?.payment_link;
     
     if (!paymentUrl) {
       return res.status(400).json({ 
@@ -5658,16 +5662,31 @@ app.get("/view/invoice/:id", async (req, res) => {
       return res.status(404).send("<h1>Invoice not found</h1>");
     }
     
-    // v122: Production uses bigint IDs
+    // v123: Production uses bigint IDs
     const isBigInt = /^\d+$/.test(invoiceIdParam);
     
-    // v122: Production uses 'number' column with aliasing for frontend compatibility
-    const query = isBigInt 
+    // v123: Production uses 'number' column with aliasing for frontend compatibility
+    // First try by ID if numeric, fallback to number column
+    let query = isBigInt 
       ? `SELECT *, number as invoice_number, date as issue_date, tax as tax_amount, payment_link as payment_url FROM invoices WHERE id = $1`
       : `SELECT *, number as invoice_number, date as issue_date, tax as tax_amount, payment_link as payment_url FROM invoices WHERE number = $1`;
     
-    const { rows: invoices } = await pgPool.query(query, [invoiceIdParam]);
-    console.log(`[PUBLIC VIEW v122] Found ${invoices.length} invoices`);
+    let { rows: invoices } = await pgPool.query(query, [invoiceIdParam]);
+    console.log(`[PUBLIC VIEW v123] Query by ${isBigInt ? 'id' : 'number'}: Found ${invoices.length} invoices`);
+    
+    // v123: If not found by ID, try by number column as fallback (handles old invoice formats)
+    if (invoices.length === 0 && isBigInt) {
+      const fallbackQuery = `SELECT *, number as invoice_number, date as issue_date, tax as tax_amount, payment_link as payment_url FROM invoices WHERE number LIKE $1`;
+      const fallbackResult = await pgPool.query(fallbackQuery, [`%${invoiceIdParam}%`]);
+      invoices = fallbackResult.rows;
+      console.log(`[PUBLIC VIEW v123] Fallback by number LIKE: Found ${invoices.length} invoices`);
+    }
+    
+    // v123 DEBUG: Log available invoices if not found
+    if (invoices.length === 0) {
+      const debugResult = await pgPool.query(`SELECT id, number, user_id FROM invoices ORDER BY created_at DESC LIMIT 5`);
+      console.log(`[PUBLIC VIEW v123 DEBUG] Sample invoices in DB:`, debugResult.rows.map(r => `id=${r.id}, number=${r.number}`).join(' | '));
+    }
     
     if (!invoices.length) {
       return res.status(404).send("<h1>Invoice not found</h1>");
@@ -5683,9 +5702,9 @@ app.get("/view/invoice/:id", async (req, res) => {
     );
     console.log(`[PUBLIC VIEW v122] Found ${items.length} line items`);
     
-    // Get business profile
+    // Get business profile (v123: removed payment_link - column doesn't exist in production)
     const { rows: profiles } = await pgPool.query(
-      `SELECT business_name, business_email as email, business_phone as phone, business_address as address, logo_url, payment_link FROM profiles WHERE id = $1`,
+      `SELECT business_name, business_email as email, business_phone as phone, business_address as address, logo_url FROM profiles WHERE id = $1`,
       [invoice.user_id]
     );
     const profile = profiles[0] || null;
