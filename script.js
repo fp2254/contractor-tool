@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 126;
+const BUILD_VERSION = 127;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -2808,6 +2808,7 @@ async function handleInvoiceSubmit(e) {
     const clientId = (rawClientId && UUID_REGEX.test(rawClientId)) ? rawClientId : null;
 
     // Build payload - matches backend spec exactly
+    // v126 FIX: Include items array so line items are saved to database!
     const payload = {
       client_id: clientId,
       job_id: null,
@@ -2819,33 +2820,39 @@ async function handleInvoiceSubmit(e) {
       payment_url: paymentUrl,
       subtotal: subtotal,
       tax_amount: taxAmount,
-      total: total
+      total: total,
+      items: items  // CRITICAL: This was missing - line items weren't being saved!
     };
 
-    console.log('[INVOICE v118] Submitting:', payload);
+    // v126 FIX: Check if editing existing invoice - use PUT for updates, POST for creates
+    const isUpdate = !!editingInvoiceId;
+    const url = isUpdate ? `/api/invoices/${editingInvoiceId}` : "/api/invoices";
+    const method = isUpdate ? "PUT" : "POST";
+    
+    console.log(`[INVOICE v126] ${method} to ${url}:`, payload);
 
     // Single API call
-    const res = await apiFetch("/api/invoices", {
-      method: "POST",
+    const res = await apiFetch(url, {
+      method: method,
       body: JSON.stringify(payload)
     });
 
-    // Handle response
-    if (res.status === 201) {
+    // Handle response (200 for update, 201 for create)
+    if (res.ok) {
       const data = await res.json();
-      console.log('[INVOICE v118] Created:', data.invoice_number, data.id);
+      console.log(`[INVOICE v126] ${isUpdate ? 'Updated' : 'Created'}:`, data.invoice_number || data.id);
       
       // Clear any error state immediately on success
       errorEl.textContent = "";
       
-      showToast("Invoice saved!");
+      showToast(isUpdate ? "Invoice updated!" : "Invoice saved!");
       resetInvoiceForm();
       
       // Secondary requests in isolated try/catch - failures here should NOT show as save errors
       try {
         await loadInvoices();
       } catch (refreshErr) {
-        console.warn('[INVOICE v118] Refresh failed (invoice was saved):', refreshErr);
+        console.warn('[INVOICE v126] Refresh failed (invoice was saved):', refreshErr);
       }
       
       showScreen("invoices");
