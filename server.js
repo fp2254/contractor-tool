@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 125;
+const BUILD_VERSION = 126;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 

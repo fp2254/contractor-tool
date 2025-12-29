@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 125;
+const BUILD_VERSION = 126;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -4823,18 +4823,22 @@ function calculateMonthlyStats(invoicesArray = []) {
     const createdDate = new Date(dateStr);
     if (isNaN(createdDate.getTime())) return; // Guard against invalid dates
     
+    // v125: CRITICAL - parseFloat to prevent string concatenation bug
+    // (database returns total as string, causing "0" + "1600" = "01600")
+    const total = parseFloat(invoice.total) || 0;
+    
     const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
     
     if (isCurrentMonth) {
-      invoicedMonth += invoice.total || 0;
+      invoicedMonth += total;
       
       if (invoice.payment_status === 'paid') {
-        paidMonth += invoice.total || 0;
+        paidMonth += total;
       }
     }
     
     if (invoice.payment_status === 'unpaid' || invoice.payment_status === 'pending') {
-      outstanding += invoice.total || 0;
+      outstanding += total;
     }
   });
   
@@ -4862,9 +4866,10 @@ function renderDashboardStats(invoicesArray = []) {
   }
   
   // Calculate pending (invoices with 'pending' status)
+  // v125: parseFloat to prevent string concatenation
   const pendingTotal = invoicesArray
     .filter(inv => inv.payment_status === 'pending')
-    .reduce((sum, inv) => sum + (inv.total || 0), 0);
+    .reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
   
   if (pendingEl) {
     pendingEl.textContent = `$${pendingTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
