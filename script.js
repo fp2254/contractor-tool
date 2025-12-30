@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 129;
+const BUILD_VERSION = 130;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -2874,17 +2874,9 @@ async function handleInvoiceSubmit(e) {
       console.error('[INVOICE v118] Error:', errorMsg);
     }
   } catch (err) {
-    console.error('[INVOICE v118] Exception:', err);
-    // User-friendly error messages - never show raw technical errors
-    const rawMsg = err.message || '';
-    const isTechnicalError = rawMsg.includes('getaddrinfo') || 
-                              rawMsg.includes('ECONNREFUSED') || 
-                              rawMsg.includes('ETIMEDOUT') ||
-                              rawMsg.includes('EAI_AGAIN') ||
-                              rawMsg.includes('fetch');
-    errorEl.textContent = isTechnicalError 
-      ? "Connection issue. Please try again." 
-      : "Unable to save invoice. Please try again.";
+    console.error('[INVOICE v129] Exception:', err);
+    // v129: Show actual error for debugging - will sanitize after we identify the issue
+    errorEl.textContent = `Error: ${err.message || 'Unknown error'}`;
   } finally {
     setButtonLoading(submitBtn, false);
   }
