@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 131;
+const BUILD_VERSION = 132;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -272,9 +272,47 @@ const pgPool = new Pool({
   max: 10
 });
 
-// Verify connection at startup
-pgPool.query('SELECT 1').then(() => {
+// Verify connection at startup and validate schema
+pgPool.query('SELECT 1').then(async () => {
   console.log(`[DB] Connected successfully to ${dbHost}`);
+  
+  // Schema validation - query actual column names from database
+  try {
+    const schemaCheck = await pgPool.query(`
+      SELECT table_name, column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+        AND table_name IN ('invoices', 'invoice_items', 'quotes', 'quote_items')
+      ORDER BY table_name, ordinal_position
+    `);
+    
+    const columns = {};
+    schemaCheck.rows.forEach(row => {
+      if (!columns[row.table_name]) columns[row.table_name] = [];
+      columns[row.table_name].push(row.column_name);
+    });
+    
+    console.log(`[DB SCHEMA] Production column discovery:`);
+    Object.keys(columns).forEach(table => {
+      console.log(`  ${table}: ${columns[table].join(', ')}`);
+    });
+    
+    // Warn about known schema differences
+    if (columns.invoice_items && !columns.invoice_items.includes('qty')) {
+      console.warn(`[DB SCHEMA WARNING] invoice_items missing 'qty' column - may have 'quantity' instead`);
+    }
+    if (columns.quote_items && !columns.quote_items.includes('qty')) {
+      console.warn(`[DB SCHEMA WARNING] quote_items missing 'qty' column - may have 'quantity' instead`);
+    }
+    if (columns.invoices && columns.invoices.includes('client_name')) {
+      console.log(`[DB SCHEMA] invoices has 'client_name' column`);
+    }
+    if (columns.invoices && !columns.invoices.includes('number')) {
+      console.warn(`[DB SCHEMA WARNING] invoices missing 'number' column - may use 'invoice_number' instead`);
+    }
+  } catch (schemaErr) {
+    console.warn(`[DB SCHEMA] Could not query schema:`, schemaErr.message);
+  }
 }).catch(err => {
   console.error(`[DB] Connection FAILED:`, err.message);
 });
@@ -1104,14 +1142,15 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // v128 FIXED: EXACT match to voice command pattern (line 4384) - this pattern WORKS in production
+    // v132: Using all production columns discovered via schema check
     const result = await pgQueryWithRetry(
-      `INSERT INTO invoices (user_id, client_id, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO invoices (user_id, client_id, client_name, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template, job_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id, number as invoice_number`,
       [
         userId, 
         sanitized.client_id, 
+        sanitized.client_name,
         sanitized.client_address,
         invoiceNumber,
         sanitized.issue_date, 
@@ -1121,7 +1160,8 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         sanitized.total, 
         'draft',
         'unpaid',
-        sanitized.template
+        sanitized.template,
+        sanitized.job_id
       ]
     );
 
@@ -1139,7 +1179,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         const itemTotal = Number(item.total) || (qty * price);
         
         await pgQueryWithRetry(
-          `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, line_total) VALUES ($1, $2, $3, $4, $5)`,
           [invoiceId, desc, qty, price, itemTotal]
         );
       }
@@ -1230,14 +1270,14 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoiceId = existing.id;
     const invoiceNumber = existing.invoice_number;
 
-    // v128 FIXED: Match voice command pattern - minimal columns that are known to exist
+    // v132: Using all production columns discovered via schema check
     await dbClient.query(
       `UPDATE invoices SET 
-        client_id = $1, client_address = $2, date = $3, notes = $4, 
-        subtotal = $5, tax = $6, total = $7, template = $8
-       WHERE id = $9 AND user_id = $10`,
-      [sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
-       sanitized.subtotal, sanitized.tax_amount, sanitized.total, sanitized.template,
+        client_id = $1, client_name = $2, client_address = $3, date = $4, notes = $5, 
+        subtotal = $6, tax = $7, total = $8, template = $9, job_id = $10
+       WHERE id = $11 AND user_id = $12`,
+      [sanitized.client_id, sanitized.client_name, sanitized.client_address, sanitized.issue_date, sanitized.notes,
+       sanitized.subtotal, sanitized.tax_amount, sanitized.total, sanitized.template, sanitized.job_id,
        invoiceId, userId]
     );
 
@@ -1259,7 +1299,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
         
         try {
           await dbClient.query(
-            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, line_total) VALUES ($1, $2, $3, $4, $5)`,
             [invoiceId, desc, qty, unitPrice, itemTotal]
           );
         } catch (itemErr) {
@@ -1336,14 +1376,14 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    // Normalize items: handle both column name variants (quantity/qty, unit_price/price)
+    // Normalize items: handle production column names (qty, line_total vs quantity, total)
     const items = rawItems.map(item => ({
       id: item.id,
       invoice_id: item.invoice_id,
       description: item.description || '',
-      quantity: parseFloat(item.quantity || item.qty) || 1,
+      quantity: parseFloat(item.qty || item.quantity) || 1,
       unit_price: parseFloat(item.unit_price || item.price) || 0,
-      total: parseFloat(item.total) || 0,
+      total: parseFloat(item.line_total || item.total) || 0,
       created_at: item.created_at
     }));
     console.log(`[INVOICE v124] Fetched ${items.length} line items for invoice ${invoiceId}:`, JSON.stringify(items.slice(0, 2)));
@@ -2434,7 +2474,7 @@ app.post("/api/quotes/:id/send-email", requireSubscription, async (req, res) => 
     const itemsHtml = (quote.quote_items || []).map(item => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.qty || item.quantity || 1}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.unit_price || 0).toFixed(2)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.total || 0).toFixed(2)}</td>
       </tr>
@@ -3378,7 +3418,7 @@ async function generateQuotePDF(quote, profile) {
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity || 1}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.qty || item.quantity || 1}</td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.unit_price || 0).toFixed(2)}</td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${parseFloat(item.total || 0).toFixed(2)}</td>
     </tr>
@@ -4391,7 +4431,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
           const unitPrice = item.unit_price || 0;
           const itemTotal = qty * unitPrice;
           await pgPool.query(
-            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, line_total) VALUES ($1, $2, $3, $4, $5)`,
             [invoice.id, item.description, qty, unitPrice, itemTotal]
           );
         }
@@ -5705,13 +5745,13 @@ app.get("/view/invoice/:id", async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    // Normalize items: handle both 'unit_price' and 'price' column names
+    // Normalize items: handle production column names (qty, line_total vs quantity, total)
     const items = rawItems.map(item => ({
       id: item.id,
       description: item.description || '',
-      quantity: parseFloat(item.quantity || item.qty) || 1,
+      quantity: parseFloat(item.qty || item.quantity) || 1,
       unit_price: parseFloat(item.unit_price || item.price) || 0,
-      total: parseFloat(item.total) || 0
+      total: parseFloat(item.line_total || item.total) || 0
     }));
     console.log(`[PUBLIC VIEW v124] Found ${items.length} line items:`, JSON.stringify(items.slice(0, 2)));
     
