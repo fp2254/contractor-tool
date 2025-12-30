@@ -108,10 +108,10 @@ Frontend → apiFetch() → Express API → pgPool → PostgreSQL
 | `supabaseAdmin` (backend) | Storage only (file uploads) | Database writes (insert/update/delete) |
 | `pgPool` (backend) | All database operations | - |
 
-### Supabase Schema (v121 - December 2024)
+### Supabase Schema (v131 - December 2024)
 **CRITICAL: Production and Development databases have DIFFERENT schemas!**
 
-**Production Supabase (SUPABASE_DB_URL):**
+**Production Supabase `invoices` table (SUPABASE_DB_URL):**
 | Supabase Column | Frontend Alias | Data Type |
 |-----------------|----------------|-----------|
 | `id` | `id` | bigint |
@@ -119,6 +119,18 @@ Frontend → apiFetch() → Express API → pgPool → PostgreSQL
 | `date` | `issue_date` | date |
 | `tax` | `tax_amount` | numeric |
 | `payment_link` | `payment_url` | text |
+| (NO `client_name` column) | - | - |
+| (NO `job_id` column) | - | - |
+
+**Production Supabase `invoice_items` table:**
+| Supabase Column | Frontend Alias | Data Type |
+|-----------------|----------------|-----------|
+| `id` | `id` | bigint |
+| `invoice_id` | `invoice_id` | bigint |
+| `description` | `description` | text |
+| `qty` | `quantity` | numeric |
+| `unit_price` | `unit_price` | numeric |
+| `total` | `total` | numeric |
 
 **Development Replit (DATABASE_URL):**
 | Column Name | Data Type |
