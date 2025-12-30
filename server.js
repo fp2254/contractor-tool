@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 128;
+const BUILD_VERSION = 129;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -1104,15 +1104,11 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
     const seqNum = (parseInt(countResult.rows[0].cnt) + 1).toString().padStart(3, '0');
     const invoiceNumber = `INV-${dateStr}-${seqNum}`;
 
-    // v127 FIXED: Match voice command pattern - omit client_name/job_id columns (may not exist in production)
-    // Production Supabase uses: user_id, client_id, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template, payment_link
+    // v128 FIXED: EXACT match to voice command pattern (line 4384) - this pattern WORKS in production
     const result = await pgQueryWithRetry(
-      `INSERT INTO invoices (
-        user_id, client_id, client_address, 
-        number, date, notes, template, payment_link, 
-        subtotal, tax, total, status, payment_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      RETURNING id, number as invoice_number`,
+      `INSERT INTO invoices (user_id, client_id, client_address, number, date, notes, subtotal, tax, total, status, payment_status, template)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id, number as invoice_number`,
       [
         userId, 
         sanitized.client_id, 
@@ -1120,13 +1116,12 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         invoiceNumber,
         sanitized.issue_date, 
         sanitized.notes, 
-        sanitized.template, 
-        sanitized.payment_url,
         sanitized.subtotal, 
         sanitized.tax_amount, 
         sanitized.total, 
         'draft',
-        'unpaid'
+        'unpaid',
+        sanitized.template
       ]
     );
 
@@ -1235,14 +1230,14 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
     const invoiceId = existing.id;
     const invoiceNumber = existing.invoice_number;
 
-    // v127 FIXED: Match voice command pattern - omit client_name/job_id columns (may not exist in production)
+    // v128 FIXED: Match voice command pattern - minimal columns that are known to exist
     await dbClient.query(
       `UPDATE invoices SET 
         client_id = $1, client_address = $2, date = $3, notes = $4, 
-        template = $5, payment_link = $6, subtotal = $7, tax = $8, total = $9
-       WHERE id = $10 AND user_id = $11`,
+        subtotal = $5, tax = $6, total = $7, template = $8
+       WHERE id = $9 AND user_id = $10`,
       [sanitized.client_id, sanitized.client_address, sanitized.issue_date, sanitized.notes,
-       sanitized.template, sanitized.payment_url, sanitized.subtotal, sanitized.tax_amount, sanitized.total,
+       sanitized.subtotal, sanitized.tax_amount, sanitized.total, sanitized.template,
        invoiceId, userId]
     );
 
