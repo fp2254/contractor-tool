@@ -15,7 +15,7 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 130;
+const BUILD_VERSION = 131;
 const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
 const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
 
@@ -1139,7 +1139,7 @@ app.post("/api/invoices", requireSubscription, async (req, res) => {
         const itemTotal = Number(item.total) || (qty * price);
         
         await pgQueryWithRetry(
-          `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+          `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
           [invoiceId, desc, qty, price, itemTotal]
         );
       }
@@ -1259,7 +1259,7 @@ app.put("/api/invoices/:id", requireSubscription, async (req, res) => {
         
         try {
           await dbClient.query(
-            `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
             [invoiceId, desc, qty, unitPrice, itemTotal]
           );
         } catch (itemErr) {
@@ -1336,12 +1336,12 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
       `SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY created_at ASC`,
       [invoiceId]
     );
-    // Normalize items: handle both 'unit_price' and 'price' column names
+    // Normalize items: handle both column name variants (quantity/qty, unit_price/price)
     const items = rawItems.map(item => ({
       id: item.id,
       invoice_id: item.invoice_id,
       description: item.description || '',
-      quantity: parseFloat(item.quantity) || 1,
+      quantity: parseFloat(item.quantity || item.qty) || 1,
       unit_price: parseFloat(item.unit_price || item.price) || 0,
       total: parseFloat(item.total) || 0,
       created_at: item.created_at
@@ -4391,7 +4391,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
           const unitPrice = item.unit_price || 0;
           const itemTotal = qty * unitPrice;
           await pgPool.query(
-            `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO invoice_items (invoice_id, description, qty, unit_price, total) VALUES ($1, $2, $3, $4, $5)`,
             [invoice.id, item.description, qty, unitPrice, itemTotal]
           );
         }
@@ -5709,7 +5709,7 @@ app.get("/view/invoice/:id", async (req, res) => {
     const items = rawItems.map(item => ({
       id: item.id,
       description: item.description || '',
-      quantity: parseFloat(item.quantity) || 1,
+      quantity: parseFloat(item.quantity || item.qty) || 1,
       unit_price: parseFloat(item.unit_price || item.price) || 0,
       total: parseFloat(item.total) || 0
     }));

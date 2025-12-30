@@ -1,4 +1,4 @@
-// SELF-DESTRUCT SERVICE WORKER v130
+// SELF-DESTRUCT SERVICE WORKER v131
 // This SW immediately unregisters itself and clears ALL caches
 // No caching, no fetch handling - pure network-only mode
 
