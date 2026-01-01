@@ -636,7 +636,7 @@ app.post("/api/profile", async (req, res) => {
   // Set trial only on FIRST profile creation (no existing profile at all)
   if (!existing) {
     const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + 14);
+    trialEnd.setDate(trialEnd.getDate() + 30);
     payload.trial_ends_at = trialEnd.toISOString();
     payload.subscription_status = "trial";
   } else {

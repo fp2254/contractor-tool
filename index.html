@@ -328,7 +328,7 @@
                 <i class="fa-solid fa-chevron-down"></i>
               </button>
               <div class="lp-faq-answer">
-                <p>No. You can start a 14-day free trial with just your email. If you like it, add a card later. If not, it simply stops — no surprise charges.</p>
+                <p>No. You can start a 30-day free trial with just your email. If you like it, add a card later. If not, it simply stops — no surprise charges.</p>
               </div>
             </div>
             <div class="lp-faq-item">
@@ -366,7 +366,7 @@
       <section class="lp-section lp-final-cta">
         <div class="lp-container">
           <h2 class="lp-cta-title">Ready to stop doing paperwork after hours?</h2>
-          <p class="lp-cta-subtitle">Start your 14-day free trial and send your first quote in minutes.</p>
+          <p class="lp-cta-subtitle">Start your 30-day free trial and send your first quote in minutes.</p>
           <button id="lp-final-cta" class="lp-btn-primary-large">Start Free Trial</button>
         </div>
       </section>
@@ -452,7 +452,7 @@
             </label>
           </div>
           
-          <button type="submit" class="btn-primary" data-i18n="auth.start_trial">Start 14-Day Free Trial</button>
+          <button type="submit" class="btn-primary" data-i18n="auth.start_trial">Start 30-Day Free Trial</button>
           <p class="trial-note" style="font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px;">No credit card required. Cancel anytime.</p>
           <p id="signup-error" class="error-text"></p>
         </form>
@@ -673,11 +673,11 @@
             </button>
 
             <!-- ROW 5: GROWTH / SECONDARY -->
-            <button class="tile referrals-banner" data-screen="referrals">
+            <button class="tile referrals-banner" data-screen="referrals" style="opacity: 0.6;">
               <div class="tile-icon"><i class="fa-solid fa-gift"></i></div>
               <div class="tile-text">
                 <h3>Referrals</h3>
-                <p class="tile-desc">Earn from invites</p>
+                <p class="tile-desc" style="color: #F59E0B;">Coming Soon</p>
               </div>
             </button>
 
@@ -1034,7 +1034,7 @@
             <div class="landing-badge">
               <i class="fa-solid fa-gift"></i> No Credit Card Required
             </div>
-            <h1 class="landing-title">Try Skippy Stack Free for 14 Days</h1>
+            <h1 class="landing-title">Try Skippy Stack Free for 30 Days</h1>
             <p class="landing-subtitle">The all-in-one invoicing app built for tradespeople. Create professional invoices, manage clients, and get paid faster.</p>
             <button id="btn-start-trial-hero" class="btn-trial-cta btn-subscribe" data-plan="monthly">
               <i class="fa-solid fa-rocket"></i> Start Your Free Trial
@@ -1114,7 +1114,7 @@
             <h2>Ready to Simplify Your Business?</h2>
             <p>Join thousands of tradespeople who save hours every week with Skippy Stack</p>
             <button id="btn-start-trial-bottom" class="btn-trial-cta btn-subscribe" data-plan="monthly">
-              <i class="fa-solid fa-rocket"></i> Start 14-Day Free Trial
+              <i class="fa-solid fa-rocket"></i> Start 30-Day Free Trial
             </button>
             <div class="landing-pricing-note">
               <p>After trial: <strong>$9.99/month</strong> or <strong>$99/year</strong> (save 2 months)</p>
@@ -1583,49 +1583,33 @@
           </div>
         </section>
 
-        <!-- REFERRALS -->
+        <!-- REFERRALS - COMING SOON -->
         <section id="screen-referrals" class="screen">
           <div class="screen-header">
             <button class="btn-back" data-back="dashboard"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <h2>Referrals – 20% For Life</h2>
+            <h2>Referrals</h2>
           </div>
-          <div class="referral-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h3>Your Badge</h3>
-              <span id="referral-badge" class="hidden" style="font-size: 18px; font-weight: bold;">🏆 First Referral</span>
+          <div class="referral-card" style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 64px; margin-bottom: 20px;">
+              <i class="fa-solid fa-gift" style="color: #F59E0B;"></i>
             </div>
-            <p>Share your link. Earn 20% of every monthly payment for everyone you bring in, for as long as they stay subscribed.</p>
-            
-            <div class="form-row" style="margin-top: 20px;">
-              <label>Invite a Friend</label>
-              <div class="ref-link-row">
-                <input type="email" id="invite-email" placeholder="friend@example.com" />
-                <button type="button" class="btn-sm" onclick="sendInvite()">Send Invite</button>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>Your referral link</label>
-              <div class="ref-link-row">
-                <input type="text" id="referral-link" readonly />
-                <button type="button" id="btn-copy-referral" class="btn-sm">Copy</button>
-              </div>
-            </div>
-            <div class="referral-stats">
-              <div>
-                <span>Invites sent</span>
-                <strong id="referral-count">0</strong>
-              </div>
-              <div>
-                <span>This month earned</span>
-                <strong id="referral-month">$0.00</strong>
-              </div>
-              <div>
-                <span>Lifetime earned</span>
-                <strong id="referral-lifetime">$0.00</strong>
-              </div>
-            </div>
-            <div id="referral-list" class="list"></div>
+            <h3 style="font-size: 24px; margin-bottom: 12px;">Coming Soon!</h3>
+            <p style="color: var(--muted); max-width: 300px; margin: 0 auto;">
+              Our referral program is under construction. Soon you'll be able to earn rewards by inviting friends to Skippy Stack.
+            </p>
+            <p style="color: #F59E0B; margin-top: 20px; font-weight: 600;">
+              <i class="fa-solid fa-bell"></i> We'll notify you when it's ready!
+            </p>
+          </div>
+          <!-- Hidden elements to prevent JS errors -->
+          <div style="display: none;">
+            <input type="text" id="referral-link" readonly />
+            <span id="referral-count">0</span>
+            <span id="referral-month">$0.00</span>
+            <span id="referral-lifetime">$0.00</span>
+            <span id="referral-badge"></span>
+            <input type="email" id="invite-email" />
+            <div id="referral-list"></div>
           </div>
         </section>
 

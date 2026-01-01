@@ -7449,7 +7449,7 @@ async function loadNotifications() {
   if (tourMode) {
     allNotifications = [
       { id: 1, title: "Welcome to Skippy Stack!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
-      { id: 2, title: "Trial Reminder", content: "Your 14-day free trial has started. Enjoy all features!", message_type: "info", is_read: false, created_at: new Date(Date.now() - 86400000).toISOString() }
+      { id: 2, title: "Trial Reminder", content: "Your 30-day free trial has started. Enjoy all features!", message_type: "info", is_read: false, created_at: new Date(Date.now() - 86400000).toISOString() }
     ];
     renderNotifications(allNotifications);
     updateNotificationBadge();
