@@ -4185,12 +4185,12 @@ async function viewQuoteDetail(quoteId) {
     const titleEl = document.getElementById("quote-detail-title");
     const contentEl = document.getElementById("quote-detail-content");
     
-    titleEl.textContent = `Quote #${quote.quote_number || quote.id.slice(0, 8)}`;
+    titleEl.textContent = `Quote #${quote.quote_number || String(quote.id).slice(0, 8)}`;
     
     contentEl.innerHTML = `
       <div class="detail-header">
         <div class="detail-header-left">
-          <h3>Quote #${quote.quote_number || quote.id.slice(0, 8)}</h3>
+          <h3>Quote #${quote.quote_number || String(quote.id).slice(0, 8)}</h3>
           <p><strong>Date:</strong> ${quote.issue_date || new Date().toLocaleDateString()}</p>
           <p><strong>Status:</strong> ${quote.status || 'draft'}</p>
           ${quote.valid_until ? `<p><strong>Valid Until:</strong> ${quote.valid_until}</p>` : ''}
@@ -4733,9 +4733,9 @@ function sendInvoiceSMS(invoice) {
     // Dev mode or desktop - show message to copy
     alert("TEXT MESSAGE:\n\n" + message);
   } else {
-    // Real mobile app - open SMS
+    // Real mobile app - open SMS without navigating away (prevents logout)
     showToast("Opening Messages...");
-    window.location.href = smsUrl;
+    window.open(smsUrl, '_self');
   }
 }
 
@@ -4747,7 +4747,7 @@ function sendQuoteSMS(quote) {
   const businessNameEl = document.getElementById("business-name");
   const businessName = businessNameEl?.value || "Your business";
   const total = formatCurrency(quote.total || 0);
-  const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'Quote');
+  const quoteNumber = quote.quote_number || (quote.id ? String(quote.id).slice(0, 8) : 'Quote');
   const clientName = quote.client_name || quote.client?.name || 'Customer';
   const quoteViewLink = `https://trade-base.biz/view/quote/${quote.id}`;
   
@@ -4781,9 +4781,9 @@ function sendQuoteSMS(quote) {
     // Dev mode or desktop - show message to copy
     alert("TEXT MESSAGE:\n\n" + message);
   } else {
-    // Real mobile app - open SMS
+    // Real mobile app - open SMS without navigating away (prevents logout)
     showToast("Opening Messages...");
-    window.location.href = smsUrl;
+    window.open(smsUrl, '_self');
   }
 }
 
@@ -6679,7 +6679,7 @@ async function downloadQuote(quote) {
     ` : (quoteData.client_name ? quoteData.client_name : "");
     
     details.innerHTML = `
-      <strong>Quote #:</strong> ${quoteData.quote_number || quoteData.id.slice(0, 8)}<br>
+      <strong>Quote #:</strong> ${quoteData.quote_number || String(quoteData.id).slice(0, 8)}<br>
       <strong>Date:</strong> ${quoteData.quote_date || new Date().toLocaleDateString()}<br>
       <strong>Status:</strong> ${quoteData.status || "draft"}<br>
       ${quoteData.notes ? `<br><strong>Notes:</strong> ${quoteData.notes}` : ""}
@@ -6729,7 +6729,7 @@ async function shareQuote(quote) {
   try {
     showToast("Generating quote image...");
     
-    const quoteNumber = quote.quote_number || (quote.id ? quote.id.slice(0, 8) : 'N/A');
+    const quoteNumber = quote.quote_number || (quote.id ? String(quote.id).slice(0, 8) : 'N/A');
     const clientName = quote.client_name || (quote.client ? quote.client.name : 'N/A');
     
     // Get user's profile for business info
