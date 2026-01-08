@@ -3288,6 +3288,15 @@ async function handleInlineAddClient(e) {
 // Handle client selection from datalist - auto-populate email/phone/address
 async function handleClientSelection(e) {
   const clientName = e.target.value.trim();
+  const addressSelect = document.getElementById("invoice-address-select");
+  const addressInput = document.getElementById("invoice-client-address");
+  
+  // Reset address dropdown
+  if (addressSelect) {
+    addressSelect.innerHTML = '<option value="">-- Select a saved address --</option>';
+    addressSelect.style.display = "none";
+  }
+  
   if (!clientName) {
     selectedClientData = null;
     return;
@@ -3305,10 +3314,46 @@ async function handleClientSelection(e) {
         console.log("Client selected:", selectedClientData);
         showToast(`Client loaded: ${matchedClient.name}`);
         
-        // Auto-fill address field if client has one saved
-        const addressInput = document.getElementById("invoice-client-address");
-        if (addressInput && matchedClient.address) {
-          addressInput.value = matchedClient.address;
+        // Load client's property addresses
+        try {
+          const addrRes = await apiFetch(`/api/clients/${matchedClient.id}/addresses`);
+          if (addrRes.ok) {
+            const addresses = await addrRes.json();
+            
+            if (addresses.length > 0) {
+              // Show dropdown with saved addresses
+              addressSelect.innerHTML = '<option value="">-- Select a saved address --</option>';
+              
+              // Add default address from client record if exists
+              if (matchedClient.address) {
+                addressSelect.innerHTML += `<option value="${matchedClient.address}">Default: ${matchedClient.address}</option>`;
+              }
+              
+              // Add property addresses
+              addresses.forEach(addr => {
+                addressSelect.innerHTML += `<option value="${addr.address}" ${addr.is_default ? 'selected' : ''}>${addr.label}: ${addr.address}</option>`;
+              });
+              
+              addressSelect.innerHTML += '<option value="__custom__">Enter custom address...</option>';
+              addressSelect.style.display = "block";
+              
+              // Auto-select default if available
+              const defaultAddr = addresses.find(a => a.is_default);
+              if (defaultAddr) {
+                addressInput.value = defaultAddr.address;
+              } else if (matchedClient.address) {
+                addressInput.value = matchedClient.address;
+              }
+            } else if (matchedClient.address) {
+              // No additional addresses, just use default
+              addressInput.value = matchedClient.address;
+            }
+          }
+        } catch (addrErr) {
+          console.log("Could not load addresses:", addrErr);
+          if (matchedClient.address) {
+            addressInput.value = matchedClient.address;
+          }
         }
       } else {
         selectedClientData = { name: clientName };
@@ -3317,6 +3362,27 @@ async function handleClientSelection(e) {
   } catch (err) {
     console.log("Could not lookup client:", err);
     selectedClientData = { name: clientName };
+  }
+  
+  updateInvoicePreview();
+}
+
+// Handle address dropdown selection
+function handleAddressSelectChange() {
+  const addressSelect = document.getElementById("invoice-address-select");
+  const addressInput = document.getElementById("invoice-client-address");
+  
+  if (!addressSelect || !addressInput) return;
+  
+  const selectedValue = addressSelect.value;
+  
+  if (selectedValue === "__custom__") {
+    // Clear input and focus for manual entry
+    addressInput.value = "";
+    addressInput.focus();
+  } else if (selectedValue) {
+    // Fill in selected address
+    addressInput.value = selectedValue;
   }
   
   updateInvoicePreview();
@@ -10480,25 +10546,188 @@ async function deleteInventoryItem(itemId) {
   }
 }
 
-// Edit client function
+// Edit client function - opens modal with address management
+let editingClientId = null;
+let clientAddresses = [];
+
 function editClient(clientId) {
-  // Load client data and switch to edit form
-  apiFetch(`/api/clients/${clientId}`).then(res => res.json()).then(client => {
-    document.getElementById("client-name").value = client.name || "";
-    document.getElementById("client-phone").value = client.phone || "";
-    document.getElementById("client-email").value = client.email || "";
-    document.getElementById("client-address").value = client.address || "";
+  editingClientId = clientId;
+  
+  // Load client data
+  apiFetch(`/api/clients/${clientId}`).then(res => res.json()).then(async client => {
+    document.getElementById("edit-client-name").value = client.name || "";
+    document.getElementById("edit-client-phone").value = client.phone || "";
+    document.getElementById("edit-client-email").value = client.email || "";
+    document.getElementById("edit-client-address").value = client.address || "";
     
-    // Store client ID for updating
-    const form = document.getElementById("client-form");
-    if (form) form.dataset.editId = clientId;
+    // Load client's property addresses
+    await loadClientAddresses(clientId);
     
-    document.getElementById("client-form-title").textContent = "Edit Client";
-    showScreen("new-client");
+    // Show modal
+    document.getElementById("client-edit-modal").style.display = "block";
   }).catch(err => {
     console.error("Error loading client:", err);
     showToast("Failed to load client");
   });
+}
+
+async function loadClientAddresses(clientId) {
+  const list = document.getElementById("client-properties-list");
+  
+  try {
+    const res = await apiFetch(`/api/clients/${clientId}/addresses`);
+    if (res.ok) {
+      clientAddresses = await res.json();
+      renderClientAddresses();
+    } else {
+      clientAddresses = [];
+      renderClientAddresses();
+    }
+  } catch (err) {
+    console.error("Error loading addresses:", err);
+    clientAddresses = [];
+    renderClientAddresses();
+  }
+}
+
+function renderClientAddresses() {
+  const list = document.getElementById("client-properties-list");
+  
+  if (!clientAddresses.length) {
+    list.innerHTML = '<p style="color: var(--muted); font-size: 13px; text-align: center; padding: 12px;">No additional properties saved</p>';
+    return;
+  }
+  
+  list.innerHTML = clientAddresses.map(addr => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg); border-radius: 6px; margin-bottom: 8px;">
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 600; font-size: 14px; color: var(--text);">
+          ${addr.label}
+          ${addr.is_default ? '<span style="font-size: 10px; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">DEFAULT</span>' : ''}
+        </div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${addr.address}</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-left: 8px;">
+        ${!addr.is_default ? `<button type="button" onclick="setDefaultAddress('${addr.id}')" style="padding: 4px 8px; font-size: 11px; background: var(--tile); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;" title="Set as default">
+          <i class="fa-solid fa-star"></i>
+        </button>` : ''}
+        <button type="button" onclick="deleteClientAddress('${addr.id}')" style="padding: 4px 8px; font-size: 11px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showAddPropertyForm() {
+  document.getElementById("add-property-form").style.display = "block";
+  document.getElementById("new-property-label").focus();
+}
+
+function hideAddPropertyForm() {
+  document.getElementById("add-property-form").style.display = "none";
+  document.getElementById("new-property-label").value = "";
+  document.getElementById("new-property-address").value = "";
+}
+
+async function saveNewProperty() {
+  const label = document.getElementById("new-property-label").value.trim();
+  const address = document.getElementById("new-property-address").value.trim();
+  
+  if (!label || !address) {
+    showToast("Please enter both property name and address");
+    return;
+  }
+  
+  try {
+    const res = await apiFetch(`/api/clients/${editingClientId}/addresses`, {
+      method: "POST",
+      body: JSON.stringify({ label, address, is_default: clientAddresses.length === 0 })
+    });
+    
+    if (res.ok) {
+      showToast("Property added!");
+      hideAddPropertyForm();
+      await loadClientAddresses(editingClientId);
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to add property");
+    }
+  } catch (err) {
+    console.error("Error adding property:", err);
+    showToast("Failed to add property");
+  }
+}
+
+async function setDefaultAddress(addressId) {
+  try {
+    const res = await apiFetch(`/api/clients/${editingClientId}/addresses/${addressId}`, {
+      method: "PUT",
+      body: JSON.stringify({ is_default: true })
+    });
+    
+    if (res.ok) {
+      showToast("Default address updated!");
+      await loadClientAddresses(editingClientId);
+    }
+  } catch (err) {
+    console.error("Error setting default:", err);
+  }
+}
+
+async function deleteClientAddress(addressId) {
+  if (!confirm("Delete this property address?")) return;
+  
+  try {
+    const res = await apiFetch(`/api/clients/${editingClientId}/addresses/${addressId}`, {
+      method: "DELETE"
+    });
+    
+    if (res.ok) {
+      showToast("Property removed!");
+      await loadClientAddresses(editingClientId);
+    }
+  } catch (err) {
+    console.error("Error deleting address:", err);
+    showToast("Failed to delete property");
+  }
+}
+
+function closeClientEditModal() {
+  document.getElementById("client-edit-modal").style.display = "none";
+  editingClientId = null;
+  clientAddresses = [];
+}
+
+async function saveClientEdit() {
+  const name = document.getElementById("edit-client-name").value.trim();
+  const phone = document.getElementById("edit-client-phone").value.trim();
+  const email = document.getElementById("edit-client-email").value.trim();
+  const address = document.getElementById("edit-client-address").value.trim();
+  
+  if (!name) {
+    showToast("Client name is required");
+    return;
+  }
+  
+  try {
+    const res = await apiFetch(`/api/clients/${editingClientId}`, {
+      method: "PUT",
+      body: JSON.stringify({ name, phone, email, address })
+    });
+    
+    if (res.ok) {
+      showToast("Client updated!");
+      closeClientEditModal();
+      await loadClients();
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Failed to update client");
+    }
+  } catch (err) {
+    console.error("Error updating client:", err);
+    showToast("Failed to update client");
+  }
 }
 
 async function deleteClient(clientId) {
