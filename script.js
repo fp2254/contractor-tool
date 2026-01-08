@@ -1,7 +1,20 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 132;
+const BUILD_VERSION = 133;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
+
+// Global error handler to prevent uncaught errors from breaking the app
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error('[Global Error]', message, 'at', source, lineno, colno);
+  console.error('[Global Error] Stack:', error?.stack);
+  // Don't let errors propagate and break UI
+  return true;
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('[Unhandled Promise Rejection]', event.reason);
+  event.preventDefault();
+});
 
 // DEBUG PANEL STATE (TEMPORARY)
 window.debugState = {
@@ -4179,8 +4192,24 @@ async function viewInvoiceDetail(invoiceId) {
 
 async function viewQuoteDetail(quoteId) {
   try {
+    console.log('[viewQuoteDetail] Fetching quote:', quoteId);
     const res = await apiFetch(`/api/quotes/${quoteId}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('[viewQuoteDetail] API error:', res.status, errorText);
+      showToast("Failed to load quote");
+      return;
+    }
+    
     const quote = await res.json();
+    console.log('[viewQuoteDetail] Quote loaded:', quote?.id);
+    
+    if (!quote || !quote.id) {
+      console.error('[viewQuoteDetail] Invalid quote data received');
+      showToast("Quote not found");
+      return;
+    }
     
     const titleEl = document.getElementById("quote-detail-title");
     const contentEl = document.getElementById("quote-detail-content");
