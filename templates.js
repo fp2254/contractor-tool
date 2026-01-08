@@ -351,3 +351,11 @@ function renderBigTotal(data, type, numberField, dateField) {
     </div>
   `;
 }
+
+// Export templates for SMS/text preview flow
+window.invoiceTemplates = {
+  basic_clean: (data) => renderBasicClean(data, 'INVOICE', 'invoice_number', 'issue_date'),
+  modern_pro: (data) => renderModernPro(data, 'INVOICE', 'invoice_number', 'issue_date'),
+  color_accent: (data) => renderColorAccent(data, 'INVOICE', 'invoice_number', 'issue_date'),
+  big_total: (data) => renderBigTotal(data, 'INVOICE', 'invoice_number', 'issue_date')
+};
