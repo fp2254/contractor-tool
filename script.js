@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 133;
+const BUILD_VERSION = 134;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -881,7 +881,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // API FETCH HELPER (sends JWT token in Authorization header)
 async function apiFetch(path, options = {}) {
-  const { data: { session } } = await sb.auth.getSession();
+  let session;
+  try {
+    const result = await sb.auth.getSession();
+    session = result?.data?.session;
+    console.log('[apiFetch v134] getSession result:', session ? 'session exists' : 'no session');
+  } catch (sessionErr) {
+    console.error('[apiFetch v134] getSession FAILED:', sessionErr);
+    // Continue without session - let server handle auth
+  }
   
   if (session && session.user) {
     currentUser = session.user;
@@ -2026,6 +2034,7 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
+  console.log('[handleLogout v134] CALLED - stack trace:', new Error().stack);
   // Check for unsynced invoices before logout
   const canLogout = await checkUnsyncedBeforeLogout();
   if (!canLogout) {
@@ -6242,6 +6251,7 @@ async function updateLifetimeEarlyCount() {
 
 async function handleQuoteSubmit(e) {
   e.preventDefault();
+  console.log('[handleQuoteSubmit v134] START - saving quote');
   const errorEl = document.getElementById("quote-error");
   errorEl.textContent = "";
   
@@ -6320,29 +6330,40 @@ async function handleQuoteSubmit(e) {
     }
 
     if (res.ok) {
+      console.log('[handleQuoteSubmit v134] API response OK');
       const data = await res.json();
+      console.log('[handleQuoteSubmit v134] Response data:', data);
       quoteData.id = isEditing ? editingQuoteId : data.id;
       
       try {
+        console.log('[handleQuoteSubmit v134] Saving to IndexedDB...');
         await tradebaseDB.saveQuote(quoteData);
+        console.log('[handleQuoteSubmit v134] IndexedDB save complete');
       } catch (dbErr) {
         console.warn("IndexedDB save failed (non-critical):", dbErr);
       }
       
+      console.log('[handleQuoteSubmit v134] About to call saveLineItemsFromUI');
       saveLineItemsFromUI();
+      console.log('[handleQuoteSubmit v134] About to setButtonLoading false');
       setButtonLoading(submitBtn, false);
+      console.log('[handleQuoteSubmit v134] About to showToast');
       showToast(isEditing ? "Quote updated!" : "Quote created!");
+      console.log('[handleQuoteSubmit v134] About to resetQuoteForm');
       resetQuoteForm();
+      console.log('[handleQuoteSubmit v134] About to showScreen quotes');
       showScreen("quotes");
+      console.log('[handleQuoteSubmit v134] About to loadQuotes');
       await loadQuotes();
+      console.log('[handleQuoteSubmit v134] COMPLETE - all done');
     } else {
       const data = await res.json();
-      console.error('[handleQuoteSubmit] API error:', res.status, data);
+      console.error('[handleQuoteSubmit v134] API error:', res.status, data);
       errorEl.textContent = data.error || "Failed to save quote.";
       setButtonLoading(submitBtn, false);
     }
   } catch (err) {
-    console.error("Quote submit error:", err);
+    console.error("[handleQuoteSubmit v134] Exception:", err);
     console.error("Error details:", JSON.stringify(err, null, 2));
     errorEl.textContent = err.message || "An error occurred.";
     setButtonLoading(submitBtn, false);
