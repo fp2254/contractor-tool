@@ -3321,17 +3321,17 @@ async function handleClientSelection(e) {
             const addresses = await addrRes.json();
             
             if (addresses.length > 0) {
-              // Show dropdown with saved addresses
+              // Show dropdown with saved addresses - use escapeHtml for XSS prevention
               addressSelect.innerHTML = '<option value="">-- Select a saved address --</option>';
               
               // Add default address from client record if exists
               if (matchedClient.address) {
-                addressSelect.innerHTML += `<option value="${matchedClient.address}">Default: ${matchedClient.address}</option>`;
+                addressSelect.innerHTML += `<option value="${escapeHtml(matchedClient.address)}">Default: ${escapeHtml(matchedClient.address)}</option>`;
               }
               
               // Add property addresses
               addresses.forEach(addr => {
-                addressSelect.innerHTML += `<option value="${addr.address}" ${addr.is_default ? 'selected' : ''}>${addr.label}: ${addr.address}</option>`;
+                addressSelect.innerHTML += `<option value="${escapeHtml(addr.address)}" ${addr.is_default ? 'selected' : ''}>${escapeHtml(addr.label)}: ${escapeHtml(addr.address)}</option>`;
               });
               
               addressSelect.innerHTML += '<option value="__custom__">Enter custom address...</option>';
@@ -10598,20 +10598,21 @@ function renderClientAddresses() {
     return;
   }
   
+  // Use escapeHtml to prevent XSS from user-provided content
   list.innerHTML = clientAddresses.map(addr => `
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg); border-radius: 6px; margin-bottom: 8px;">
       <div style="flex: 1; min-width: 0;">
         <div style="font-weight: 600; font-size: 14px; color: var(--text);">
-          ${addr.label}
+          ${escapeHtml(addr.label)}
           ${addr.is_default ? '<span style="font-size: 10px; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">DEFAULT</span>' : ''}
         </div>
-        <div style="font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${addr.address}</div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(addr.address)}</div>
       </div>
       <div style="display: flex; gap: 8px; margin-left: 8px;">
-        ${!addr.is_default ? `<button type="button" onclick="setDefaultAddress('${addr.id}')" style="padding: 4px 8px; font-size: 11px; background: var(--tile); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;" title="Set as default">
+        ${!addr.is_default ? `<button type="button" onclick="setDefaultAddress('${escapeHtml(addr.id)}')" style="padding: 4px 8px; font-size: 11px; background: var(--tile); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;" title="Set as default">
           <i class="fa-solid fa-star"></i>
         </button>` : ''}
-        <button type="button" onclick="deleteClientAddress('${addr.id}')" style="padding: 4px 8px; font-size: 11px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">
+        <button type="button" onclick="deleteClientAddress('${escapeHtml(addr.id)}')" style="padding: 4px 8px; font-size: 11px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
