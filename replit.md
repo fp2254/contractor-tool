@@ -6,8 +6,8 @@ Skippy Stack is a full-stack web application for tradespeople, offering client m
 ## User Preferences
 - "Keep it stupid simple" philosophy for non-technical users
 - Big buttons and one-page layouts
-- 14-day free trial for all users
-- Invite 4 friends = 60 free days bonus
+- 30-day free trial for all users (Phase 1 rollout)
+- Referral system: Coming Soon (disabled for Phase 1)
 
 ## System Architecture
 Skippy Stack is a full-stack web application utilizing Node.js with Express.js for the backend and Vanilla JavaScript for a Single-Page Application (SPA) frontend. Supabase provides authentication and file storage, while PostgreSQL (accessed via `pgPool`) handles all database operations. Stripe is integrated for payment processing.
@@ -32,7 +32,8 @@ Skippy Stack is a full-stack web application utilizing Node.js with Express.js f
 - **Offline PWA**: Progressive Web App with offline-first architecture using Service Worker and IndexedDB for invoice management. Invoices save locally first, then sync to the cloud.
 - **Job Folders**: Automatic organization of job-related assets (invoices, quotes, photos, voice notes).
 - **Notification Center**: In-app system for announcements.
-- **Database Schema**: Core tables include `profiles`, `clients`, `invoices`, `invoice_items`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, `system_messages`, `calendar_events`, `ai_usage_logs`, and `payment_links`.
+- **Database Schema**: Core tables include `profiles`, `clients`, `client_addresses`, `invoices`, `invoice_items`, `quotes`, `quote_items`, `inventory_items`, `referral_earnings`, `jobs`, `voice_notes`, `system_messages`, `calendar_events`, `ai_usage_logs`, and `payment_links`.
+- **Multiple Client Addresses**: Clients can have multiple property addresses (e.g., rental properties, second homes). When creating invoices, users can select from saved addresses via dropdown or enter a custom address.
 - **File Storage**: Supabase Storage for `logos` and `invoice-photos`.
 - **AI Add-On System**: Subscription-based AI features with usage limits, including:
     - Unified Voice Command System using OpenAI function calling for various operations.
