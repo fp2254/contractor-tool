@@ -1039,6 +1039,139 @@ app.delete("/api/clients/:id", requireSubscription, async (req, res) => {
   }
 });
 
+// CLIENT ADDRESSES - Multiple properties per client
+
+app.get("/api/clients/:id/addresses", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+
+  try {
+    // Verify client belongs to user
+    const { rows: clients } = await pgPool.query(
+      `SELECT id FROM clients WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    if (!clients.length) return res.status(404).json({ error: "Client not found" });
+
+    const { rows } = await pgPool.query(
+      `SELECT * FROM client_addresses WHERE client_id = $1 ORDER BY is_default DESC, created_at ASC`,
+      [id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("Get client addresses error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/clients/:id/addresses", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id } = req.params;
+  const { label, address, is_default } = req.body;
+
+  if (!label || !address) {
+    return res.status(400).json({ error: "Label and address are required" });
+  }
+
+  try {
+    // Verify client belongs to user
+    const { rows: clients } = await pgPool.query(
+      `SELECT id FROM clients WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    if (!clients.length) return res.status(404).json({ error: "Client not found" });
+
+    // If setting as default, unset other defaults first
+    if (is_default) {
+      await pgPool.query(
+        `UPDATE client_addresses SET is_default = false WHERE client_id = $1`,
+        [id]
+      );
+    }
+
+    const { rows } = await pgPool.query(
+      `INSERT INTO client_addresses (client_id, label, address, is_default)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, label.trim(), address.trim(), is_default || false]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error("Add client address error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put("/api/clients/:id/addresses/:addressId", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id, addressId } = req.params;
+  const { label, address, is_default } = req.body;
+
+  try {
+    // Verify client belongs to user
+    const { rows: clients } = await pgPool.query(
+      `SELECT id FROM clients WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    if (!clients.length) return res.status(404).json({ error: "Client not found" });
+
+    // If setting as default, unset other defaults first
+    if (is_default) {
+      await pgPool.query(
+        `UPDATE client_addresses SET is_default = false WHERE client_id = $1`,
+        [id]
+      );
+    }
+
+    const { rows } = await pgPool.query(
+      `UPDATE client_addresses 
+       SET label = COALESCE($1, label), 
+           address = COALESCE($2, address), 
+           is_default = COALESCE($3, is_default),
+           updated_at = NOW()
+       WHERE id = $4 AND client_id = $5 RETURNING *`,
+      [label?.trim(), address?.trim(), is_default, addressId, id]
+    );
+
+    if (!rows.length) return res.status(404).json({ error: "Address not found" });
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Update client address error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/clients/:id/addresses/:addressId", requireSubscription, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+  const { id, addressId } = req.params;
+
+  try {
+    // Verify client belongs to user
+    const { rows: clients } = await pgPool.query(
+      `SELECT id FROM clients WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    if (!clients.length) return res.status(404).json({ error: "Client not found" });
+
+    await pgPool.query(
+      `DELETE FROM client_addresses WHERE id = $1 AND client_id = $2`,
+      [addressId, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete client address error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // INVOICES
 
 app.get("/api/invoices", requireSubscription, async (req, res) => {
