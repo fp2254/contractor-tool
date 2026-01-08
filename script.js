@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 134;
+const BUILD_VERSION = 135;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -882,16 +882,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 // API FETCH HELPER (sends JWT token in Authorization header)
 async function apiFetch(path, options = {}) {
   let session;
+  
+  // First attempt to get session
   try {
     const result = await sb.auth.getSession();
     session = result?.data?.session;
-    console.log('[apiFetch v134] getSession result:', session ? 'session exists' : 'no session');
   } catch (sessionErr) {
-    console.error('[apiFetch v134] getSession FAILED:', sessionErr);
-    // Continue without session - let server handle auth
+    console.warn('[apiFetch] getSession failed:', sessionErr.message);
   }
   
-  if (session && session.user) {
+  // If no session, try refreshing (handles Safari/iOS transient token loss)
+  if (!session?.access_token) {
+    try {
+      const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+      if (!refreshError && refreshData?.session) {
+        session = refreshData.session;
+        console.log('[apiFetch] Session refreshed successfully');
+      }
+    } catch (refreshErr) {
+      console.warn('[apiFetch] Session refresh failed:', refreshErr.message);
+    }
+  }
+  
+  if (session?.user) {
     currentUser = session.user;
   }
 
@@ -908,103 +921,42 @@ async function apiFetch(path, options = {}) {
   const apiBase = window.API_BASE_URL || API_BASE_URL || "";
   const fullUrl = `${apiBase}${path}`;
   
-  // DIAGNOSTIC LOGGING v113 - Log every request with all _id fields
-  const method = options.method || 'GET';
-  console.log('🔍 [apiFetch v113] ====== REQUEST START ======');
-  console.log('🔍 [apiFetch v113] URL:', fullUrl);
-  console.log('🔍 [apiFetch v113] Method:', method);
-  
-  // Log payload and extract all _id fields
-  if (options.body && !(options.body instanceof FormData)) {
-    try {
-      const payload = JSON.parse(options.body);
-      console.log('🔍 [apiFetch v113] Full Payload:', JSON.stringify(payload, null, 2));
-      
-      // Extract and log ALL fields ending in _id
-      const idFields = {};
-      for (const key of Object.keys(payload)) {
-        if (key.endsWith('_id') || key === 'id') {
-          idFields[key] = {
-            value: payload[key],
-            type: typeof payload[key],
-            isNull: payload[key] === null,
-            isEmpty: payload[key] === "",
-            isUndefined: payload[key] === undefined
-          };
-        }
-      }
-      console.log('🔍 [apiFetch v113] ALL _id FIELDS:', JSON.stringify(idFields, null, 2));
-      
-      // CRITICAL: Check for empty strings in UUID fields
-      for (const [key, info] of Object.entries(idFields)) {
-        if (info.isEmpty) {
-          console.error(`🚨 [apiFetch v113] EMPTY STRING IN ${key}! This will cause PostgREST error!`);
-        }
-        if (info.type === 'string' && info.value && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(info.value)) {
-          console.error(`🚨 [apiFetch v113] INVALID UUID FORMAT IN ${key}: "${info.value}"`);
-        }
-      }
-    } catch (e) {
-      console.log('🔍 [apiFetch v113] Body (non-JSON):', options.body);
-    }
-  } else if (options.body instanceof FormData) {
-    console.log('🔍 [apiFetch v113] Body: [FormData]');
-  }
-  console.log('🔍 [apiFetch v113] ============================');
-  
   const response = await fetch(fullUrl, {
     credentials: "include",
     ...options,
     headers,
   });
 
-  // DIAGNOSTIC LOGGING v113 - Log response headers
-  console.log('🔍 [apiFetch v113] ====== RESPONSE ======');
-  console.log('🔍 [apiFetch v113] Status:', response.status);
-  console.log('🔍 [apiFetch v113] X-Hit-Express:', response.headers.get('X-Hit-Express') || 'NOT PRESENT');
-  console.log('🔍 [apiFetch v113] X-Tradebase-Server:', response.headers.get('X-Tradebase-Server') || 'NOT PRESENT');
-  console.log('🔍 [apiFetch v113] X-Tradebase-Handler:', response.headers.get('X-Tradebase-Handler') || 'NOT PRESENT');
-  console.log('🔍 [apiFetch v113] X-Build-ID:', response.headers.get('X-Build-ID') || 'NOT PRESENT');
-  
-  // If error, ALWAYS read and surface the raw response body
+  // Handle error responses - but NEVER trigger logout
   if (!response.ok) {
     let errorText = '';
     let errorDetail = null;
     try {
       errorText = await response.text();
-      console.error('🚨 [apiFetch v117] ERROR RESPONSE BODY:', errorText);
-      
-      // Try to parse as JSON for structured error info
       try {
         errorDetail = JSON.parse(errorText);
-        console.error('🚨 [apiFetch v117] Parsed error:', JSON.stringify(errorDetail, null, 2));
-        if (errorDetail.column) console.error('🚨 FAILING COLUMN:', errorDetail.column);
-        if (errorDetail.constraint) console.error('🚨 CONSTRAINT:', errorDetail.constraint);
-        if (errorDetail.detail) console.error('🚨 DETAIL:', errorDetail.detail);
-        if (errorDetail.values) console.error('🚨 VALUES:', JSON.stringify(errorDetail.values));
       } catch (parseErr) {
         // Not JSON, use raw text
-      }
-      
-      // Check if this is a PostgREST error
-      if (errorText.includes('did not match the expected pattern')) {
-        console.error('🚨🚨🚨 [apiFetch v117] POSTGREST UUID ERROR DETECTED! 🚨🚨🚨');
-        console.error('🚨 This request may be hitting Supabase/PostgREST instead of Express!');
-        console.error('🚨 URL:', fullUrl);
-        console.error('🚨 X-Hit-Express:', response.headers.get('X-Hit-Express') || 'NOT PRESENT');
       }
     } catch (e) {
       errorText = `${response.status} ${response.statusText}`;
     }
-    console.log('🔍 [apiFetch v117] ===========================');
+    
+    // Log errors for debugging but don't spam console
+    if (response.status >= 500) {
+      console.error('[apiFetch] Server error:', response.status, errorText.substring(0, 200));
+    } else if (response.status === 401) {
+      console.warn('[apiFetch] Auth error - token may need refresh');
+      // NOTE: Do NOT logout on 401 - session might be transiently invalid
+    }
     
     // For non-special status codes, throw with actual error detail
+    // This lets the calling code handle the error gracefully
     if (response.status !== 402 && response.status !== 429) {
       const errorMessage = errorDetail?.error || errorDetail?.message || errorText || `${response.status} ${response.statusText}`;
       throw new Error(errorMessage);
     }
   }
-  console.log('🔍 [apiFetch v117] ===========================');
 
   // Handle subscription required error
   if (response.status === 402) {
@@ -2034,7 +1986,6 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
-  console.log('[handleLogout v134] CALLED - stack trace:', new Error().stack);
   // Check for unsynced invoices before logout
   const canLogout = await checkUnsyncedBeforeLogout();
   if (!canLogout) {
@@ -2062,13 +2013,36 @@ async function handleLogout() {
 }
 
 async function checkSession() {
-  const { data } = await sb.auth.getUser();
-  if (data && data.user) {
-    // User has a valid session - log them in
-    // email_confirmed_at being set means they confirmed their email
-    currentUser = data.user;
+  // First attempt to get user
+  let userData = null;
+  
+  try {
+    const { data } = await sb.auth.getUser();
+    userData = data?.user;
+  } catch (e) {
+    console.log('[checkSession] getUser failed, attempting refresh:', e.message);
+  }
+  
+  // If no user, try refreshing the session (handles Safari/iOS transient issues)
+  if (!userData) {
+    try {
+      const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+      if (!refreshError && refreshData?.session?.user) {
+        userData = refreshData.session.user;
+        console.log('[checkSession] Session refreshed successfully');
+      }
+    } catch (refreshErr) {
+      console.log('[checkSession] Session refresh failed:', refreshErr.message);
+    }
+  }
+  
+  // Only proceed to login if we have a valid user
+  if (userData) {
+    currentUser = userData;
     await onLoggedIn();
   }
+  // NOTE: Do NOT log out or show landing page here - only checkSession on initial load
+  // Transient session loss should not force logout
 }
 
 async function onLoggedIn() {
@@ -4201,21 +4175,16 @@ async function viewInvoiceDetail(invoiceId) {
 
 async function viewQuoteDetail(quoteId) {
   try {
-    console.log('[viewQuoteDetail] Fetching quote:', quoteId);
     const res = await apiFetch(`/api/quotes/${quoteId}`);
     
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error('[viewQuoteDetail] API error:', res.status, errorText);
       showToast("Failed to load quote");
       return;
     }
     
     const quote = await res.json();
-    console.log('[viewQuoteDetail] Quote loaded:', quote?.id);
     
     if (!quote || !quote.id) {
-      console.error('[viewQuoteDetail] Invalid quote data received');
       showToast("Quote not found");
       return;
     }
@@ -6251,7 +6220,6 @@ async function updateLifetimeEarlyCount() {
 
 async function handleQuoteSubmit(e) {
   e.preventDefault();
-  console.log('[handleQuoteSubmit v134] START - saving quote');
   const errorEl = document.getElementById("quote-error");
   errorEl.textContent = "";
   
@@ -6330,42 +6298,29 @@ async function handleQuoteSubmit(e) {
     }
 
     if (res.ok) {
-      console.log('[handleQuoteSubmit v134] API response OK');
       const data = await res.json();
-      console.log('[handleQuoteSubmit v134] Response data:', data);
       quoteData.id = isEditing ? editingQuoteId : data.id;
       
       try {
-        console.log('[handleQuoteSubmit v134] Saving to IndexedDB...');
         await tradebaseDB.saveQuote(quoteData);
-        console.log('[handleQuoteSubmit v134] IndexedDB save complete');
       } catch (dbErr) {
-        console.warn("IndexedDB save failed (non-critical):", dbErr);
+        // IndexedDB save is non-critical, continue
       }
       
-      console.log('[handleQuoteSubmit v134] About to call saveLineItemsFromUI');
       saveLineItemsFromUI();
-      console.log('[handleQuoteSubmit v134] About to setButtonLoading false');
       setButtonLoading(submitBtn, false);
-      console.log('[handleQuoteSubmit v134] About to showToast');
       showToast(isEditing ? "Quote updated!" : "Quote created!");
-      console.log('[handleQuoteSubmit v134] About to resetQuoteForm');
       resetQuoteForm();
-      console.log('[handleQuoteSubmit v134] About to showScreen quotes');
       showScreen("quotes");
-      console.log('[handleQuoteSubmit v134] About to loadQuotes');
       await loadQuotes();
-      console.log('[handleQuoteSubmit v134] COMPLETE - all done');
     } else {
       const data = await res.json();
-      console.error('[handleQuoteSubmit v134] API error:', res.status, data);
       errorEl.textContent = data.error || "Failed to save quote.";
       setButtonLoading(submitBtn, false);
     }
   } catch (err) {
-    console.error("[handleQuoteSubmit v134] Exception:", err);
-    console.error("Error details:", JSON.stringify(err, null, 2));
-    errorEl.textContent = err.message || "An error occurred.";
+    // Show error to user but do NOT logout
+    errorEl.textContent = err.message || "An error occurred. Please try again.";
     setButtonLoading(submitBtn, false);
   }
 }
