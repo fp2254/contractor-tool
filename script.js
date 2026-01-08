@@ -4472,9 +4472,17 @@ function copyToClipboard(text, message = "Copied to clipboard!") {
 
 // Open template chooser before sending invoice via SMS - shows preview first
 function openTemplateChooserForTextInvoice(invoice) {
+  console.log("[TEMPLATE CHOOSER] Opening for invoice:", invoice.id);
+  
   const modal = document.getElementById("template-chooser-modal");
   const grid = document.getElementById("template-chooser-grid");
   const title = modal.querySelector('h2');
+  
+  if (!modal || !grid) {
+    console.error("[TEMPLATE CHOOSER] Modal or grid not found!");
+    showToast("Error: Template chooser not available");
+    return;
+  }
   
   title.textContent = 'Choose Template for Text';
   
@@ -4485,35 +4493,45 @@ function openTemplateChooserForTextInvoice(invoice) {
     { id: 'big_total', name: 'Big Total', desc: 'Emphasizes the total amount prominently' }
   ];
   
+  // Store invoice in window for onclick handlers (more reliable on mobile)
+  window._currentTextInvoice = invoice;
+  
   grid.innerHTML = templates.map(template => `
-    <div class="template-card" data-invoice-id="${invoice.id}" data-template-id="${template.id}" data-action="text" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s;">
+    <div class="template-card" data-template-id="${template.id}" onclick="handleTemplateCardClick('${template.id}')" style="cursor: pointer; border: 2px solid var(--border); border-radius: 8px; padding: 20px; background: var(--tile); transition: all 0.2s; -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3); user-select: none;">
       <h3 style="margin: 0 0 8px 0; color: var(--text); font-size: 16px;">${template.name}</h3>
       <p style="margin: 0; color: var(--muted); font-size: 13px;">${template.desc}</p>
-      <div style="margin-top: 12px; padding: 8px; background: var(--bg); border-radius: 4px; text-align: center; color: var(--primary); font-size: 12px; font-weight: 600;">
-        <i class="fa-solid fa-eye"></i> CLICK TO PREVIEW
+      <div style="margin-top: 12px; padding: 12px; background: var(--bg); border-radius: 6px; text-align: center; color: var(--primary); font-size: 14px; font-weight: 600;">
+        <i class="fa-solid fa-eye"></i> TAP TO PREVIEW
       </div>
     </div>
   `).join('');
   
-  // Add event listeners to template cards - shows preview with Send Text button
-  grid.querySelectorAll('.template-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const invoiceId = card.getAttribute('data-invoice-id');
-      const templateId = card.getAttribute('data-template-id');
-      previewInvoiceTemplateForText(invoice, templateId);
-    });
-  });
-  
+  console.log("[TEMPLATE CHOOSER] Grid populated with", templates.length, "templates");
   modal.style.display = 'block';
+}
+
+// Handle template card click (separate function for better mobile support)
+function handleTemplateCardClick(templateId) {
+  console.log("[TEMPLATE CARD] Clicked template:", templateId);
+  const invoice = window._currentTextInvoice;
+  if (!invoice) {
+    console.error("[TEMPLATE CARD] No invoice stored in window._currentTextInvoice");
+    showToast("Error: Please try again");
+    return;
+  }
+  previewInvoiceTemplateForText(invoice, templateId);
 }
 
 // Preview invoice template with Send Text action button
 async function previewInvoiceTemplateForText(invoice, templateId) {
+  console.log("[TEMPLATE PREVIEW] Starting preview for template:", templateId, "invoice:", invoice.id);
+  
   const modal = document.getElementById("template-preview-modal");
   const content = document.getElementById("template-preview-content");
   
   if (!modal || !content) {
-    console.error("Preview modal not found");
+    console.error("[TEMPLATE PREVIEW] Modal or content not found!");
+    showToast("Error: Preview not available");
     return;
   }
   
