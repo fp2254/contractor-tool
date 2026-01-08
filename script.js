@@ -6337,6 +6337,7 @@ async function handleQuoteSubmit(e) {
       await loadQuotes();
     } else {
       const data = await res.json();
+      console.error('[handleQuoteSubmit] API error:', res.status, data);
       errorEl.textContent = data.error || "Failed to save quote.";
       setButtonLoading(submitBtn, false);
     }
@@ -10067,6 +10068,7 @@ async function createQuoteFromParsedData(parsed, transcript) {
       }, 2000);
     } else {
       const errData = await res.json();
+      console.error('[createQuoteFromParsedData] API error:', res.status, errData);
       throw new Error(errData.error || "Failed to save quote");
     }
   } catch (err) {
