@@ -19,7 +19,25 @@
     };
     
     window.addEventListener('unhandledrejection', function(e) {
-      console.error('[EARLY-REJECTION]', e.reason, 'Promise:', e.promise);
+      var reason = e.reason;
+      var details = '';
+      try {
+        if (reason && typeof reason === 'object') {
+          details = JSON.stringify(reason, Object.getOwnPropertyNames(reason));
+        } else {
+          details = String(reason);
+        }
+      } catch(err) {
+        details = 'Could not stringify: ' + err.message;
+      }
+      console.error('[EARLY-REJECTION] Reason:', details);
+      console.error('[EARLY-REJECTION] Stack:', reason?.stack || 'no stack');
+      console.error('[EARLY-REJECTION] Promise:', e.promise);
+      
+      // Try to get promise creation stack if available
+      if (e.promise && e.promise.constructor) {
+        console.error('[EARLY-REJECTION] Promise type:', e.promise.constructor.name);
+      }
     });
     
     // Track any navigation attempts
