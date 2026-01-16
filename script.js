@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 136;
+const BUILD_VERSION = 138;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -88,7 +88,13 @@ if (typeof window.API_BASE_URL === 'undefined') {
 }
 console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL));
 
-// Automatic version check and cache bust
+// Flag to prevent reloads during active operations
+window.__activeOperation = false;
+
+// Automatic version check and cache bust - DISABLED to prevent logout loop
+// The version check was causing page reloads during quote saves
+// TODO: Re-enable with user confirmation dialog instead of auto-reload
+/*
 (async function checkVersionAndBust() {
   try {
     const res = await fetch('/api/version', { cache: 'no-store' });
@@ -97,7 +103,7 @@ console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL))
       const serverVersion = data.version;
       console.log('[Version Check] Client:', BUILD_VERSION, 'Server:', serverVersion);
       
-      if (serverVersion > BUILD_VERSION) {
+      if (serverVersion > BUILD_VERSION && !window.__activeOperation) {
         console.log('[Version Check] Stale code detected! Forcing cache clear...');
         
         // Unregister all service workers
@@ -125,6 +131,7 @@ console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL))
     console.log('[Version Check] Could not check version:', e);
   }
 })();
+*/
 
 // SERVICE WORKER REGISTRATION - DISABLED (self-destruct mode)
 // Re-enable once caching issues are resolved
@@ -6220,8 +6227,12 @@ async function updateLifetimeEarlyCount() {
 
 async function handleQuoteSubmit(e) {
   e.preventDefault();
+  console.log('[QUOTE-DEBUG] handleQuoteSubmit called');
   const errorEl = document.getElementById("quote-error");
   errorEl.textContent = "";
+  
+  // DEBUG: Track that we're in an active operation
+  window.__activeOperation = true;
   
   const submitBtn = document.getElementById("btn-save-quote");
   setButtonLoading(submitBtn, true);
@@ -6297,8 +6308,11 @@ async function handleQuoteSubmit(e) {
       });
     }
 
+    console.log('[QUOTE-DEBUG] Got response:', res.status);
+    
     if (res.ok) {
       const data = await res.json();
+      console.log('[QUOTE-DEBUG] Quote saved successfully, id:', data.id);
       quoteData.id = isEditing ? editingQuoteId : data.id;
       
       try {
@@ -6311,17 +6325,25 @@ async function handleQuoteSubmit(e) {
       setButtonLoading(submitBtn, false);
       showToast(isEditing ? "Quote updated!" : "Quote created!");
       resetQuoteForm();
+      console.log('[QUOTE-DEBUG] About to showScreen quotes');
       showScreen("quotes");
+      console.log('[QUOTE-DEBUG] About to loadQuotes');
       await loadQuotes();
+      console.log('[QUOTE-DEBUG] DONE - quote save complete');
+      window.__activeOperation = false;
     } else {
+      console.log('[QUOTE-DEBUG] Response not ok:', res.status);
       const data = await res.json();
       errorEl.textContent = data.error || "Failed to save quote.";
       setButtonLoading(submitBtn, false);
+      window.__activeOperation = false;
     }
   } catch (err) {
     // Show error to user but do NOT logout
+    console.error('[QUOTE-DEBUG] Exception caught:', err.message);
     errorEl.textContent = err.message || "An error occurred. Please try again.";
     setButtonLoading(submitBtn, false);
+    window.__activeOperation = false;
   }
 }
 
