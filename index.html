@@ -57,13 +57,16 @@
   <!-- INLINE VERSION CHECK - Runs before any cached JS -->
   <script>
   (async function() {
-    const EXPECTED_VERSION = 132;
+    const EXPECTED_VERSION = 139;
+    const RELOAD_KEY = 'skippy_reloaded_v' + EXPECTED_VERSION;
+    if (sessionStorage.getItem(RELOAD_KEY)) return;
     try {
       const res = await fetch('/api/version', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data.version > EXPECTED_VERSION) {
           console.log('[INLINE VERSION CHECK] Stale code! Server:', data.version, 'Client:', EXPECTED_VERSION);
+          sessionStorage.setItem(RELOAD_KEY, '1');
           if ('serviceWorker' in navigator) {
             const regs = await navigator.serviceWorker.getRegistrations();
             for (const r of regs) await r.unregister();
