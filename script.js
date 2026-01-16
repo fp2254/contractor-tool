@@ -3177,21 +3177,25 @@ function calculateSuggestedPrice({ materials, hours, rate, markup, tax }) {
 // CLIENTS & SETTINGS
 
 function wireSettingsUI() {
-  document
-    .getElementById("client-form")
-    .addEventListener("submit", handleAddClient);
+  const clientForm = document.getElementById("client-form");
+  if (clientForm) {
+    clientForm.addEventListener("submit", handleAddClient);
+  }
 
-  document
-    .getElementById("settings-form")
-    .addEventListener("submit", handleSaveSettings);
+  const settingsForm = document.getElementById("settings-form");
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", handleSaveSettings);
+  }
 
-  document
-    .getElementById("business-logo")
-    .addEventListener("change", handleLogoSelect);
+  const businessLogoInput = document.getElementById("business-logo");
+  if (businessLogoInput) {
+    businessLogoInput.addEventListener("change", handleLogoSelect);
+  }
 
-  document
-    .getElementById("btn-copy-referral")
-    .addEventListener("click", copyReferralLink);
+  const copyReferralBtn = document.getElementById("btn-copy-referral");
+  if (copyReferralBtn) {
+    copyReferralBtn.addEventListener("click", copyReferralLink);
+  }
   
   // Wire up payment link button
   const addPaymentLinkBtn = document.getElementById("btn-add-payment-link");
