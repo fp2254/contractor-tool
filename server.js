@@ -15,9 +15,9 @@ dotenv.config();
 
 
 // VERSION CONSTANTS - Must be defined early for middleware
-const BUILD_VERSION = 132;
-const BUILD_TIMESTAMP = "2024-12-28-v121-prod-schema-fix";
-const BUILD_ID = "v121-prod-schema-fix-" + Date.now();
+const BUILD_VERSION = 139;
+const BUILD_TIMESTAMP = "2025-01-16-v139-cache-fix";
+const BUILD_ID = "v139-cache-fix-" + Date.now();
 
 // Lazy-loaded chromium path (cached after first call)
 let cachedChromiumPath = undefined;
