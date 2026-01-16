@@ -822,26 +822,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   
-  loadTheme();
-  wireLandingPageUI();
-  wireAuthUI();
-  wireDashboardUI();
-  wireInvoiceUI();
-  wireCalculatorUI();
-  wireSettingsUI();
-  wireReferralsUI();
-  wireSubscriptionUI();
-  wireQuotesUI();
-  wireInventoryUI();
-  wireJobsUI();
-  wireNotificationsUI();
-  wireVoiceRecording();
-  wireTourMode();
-  wirePlansModal();
-  wireQuickPayModal();
-  wireAIDoAllMenu();
-  wireAdminPanel();
-  initCalendar();
+  // Wrap all UI initialization in try/catch to prevent crashes
+  try {
+    loadTheme();
+    wireLandingPageUI();
+    wireAuthUI();
+    wireDashboardUI();
+    wireInvoiceUI();
+    wireCalculatorUI();
+    wireSettingsUI();
+    wireReferralsUI();
+    wireSubscriptionUI();
+    wireQuotesUI();
+    wireInventoryUI();
+    wireJobsUI();
+    wireNotificationsUI();
+    wireVoiceRecording();
+    wireTourMode();
+    wirePlansModal();
+    wireQuickPayModal();
+    wireAIDoAllMenu();
+    wireAdminPanel();
+    initCalendar();
+  } catch (uiInitError) {
+    console.error('[INIT] UI initialization error:', uiInitError);
+  }
   
   // Check tour mode and session - these will update language if needed
   checkTourMode();
@@ -1074,12 +1079,12 @@ function checkTourMode() {
   const tourFlag = sessionStorage.getItem("tb_tour_mode");
   if (tourFlag === "true") {
     tourMode = true;
-    document.getElementById("auth-container").classList.add("hidden");
-    document.getElementById("app-container").classList.remove("hidden");
-    document.getElementById("tour-banner").classList.remove("hidden");
-    document.getElementById("trial-banner").classList.add("hidden");
-    document.getElementById("btn-logout").classList.add("hidden");
-    document.getElementById("screen-container").classList.add("tour-mode");
+    document.getElementById("auth-container")?.classList.add("hidden");
+    document.getElementById("app-container")?.classList.remove("hidden");
+    document.getElementById("tour-banner")?.classList.remove("hidden");
+    document.getElementById("trial-banner")?.classList.add("hidden");
+    document.getElementById("btn-logout")?.classList.add("hidden");
+    document.getElementById("screen-container")?.classList.add("tour-mode");
     
     // Set language and update picker
     setLanguage(currentLanguage);
@@ -1097,12 +1102,12 @@ function enterTourMode() {
   sessionStorage.setItem("tb_tour_mode", "true");
   renderTemplateShowcase();
   
-  document.getElementById("auth-container").classList.add("hidden");
-  document.getElementById("app-container").classList.remove("hidden");
-  document.getElementById("tour-banner").classList.remove("hidden");
-  document.getElementById("trial-banner").classList.add("hidden");
-  document.getElementById("btn-logout").classList.add("hidden");
-  document.getElementById("screen-container").classList.add("tour-mode");
+  document.getElementById("auth-container")?.classList.add("hidden");
+  document.getElementById("app-container")?.classList.remove("hidden");
+  document.getElementById("tour-banner")?.classList.remove("hidden");
+  document.getElementById("trial-banner")?.classList.add("hidden");
+  document.getElementById("btn-logout")?.classList.add("hidden");
+  document.getElementById("screen-container")?.classList.add("tour-mode");
   
   // Set language and update picker
   setLanguage(currentLanguage);
@@ -1119,19 +1124,19 @@ function exitTourMode() {
   
   clearDemoData();
   
-  document.getElementById("tour-banner").classList.add("hidden");
-  document.getElementById("screen-container").classList.remove("tour-mode");
+  document.getElementById("tour-banner")?.classList.add("hidden");
+  document.getElementById("screen-container")?.classList.remove("tour-mode");
   
   // Immediately show pricing page
-  document.getElementById("app-container").classList.remove("hidden");
-  document.getElementById("auth-container").classList.add("hidden");
+  document.getElementById("app-container")?.classList.remove("hidden");
+  document.getElementById("auth-container")?.classList.add("hidden");
   showScreen("subscription");
   updateLifetimeEarlyCount();
   
   // Then check if user is logged in and switch to dashboard if so
   sb.auth.getSession().then(({ data: { session } }) => {
     if (session?.user) {
-      document.getElementById("btn-logout").classList.remove("hidden");
+      document.getElementById("btn-logout")?.classList.remove("hidden");
       showScreen("dashboard");
       loadInitialData();
     }
@@ -1234,12 +1239,16 @@ function showDemoFormVoice(formType) {
     btn.style.backgroundColor = originalBg;
     
     if (formType === 'quote') {
-      document.getElementById("quote-client-name").value = "Smith Electric";
-      document.getElementById("quote-notes").value = "Panel upgrade at 456 Oak Ave";
+      const quoteClientName = document.getElementById("quote-client-name");
+      const quoteNotes = document.getElementById("quote-notes");
+      if (quoteClientName) quoteClientName.value = "Smith Electric";
+      if (quoteNotes) quoteNotes.value = "Panel upgrade at 456 Oak Ave";
       showToast("✅ Demo: Form filled! Client: Smith Electric, Amount: $1,200");
     } else if (formType === 'invoice') {
-      document.getElementById("invoice-client-name").value = "Smith Electric";
-      document.getElementById("invoice-notes").value = "Panel upgrade completed at 456 Oak Ave";
+      const invoiceClientName = document.getElementById("invoice-client-name");
+      const invoiceNotes = document.getElementById("invoice-notes");
+      if (invoiceClientName) invoiceClientName.value = "Smith Electric";
+      if (invoiceNotes) invoiceNotes.value = "Panel upgrade completed at 456 Oak Ave";
       showToast("✅ Demo: Form filled! Client: Smith Electric, Amount: $1,200");
     }
   }, 4000);
@@ -1760,7 +1769,7 @@ function wireAuthUI() {
   loginForm.addEventListener("submit", handleLogin);
   signupForm.addEventListener("submit", handleSignup);
 
-  document.getElementById("btn-logout").addEventListener("click", handleLogout);
+  document.getElementById("btn-logout")?.addEventListener("click", handleLogout);
   
   // Forgot password handler
   const forgotPasswordLink = document.getElementById("forgot-password-link");
@@ -1811,8 +1820,8 @@ function wireAuthUI() {
   if (viewPricingLink) {
     viewPricingLink.addEventListener("click", (e) => {
       e.preventDefault();
-      document.getElementById("auth-container").classList.add("hidden");
-      document.getElementById("app-container").classList.remove("hidden");
+      document.getElementById("auth-container")?.classList.add("hidden");
+      document.getElementById("app-container")?.classList.remove("hidden");
       showScreen("subscription");
       updateLifetimeEarlyCount();
     });
@@ -1871,14 +1880,14 @@ function wireLandingPageUI() {
   function showSignup() {
     landingPage.classList.add("hidden");
     authContainer.classList.remove("hidden");
-    document.getElementById("btn-show-signup").click();
+    document.getElementById("btn-show-signup")?.click();
   }
   
   // Show auth form with login tab active
   function showLogin() {
     landingPage.classList.add("hidden");
     authContainer.classList.remove("hidden");
-    document.getElementById("btn-show-login").click();
+    document.getElementById("btn-show-login")?.click();
   }
   
   // Back to landing page
@@ -2167,7 +2176,7 @@ function wireDashboardUI() {
     });
   });
 
-  document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+  document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
   
   // Language selector in app header
   const appLangSelect = document.getElementById("app-language-select");
@@ -2581,13 +2590,13 @@ function wireInvoiceUI() {
   }
 
   // Wire up live preview updates
-  document.getElementById("invoice-client-name").addEventListener("input", updateInvoicePreview);
-  document.getElementById("invoice-date").addEventListener("change", updateInvoicePreview);
+  document.getElementById("invoice-client-name")?.addEventListener("input", updateInvoicePreview);
+  document.getElementById("invoice-date")?.addEventListener("change", updateInvoicePreview);
   const templateSelect = document.getElementById("invoice-template-select");
   if (templateSelect) {
     templateSelect.addEventListener("change", updateInvoicePreview);
   }
-  document.getElementById("invoice-notes").addEventListener("input", updateInvoicePreview);
+  document.getElementById("invoice-notes")?.addEventListener("input", updateInvoicePreview);
 
   // Wire up sync button for offline-first invoice syncing
   const syncBtn = document.getElementById("btn-sync-invoices");
