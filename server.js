@@ -798,6 +798,11 @@ app.get("/api/payment-links", async (req, res) => {
     );
     res.json(result.rows || []);
   } catch (err) {
+    // Handle missing table gracefully (code 42P01 = relation does not exist)
+    if (err.code === '42P01') {
+      console.log("[payment-links] Table does not exist yet, returning empty array");
+      return res.json([]);
+    }
     console.error("Error fetching payment links:", err);
     res.status(500).json({ error: "Failed to fetch payment links" });
   }

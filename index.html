@@ -5,52 +5,11 @@
   <title>Skippy Stack - Invoice & Quote App for Contractors | Works Offline</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- FORCE API_BASE_URL - Clear any cached config BEFORE scripts load -->
+  <!-- API_BASE_URL initialization - simplified to prevent Safari reload issues -->
   <script>
   (function() {
-    try {
-      localStorage.removeItem('API_BASE_URL');
-      sessionStorage.removeItem('API_BASE_URL');
-      localStorage.removeItem('apiBaseUrl');
-      sessionStorage.removeItem('apiBaseUrl');
-    } catch(e) {}
     window.API_BASE_URL = "";
-    console.log('[FORCE API] Cleared cached API URLs, set to empty string');
-    
-    // KILL SWITCH: Unregister ALL service workers immediately
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var r of regs) {
-          r.unregister();
-          console.log('[SW KILL] Unregistered service worker');
-        }
-      });
-    }
-    
-    // Clear ALL caches
-    if ('caches' in window) {
-      caches.keys().then(function(names) {
-        for (var n of names) {
-          caches.delete(n);
-          console.log('[CACHE KILL] Deleted cache:', n);
-        }
-      });
-    }
-    
-    // CRITICAL: Clear IndexedDB sync queue to remove stale Supabase-targeted entries
-    try {
-      const req = indexedDB.open('TradeBaseDB', 1);
-      req.onsuccess = function(e) {
-        const db = e.target.result;
-        if (db.objectStoreNames.contains('sync_queue')) {
-          const tx = db.transaction(['sync_queue'], 'readwrite');
-          const store = tx.objectStore('sync_queue');
-          store.clear();
-          console.log('[FORCE API] Cleared IndexedDB sync_queue');
-        }
-        db.close();
-      };
-    } catch(e) { console.log('[FORCE API] IndexedDB clear failed:', e); }
+    console.log('[INIT] API_BASE_URL set to empty string');
   })();
   </script>
   
