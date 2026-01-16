@@ -2213,7 +2213,7 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
     
     // Insert quote - use correct column names that match database schema
     const quoteResult = await client.query(
-      `INSERT INTO quotes (user_id, client_id, client_address, issue_date, valid_until, quote_number, notes, template, subtotal, tax_amount, total, status)
+      `INSERT INTO quotes (user_id, client_id, client_address, quote_date, due_date, quote_number, notes, template, subtotal, tax, total, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, quote_number`,
       [userId, client_id || null, client_address || null, quote_date || new Date().toISOString().split('T')[0], valid_until || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
@@ -4483,7 +4483,7 @@ async function executeVoiceToolCall(toolName, args, userId) {
       // Create the quote - USING PGPOOL
       const quoteNumber = `QT-${Date.now()}`;
       const { rows: quoteRows } = await pgPool.query(
-        `INSERT INTO quotes (user_id, client_id, client_name, quote_number, issue_date, notes, subtotal, tax_amount, total, status, template)
+        `INSERT INTO quotes (user_id, client_id, client_name, quote_number, quote_date, notes, subtotal, tax, total, status, template)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
         [userId, clientId, client_name, quoteNumber, new Date().toISOString().split("T")[0], notes, subtotal, tax, total, "draft", "basic_clean"]
       );
