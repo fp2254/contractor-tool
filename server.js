@@ -1802,7 +1802,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
 
     // v123: payment_link doesn't exist in profiles table - get from payment_links table or use invoice's existing payment_link
     const { rows: paymentLinks } = await pgPool.query(
-      `SELECT url FROM payment_links WHERE user_id = $1 AND is_default = true LIMIT 1`,
+      `SELECT url FROM payment_links WHERE profile_id = $1 AND is_default = true LIMIT 1`,
       [userId]
     );
     
@@ -1810,7 +1810,7 @@ app.post("/api/invoices/:id/payment-link", requireSubscription, async (req, res)
     let paymentUrl = paymentLinks.length ? paymentLinks[0].url : null;
     if (!paymentUrl) {
       const { rows: anyPaymentLink } = await pgPool.query(
-        `SELECT url FROM payment_links WHERE user_id = $1 LIMIT 1`,
+        `SELECT url FROM payment_links WHERE profile_id = $1 LIMIT 1`,
         [userId]
       );
       paymentUrl = anyPaymentLink.length ? anyPaymentLink[0].url : null;
