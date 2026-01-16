@@ -848,7 +848,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await checkSession();
   
   updateTrialBanner();
-  await initializeOfflineSupport();
+  
+  // Wrap offline support in try/catch to prevent crashes
+  try {
+    await initializeOfflineSupport();
+  } catch (offlineErr) {
+    console.error('[INIT] Offline support failed:', offlineErr);
+  }
   
   // Wire up template chooser modal close button
   const closeTemplateChooserBtn = document.getElementById("close-template-chooser");

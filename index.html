@@ -5,11 +5,32 @@
   <title>Skippy Stack - Invoice & Quote App for Contractors | Works Offline</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- API_BASE_URL initialization - simplified to prevent Safari reload issues -->
+  <!-- API_BASE_URL initialization and early error tracking -->
   <script>
   (function() {
     window.API_BASE_URL = "";
-    console.log('[INIT] API_BASE_URL set to empty string');
+    window.__pageLoadTime = Date.now();
+    console.log('[INIT] Page load started at:', new Date().toISOString());
+    
+    // Early error tracking
+    window.onerror = function(msg, src, line, col, err) {
+      console.error('[EARLY-ERROR]', msg, 'at', src, line, col);
+      return false;
+    };
+    
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[EARLY-REJECTION]', e.reason, 'Promise:', e.promise);
+    });
+    
+    // Track any navigation attempts
+    window.addEventListener('beforeunload', function(e) {
+      var elapsed = Date.now() - window.__pageLoadTime;
+      console.log('[BEFOREUNLOAD] Navigation after', elapsed, 'ms');
+    });
+    
+    window.addEventListener('pagehide', function(e) {
+      console.log('[PAGEHIDE] persisted:', e.persisted);
+    });
   })();
   </script>
   
