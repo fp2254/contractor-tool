@@ -23,6 +23,38 @@ window.debugState = {
   lastSyncError: null
 };
 
+// RELOAD PROTECTION - Detect and log any navigation attempts
+window.__activeOperation = false;
+window.__operationName = '';
+
+// Capture any navigation attempts during active operations
+window.addEventListener('beforeunload', function(e) {
+  console.log('[RELOAD-GUARD] beforeunload triggered, activeOperation:', window.__activeOperation, window.__operationName);
+  
+  // If we're in an active operation, try to prevent navigation
+  if (window.__activeOperation) {
+    console.error('[RELOAD-GUARD] BLOCKED: Navigation attempt during active operation:', window.__operationName);
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    return e.returnValue;
+  }
+});
+
+// Override location.reload to track calls
+const originalReload = window.location.reload.bind(window.location);
+window.location.reload = function(...args) {
+  console.error('[RELOAD-GUARD] window.location.reload() called!');
+  console.trace('[RELOAD-GUARD] Stack trace:');
+  
+  // If in active operation, block the reload
+  if (window.__activeOperation) {
+    console.error('[RELOAD-GUARD] BLOCKED: Reload blocked during active operation:', window.__operationName);
+    return;
+  }
+  
+  originalReload(...args);
+};
+
 function showDebugPanel() {
   const panel = document.getElementById('debug-panel');
   if (panel) {
@@ -87,9 +119,6 @@ if (typeof window.API_BASE_URL === 'undefined') {
   window.API_BASE_URL = "";
 }
 console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL));
-
-// Flag to prevent reloads during active operations
-window.__activeOperation = false;
 
 // Automatic version check and cache bust - DISABLED to prevent logout loop
 // The version check was causing page reloads during quote saves
@@ -6233,6 +6262,7 @@ async function handleQuoteSubmit(e) {
   
   // DEBUG: Track that we're in an active operation
   window.__activeOperation = true;
+  window.__operationName = 'quote-save';
   
   const submitBtn = document.getElementById("btn-save-quote");
   setButtonLoading(submitBtn, true);
@@ -6367,12 +6397,14 @@ async function handleQuoteSubmit(e) {
       await loadQuotes();
       console.log('[QUOTE-DEBUG] DONE - quote save complete');
       window.__activeOperation = false;
+      window.__operationName = '';
     } else {
       console.log('[QUOTE-DEBUG] Response not ok:', res.status);
       const data = await res.json();
       errorEl.textContent = data.error || "Failed to save quote.";
       setButtonLoading(submitBtn, false);
       window.__activeOperation = false;
+      window.__operationName = '';
     }
   } catch (err) {
     // Show error to user but do NOT logout
@@ -6380,6 +6412,7 @@ async function handleQuoteSubmit(e) {
     errorEl.textContent = err.message || "An error occurred. Please try again.";
     setButtonLoading(submitBtn, false);
     window.__activeOperation = false;
+    window.__operationName = '';
   }
 }
 
