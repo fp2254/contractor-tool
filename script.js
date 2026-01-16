@@ -6306,21 +6306,44 @@ async function handleQuoteSubmit(e) {
     }
 
     let res;
-    if (isEditing) {
-      res = await apiFetch(`/api/quotes/${editingQuoteId}`, {
-        method: "PUT",
-        body: JSON.stringify(quoteData),
-      });
-    } else {
-      quoteData.quote_number = `QT-${Date.now()}`;
-      quoteData.status = "draft";
-      quoteData.created_at = new Date().toISOString();
-      res = await apiFetch("/api/quotes", {
-        method: "POST",
-        body: JSON.stringify(quoteData),
-      });
-    }
-
+    const saveQuoteWithRetry = async (retryCount = 0) => {
+      try {
+        if (isEditing) {
+          return await apiFetch(`/api/quotes/${editingQuoteId}`, {
+            method: "PUT",
+            body: JSON.stringify(quoteData),
+          });
+        } else {
+          if (retryCount === 0) {
+            quoteData.quote_number = `QT-${Date.now()}`;
+            quoteData.status = "draft";
+            quoteData.created_at = new Date().toISOString();
+          }
+          return await apiFetch("/api/quotes", {
+            method: "POST",
+            body: JSON.stringify(quoteData),
+          });
+        }
+      } catch (saveErr) {
+        // On auth error, retry once after session refresh
+        if (retryCount === 0 && (saveErr.message.includes('401') || saveErr.message.includes('Unauthorized') || saveErr.message.includes('auth'))) {
+          console.log('[QUOTE-DEBUG] Auth error, refreshing session and retrying...');
+          try {
+            const { data: retrySession } = await sb.auth.refreshSession();
+            if (retrySession?.session) {
+              currentUser = retrySession.session.user;
+              console.log('[QUOTE-DEBUG] Session refreshed, retrying save...');
+              return await saveQuoteWithRetry(1);
+            }
+          } catch (refreshErr) {
+            console.error('[QUOTE-DEBUG] Retry refresh failed:', refreshErr.message);
+          }
+        }
+        throw saveErr;
+      }
+    };
+    
+    res = await saveQuoteWithRetry();
     console.log('[QUOTE-DEBUG] Got response:', res.status);
     
     if (res.ok) {
