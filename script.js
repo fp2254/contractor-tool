@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 135;
+const BUILD_VERSION = 136;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -6244,7 +6244,7 @@ async function handleQuoteSubmit(e) {
   }
 
   let subtotal = 0;
-  items.forEach((i) => (subtotal += i.line_total));
+  items.forEach((i) => (subtotal += i.total || 0));
   const taxPercent = parseFloat(document.getElementById("quote-tax").value) || 0;
   const tax = subtotal * (taxPercent / 100);
   const total = subtotal + tax;
