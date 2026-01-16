@@ -1,5 +1,5 @@
 // BUILD VERSION - Used for cache busting
-const BUILD_VERSION = 139;
+const BUILD_VERSION = 140;
 window.__BUILD_VERSION__ = BUILD_VERSION;
 console.log('[Skippy Stack] Build version:', BUILD_VERSION);
 
@@ -6236,6 +6236,19 @@ async function handleQuoteSubmit(e) {
   
   const submitBtn = document.getElementById("btn-save-quote");
   setButtonLoading(submitBtn, true);
+  
+  // Safari/iOS session fix: refresh session before save to prevent auth loss
+  try {
+    const { data: sessionData, error: sessionError } = await sb.auth.refreshSession();
+    if (sessionError) {
+      console.warn('[QUOTE-DEBUG] Session refresh failed:', sessionError.message);
+    } else if (sessionData?.session) {
+      console.log('[QUOTE-DEBUG] Session refreshed before save');
+      currentUser = sessionData.session.user;
+    }
+  } catch (refreshErr) {
+    console.warn('[QUOTE-DEBUG] Session refresh exception:', refreshErr.message);
+  }
 
   const clientName = document.getElementById("quote-client-name").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
