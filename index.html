@@ -1658,6 +1658,25 @@
             <h2>Admin Panel</h2>
           </div>
 
+          <div class="feature-status-card" style="background: linear-gradient(135deg, var(--primary), #6366f1); color: white;">
+            <div class="feature-status-header" style="color: white;">
+              <i class="fa-solid fa-share-nodes"></i>
+              <h3>Your Referral Link</h3>
+            </div>
+            <div style="padding: 16px;">
+              <p style="margin-bottom: 12px; opacity: 0.9;">Share this link to invite new users to Skippy Stack:</p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="admin-referral-link" readonly value="" 
+                  style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 12px; border-radius: 8px; font-size: 14px;" />
+                <button type="button" onclick="copyAdminReferralLink()" class="btn-primary" 
+                  style="background: white; color: var(--primary); padding: 12px 20px; font-weight: 600;">
+                  <i class="fa-solid fa-copy"></i> Copy Link
+                </button>
+              </div>
+              <p id="admin-referral-copied" style="display: none; margin-top: 8px; font-size: 13px;"><i class="fa-solid fa-check"></i> Copied!</p>
+            </div>
+          </div>
+
           <div class="feature-status-card">
             <div class="feature-status-header">
               <i class="fa-solid fa-bell"></i>

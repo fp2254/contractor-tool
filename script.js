@@ -2522,6 +2522,11 @@ function showScreen(screenId) {
   if (screenId === "activity-log") {
     showActivityLog();
   }
+  
+  // Initialize admin referral link when navigating to admin screen
+  if (screenId === "admin") {
+    initAdminReferralLink();
+  }
 }
 
 // INITIAL LOAD
@@ -8170,6 +8175,33 @@ async function grantLifetimeToUser() {
     console.error("Error granting lifetime:", err);
     showToast("Failed to grant lifetime membership");
   }
+}
+
+function initAdminReferralLink() {
+  const linkInput = document.getElementById("admin-referral-link");
+  if (linkInput) {
+    const referralLink = `${window.location.origin}/?ref=SKIPPY_ADMIN`;
+    linkInput.value = referralLink;
+  }
+}
+
+function copyAdminReferralLink() {
+  const linkInput = document.getElementById("admin-referral-link");
+  const copiedMsg = document.getElementById("admin-referral-copied");
+  
+  if (!linkInput) return;
+  
+  navigator.clipboard.writeText(linkInput.value).then(() => {
+    if (copiedMsg) {
+      copiedMsg.style.display = "block";
+      setTimeout(() => { copiedMsg.style.display = "none"; }, 2000);
+    }
+    showToast("Referral link copied!");
+  }).catch(() => {
+    linkInput.select();
+    document.execCommand("copy");
+    showToast("Referral link copied!");
+  });
 }
 
 async function sendAdminMessage() {
