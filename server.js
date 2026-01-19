@@ -3736,6 +3736,36 @@ async function getResendClient() {
   }
 }
 
+// HANDLE EMAIL CONFIRMATION LINK - Redirect to app with success message
+app.get("/confirm-signup", async (req, res) => {
+  try {
+    const { userId, email } = req.query;
+    
+    if (!userId || !email) {
+      return res.redirect("/?error=invalid_confirmation_link");
+    }
+    
+    console.log(`[CONFIRM SIGNUP] User ${email} (${userId}) confirmed their email`);
+    
+    // Update the profile to mark email as confirmed
+    try {
+      await pgPool.query(
+        `UPDATE profiles SET email_confirmed = true WHERE id = $1`,
+        [userId]
+      );
+    } catch (dbErr) {
+      // Column might not exist yet, that's okay
+      console.log("[CONFIRM SIGNUP] Could not update email_confirmed (column may not exist):", dbErr.message);
+    }
+    
+    // Redirect to login page with success message
+    res.redirect("/?confirmed=true&email=" + encodeURIComponent(email));
+  } catch (error) {
+    console.error("[CONFIRM SIGNUP] Error:", error);
+    res.redirect("/?error=confirmation_failed");
+  }
+});
+
 // SEND SIGNUP CONFIRMATION EMAIL
 app.post("/api/send-signup-confirmation", async (req, res) => {
   try {

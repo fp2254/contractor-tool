@@ -2551,6 +2551,19 @@ async function loadInitialData() {
     showToast("Checkout canceled. You can subscribe anytime!");
     window.history.replaceState({}, '', '/');
   }
+  
+  // Check for email confirmation success
+  if (params.get("confirmed") === "true") {
+    const confirmedEmail = params.get("email") || "";
+    showToast("Email confirmed! You can now log in.");
+    window.history.replaceState({}, '', '/');
+  } else if (params.get("error") === "invalid_confirmation_link") {
+    showToast("Invalid confirmation link. Please try again.");
+    window.history.replaceState({}, '', '/');
+  } else if (params.get("error") === "confirmation_failed") {
+    showToast("Confirmation failed. Please try again or contact support.");
+    window.history.replaceState({}, '', '/');
+  }
 }
 
 // INVOICE UI
