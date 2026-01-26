@@ -65,6 +65,7 @@ function renderBasicClean(data, type, numberField, dateField) {
         <p style="margin: 5px 0; color: #666; font-size: 12px;">${data.business_name || ''}</p>
         <p style="margin: 2px 0; color: #666; font-size: 12px;">${data.address || ''}</p>
         <p style="margin: 2px 0; color: #666; font-size: 12px;">${data.phone || ''}</p>
+        ${data.website ? `<p style="margin: 2px 0; color: #666; font-size: 12px;">${data.website}</p>` : ''}
       </div>
       
       <table style="width: 100%; margin-bottom: 20px; font-size: 12px;">
@@ -139,6 +140,7 @@ function renderModernPro(data, type, numberField, dateField) {
           <p style="margin: 0; font-weight: 600; font-size: 16px; color: #000;">${data.business_name || ''}</p>
           <p style="margin: 4px 0; font-size: 12px; color: #666;">${data.address || ''}</p>
           <p style="margin: 4px 0; font-size: 12px; color: #666;">${data.phone || ''}</p>
+          ${data.website ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">${data.website}</p>` : ''}
         </div>
         <div style="text-align: right;">
           <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #2c3e50;">${type}</h1>
@@ -291,6 +293,7 @@ function renderBigTotal(data, type, numberField, dateField) {
           <p style="margin: 0; font-size: 14px; font-weight: 600; color: #000;">${data.business_name || ''}</p>
           <p style="margin: 4px 0; font-size: 11px; color: #666;">${data.address || ''}</p>
           <p style="margin: 2px 0; font-size: 11px; color: #666;">${data.phone || ''}</p>
+          ${data.website ? `<p style="margin: 2px 0; font-size: 11px; color: #666;">${data.website}</p>` : ''}
         </div>
         <div style="text-align: right;">
           <h1 style="margin: 0; font-size: 32px; font-weight: 700;">${type}</h1>

@@ -6015,6 +6015,7 @@ async function previewQuoteTemplate(quote, templateId) {
       address: profile?.business_address,
       phone: profile?.business_phone,
       email: profile?.business_email,
+      website: profile?.business_website,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (quoteData.items || []).map(item => ({
@@ -6177,6 +6178,7 @@ async function downloadQuoteWithTemplate(quote, templateId) {
       address: profile?.business_address,
       phone: profile?.business_phone,
       email: profile?.business_email,
+      website: profile?.business_website,
       logo_url: profile?.logo_url,
       invoice_footer: profile?.invoice_footer,
       items: (quoteData.items || []).map(item => ({
