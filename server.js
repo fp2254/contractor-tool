@@ -673,34 +673,65 @@ app.post("/api/profile", async (req, res) => {
     payload.ai_billing_cycle_start = existing.ai_billing_cycle_start;
   }
 
-  // UPSERT profile - USING PGPOOL
-  const finalPayload = {
-    ...payload,
-    preferred_language: payload.preferred_language || existing?.preferred_language || 'en',
-    preferred_template: payload.preferred_template || existing?.preferred_template || 'basic_clean',
-    stripe_connect_enabled: true
-  };
-  
+  // UPSERT profile - USING PGPOOL with fixed column approach
   try {
-    // Build column list and values for upsert
-    const columns = Object.keys(finalPayload);
-    const values = Object.values(finalPayload);
-    const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-    const updateSet = columns.filter(c => c !== 'id').map((col, i) => `${col} = EXCLUDED.${col}`).join(', ');
-    
     const query = `
-      INSERT INTO profiles (${columns.join(', ')})
-      VALUES (${placeholders})
-      ON CONFLICT (id) DO UPDATE SET ${updateSet}
+      INSERT INTO profiles (
+        id, business_name, business_email, business_phone, business_address,
+        preferred_language, preferred_template, default_warranty_text,
+        payment_provider, payment_value, stripe_connect_enabled,
+        trial_ends_at, subscription_status, subscription_plan, subscription_ends_at,
+        ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        business_name = COALESCE($2, profiles.business_name),
+        business_email = COALESCE($3, profiles.business_email),
+        business_phone = COALESCE($4, profiles.business_phone),
+        business_address = COALESCE($5, profiles.business_address),
+        preferred_language = COALESCE($6, profiles.preferred_language),
+        preferred_template = COALESCE($7, profiles.preferred_template),
+        default_warranty_text = COALESCE($8, profiles.default_warranty_text),
+        payment_provider = $9,
+        payment_value = $10,
+        stripe_connect_enabled = COALESCE($11, profiles.stripe_connect_enabled),
+        updated_at = NOW()
       RETURNING *
     `;
     
+    const values = [
+      userId,
+      payload.business_name || '',
+      payload.business_email || '',
+      payload.business_phone || '',
+      payload.business_address || '',
+      payload.preferred_language || existing?.preferred_language || 'en',
+      payload.preferred_template || existing?.preferred_template || 'basic_clean',
+      payload.default_warranty_text || '',
+      payload.payment_provider || null,
+      payload.payment_value || null,
+      true,
+      payload.trial_ends_at || null,
+      payload.subscription_status || 'trial',
+      payload.subscription_plan || null,
+      payload.subscription_ends_at || null,
+      payload.ai_enabled || false,
+      payload.ai_plan || null,
+      payload.ai_subscription_id || null,
+      payload.ai_actions_used || 0,
+      payload.ai_actions_limit || 0,
+      payload.ai_billing_cycle_start || null
+    ];
+    
+    console.log("[PROFILE SAVE] Executing query with userId:", userId);
     const { rows } = await pgPool.query(query, values);
     if (!rows.length) return res.status(500).json({ error: "Failed to save profile" });
+    console.log("[PROFILE SAVE] Success for user:", userId);
     res.json(rows[0]);
   } catch (error) {
-    console.error("Profile upsert error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Profile upsert error:", error.message, error.stack);
+    res.status(500).json({ error: "Failed to save profile: " + error.message });
   }
 });
 
