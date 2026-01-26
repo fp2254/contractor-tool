@@ -5068,6 +5068,19 @@ async function loadSettings() {
   document.getElementById("business-phone").value = profile.business_phone || "";
   document.getElementById("business-email").value = profile.business_email || "";
   document.getElementById("business-address").value = profile.business_address || "";
+  
+  const websiteField = document.getElementById("business-website");
+  if (websiteField) websiteField.value = profile.business_website || "";
+  
+  const taxField = document.getElementById("business-tax");
+  if (taxField) taxField.value = profile.default_tax_percent || "";
+  
+  const markupField = document.getElementById("business-markup");
+  if (markupField) markupField.value = profile.default_markup_percent || "";
+  
+  const footerField = document.getElementById("business-footer");
+  if (footerField) footerField.value = profile.invoice_footer || "";
+  
   document.getElementById("settings-language").value = profile.preferred_language || "en";
   document.getElementById("settings-template").value = profile.preferred_template || "basic_clean";
   
@@ -5126,6 +5139,10 @@ async function handleSaveSettings(e) {
     business_phone: document.getElementById("business-phone")?.value || "",
     business_email: document.getElementById("business-email")?.value || "",
     business_address: document.getElementById("business-address")?.value || "",
+    business_website: document.getElementById("business-website")?.value || "",
+    default_tax_percent: parseFloat(document.getElementById("business-tax")?.value) || 0,
+    default_markup_percent: parseFloat(document.getElementById("business-markup")?.value) || 0,
+    invoice_footer: document.getElementById("business-footer")?.value || "",
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,

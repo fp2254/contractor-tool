@@ -691,11 +691,15 @@ app.post("/api/profile", async (req, res) => {
           business_email = $3,
           business_phone = $4,
           business_address = $5,
-          preferred_language = $6,
-          preferred_template = $7,
-          default_warranty_text = $8,
-          payment_provider = $9,
-          payment_value = $10
+          business_website = $6,
+          default_tax_percent = $7,
+          default_markup_percent = $8,
+          invoice_footer = $9,
+          preferred_language = $10,
+          preferred_template = $11,
+          default_warranty_text = $12,
+          payment_provider = $13,
+          payment_value = $14
         WHERE id = $1
         RETURNING *
       `;
@@ -706,6 +710,10 @@ app.post("/api/profile", async (req, res) => {
         payload.business_email || '',
         payload.business_phone || '',
         payload.business_address || '',
+        payload.business_website || '',
+        payload.default_tax_percent || 0,
+        payload.default_markup_percent || 0,
+        payload.invoice_footer || '',
         payload.preferred_language || 'en',
         payload.preferred_template || 'basic_clean',
         payload.default_warranty_text || '',
@@ -726,9 +734,10 @@ app.post("/api/profile", async (req, res) => {
       const query = `
         INSERT INTO profiles (
           id, business_name, business_email, business_phone, business_address,
+          business_website, default_tax_percent, default_markup_percent, invoice_footer,
           preferred_language, preferred_template, default_warranty_text,
           payment_provider, payment_value, trial_ends_at, subscription_status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *
       `;
       
@@ -738,6 +747,10 @@ app.post("/api/profile", async (req, res) => {
         payload.business_email || '',
         payload.business_phone || '',
         payload.business_address || '',
+        payload.business_website || '',
+        payload.default_tax_percent || 0,
+        payload.default_markup_percent || 0,
+        payload.invoice_footer || '',
         payload.preferred_language || 'en',
         payload.preferred_template || 'basic_clean',
         payload.default_warranty_text || '',
