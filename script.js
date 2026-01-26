@@ -5098,11 +5098,15 @@ async function loadSettings() {
 async function handleSaveSettings(e) {
   e.preventDefault();
   const msg = document.getElementById("settings-message");
+  if (!msg) {
+    console.error("[SETTINGS] settings-message element not found");
+    return;
+  }
   msg.textContent = "Saving...";
   msg.style.color = "var(--muted)";
 
-  const selectedLang = document.getElementById("settings-language").value;
-  const selectedTemplate = document.getElementById("settings-template").value;
+  const selectedLang = document.getElementById("settings-language")?.value || "en";
+  const selectedTemplate = document.getElementById("settings-template")?.value || "basic_clean";
   
   if (setLanguage(selectedLang)) {
     applyLanguage();
@@ -5118,16 +5122,18 @@ async function handleSaveSettings(e) {
   const paymentValue = document.getElementById("payment-value-input")?.value || "";
 
   const payload = {
-    business_name: document.getElementById("business-name").value,
-    business_phone: document.getElementById("business-phone").value,
-    business_email: document.getElementById("business-email").value,
-    business_address: document.getElementById("business-address").value,
+    business_name: document.getElementById("business-name")?.value || "",
+    business_phone: document.getElementById("business-phone")?.value || "",
+    business_email: document.getElementById("business-email")?.value || "",
+    business_address: document.getElementById("business-address")?.value || "",
     preferred_language: selectedLang,
     preferred_template: selectedTemplate,
     default_warranty_text: defaultWarrantyText,
     payment_provider: paymentProvider || null,
     payment_value: paymentValue || null,
   };
+  
+  console.log("[SETTINGS] Saving payload:", payload);
 
   if (selectedLogoFile) {
     try {
