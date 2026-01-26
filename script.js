@@ -5170,11 +5170,19 @@ async function handleSaveSettings(e) {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch (parseErr) {
+      console.error("Profile save - JSON parse error:", parseErr, "Status:", res.status);
+      msg.textContent = "Server error (status " + res.status + ")";
+      msg.style.color = "var(--danger)";
+      return;
+    }
     
     if (!res.ok) {
       console.error("Profile save failed:", data);
-      msg.textContent = "Failed to save: " + (data.error || "Unknown error");
+      msg.textContent = "Failed: " + (data.error || "Status " + res.status);
       msg.style.color = "var(--danger)";
       return;
     }
@@ -5183,8 +5191,8 @@ async function handleSaveSettings(e) {
     msg.style.color = "var(--success)";
     selectedLogoFile = null;
   } catch (err) {
-    console.error("Profile save error:", err);
-    msg.textContent = "Failed to save settings. Please try again.";
+    console.error("Profile save error:", err.message, err.stack);
+    msg.textContent = "Network error: " + err.message;
     msg.style.color = "var(--danger)";
   }
 }
