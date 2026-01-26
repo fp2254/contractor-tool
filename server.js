@@ -646,12 +646,19 @@ app.post("/api/profile", async (req, res) => {
   
   const payload = { ...filteredBody, id: userId };
   
-  // Check for existing profile and preserve critical fields
-  const { data: existing } = await supabaseAdmin
-    .from("profiles")
-    .select("id, trial_ends_at, subscription_status, subscription_plan, subscription_ends_at, ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start")
-    .eq("id", userId)
-    .single();
+  // Check for existing profile using pgPool (not supabaseAdmin)
+  let existing = null;
+  try {
+    const { rows } = await pgPool.query(
+      `SELECT id, trial_ends_at, subscription_status, subscription_plan, subscription_ends_at, 
+              ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start
+       FROM profiles WHERE id = $1`,
+      [userId]
+    );
+    existing = rows[0] || null;
+  } catch (fetchErr) {
+    console.error("[PROFILE SAVE] Error fetching existing:", fetchErr.message);
+  }
   
   // Set trial only on FIRST profile creation (no existing profile at all)
   if (!existing) {
