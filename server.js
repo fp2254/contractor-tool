@@ -2301,10 +2301,10 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
     
     // Insert quote - use correct column names that match database schema
     const quoteResult = await client.query(
-      `INSERT INTO quotes (user_id, client_id, client_address, quote_date, due_date, quote_number, notes, template, subtotal, tax, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO quotes (user_id, client_id, client_name, client_address, quote_date, due_date, quote_number, notes, template, subtotal, tax, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING id, quote_number`,
-      [userId, client_id || null, client_address || null, quote_date || new Date().toISOString().split('T')[0], valid_until || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
+      [userId, client_id || null, client_name || null, client_address || null, quote_date || new Date().toISOString().split('T')[0], valid_until || null, quote_number || null, notes || null, template || 'basic_clean', subtotal || 0, tax || 0, total || 0, 'draft']
     );
     
     const quote = quoteResult.rows[0];
@@ -2405,18 +2405,20 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     const { rows: updated } = await dbClient.query(
       `UPDATE quotes SET 
         client_id = $1,
-        client_address = COALESCE($2, client_address),
-        issue_date = COALESCE($3, issue_date),
-        valid_until = COALESCE($4, valid_until),
-        subtotal = $5,
-        tax_amount = $6,
-        total = $7,
-        notes = COALESCE($8, notes),
-        template = COALESCE($9, template)
-       WHERE id = $10 AND user_id = $11
+        client_name = COALESCE($2, client_name),
+        client_address = COALESCE($3, client_address),
+        quote_date = COALESCE($4, quote_date),
+        due_date = COALESCE($5, due_date),
+        subtotal = $6,
+        tax = $7,
+        total = $8,
+        notes = COALESCE($9, notes),
+        template = COALESCE($10, template)
+       WHERE id = $11 AND user_id = $12
        RETURNING *`,
       [
         sanitizedClientId,
+        toNull(client_name),
         toNull(client_address),
         toNull(quote_date),
         toNull(valid_until),
