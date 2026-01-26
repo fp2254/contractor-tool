@@ -673,65 +673,83 @@ app.post("/api/profile", async (req, res) => {
     payload.ai_billing_cycle_start = existing.ai_billing_cycle_start;
   }
 
-  // UPSERT profile - USING PGPOOL with fixed column approach
+  // UPDATE profile - simpler approach that only updates the fields we care about
   try {
-    const query = `
-      INSERT INTO profiles (
-        id, business_name, business_email, business_phone, business_address,
-        preferred_language, preferred_template, default_warranty_text,
-        payment_provider, payment_value, stripe_connect_enabled,
-        trial_ends_at, subscription_status, subscription_plan, subscription_ends_at,
-        ai_enabled, ai_plan, ai_subscription_id, ai_actions_used, ai_actions_limit, ai_billing_cycle_start
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        business_name = COALESCE($2, profiles.business_name),
-        business_email = COALESCE($3, profiles.business_email),
-        business_phone = COALESCE($4, profiles.business_phone),
-        business_address = COALESCE($5, profiles.business_address),
-        preferred_language = COALESCE($6, profiles.preferred_language),
-        preferred_template = COALESCE($7, profiles.preferred_template),
-        default_warranty_text = COALESCE($8, profiles.default_warranty_text),
-        payment_provider = $9,
-        payment_value = $10,
-        stripe_connect_enabled = COALESCE($11, profiles.stripe_connect_enabled),
-        updated_at = NOW()
-      RETURNING *
-    `;
-    
-    const values = [
-      userId,
-      payload.business_name || '',
-      payload.business_email || '',
-      payload.business_phone || '',
-      payload.business_address || '',
-      payload.preferred_language || existing?.preferred_language || 'en',
-      payload.preferred_template || existing?.preferred_template || 'basic_clean',
-      payload.default_warranty_text || '',
-      payload.payment_provider || null,
-      payload.payment_value || null,
-      true,
-      payload.trial_ends_at || null,
-      payload.subscription_status || 'trial',
-      payload.subscription_plan || null,
-      payload.subscription_ends_at || null,
-      payload.ai_enabled || false,
-      payload.ai_plan || null,
-      payload.ai_subscription_id || null,
-      payload.ai_actions_used || 0,
-      payload.ai_actions_limit || 0,
-      payload.ai_billing_cycle_start || null
-    ];
-    
-    console.log("[PROFILE SAVE] Executing query with userId:", userId);
-    const { rows } = await pgPool.query(query, values);
-    if (!rows.length) return res.status(500).json({ error: "Failed to save profile" });
-    console.log("[PROFILE SAVE] Success for user:", userId);
-    res.json(rows[0]);
+    // First check if profile exists
+    if (existing) {
+      // UPDATE existing profile
+      const query = `
+        UPDATE profiles SET
+          business_name = $2,
+          business_email = $3,
+          business_phone = $4,
+          business_address = $5,
+          preferred_language = $6,
+          preferred_template = $7,
+          default_warranty_text = $8,
+          payment_provider = $9,
+          payment_value = $10,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `;
+      
+      const values = [
+        userId,
+        payload.business_name || '',
+        payload.business_email || '',
+        payload.business_phone || '',
+        payload.business_address || '',
+        payload.preferred_language || 'en',
+        payload.preferred_template || 'basic_clean',
+        payload.default_warranty_text || '',
+        payload.payment_provider || null,
+        payload.payment_value || null
+      ];
+      
+      console.log("[PROFILE SAVE] Updating existing profile for:", userId);
+      const { rows } = await pgPool.query(query, values);
+      if (!rows.length) return res.status(500).json({ error: "Failed to update profile" });
+      console.log("[PROFILE SAVE] Success");
+      res.json(rows[0]);
+    } else {
+      // INSERT new profile
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 30);
+      
+      const query = `
+        INSERT INTO profiles (
+          id, business_name, business_email, business_phone, business_address,
+          preferred_language, preferred_template, default_warranty_text,
+          payment_provider, payment_value, trial_ends_at, subscription_status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING *
+      `;
+      
+      const values = [
+        userId,
+        payload.business_name || '',
+        payload.business_email || '',
+        payload.business_phone || '',
+        payload.business_address || '',
+        payload.preferred_language || 'en',
+        payload.preferred_template || 'basic_clean',
+        payload.default_warranty_text || '',
+        payload.payment_provider || null,
+        payload.payment_value || null,
+        trialEnd.toISOString(),
+        'trial'
+      ];
+      
+      console.log("[PROFILE SAVE] Creating new profile for:", userId);
+      const { rows } = await pgPool.query(query, values);
+      if (!rows.length) return res.status(500).json({ error: "Failed to create profile" });
+      console.log("[PROFILE SAVE] Success");
+      res.json(rows[0]);
+    }
   } catch (error) {
-    console.error("Profile upsert error:", error.message, error.stack);
-    res.status(500).json({ error: "Failed to save profile: " + error.message });
+    console.error("Profile save error:", error.message);
+    res.status(500).json({ error: "Database error: " + error.message });
   }
 });
 
