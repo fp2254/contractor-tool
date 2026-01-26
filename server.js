@@ -624,7 +624,27 @@ app.post("/api/profile", async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const payload = { ...req.body, id: userId };
+  console.log("[PROFILE SAVE] User:", userId, "Body:", JSON.stringify(req.body));
+  
+  // Only allow known profile columns to prevent SQL errors
+  const allowedColumns = [
+    'id', 'email', 'business_name', 'business_email', 'business_phone', 'business_address',
+    'logo_url', 'trade_type', 'preferred_language', 'preferred_template', 'subscription_status',
+    'subscription_id', 'subscription_plan', 'trial_ends_at', 'subscription_ends_at', 'is_lifetime',
+    'ai_enabled', 'ai_plan', 'ai_subscription_id', 'referral_code', 'referred_by', 'invites_sent',
+    'referral_bonus_days', 'is_admin', 'stripe_customer_id', 'stripe_connect_account_id',
+    'stripe_connect_enabled', 'ai_actions_used', 'ai_actions_limit', 'ai_billing_cycle_start',
+    'default_warranty_text', 'payment_link', 'venmo_username', 'payment_provider', 'payment_value'
+  ];
+  
+  const filteredBody = {};
+  for (const key of Object.keys(req.body)) {
+    if (allowedColumns.includes(key)) {
+      filteredBody[key] = req.body[key];
+    }
+  }
+  
+  const payload = { ...filteredBody, id: userId };
   
   // Check for existing profile and preserve critical fields
   const { data: existing } = await supabaseAdmin
