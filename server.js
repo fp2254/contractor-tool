@@ -2862,33 +2862,20 @@ app.delete("/api/quotes/:id", requireAuth, async (req, res) => {
 
   try {
     // First verify the quote exists and belongs to this user
-    const { data: quote, error: findError } = await supabaseAdmin
-      .from("quotes")
-      .select("id")
-      .eq("id", quoteId)
-      .eq("user_id", userId)
-      .single();
+    const checkResult = await pgPool.query(
+      'SELECT id FROM quotes WHERE id = $1 AND user_id = $2',
+      [quoteId, userId]
+    );
 
-    if (findError || !quote) {
+    if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: "Quote not found" });
     }
 
-    // Delete related items
-    await supabaseAdmin
-      .from("quote_items")
-      .delete()
-      .eq("quote_id", quoteId);
+    // Delete related items first
+    await pgPool.query('DELETE FROM quote_items WHERE quote_id = $1', [quoteId]);
 
     // Then delete the quote
-    const { error } = await supabaseAdmin
-      .from("quotes")
-      .delete()
-      .eq("id", quoteId)
-      .eq("user_id", userId);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    await pgPool.query('DELETE FROM quotes WHERE id = $1 AND user_id = $2', [quoteId, userId]);
     
     res.json({ success: true });
   } catch (err) {
