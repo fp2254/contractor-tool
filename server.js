@@ -2367,22 +2367,23 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   const quoteId = req.params.id;
   const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
-  // UUID sanitization - convert empty strings to null
+  // Quote IDs are integers, not UUIDs
+  const parsedQuoteId = parseInt(quoteId, 10);
+  if (isNaN(parsedQuoteId)) {
+    return res.status(400).json({ error: "Invalid quote ID" });
+  }
+
+  // UUID sanitization for client_id only
   const toNull = (v) => (v === "" || v === undefined || v === null) ? null : v;
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const toUUID = (v) => {
     if (!v || v === "" || v === undefined || v === null) return null;
     if (isValidUUID.test(v)) return v;
-    console.warn(`[QUOTE UPDATE] Invalid UUID rejected: "${v}"`);
+    console.warn(`[QUOTE UPDATE] Invalid client UUID rejected: "${v}"`);
     return null;
   };
 
   const sanitizedClientId = toUUID(client_id);
-  const sanitizedQuoteId = toUUID(quoteId);
-  
-  if (!sanitizedQuoteId) {
-    return res.status(400).json({ error: "Invalid quote ID" });
-  }
 
   const dbClient = await pgPool.connect();
   try {
@@ -2391,7 +2392,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     // Verify quote belongs to user
     const { rows: existing } = await dbClient.query(
       'SELECT id FROM quotes WHERE id = $1 AND user_id = $2',
-      [sanitizedQuoteId, userId]
+      [parsedQuoteId, userId]
     );
     
     if (!existing.length) {
@@ -2427,7 +2428,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
         total || 0,
         toNull(notes),
         template || null,
-        sanitizedQuoteId,
+        parsedQuoteId,
         userId
       ]
     );
@@ -2443,8 +2444,8 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     console.log(`[QUOTE UPDATE] About to update line items for quote ${quote.id}`);
     console.log(`[QUOTE UPDATE] Raw items received:`, JSON.stringify(items, null, 2));
     
-    await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [sanitizedQuoteId]);
-    console.log(`[QUOTE UPDATE] Deleted old line items for quote ${sanitizedQuoteId}`);
+    await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [parsedQuoteId]);
+    console.log(`[QUOTE UPDATE] Deleted old line items for quote ${parsedQuoteId}`);
 
     if (items && items.length) {
       const sanitizedItems = [];
