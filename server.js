@@ -695,8 +695,7 @@ app.post("/api/profile", async (req, res) => {
           preferred_template = $7,
           default_warranty_text = $8,
           payment_provider = $9,
-          payment_value = $10,
-          updated_at = NOW()
+          payment_value = $10
         WHERE id = $1
         RETURNING *
       `;
