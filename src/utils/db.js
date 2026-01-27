@@ -16,9 +16,14 @@ if (isDev) {
   }
 }
 
+const needsSsl = dbUrl?.toLowerCase().includes("supabase") || 
+                 dbUrl?.includes(".pooler.") || 
+                 dbUrl?.includes("aws-") ||
+                 dbUrl?.includes("neon");
+
 export const pgPool = new Pool({
   connectionString: dbUrl,
-  ssl: dbUrl?.includes("supabase") ? { rejectUnauthorized: false } : false,
+  ssl: needsSsl ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
