@@ -59,6 +59,32 @@ Skippy Stack is a full-stack web application utilizing Node.js with Express.js f
 - **Supabase Usage Policy**: `sb` (frontend) for authentication only. `supabaseAdmin` (backend) for storage only. `pgPool` (backend) for ALL database operations.
 - **Supabase Schema**: Production schema is discovered at startup. Server code aliases production column names to frontend names. Development uses `DATABASE_URL` with different column names. All writes are through `pgPool`.
 
+**Modular Server Structure (v141):**
+```
+server.js           - Main bootstrap (813 lines) with invoice/quote routes
+src/
+  utils/
+    config.js       - Build version, AI models config
+    db.js           - pgPool, supabaseAdmin with write guard
+    helpers.js      - Utility functions (chromium, payment URLs, profanity filter)
+  middleware/
+    auth.js         - Authentication middleware (requireAuth, requireSubscription, requireAdmin, requireAI)
+  services/
+    ai.js           - AI usage logging, voice command tools
+    email.js        - Resend email service (lazy-loaded)
+    pdf.js          - PDF generation with Puppeteer
+  routes/
+    index.js        - Route registration
+    profile.js      - Profile CRUD, logo upload
+    clients.js      - Client management, addresses
+    payment.js      - Payment links CRUD, URL generation
+    inventory.js    - Inventory management
+    calendar.js     - Calendar events
+    jobs.js         - Job folders
+    messages.js     - System messages
+    admin.js        - Admin endpoints
+```
+
 ## External Dependencies
 - **Supabase**: Authentication and File Storage.
 - **PostgreSQL via pgPool**: All database operations.
