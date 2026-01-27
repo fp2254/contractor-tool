@@ -1,5 +1,9 @@
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
+
+// Allow self-signed certificates for Supabase connection pooler
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const { Pool } = pg;
 
 const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
@@ -16,10 +20,9 @@ if (isDev) {
   }
 }
 
-const needsSsl = dbUrl?.toLowerCase().includes("supabase") || 
-                 dbUrl?.includes(".pooler.") || 
-                 dbUrl?.includes("aws-") ||
-                 dbUrl?.includes("neon");
+const needsSsl = true; // Force SSL for all external DB connections
+
+console.log(`[DB] SSL enabled: ${needsSsl}`);
 
 export const pgPool = new Pool({
   connectionString: dbUrl,
