@@ -522,10 +522,8 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
   const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
   const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
-
-  const parsedQuoteId = parseInt(quoteId, 10);
-  if (isNaN(parsedQuoteId)) return res.status(400).json({ error: "Invalid quote ID" });
 
   const toNull = (v) => (v === "" || v === undefined || v === null ? null : v);
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -535,7 +533,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
   try {
     await dbClient.query("BEGIN");
 
-    const { rows: existing } = await dbClient.query("SELECT id FROM quotes WHERE id = $1 AND user_id = $2", [parsedQuoteId, userId]);
+    const { rows: existing } = await dbClient.query("SELECT id FROM quotes WHERE id = $1 AND user_id = $2", [quoteId, userId]);
 
     if (!existing.length) {
       await dbClient.query("ROLLBACK");
@@ -549,7 +547,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
         quote_date = COALESCE($4, quote_date), due_date = COALESCE($5, due_date), subtotal = $6, tax = $7, total = $8,
         notes = COALESCE($9, notes), template = COALESCE($10, template)
        WHERE id = $11 AND user_id = $12 RETURNING *`,
-      [toUUID(client_id), toNull(client_name), toNull(client_address), toNull(quote_date), toNull(valid_until), subtotal || 0, tax || 0, total || 0, toNull(notes), template || null, parsedQuoteId, userId]
+      [toUUID(client_id), toNull(client_name), toNull(client_address), toNull(quote_date), toNull(valid_until), subtotal || 0, tax || 0, total || 0, toNull(notes), template || null, quoteId, userId]
     );
 
     const quote = updated[0];
@@ -559,7 +557,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
       return res.status(500).json({ error: "Failed to update quote" });
     }
 
-    await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [parsedQuoteId]);
+    await dbClient.query(`DELETE FROM quote_items WHERE quote_id = $1`, [quoteId]);
 
     if (items && items.length) {
       for (const it of items) {
@@ -584,8 +582,8 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const quoteId = parseInt(req.params.id, 10);
-  if (isNaN(quoteId)) return res.status(400).json({ error: "Invalid quote ID" });
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
 
   try {
     const { rows: quotes } = await pgPool.query(`SELECT q.*, c.name as client_name_joined, c.email as client_email, c.phone as client_phone FROM quotes q LEFT JOIN clients c ON q.client_id = c.id WHERE q.id = $1 AND q.user_id = $2`, [quoteId, userId]);
@@ -609,8 +607,8 @@ app.get("/api/quotes/:id", requireAuth, async (req, res) => {
 
 app.post("/api/quotes/:id/archive", requireAuth, async (req, res) => {
   const userId = req.userId;
-  const quoteId = parseInt(req.params.id, 10);
-  if (isNaN(quoteId)) return res.status(400).json({ error: "Invalid quote ID" });
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
 
   try {
     const { rows } = await pgPool.query(`UPDATE quotes SET archived = true WHERE id = $1 AND user_id = $2 RETURNING *`, [quoteId, userId]);
@@ -623,8 +621,8 @@ app.post("/api/quotes/:id/archive", requireAuth, async (req, res) => {
 
 app.post("/api/quotes/:id/unarchive", requireAuth, async (req, res) => {
   const userId = req.userId;
-  const quoteId = parseInt(req.params.id, 10);
-  if (isNaN(quoteId)) return res.status(400).json({ error: "Invalid quote ID" });
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
 
   try {
     const { rows } = await pgPool.query(`UPDATE quotes SET archived = false WHERE id = $1 AND user_id = $2 RETURNING *`, [quoteId, userId]);
@@ -637,8 +635,8 @@ app.post("/api/quotes/:id/unarchive", requireAuth, async (req, res) => {
 
 app.delete("/api/quotes/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
-  const quoteId = parseInt(req.params.id, 10);
-  if (isNaN(quoteId)) return res.status(400).json({ error: "Invalid quote ID" });
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
 
   const dbClient = await pgPool.connect();
   try {
@@ -665,8 +663,8 @@ app.delete("/api/quotes/:id", requireAuth, async (req, res) => {
 
 app.patch("/api/quotes/:id/job", requireAuth, async (req, res) => {
   const userId = req.userId;
-  const quoteId = parseInt(req.params.id, 10);
-  if (isNaN(quoteId)) return res.status(400).json({ error: "Invalid quote ID" });
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
 
   const { job_id } = req.body;
 
