@@ -24,14 +24,27 @@ router.get("/check", requireAuth, async (req, res) => {
 router.get("/users", requireAdmin, async (req, res) => {
   try {
     const { rows } = await pgPool.query(
-      `SELECT id, email, business_name, subscription_status, trial_ends_at, 
-              ai_enabled, is_lifetime, created_at 
+      `SELECT id, COALESCE(email, business_email, '') as email, business_name, 
+              subscription_status, trial_ends_at, 
+              ai_enabled, created_at 
        FROM profiles 
-       ORDER BY created_at DESC 
+       ORDER BY created_at DESC NULLS LAST
        LIMIT 100`
     );
-    res.json(rows);
+
+    const { data: authData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+    const authUsers = authData?.users || [];
+    const authMap = {};
+    authUsers.forEach(u => { authMap[u.id] = u.email; });
+
+    const enriched = rows.map(u => ({
+      ...u,
+      email: u.email || authMap[u.id] || u.id.slice(0, 8)
+    }));
+
+    res.json(enriched);
   } catch (err) {
+    console.error("[ADMIN] Error loading users:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -85,7 +98,7 @@ router.post("/grant-lifetime", requireAdmin, async (req, res) => {
 
   try {
     await pgPool.query(
-      `UPDATE profiles SET is_lifetime = true, subscription_status = 'active', 
+      `UPDATE profiles SET subscription_status = 'active', 
        ai_enabled = true, ai_actions_limit = 1000 WHERE id = $1`,
       [user_id]
     );
