@@ -2848,9 +2848,16 @@ async function handleInvoiceSubmit(e) {
     const clientName = document.getElementById("invoice-client-name").value.trim();
     const clientAddress = document.getElementById("invoice-client-address")?.value.trim() || null;
     const issueDate = document.getElementById("invoice-date").value || new Date().toISOString().split('T')[0];
-    const notes = document.getElementById("invoice-notes").value.trim() || null;
+    let notes = document.getElementById("invoice-notes").value.trim() || '';
     const template = document.getElementById("invoice-template-select")?.value || "basic_clean";
     const paymentUrl = document.getElementById("invoice-payment-url")?.value.trim() || null;
+
+    const warrantyCheckbox = document.getElementById("invoice-include-warranty");
+    const warrantyText = document.getElementById("invoice-warranty-text")?.value || '';
+    if (warrantyCheckbox?.checked && warrantyText.trim()) {
+      notes = notes ? `${notes}\n\n--- Warranty/Terms ---\n${warrantyText}` : `--- Warranty/Terms ---\n${warrantyText}`;
+    }
+    if (!notes) notes = null;
     
     // Basic validation
     if (!clientName) {
@@ -6349,8 +6356,14 @@ async function handleQuoteSubmit(e) {
 
   const clientName = document.getElementById("quote-client-name").value.trim();
   const quoteDate = document.getElementById("quote-date").value;
-  const notes = document.getElementById("quote-notes").value;
+  let notes = document.getElementById("quote-notes").value;
   const template = document.getElementById("quote-template").value || "basic_clean";
+
+  const warrantyCheckbox = document.getElementById("quote-include-warranty");
+  const warrantyText = document.getElementById("quote-warranty-text")?.value || '';
+  if (warrantyCheckbox?.checked && warrantyText.trim()) {
+    notes = notes ? `${notes}\n\n--- Warranty/Terms ---\n${warrantyText}` : `--- Warranty/Terms ---\n${warrantyText}`;
+  }
   const items = getQuoteLineItemsFromUI();
 
   if (!clientName) {
