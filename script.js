@@ -4787,8 +4787,7 @@ function sendInvoiceSMS(invoice) {
     message += `\n\nPay now: ${paymentUrl}`;
   }
   
-  // Get client phone (cleaned)
-  const clientPhone = (invoice.client?.phone || '').replace(/[^0-9+]/g, '');
+  const clientPhone = (invoice.client_phone || invoice.client?.phone || '').replace(/[^0-9+]/g, '');
   
   // Encode message for URL
   const encodedMessage = encodeURIComponent(message);
@@ -4823,20 +4822,18 @@ function sendInvoiceSMS(invoice) {
 function sendQuoteSMS(quote) {
   console.log("sendQuoteSMS called with quote:", quote);
   
-  // Build message - get business name from settings input field
   const businessNameEl = document.getElementById("business-name");
   const businessName = businessNameEl?.value || "Your business";
   const total = formatCurrency(quote.total || 0);
   const quoteNumber = quote.quote_number || (quote.id ? String(quote.id).slice(0, 8) : 'Quote');
-  const clientName = quote.client_name || quote.client?.name || 'Customer';
+  const clientName = quote.client_name || quote.client_name_joined || quote.client?.name || 'Customer';
   const quoteViewLink = `https://trade-base.biz/view/quote/${quote.id}`;
   
-  let message = `Hi ${clientName}! Here's your quote from ${businessName} for ${total}.`;
+  let message = `Hi ${clientName}! Here's your quote #${quoteNumber} from ${businessName} for ${total}.`;
   message += `\n\nView & download your quote: ${quoteViewLink}`;
   message += `\n\nPlease reply to approve or let me know if you have any questions!`;
   
-  // Get client phone (cleaned)
-  const clientPhone = (quote.client?.phone || '').replace(/[^0-9+]/g, '');
+  const clientPhone = (quote.client_phone || quote.client?.phone || '').replace(/[^0-9+]/g, '');
   
   // Encode message for URL
   const encodedMessage = encodeURIComponent(message);
