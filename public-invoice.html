@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice - Skippy Stack</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    .loading { display: flex; justify-content: center; align-items: center; min-height: 60vh; font-size: 18px; color: #666; }
+    .error { text-align: center; padding: 60px 20px; color: #e53e3e; font-size: 18px; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .invoice-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+    .invoice-header { background: #2563eb; color: white; padding: 24px; }
+    .invoice-header h1 { font-size: 24px; margin-bottom: 4px; }
+    .invoice-header .business-name { font-size: 14px; opacity: 0.9; }
+    .invoice-body { padding: 24px; }
+    .invoice-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+    .meta-block label { font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
+    .meta-block p { font-size: 15px; margin-top: 4px; font-weight: 500; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .items-table th { text-align: left; padding: 10px 12px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+    .items-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+    .items-table .num { text-align: right; }
+    .totals { margin-left: auto; width: 240px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .totals-row.total { font-size: 20px; font-weight: 700; color: #2563eb; border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 8px; }
+    .notes { margin-top: 20px; padding: 16px; background: #f9fafb; border-radius: 8px; font-size: 14px; color: #4b5563; }
+    .notes h3 { font-size: 13px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+    .pay-btn { display: block; width: 100%; max-width: 320px; margin: 24px auto 0; padding: 16px; background: #16a34a; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; }
+    .pay-btn:hover { background: #15803d; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .status-paid { background: #dcfce7; color: #16a34a; }
+    .status-unpaid { background: #fef2f2; color: #dc2626; }
+    .status-pending { background: #fef9c3; color: #ca8a04; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #9ca3af; }
+    .logo { max-width: 180px; max-height: 70px; margin-bottom: 12px; }
+    .client-info { font-size: 14px; color: #4b5563; margin-top: 4px; }
+    @media (max-width: 600px) {
+      .container { padding: 10px; }
+      .invoice-meta { flex-direction: column; gap: 12px; }
+      .totals { width: 100%; }
+      .items-table th, .items-table td { padding: 8px 6px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <div class="loading" id="loading">Loading invoice...</div>
+    </div>
+    <div class="footer">Powered by Skippy Stack</div>
+  </div>
+
+  <script>
+    async function loadInvoice() {
+      const pathParts = window.location.pathname.split('/');
+      const invoiceId = pathParts[pathParts.length - 1];
+
+      if (!invoiceId) {
+        document.getElementById('content').innerHTML = '<div class="error">Invalid invoice link.</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/public/invoice/${invoiceId}`);
+        if (!res.ok) {
+          document.getElementById('content').innerHTML = '<div class="error">Invoice not found or no longer available.</div>';
+          return;
+        }
+
+        const inv = await res.json();
+        const fmt = (v) => '$' + (parseFloat(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const status = (inv.payment_status || 'unpaid').toLowerCase();
+        const statusClass = status === 'paid' ? 'status-paid' : status === 'pending' ? 'status-pending' : 'status-unpaid';
+
+        const itemsHtml = (inv.items || []).map(item => `
+          <tr>
+            <td>${item.description || ''}</td>
+            <td class="num">${item.quantity || item.qty || 1}</td>
+            <td class="num">${fmt(item.unit_price || item.price || 0)}</td>
+            <td class="num">${fmt(item.total || 0)}</td>
+          </tr>
+        `).join('');
+
+        const payButton = (inv.payment_url && status !== 'paid') ? 
+          `<a href="${inv.payment_url}" class="pay-btn" target="_blank">Pay Now - ${fmt(inv.total)}</a>` : '';
+
+        document.getElementById('content').innerHTML = `
+          <div class="invoice-card">
+            <div class="invoice-header">
+              ${inv.logo_url ? `<img src="${inv.logo_url}" class="logo" alt="Logo">` : ''}
+              <h1>Invoice #${inv.invoice_number || String(inv.id).slice(0, 8)}</h1>
+              <div class="business-name">${inv.business_name || ''}</div>
+            </div>
+            <div class="invoice-body">
+              <div class="invoice-meta">
+                <div class="meta-block">
+                  <label>Bill To</label>
+                  <p>${inv.client_name || 'Customer'}</p>
+                  <div class="client-info">
+                    ${inv.client_email ? inv.client_email + '<br>' : ''}
+                    ${inv.client_phone || ''}
+                  </div>
+                </div>
+                <div class="meta-block">
+                  <label>Date</label>
+                  <p>${inv.issue_date || ''}</p>
+                </div>
+                <div class="meta-block">
+                  <label>Status</label>
+                  <p><span class="status-badge ${statusClass}">${status}</span></p>
+                </div>
+                <div class="meta-block">
+                  <label>From</label>
+                  <p>${inv.business_name || ''}</p>
+                  <div class="client-info">
+                    ${inv.address ? inv.address + '<br>' : ''}
+                    ${inv.phone || ''}
+                  </div>
+                </div>
+              </div>
+
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Unit Price</th>
+                    <th class="num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>${itemsHtml}</tbody>
+              </table>
+
+              <div class="totals">
+                <div class="totals-row">
+                  <span>Subtotal</span>
+                  <span>${fmt(inv.subtotal)}</span>
+                </div>
+                ${inv.tax_amount ? `
+                <div class="totals-row">
+                  <span>Tax</span>
+                  <span>${fmt(inv.tax_amount)}</span>
+                </div>
+                ` : ''}
+                <div class="totals-row total">
+                  <span>Total</span>
+                  <span>${fmt(inv.total)}</span>
+                </div>
+              </div>
+
+              ${inv.notes ? `
+              <div class="notes">
+                <h3>Notes</h3>
+                <p>${inv.notes.replace(/\n/g, '<br>')}</p>
+              </div>
+              ` : ''}
+
+              ${payButton}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById('content').innerHTML = '<div class="error">Something went wrong loading this invoice.</div>';
+      }
+    }
+
+    loadInvoice();
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote - Skippy Stack</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    .loading { display: flex; justify-content: center; align-items: center; min-height: 60vh; font-size: 18px; color: #666; }
+    .error { text-align: center; padding: 60px 20px; color: #e53e3e; font-size: 18px; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .quote-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+    .quote-header { background: #2563eb; color: white; padding: 24px; }
+    .quote-header h1 { font-size: 24px; margin-bottom: 4px; }
+    .quote-header .business-name { font-size: 14px; opacity: 0.9; }
+    .quote-body { padding: 24px; }
+    .quote-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+    .meta-block label { font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
+    .meta-block p { font-size: 15px; margin-top: 4px; font-weight: 500; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .items-table th { text-align: left; padding: 10px 12px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+    .items-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+    .items-table .num { text-align: right; }
+    .totals { margin-left: auto; width: 240px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .totals-row.total { font-size: 20px; font-weight: 700; color: #2563eb; border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 8px; }
+    .notes { margin-top: 20px; padding: 16px; background: #f9fafb; border-radius: 8px; font-size: 14px; color: #4b5563; }
+    .notes h3 { font-size: 13px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #9ca3af; }
+    .logo { max-width: 180px; max-height: 70px; margin-bottom: 12px; }
+    .client-info { font-size: 14px; color: #4b5563; margin-top: 4px; }
+    @media (max-width: 600px) {
+      .container { padding: 10px; }
+      .quote-meta { flex-direction: column; gap: 12px; }
+      .totals { width: 100%; }
+      .items-table th, .items-table td { padding: 8px 6px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <div class="loading" id="loading">Loading quote...</div>
+    </div>
+    <div class="footer">Powered by Skippy Stack</div>
+  </div>
+
+  <script>
+    async function loadQuote() {
+      const pathParts = window.location.pathname.split('/');
+      const quoteId = pathParts[pathParts.length - 1];
+
+      if (!quoteId) {
+        document.getElementById('content').innerHTML = '<div class="error">Invalid quote link.</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/public/quote/${quoteId}`);
+        if (!res.ok) {
+          document.getElementById('content').innerHTML = '<div class="error">Quote not found or no longer available.</div>';
+          return;
+        }
+
+        const q = await res.json();
+        const fmt = (v) => '$' + (parseFloat(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const itemsHtml = (q.items || []).map(item => `
+          <tr>
+            <td>${item.description || ''}</td>
+            <td class="num">${item.quantity || item.qty || 1}</td>
+            <td class="num">${fmt(item.unit_price || item.price || 0)}</td>
+            <td class="num">${fmt(item.total || 0)}</td>
+          </tr>
+        `).join('');
+
+        document.getElementById('content').innerHTML = `
+          <div class="quote-card">
+            <div class="quote-header">
+              ${q.logo_url ? `<img src="${q.logo_url}" class="logo" alt="Logo">` : ''}
+              <h1>Quote #${q.quote_number || String(q.id).slice(0, 8)}</h1>
+              <div class="business-name">${q.business_name || ''}</div>
+            </div>
+            <div class="quote-body">
+              <div class="quote-meta">
+                <div class="meta-block">
+                  <label>Prepared For</label>
+                  <p>${q.client_name || 'Customer'}</p>
+                  <div class="client-info">
+                    ${q.client_email ? q.client_email + '<br>' : ''}
+                    ${q.client_phone || ''}
+                  </div>
+                </div>
+                <div class="meta-block">
+                  <label>Date</label>
+                  <p>${q.issue_date || ''}</p>
+                </div>
+                ${q.valid_until ? `
+                <div class="meta-block">
+                  <label>Valid Until</label>
+                  <p>${q.valid_until}</p>
+                </div>
+                ` : ''}
+                <div class="meta-block">
+                  <label>From</label>
+                  <p>${q.business_name || ''}</p>
+                  <div class="client-info">
+                    ${q.address ? q.address + '<br>' : ''}
+                    ${q.phone || ''}
+                  </div>
+                </div>
+              </div>
+
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Unit Price</th>
+                    <th class="num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>${itemsHtml}</tbody>
+              </table>
+
+              <div class="totals">
+                <div class="totals-row">
+                  <span>Subtotal</span>
+                  <span>${fmt(q.subtotal)}</span>
+                </div>
+                ${q.tax_amount ? `
+                <div class="totals-row">
+                  <span>Tax</span>
+                  <span>${fmt(q.tax_amount)}</span>
+                </div>
+                ` : ''}
+                <div class="totals-row total">
+                  <span>Total</span>
+                  <span>${fmt(q.total)}</span>
+                </div>
+              </div>
+
+              ${q.notes ? `
+              <div class="notes">
+                <h3>Notes</h3>
+                <p>${q.notes.replace(/\n/g, '<br>')}</p>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById('content').innerHTML = '<div class="error">Something went wrong loading this quote.</div>';
+      }
+    }
+
+    loadQuote();
+  </script>
+</body>
+</html>

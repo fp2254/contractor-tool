@@ -797,6 +797,82 @@ app.get("/confirm-signup", async (req, res) => {
   res.sendFile(path.join(__dirname, "confirm-signup.html"));
 });
 
+app.get("/api/public/invoice/:id", async (req, res) => {
+  const invoiceId = req.params.id;
+  if (!invoiceId) return res.status(400).json({ error: "Invalid invoice ID" });
+
+  try {
+    const { rows: invoices } = await pgPool.query(
+      `SELECT i.*, 
+        i.number as invoice_number,
+        TO_CHAR(i.date, 'YYYY-MM-DD') as issue_date,
+        i.tax as tax_amount,
+        COALESCE(i.client_name, c.name) as client_name,
+        c.email as client_email, c.phone as client_phone
+      FROM invoices i
+      LEFT JOIN clients c ON i.client_id = c.id
+      WHERE i.id = $1`,
+      [invoiceId]
+    );
+
+    if (!invoices.length) return res.status(404).json({ error: "Invoice not found" });
+
+    const invoice = invoices[0];
+    const { rows: items } = await pgPool.query(`SELECT * FROM invoice_items WHERE invoice_id = $1 ORDER BY id ASC`, [invoiceId]);
+
+    const { rows: profiles } = await pgPool.query(`SELECT business_name, address, phone, logo_url, website FROM profiles WHERE id = $1`, [invoice.user_id]);
+    const profile = profiles[0] || {};
+
+    res.json({
+      ...invoice,
+      items: items || [],
+      business_name: profile.business_name || '',
+      address: profile.address || '',
+      phone: profile.phone || '',
+      logo_url: profile.logo_url || '',
+      website: profile.website || ''
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch invoice" });
+  }
+});
+
+app.get("/api/public/quote/:id", async (req, res) => {
+  const quoteId = req.params.id;
+  if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
+
+  try {
+    const { rows: quotes } = await pgPool.query(
+      `SELECT q.*, c.name as client_name_joined, c.email as client_email, c.phone as client_phone
+      FROM quotes q
+      LEFT JOIN clients c ON q.client_id = c.id
+      WHERE q.id = $1`,
+      [quoteId]
+    );
+
+    if (!quotes.length) return res.status(404).json({ error: "Quote not found" });
+
+    const quote = quotes[0];
+    const { rows: items } = await pgPool.query(`SELECT * FROM quote_items WHERE quote_id = $1 ORDER BY id ASC`, [quoteId]);
+
+    const { rows: profiles } = await pgPool.query(`SELECT business_name, address, phone, logo_url, website FROM profiles WHERE id = $1`, [quote.user_id]);
+    const profile = profiles[0] || {};
+
+    res.json({
+      ...quote,
+      client_name: quote.client_name || quote.client_name_joined,
+      items: items || [],
+      business_name: profile.business_name || '',
+      address: profile.address || '',
+      phone: profile.phone || '',
+      logo_url: profile.logo_url || '',
+      website: profile.website || ''
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch quote" });
+  }
+});
+
 app.get("/view/invoice/:id", async (req, res) => {
   res.sendFile(path.join(__dirname, "public-invoice.html"));
 });
