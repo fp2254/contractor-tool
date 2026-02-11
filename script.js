@@ -1976,47 +1976,56 @@ async function handleSignup(e) {
     return;
   }
 
-  // Save trade type to profile after signup
-  if (data && data.user && data.user.id && data.session) {
-    try {
-      // Store trade type in profile - use apiFetch with auth token
-      const profileRes = await fetch("/api/profile", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${data.session.access_token}`
-        },
-        body: JSON.stringify({ 
-          trade_type: tradeType,
-          tos_accepted_at: new Date().toISOString()
-        })
-      });
-      if (!profileRes.ok) {
-        console.error("Profile creation failed:", await profileRes.text());
+  if (data && data.user && data.user.id) {
+    const userId = data.user.id;
+    const accessToken = data.session?.access_token;
+
+    if (accessToken) {
+      try {
+        const profileRes = await fetch("/api/profile", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ 
+            trade_type: tradeType,
+            email: email,
+            tos_accepted_at: new Date().toISOString()
+          })
+        });
+        if (!profileRes.ok) {
+          console.error("Profile creation failed:", await profileRes.text());
+        }
+      } catch (err) {
+        console.error("Error saving trade type:", err);
       }
-    } catch (err) {
-      console.error("Error saving trade type:", err);
     }
     
-    // Send confirmation email via Resend
     try {
       const res = await fetch("/api/send-signup-confirmation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, userId: data.user.id })
+        body: JSON.stringify({ email, userId })
       });
       if (!res.ok) {
-        console.warn("Failed to send confirmation email via Resend");
+        console.warn("Failed to send welcome email");
       }
     } catch (err) {
-      console.error("Error sending confirmation email:", err);
+      console.error("Error sending welcome email:", err);
+    }
+
+    if (accessToken) {
+      currentUser = data.user;
+      showToast("Account created! Welcome to Skippy Stack.");
+      showScreen("dashboard");
+      loadDashboard();
+      return;
     }
   }
 
-  // Sign out immediately to prevent auto-login before email confirmation
   await sb.auth.signOut();
-  
-  showToast("Check your email to confirm your account.");
+  showToast("Account created! You can now log in.");
 }
 
 async function handleLogin(e) {

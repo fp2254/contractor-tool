@@ -798,13 +798,22 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
   if (!email) return res.status(400).json({ error: "Email required" });
 
   try {
-    const appUrl = process.env.REPLIT_DEV_DOMAIN
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : "https://trade-base.biz";
+    if (userId) {
+      const { error: confirmErr } = await supabaseAdminRaw.auth.admin.updateUserById(userId, {
+        email_confirm: true
+      });
+      if (confirmErr) {
+        console.error("[Signup] Failed to auto-confirm user:", confirmErr.message);
+      } else {
+        console.log("[Signup] User auto-confirmed:", userId);
+      }
+    }
+
+    const appUrl = "https://trade-base.biz";
 
     const result = await sendEmail({
       to: email,
-      subject: "Welcome to Skippy Stack - Confirm Your Account",
+      subject: "Welcome to Skippy Stack!",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -813,14 +822,16 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
           </div>
           <div style="background: #f9fafb; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
             <h2 style="margin: 0 0 15px 0; color: #111;">Welcome aboard!</h2>
-            <p style="color: #333; line-height: 1.6;">Your account has been created. Please check your email for a confirmation link from Supabase to verify your email address and activate your account.</p>
-            <p style="color: #333; line-height: 1.6;">Once confirmed, you'll have access to:</p>
+            <p style="color: #333; line-height: 1.6;">Your account is ready to go. You can log in right now and start using Skippy Stack.</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${appUrl}" style="background: #2563eb; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; display: inline-block;">Log In Now</a>
+            </div>
+            <p style="color: #333; line-height: 1.6;">Your 14-day free trial includes:</p>
             <ul style="color: #333; line-height: 1.8;">
               <li>Create professional invoices and quotes</li>
               <li>Manage clients and jobs</li>
               <li>Send quotes via SMS</li>
               <li>Track payments</li>
-              <li>14-day free trial of all features</li>
             </ul>
           </div>
           <div style="text-align: center; padding: 20px;">
@@ -832,14 +843,14 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
 
     if (result.success) {
       console.log("[Signup] Welcome email sent to:", email);
-      res.json({ success: true });
+      res.json({ success: true, confirmed: true });
     } else {
       console.error("[Signup] Failed to send welcome email:", result.error);
-      res.status(500).json({ error: result.error });
+      res.json({ success: false, confirmed: true, emailError: result.error });
     }
   } catch (err) {
-    console.error("[Signup] Error sending email:", err);
-    res.status(500).json({ error: "Failed to send confirmation email" });
+    console.error("[Signup] Error:", err);
+    res.status(500).json({ error: "Failed to process signup confirmation" });
   }
 });
 
