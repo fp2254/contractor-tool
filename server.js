@@ -793,6 +793,56 @@ app.get("/api/payments/stats", requireSubscription, async (req, res) => {
   }
 });
 
+app.post("/api/send-signup-confirmation", async (req, res) => {
+  const { email, userId } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
+
+  try {
+    const appUrl = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : "https://trade-base.biz";
+
+    const result = await sendEmail({
+      to: email,
+      subject: "Welcome to Skippy Stack - Confirm Your Account",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin: 0;">Skippy Stack</h1>
+            <p style="color: #666; margin: 5px 0;">Invoice & Business Management for Tradespeople</p>
+          </div>
+          <div style="background: #f9fafb; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+            <h2 style="margin: 0 0 15px 0; color: #111;">Welcome aboard!</h2>
+            <p style="color: #333; line-height: 1.6;">Your account has been created. Please check your email for a confirmation link from Supabase to verify your email address and activate your account.</p>
+            <p style="color: #333; line-height: 1.6;">Once confirmed, you'll have access to:</p>
+            <ul style="color: #333; line-height: 1.8;">
+              <li>Create professional invoices and quotes</li>
+              <li>Manage clients and jobs</li>
+              <li>Send quotes via SMS</li>
+              <li>Track payments</li>
+              <li>14-day free trial of all features</li>
+            </ul>
+          </div>
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: #999; font-size: 12px;">Skippy Stack - Built for tradespeople</p>
+          </div>
+        </div>
+      `
+    });
+
+    if (result.success) {
+      console.log("[Signup] Welcome email sent to:", email);
+      res.json({ success: true });
+    } else {
+      console.error("[Signup] Failed to send welcome email:", result.error);
+      res.status(500).json({ error: result.error });
+    }
+  } catch (err) {
+    console.error("[Signup] Error sending email:", err);
+    res.status(500).json({ error: "Failed to send confirmation email" });
+  }
+});
+
 app.get("/confirm-signup", async (req, res) => {
   res.sendFile(path.join(__dirname, "confirm-signup.html"));
 });
