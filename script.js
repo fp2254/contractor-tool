@@ -4730,9 +4730,9 @@ async function previewInvoiceTemplateForText(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity || 1,
+        quantity: item.quantity || item.qty || 1,
         unit_price: item.unit_price || 0,
-        total: item.total || 0
+        total: item.line_total || item.total || 0
       }))
     };
     
@@ -5637,9 +5637,9 @@ async function downloadInvoice(invoice) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity || 1,
+        quantity: item.quantity || item.qty || 1,
         unit_price: item.unit_price || 0,
-        total: item.total || 0
+        total: item.line_total || item.total || 0
       }))
     };
     
@@ -5934,9 +5934,9 @@ async function previewInvoiceTemplate(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity || 1,
+        quantity: item.quantity || item.qty || 1,
         unit_price: item.unit_price || 0,
-        total: item.total || 0
+        total: item.line_total || item.total || 0
       }))
     };
     
@@ -6129,9 +6129,9 @@ async function downloadInvoiceWithTemplate(invoice, templateId) {
       invoice_footer: profile?.invoice_footer,
       items: (invoiceData.items || []).map(item => ({
         description: item.description,
-        quantity: item.quantity || 1,
+        quantity: item.quantity || item.qty || 1,
         unit_price: item.unit_price || 0,
-        total: item.total || 0
+        total: item.line_total || item.total || 0
       }))
     };
     

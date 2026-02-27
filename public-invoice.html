@@ -80,7 +80,7 @@
             <td>${item.description || ''}</td>
             <td class="num">${item.quantity || item.qty || 1}</td>
             <td class="num">${fmt(item.unit_price || item.price || 0)}</td>
-            <td class="num">${fmt(item.total || 0)}</td>
+            <td class="num">${fmt(item.line_total || item.total || 0)}</td>
           </tr>
         `).join('');
 
