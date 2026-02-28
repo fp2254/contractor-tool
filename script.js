@@ -4509,14 +4509,18 @@ async function convertQuoteToInvoice(quoteId) {
     const clientNameEl = document.getElementById("invoice-client-name");
     if (clientNameEl) {
       clientNameEl.value = quote.client_name || (quote.client ? quote.client.name : '');
-      console.log("Set client name:", clientNameEl.value);
+    }
+
+    // Pre-fill client address
+    const clientAddressEl = document.getElementById("invoice-client-address");
+    if (clientAddressEl && (quote.client_address || quote.address)) {
+      clientAddressEl.value = quote.client_address || quote.address || '';
     }
     
     // Pre-fill date (use today's date)
     const dateEl = document.getElementById("invoice-date");
     if (dateEl) {
       dateEl.value = new Date().toISOString().split('T')[0];
-      console.log("Set date:", dateEl.value);
     }
     
     // Pre-fill notes
@@ -4530,19 +4534,17 @@ async function convertQuoteToInvoice(quoteId) {
     if (quote.items && quote.items.length > 0) {
       quote.items.forEach((item, index) => {
         console.log(`Adding line item ${index}:`, item);
-        // Guard against missing fields
         if (!item.description && !item.quantity && !item.unit_price) {
           console.log("Skipping empty item");
-          return; // Skip empty items
+          return;
         }
         addLineItemRow({
           description: item.description || '',
-          qty: item.quantity || 1,
-          price: item.unit_price || 0
+          quantity: item.quantity || item.qty || 1,
+          unit_price: item.unit_price || item.price || 0
         });
       });
     } else {
-      // Add one empty line item if no items
       console.log("No items, adding empty row");
       addLineItemRow();
     }
