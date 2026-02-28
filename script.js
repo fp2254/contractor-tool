@@ -12155,3 +12155,226 @@ document.addEventListener("touchend", (e) => {
     bulkArchiveSelected();
   }
 }, true); // Use capture phase
+
+// ============================================================
+// ADMIN PANEL
+// ============================================================
+let allAdminUsers = [];
+let selectedAdminUserId = null;
+
+async function loadAdminUsers() {
+  const listEl = document.getElementById("admin-users-list");
+  if (!listEl) return;
+  listEl.innerHTML = '<p style="padding: 12px; color: var(--muted);">Loading users...</p>';
+
+  try {
+    const referralCode = currentProfile?.referral_code || "";
+    const referralLink = `https://trade-base.biz/?ref=${referralCode}`;
+    const referralInput = document.getElementById("admin-referral-link");
+    if (referralInput) referralInput.value = referralLink;
+
+    const res = await apiFetch("/api/admin/users");
+    if (!res.ok) {
+      listEl.innerHTML = '<p style="padding: 12px; color: #ef4444;">Failed to load users.</p>';
+      return;
+    }
+    allAdminUsers = await res.json();
+    renderAdminUsers(allAdminUsers);
+  } catch (err) {
+    listEl.innerHTML = `<p style="padding: 12px; color: #ef4444;">Error: ${err.message}</p>`;
+  }
+}
+
+function renderAdminUsers(users) {
+  const listEl = document.getElementById("admin-users-list");
+  if (!listEl) return;
+
+  if (!users.length) {
+    listEl.innerHTML = '<p style="padding: 12px; color: var(--muted);">No users found.</p>';
+    return;
+  }
+
+  listEl.innerHTML = users.map(u => {
+    const email = u.email || u.id.slice(0, 8);
+    const status = u.subscription_status || "unknown";
+    const statusColor = status === "active" ? "#22c55e" : status === "trialing" ? "#f59e0b" : "#6b7280";
+    const aiLabel = u.ai_enabled ? '<span style="background:#7c3aed;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">AI</span>' : '';
+    const createdAt = u.created_at ? new Date(u.created_at).toLocaleDateString() : "–";
+    return `
+      <div class="list-item" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${email}</div>
+          <div style="font-size: 12px; color: var(--muted);">${u.business_name || '—'} · Joined ${createdAt}</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          ${aiLabel}
+          <span style="background:${statusColor}22;color:${statusColor};padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;text-transform:uppercase;">${status}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function filterAdminUserList() {
+  const query = (document.getElementById("admin-user-search")?.value || "").toLowerCase().trim();
+  const resultsEl = document.getElementById("admin-user-search-results");
+  if (!resultsEl) return;
+
+  if (!query) {
+    resultsEl.style.display = "none";
+    return;
+  }
+
+  const matches = allAdminUsers.filter(u =>
+    (u.email || "").toLowerCase().includes(query) ||
+    (u.business_name || "").toLowerCase().includes(query)
+  );
+
+  if (!matches.length) {
+    resultsEl.style.display = "none";
+    return;
+  }
+
+  resultsEl.innerHTML = matches.slice(0, 8).map(u => `
+    <div onclick="selectAdminUser('${u.id}', '${(u.email || u.id.slice(0, 8)).replace(/'/g, "\\'")}')"
+      style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border);"
+      onmouseover="this.style.background='var(--tile)'" onmouseout="this.style.background=''">
+      <div style="font-weight: 600; font-size: 14px;">${u.email || u.id.slice(0, 8)}</div>
+      <div style="font-size: 12px; color: var(--muted);">${u.business_name || '—'}</div>
+    </div>
+  `).join("");
+  resultsEl.style.display = "block";
+}
+
+function selectAdminUser(userId, email) {
+  selectedAdminUserId = userId;
+  const resultsEl = document.getElementById("admin-user-search-results");
+  const selectedEl = document.getElementById("admin-selected-user");
+  const emailEl = document.getElementById("admin-selected-user-email");
+  const sendBtn = document.getElementById("admin-send-btn");
+
+  if (resultsEl) resultsEl.style.display = "none";
+  if (emailEl) emailEl.textContent = email;
+  if (selectedEl) selectedEl.style.display = "block";
+  if (sendBtn) sendBtn.textContent = `Send to ${email}`;
+}
+
+function clearSelectedUser() {
+  selectedAdminUserId = null;
+  const selectedEl = document.getElementById("admin-selected-user");
+  const searchInput = document.getElementById("admin-user-search");
+  const sendBtn = document.getElementById("admin-send-btn");
+
+  if (selectedEl) selectedEl.style.display = "none";
+  if (searchInput) searchInput.value = "";
+  if (sendBtn) sendBtn.textContent = "Send to All Users";
+}
+
+function toggleUserSearch(show) {
+  const container = document.getElementById("admin-user-search-container");
+  const sendBtn = document.getElementById("admin-send-btn");
+  if (container) container.style.display = show ? "block" : "none";
+  if (!show) {
+    clearSelectedUser();
+    if (sendBtn) sendBtn.textContent = "Send to All Users";
+  }
+}
+
+async function sendAdminMessage() {
+  const title = document.getElementById("admin-message-title")?.value.trim();
+  const content = document.getElementById("admin-message-content")?.value.trim();
+  const type = document.getElementById("admin-message-type")?.value || "info";
+  const recipientMode = document.querySelector('input[name="admin-recipient"]:checked')?.value || "all";
+
+  if (!title || !content) {
+    showToast("Please fill in the title and message.");
+    return;
+  }
+
+  if (recipientMode === "specific" && !selectedAdminUserId) {
+    showToast("Please select a specific user first.");
+    return;
+  }
+
+  const btn = document.getElementById("admin-send-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
+
+  try {
+    const res = await apiFetch("/api/admin/send-message", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        content,
+        type,
+        target_user_id: recipientMode === "specific" ? selectedAdminUserId : null
+      })
+    });
+
+    if (res.ok) {
+      showToast("Message sent successfully!");
+      document.getElementById("admin-message-title").value = "";
+      document.getElementById("admin-message-content").value = "";
+      clearSelectedUser();
+      document.querySelector('input[name="admin-recipient"][value="all"]').checked = true;
+      toggleUserSearch(false);
+    } else {
+      const err = await res.json();
+      showToast("Failed to send: " + (err.error || "Unknown error"));
+    }
+  } catch (err) {
+    showToast("Error: " + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Send to All Users"; }
+  }
+}
+
+async function enableAIForUser() {
+  if (!selectedAdminUserId) return;
+  try {
+    const res = await apiFetch("/api/admin/enable-ai", {
+      method: "POST",
+      body: JSON.stringify({ user_id: selectedAdminUserId })
+    });
+    if (res.ok) {
+      showToast("AI enabled for user!");
+      await loadAdminUsers();
+    } else {
+      showToast("Failed to enable AI.");
+    }
+  } catch (err) {
+    showToast("Error: " + err.message);
+  }
+}
+
+async function grantLifetimeToUser() {
+  if (!selectedAdminUserId) return;
+  if (!confirm("Grant lifetime access to this user?")) return;
+  try {
+    const res = await apiFetch("/api/admin/grant-lifetime", {
+      method: "POST",
+      body: JSON.stringify({ user_id: selectedAdminUserId })
+    });
+    if (res.ok) {
+      showToast("Lifetime access granted!");
+      await loadAdminUsers();
+    } else {
+      showToast("Failed to grant lifetime access.");
+    }
+  } catch (err) {
+    showToast("Error: " + err.message);
+  }
+}
+
+function copyAdminReferralLink() {
+  const input = document.getElementById("admin-referral-link");
+  if (!input?.value) return;
+  navigator.clipboard.writeText(input.value).then(() => {
+    const copied = document.getElementById("admin-referral-copied");
+    if (copied) {
+      copied.style.display = "block";
+      setTimeout(() => { copied.style.display = "none"; }, 2000);
+    }
+  }).catch(() => {
+    input.select();
+    document.execCommand("copy");
+  });
+}
