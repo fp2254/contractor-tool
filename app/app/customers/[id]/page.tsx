@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { SendPortalButton } from "@/components/SendPortalButton";
 
 async function addNote(formData: FormData) {
   "use server";
@@ -90,6 +91,8 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           🔨 Schedule Job
         </Link>
       </div>
+
+      <SendPortalButton customerId={customer.id} customerEmail={customer.email} />
 
       {quotes && quotes.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
