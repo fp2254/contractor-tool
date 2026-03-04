@@ -10,9 +10,10 @@ packages = ["chromium"]
 [userenv]
 
 [userenv.shared]
-SUPABASE_URL = "https://uafgyteczukkgmxfbeil.supabase.co"
+SUPABASE_URL = "https://lrtrbocvcqgfnklknlnu.supabase.co"
 FRONTEND_URL = "https://1fda3655-6328-4da8-b0bb-f4d6953dbf13-00-23p8hfagt4ral.janeway.replit.dev"
 PORT = "5000"
+NEXT_PUBLIC_SUPABASE_URL = "https://lrtrbocvcqgfnklknlnu.supabase.co"
 
 [workflows]
 runButton = "Project"
@@ -24,15 +25,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "TradeBase Server"
+args = "TradeBase"
 
 [[workflows.workflow]]
-name = "TradeBase Server"
+name = "TradeBase"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm start"
+args = "npm run dev -- -H 0.0.0.0 -p 5000"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
