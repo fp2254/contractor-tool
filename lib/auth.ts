@@ -1,8 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { Database } from "@/lib/types";
+
+function getAdminClient() {
+  return createAdminClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 async function ensureDefaultTemplates(orgId: string, userId: string) {
-  const supabase = await createClient();
-  const { data: existing } = await supabase
+  const admin = getAdminClient();
+  const { data: existing } = await admin
     .from("message_templates")
     .select("id,channel")
     .eq("org_id", orgId)
@@ -11,7 +21,7 @@ async function ensureDefaultTemplates(orgId: string, userId: string) {
   const hasSms = (existing ?? []).some((t) => t.channel === "sms");
   const hasEmail = (existing ?? []).some((t) => t.channel === "email");
 
-  const inserts = [];
+  const inserts: any[] = [];
   if (!hasSms) {
     inserts.push({
       org_id: orgId,
@@ -35,7 +45,7 @@ async function ensureDefaultTemplates(orgId: string, userId: string) {
   }
 
   if (inserts.length > 0) {
-    await supabase.from("message_templates").insert(inserts);
+    await admin.from("message_templates").insert(inserts);
   }
 }
 
@@ -48,17 +58,25 @@ export async function ensureUserOrg() {
   }
 
   const userId = userResp.user.id;
-  const { data: member } = await supabase.from("org_members").select("org_id").eq("user_id", userId).maybeSingle();
+  const admin = getAdminClient();
+
+  const { data: member } = await admin
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", userId)
+    .maybeSingle();
 
   if (member?.org_id) {
     await ensureDefaultTemplates(member.org_id, userId);
     return member.org_id;
   }
 
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await admin
     .from("orgs")
     .insert({
-      name: userResp.user.email ? `${userResp.user.email.split("@")[0]}'s Company` : "My Company",
+      name: userResp.user.email
+        ? `${userResp.user.email.split("@")[0]}'s Company`
+        : "My Company",
       owner_user_id: userId,
     })
     .select("id")
@@ -66,7 +84,7 @@ export async function ensureUserOrg() {
 
   if (orgError || !org) throw orgError;
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await admin
     .from("org_members")
     .insert({ org_id: org.id, user_id: userId, role: "owner" });
 
