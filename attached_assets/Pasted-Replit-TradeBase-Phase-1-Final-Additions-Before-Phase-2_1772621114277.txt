@@ -1,0 +1,215 @@
+Replit — TradeBase Phase 1 Final Additions (Before Phase 2)
+
+OBJECTIVE
+Complete Phase 1 so TradeBase functions as a true daily jobsite tool before building Phase 2 features.
+
+These improvements ensure contractors can:
+• See where they are going today
+• Run jobs from the app
+• Capture job photos
+• Generate revenue immediately after completing jobs
+• Use voice commands anywhere in the app
+• Use the app in poor internet environments
+
+--------------------------------------------------
+
+1) TODAY’S JOBS — DISPLAY REAL JOB CARDS
+
+Currently the section exists but must display jobs.
+
+Query:
+jobs where scheduled_date == today (local timezone)
+Sort by start_time.
+
+Each Job Card must show:
+
+- Time
+- Service type or job title
+- Customer name
+- City / town
+- Status pill (Scheduled / In Progress / Complete)
+
+Each card includes 3 quick buttons:
+
+Directions → opens map using job address  
+Call → tel: customer phone  
+Start Job → updates job status
+
+Example layout:
+
+8:00 AM
+Radon Mitigation
+Smith Residence – Augusta
+[Directions] [Call] [Start Job]
+
+11:30 AM
+Water Test
+Johnson Residence – Lewiston
+[Directions] [Call] [Start Job]
+
+Empty state:
+
+No jobs scheduled today
+[Schedule Job]
+
+--------------------------------------------------
+
+2) JOB LIFECYCLE WORKFLOW
+
+Inside the Job Detail screen implement the full workflow.
+
+Buttons:
+
+Arrive  
+Start Job  
+Complete Job
+
+Track timestamps for each action.
+
+After pressing "Complete Job" prompt user:
+
+Generate Invoice?  
+Collect Payment?
+
+If user chooses Generate Invoice:
+Create invoice automatically using job data.
+
+If Collect Payment:
+Open payment screen immediately.
+
+--------------------------------------------------
+
+3) JOB PHOTOS
+
+Add a photo system to every job.
+
+Button inside Job Detail:
+
++ Add Photo
+
+Photo tags:
+
+Before  
+After  
+Install  
+Other
+
+Requirements:
+
+• Use phone camera
+• Auto attach photos to job record
+• Store in job_photos table
+• Display photo gallery inside job screen
+
+Purpose:
+
+• proof of work
+• warranty documentation
+• customer disputes
+• future service reference
+
+--------------------------------------------------
+
+4) FLOATING VOICE BUTTON
+
+Your Talk to Work bar disappears when scrolling.
+
+Add a floating mic button bottom-right of the screen.
+
+Button design:
+
+🎤
+
+Label optional: Tap to Speak
+
+The button should open the voice assistant.
+
+Example supported commands:
+
+"Create quote for radon mitigation $1200 for Smith"
+
+"Add lead John Brown Augusta"
+
+"Schedule job tomorrow at 9"
+
+This keeps voice workflow accessible anywhere.
+
+--------------------------------------------------
+
+5) IMPROVE MONEY SNAPSHOT VISIBILITY
+
+Make revenue numbers visually stronger.
+
+Each tile should clearly show the amount:
+
+This Week
+$3,400
+
+This Month
+$11,250
+
+Outstanding
+$2,900
+
+Tiles should be clickable and open the Money screen with filters applied.
+
+--------------------------------------------------
+
+6) OFFLINE SUPPORT
+
+Contractors often work in poor internet environments.
+
+Implement basic offline capability:
+
+Cache today's jobs locally.
+
+If connection drops:
+
+• show cached jobs
+• allow job status updates
+• allow photo capture
+• queue updates locally
+
+When internet reconnects:
+
+Automatically sync queued updates to server.
+
+--------------------------------------------------
+
+7) DASHBOARD ORDER (FINAL STRUCTURE)
+
+Home screen should appear in this order:
+
+Talk to Work
+
+Today's Jobs
+
+Dashboard (Stat Cards)
+
+Needs Attention
+
+Quick Actions
+
+Money Snapshot
+
+Recent Activity
+
+This order matches contractor priorities.
+
+--------------------------------------------------
+
+PHASE 1 COMPLETION CRITERIA
+
+Phase 1 is considered complete when:
+
+• Today's Jobs shows real job cards
+• Job lifecycle workflow exists
+• Job photos can be captured and stored
+• Floating voice button works anywhere
+• Money Snapshot numbers are clearly visible
+• Basic offline caching is implemented
+• Dashboard layout follows the defined structure
+
+After these are implemented, begin Phase 2 development.
+
+END SPEC
