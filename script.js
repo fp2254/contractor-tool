@@ -2714,6 +2714,15 @@ function showScreen(screenId) {
     loadDashboardActivity();
   }
 
+  if (screenId === "followups") {
+    loadFollowups();
+    populateFollowupClientDropdown();
+  }
+
+  if (screenId === "message-templates") {
+    loadMessageTemplates();
+  }
+
   updateBottomNav(screenId);
 }
 
@@ -7683,6 +7692,7 @@ function renderJobDetail(job) {
   renderJobLinkedItems(job);
   loadJobMaterials(job.id);
   loadJobPhotos(job.id);
+  renderJobProfit(job);
 }
 
 function formatTime(timeStr) {
@@ -13624,3 +13634,336 @@ window.advanceJobStatus = async function(jobId, currentStatus) {
   }
   return _origAdvanceJobStatus.apply(this, [jobId, currentStatus]);
 };
+
+// ============================================================
+// JOB PROFIT TRACKING
+// ============================================================
+
+function renderJobProfit(job) {
+  if (!job) return;
+  const hoursEl = document.getElementById("profit-labor-hours");
+  const rateEl = document.getElementById("profit-labor-rate");
+  if (!hoursEl || !rateEl) return;
+
+  const laborMinutes = parseFloat(job.labor_minutes) || 0;
+  const laborRate = parseFloat(job.labor_rate) || 0;
+  hoursEl.value = laborMinutes ? (laborMinutes / 60).toFixed(2) : "";
+  rateEl.value = laborRate || "";
+
+  updateProfitDisplay();
+
+  hoursEl.oninput = updateProfitDisplay;
+  rateEl.oninput = updateProfitDisplay;
+}
+
+function updateProfitDisplay() {
+  const hours = parseFloat(document.getElementById("profit-labor-hours")?.value) || 0;
+  const rate = parseFloat(document.getElementById("profit-labor-rate")?.value) || 0;
+  const laborCost = hours * rate;
+
+  // Get materials total from existing UI
+  const matTotalEl = document.getElementById("job-materials-total");
+  const matText = matTotalEl ? matTotalEl.textContent.replace(/[^0-9.]/g, "") : "0";
+  const materialsCost = parseFloat(matText) || 0;
+
+  // Get invoice total from linked invoices
+  let invoiceTotal = 0;
+  if (currentJob && currentJob.invoices && currentJob.invoices.length > 0) {
+    invoiceTotal = currentJob.invoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
+  }
+
+  const profit = invoiceTotal - laborCost - materialsCost;
+
+  const fmt = (n) => "$" + Math.abs(n).toFixed(2);
+  const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+
+  el("profit-labor-cost", fmt(laborCost));
+  el("profit-materials-cost", fmt(materialsCost));
+  el("profit-invoice-total", fmt(invoiceTotal));
+
+  const profitEl = document.getElementById("profit-estimate-display");
+  if (profitEl) {
+    profitEl.textContent = (profit < 0 ? "-" : "") + fmt(profit);
+    profitEl.className = "profit-total " + (profit >= 0 ? "profit-positive" : "profit-negative");
+  }
+}
+
+async function saveJobProfit() {
+  if (!currentJob) return;
+  const hours = parseFloat(document.getElementById("profit-labor-hours")?.value) || 0;
+  const rate = parseFloat(document.getElementById("profit-labor-rate")?.value) || 0;
+  const laborMinutes = Math.round(hours * 60);
+
+  const profit = (() => {
+    const matText = document.getElementById("job-materials-total")?.textContent.replace(/[^0-9.]/g, "") || "0";
+    const mats = parseFloat(matText) || 0;
+    const inv = (currentJob.invoices || []).reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+    return inv - (hours * rate) - mats;
+  })();
+
+  try {
+    const res = await apiFetch(`/api/jobs/${currentJob.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ labor_minutes: laborMinutes, labor_rate: rate, profit_estimate: profit })
+    });
+    if (res.ok) {
+      currentJob = { ...currentJob, labor_minutes: laborMinutes, labor_rate: rate, profit_estimate: profit };
+      showToast("Labor saved", "success");
+    }
+  } catch (err) {
+    showToast("Failed to save labor", "error");
+  }
+}
+
+// ============================================================
+// FOLLOW-UPS
+// ============================================================
+
+let allFollowups = [];
+let followupFilter = "all";
+
+async function loadFollowups() {
+  try {
+    const res = await apiFetch("/api/followups");
+    if (res.ok) {
+      allFollowups = await res.json();
+      renderFollowups();
+    }
+  } catch (err) {
+    console.error("loadFollowups error:", err);
+  }
+}
+
+function filterFollowups(filter, btn) {
+  followupFilter = filter;
+  document.querySelectorAll("[data-followup-filter]").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  renderFollowups();
+}
+
+function renderFollowups() {
+  const list = document.getElementById("followup-list");
+  const empty = document.getElementById("followup-empty");
+  if (!list) return;
+
+  let filtered = allFollowups;
+  if (followupFilter === "pending") filtered = allFollowups.filter(f => !f.completed_at);
+  if (followupFilter === "completed") filtered = allFollowups.filter(f => f.completed_at);
+
+  if (filtered.length === 0) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+
+  const typeIcon = { call: "📞", text: "💬", email: "✉️", visit: "🏠" };
+  list.innerHTML = filtered.map(f => {
+    const due = f.due_date ? new Date(f.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    const done = !!f.completed_at;
+    return `<div class="followup-card ${done ? "followup-done" : ""}">
+      <div class="followup-card-left">
+        <span class="followup-type-badge">${typeIcon[f.type] || "📋"}</span>
+        <div class="followup-info">
+          ${f.client_name ? `<div class="followup-client">${f.client_name}</div>` : ""}
+          ${f.notes ? `<div class="followup-notes">${f.notes.substring(0, 80)}${f.notes.length > 80 ? "…" : ""}</div>` : ""}
+          ${due ? `<div class="followup-due">Due: ${due}</div>` : ""}
+        </div>
+      </div>
+      <div class="followup-actions">
+        ${!done ? `<button class="btn-sm followup-btn-complete" onclick="completeFollowup('${f.id}')"><i class="fa-solid fa-check"></i></button>` : ""}
+        <button class="btn-sm followup-btn-delete" onclick="deleteFollowup('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function openNewFollowupForm() {
+  const form = document.getElementById("followup-new-form");
+  if (form) { form.style.display = "block"; form.scrollIntoView({ behavior: "smooth" }); }
+}
+
+function closeFollowupForm() {
+  const form = document.getElementById("followup-new-form");
+  if (form) form.style.display = "none";
+  const fields = ["followup-type", "followup-due-date", "followup-notes", "followup-client-id"];
+  fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = el.tagName === "SELECT" ? el.options[0]?.value || "" : ""; });
+}
+
+function populateFollowupClientDropdown() {
+  const sel = document.getElementById("followup-client-id");
+  if (!sel) return;
+  const clients = window._allClients || [];
+  sel.innerHTML = `<option value="">— No client —</option>` +
+    clients.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+}
+
+async function createFollowup() {
+  const type = document.getElementById("followup-type")?.value || "call";
+  const due_date = document.getElementById("followup-due-date")?.value || null;
+  const notes = document.getElementById("followup-notes")?.value || null;
+  const client_id = document.getElementById("followup-client-id")?.value || null;
+
+  try {
+    const res = await apiFetch("/api/followups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, due_date, notes, client_id })
+    });
+    if (res.ok) {
+      showToast("Follow-up created", "success");
+      closeFollowupForm();
+      await loadFollowups();
+    } else {
+      showToast("Failed to create follow-up", "error");
+    }
+  } catch (err) {
+    showToast("Error creating follow-up", "error");
+  }
+}
+
+async function completeFollowup(id) {
+  try {
+    const res = await apiFetch(`/api/followups/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: true })
+    });
+    if (res.ok) {
+      showToast("Marked complete", "success");
+      await loadFollowups();
+    }
+  } catch (err) {
+    showToast("Error updating follow-up", "error");
+  }
+}
+
+async function deleteFollowup(id) {
+  if (!confirm("Delete this follow-up?")) return;
+  try {
+    const res = await apiFetch(`/api/followups/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      showToast("Deleted", "success");
+      allFollowups = allFollowups.filter(f => f.id !== id);
+      renderFollowups();
+    }
+  } catch (err) {
+    showToast("Error deleting follow-up", "error");
+  }
+}
+
+// ============================================================
+// MESSAGE TEMPLATES
+// ============================================================
+
+let allMessageTemplates = [];
+
+async function loadMessageTemplates() {
+  try {
+    const res = await apiFetch("/api/message-templates");
+    if (res.ok) {
+      allMessageTemplates = await res.json();
+      renderMessageTemplates();
+    }
+  } catch (err) {
+    console.error("loadMessageTemplates error:", err);
+  }
+}
+
+function renderMessageTemplates() {
+  const list = document.getElementById("template-list");
+  const empty = document.getElementById("template-empty");
+  if (!list) return;
+
+  if (allMessageTemplates.length === 0) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+
+  const triggerLabel = { manual: "Manual", quote_sent: "Quote Sent", invoice_sent: "Invoice Sent", job_complete: "Job Complete" };
+  list.innerHTML = allMessageTemplates.map(t => `
+    <div class="template-card">
+      <div class="template-card-header">
+        <span class="template-name">${t.name}</span>
+        <span class="template-trigger-badge">${triggerLabel[t.trigger] || t.trigger}</span>
+      </div>
+      <div class="template-body-preview">${t.body.substring(0, 100)}${t.body.length > 100 ? "…" : ""}</div>
+      <div class="template-actions">
+        <button class="btn-sm" onclick="editTemplate('${t.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
+        <button class="btn-sm btn-danger-sm" onclick="deleteMessageTemplate('${t.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openNewTemplateForm() {
+  document.getElementById("template-edit-id").value = "";
+  document.getElementById("template-form-title").textContent = "New Template";
+  document.getElementById("template-name").value = "";
+  document.getElementById("template-body").value = "";
+  document.getElementById("template-trigger").value = "manual";
+  const form = document.getElementById("template-form");
+  if (form) { form.style.display = "block"; form.scrollIntoView({ behavior: "smooth" }); }
+}
+
+function closeTemplateForm() {
+  const form = document.getElementById("template-form");
+  if (form) form.style.display = "none";
+}
+
+function editTemplate(id) {
+  const t = allMessageTemplates.find(t => t.id === id);
+  if (!t) return;
+  document.getElementById("template-edit-id").value = t.id;
+  document.getElementById("template-form-title").textContent = "Edit Template";
+  document.getElementById("template-name").value = t.name;
+  document.getElementById("template-body").value = t.body;
+  document.getElementById("template-trigger").value = t.trigger || "manual";
+  const form = document.getElementById("template-form");
+  if (form) { form.style.display = "block"; form.scrollIntoView({ behavior: "smooth" }); }
+}
+
+async function saveMessageTemplate() {
+  const id = document.getElementById("template-edit-id")?.value;
+  const name = document.getElementById("template-name")?.value?.trim();
+  const body = document.getElementById("template-body")?.value?.trim();
+  const trigger = document.getElementById("template-trigger")?.value || "manual";
+
+  if (!name || !body) { showToast("Name and message body are required", "error"); return; }
+
+  try {
+    const url = id ? `/api/message-templates/${id}` : "/api/message-templates";
+    const method = id ? "PATCH" : "POST";
+    const res = await apiFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, body, trigger })
+    });
+    if (res.ok) {
+      showToast(id ? "Template updated" : "Template created", "success");
+      closeTemplateForm();
+      await loadMessageTemplates();
+    } else {
+      showToast("Failed to save template", "error");
+    }
+  } catch (err) {
+    showToast("Error saving template", "error");
+  }
+}
+
+async function deleteMessageTemplate(id) {
+  if (!confirm("Delete this template?")) return;
+  try {
+    const res = await apiFetch(`/api/message-templates/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      showToast("Deleted", "success");
+      allMessageTemplates = allMessageTemplates.filter(t => t.id !== id);
+      renderMessageTemplates();
+    }
+  } catch (err) {
+    showToast("Error deleting template", "error");
+  }
+}

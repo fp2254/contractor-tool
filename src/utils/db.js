@@ -6,8 +6,39 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const { Pool } = pg;
 
-const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+const rawDbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 const isDev = !process.env.SUPABASE_DB_URL;
+
+function sanitizeConnectionString(str) {
+  if (!str) return str;
+  try {
+    new URL(str);
+    return str;
+  } catch {
+    try {
+      const protoEnd = str.indexOf("://");
+      if (protoEnd === -1) return str;
+      const proto = str.substring(0, protoEnd + 3);
+      const rest = str.substring(protoEnd + 3);
+      const lastAt = rest.lastIndexOf("@");
+      if (lastAt === -1) return str;
+      const auth = rest.substring(0, lastAt);
+      const hostPart = rest.substring(lastAt + 1);
+      const colonIdx = auth.indexOf(":");
+      if (colonIdx === -1) return str;
+      const user = auth.substring(0, colonIdx);
+      const password = auth.substring(colonIdx + 1);
+      const encoded = `${proto}${encodeURIComponent(user)}:${encodeURIComponent(password)}@${hostPart}`;
+      new URL(encoded);
+      console.log("[DB] Connection string sanitized (special chars in password)");
+      return encoded;
+    } catch {
+      return str;
+    }
+  }
+}
+
+const dbUrl = sanitizeConnectionString(rawDbUrl);
 
 if (isDev) {
   console.log("[DB] Development mode: using DATABASE_URL");

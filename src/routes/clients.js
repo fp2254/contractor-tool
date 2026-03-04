@@ -5,6 +5,13 @@ import { requireSubscription } from "../middleware/auth.js";
 
 const router = express.Router();
 
+async function ensureCustomersView() {
+  try {
+    await pgPool.query(`CREATE OR REPLACE VIEW customers AS SELECT * FROM clients`);
+  } catch (_) {}
+}
+ensureCustomersView();
+
 router.get("/", requireSubscription, async (req, res) => {
   const userId = req.userId;
   try {

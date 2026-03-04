@@ -14,6 +14,9 @@ async function ensureJobColumns() {
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS arrived_at TIMESTAMPTZ",
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ",
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ",
+    "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS labor_minutes INTEGER DEFAULT 0",
+    "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS labor_rate DECIMAL(10,2) DEFAULT 0",
+    "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS profit_estimate DECIMAL(10,2) DEFAULT 0",
   ];
   for (const sql of cols) {
     try { await pgPool.query(sql); } catch (_) {}
@@ -99,7 +102,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
   const userId = req.userId;
   const { id } = req.params;
   const { name, client_id, address, status, notes, scheduled_date, start_time, client_phone,
-          arrived_at, started_at, completed_at } = req.body;
+          arrived_at, started_at, completed_at, labor_minutes, labor_rate, profit_estimate } = req.body;
 
   try {
     // Build timestamp fields based on status transitions
@@ -123,11 +126,14 @@ router.patch("/:id", requireAuth, async (req, res) => {
         arrived_at = COALESCE($9, arrived_at),
         started_at = COALESCE($10, started_at),
         completed_at = COALESCE($11, completed_at),
+        labor_minutes = COALESCE($12, labor_minutes),
+        labor_rate = COALESCE($13, labor_rate),
+        profit_estimate = COALESCE($14, profit_estimate),
         updated_at = NOW()
-       WHERE id = $12 AND user_id = $13
+       WHERE id = $15 AND user_id = $16
        RETURNING *`,
       [name, client_id, address, status, notes, scheduled_date, start_time, client_phone,
-       arrivedAt, startedAt, completedAt, id, userId]
+       arrivedAt, startedAt, completedAt, labor_minutes, labor_rate, profit_estimate, id, userId]
     );
 
     if (rows.length === 0) {

@@ -9,10 +9,13 @@ import adminRoutes from "./admin.js";
 import tradeContactsRoutes from "./trade_contacts.js";
 import jobMaterialsRoutes from "./job_materials.js";
 import jobPhotosRoutes from "./job_photos.js";
+import followupsRoutes from "./followups.js";
+import messageTemplatesRoutes from "./message_templates.js";
 
 export function registerRoutes(app) {
   app.use("/api/profile", profileRoutes);
   app.use("/api/clients", clientsRoutes);
+  app.use("/api/customers", clientsRoutes);
   app.use("/api", paymentRoutes);
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/calendar-events", calendarRoutes);
@@ -22,4 +25,6 @@ export function registerRoutes(app) {
   app.use("/api/messages", messagesRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/trade-contacts", tradeContactsRoutes);
+  app.use("/api/followups", followupsRoutes);
+  app.use("/api/message-templates", messageTemplatesRoutes);
 }

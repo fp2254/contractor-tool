@@ -6548,3 +6548,72 @@ body.multi-select-mode .bottom-nav {
   font-size: 26px !important;
   font-weight: 900 !important;
 }
+
+/* ==================== PROFIT TRACKING ==================== */
+.profit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.profit-row:last-of-type { border-bottom: none; }
+.profit-label { font-size: 14px; color: var(--text); flex: 1; }
+.profit-value { font-size: 14px; font-weight: 600; color: var(--text); }
+.profit-input {
+  width: 90px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  text-align: right;
+}
+.profit-total-row { margin-top: 4px; }
+.profit-total { font-size: 20px; font-weight: 800; }
+.profit-positive { color: #10b981; }
+.profit-negative { color: #ef4444; }
+
+/* ==================== FOLLOW-UPS ==================== */
+.followup-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  gap: 12px;
+}
+.followup-card.followup-done { opacity: 0.55; }
+.followup-card-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+.followup-type-badge { font-size: 22px; flex-shrink: 0; }
+.followup-info { flex: 1; min-width: 0; }
+.followup-client { font-weight: 700; font-size: 14px; color: var(--text); }
+.followup-notes { font-size: 13px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.followup-due { font-size: 12px; color: #f59e0b; font-weight: 600; margin-top: 4px; }
+.followup-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.followup-btn-complete { background: #10b981; color: white; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.followup-btn-delete { background: #fee2e2; color: #ef4444; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+
+/* ==================== MESSAGE TEMPLATES ==================== */
+.template-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.template-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.template-name { font-weight: 700; font-size: 15px; color: var(--text); }
+.template-trigger-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.template-body-preview { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.template-actions { display: flex; gap: 8px; }
+.btn-danger-sm { background: #fee2e2 !important; color: #ef4444 !important; border: none; }

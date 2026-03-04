@@ -2020,6 +2020,41 @@
             <div id="job-photos-empty" style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No photos yet</div>
           </div>
 
+          <!-- PROFIT ESTIMATE -->
+          <div class="feature-status-card" style="margin-top:20px;" id="job-profit-section">
+            <div class="feature-status-header">
+              <i class="fa-solid fa-chart-line"></i>
+              <h3>Profit Estimate</h3>
+            </div>
+            <div style="padding:16px;">
+              <div class="profit-row">
+                <label class="profit-label">Labor Hours</label>
+                <input type="number" id="profit-labor-hours" min="0" step="0.25" placeholder="0" class="profit-input" />
+              </div>
+              <div class="profit-row">
+                <label class="profit-label">Labor Rate ($/hr)</label>
+                <input type="number" id="profit-labor-rate" min="0" step="1" placeholder="0" class="profit-input" />
+              </div>
+              <div class="profit-row">
+                <label class="profit-label">Labor Cost</label>
+                <span id="profit-labor-cost" class="profit-value">$0.00</span>
+              </div>
+              <div class="profit-row">
+                <label class="profit-label">Materials Cost</label>
+                <span id="profit-materials-cost" class="profit-value">$0.00</span>
+              </div>
+              <div class="profit-row">
+                <label class="profit-label">Invoice Total</label>
+                <span id="profit-invoice-total" class="profit-value">$0.00</span>
+              </div>
+              <div class="profit-row profit-total-row">
+                <label class="profit-label"><strong>Estimated Profit</strong></label>
+                <span id="profit-estimate-display" class="profit-total">$0.00</span>
+              </div>
+              <button id="btn-save-profit" class="btn-primary btn-sm" style="margin-top:12px;width:100%;" onclick="saveJobProfit()"><i class="fa-solid fa-floppy-disk"></i> Save Labor</button>
+            </div>
+          </div>
+
           <div class="feature-status-card" style="margin-top: 20px;">
             <div class="feature-status-header" style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -2255,6 +2290,16 @@
               <span class="more-label">Inventory</span>
               <i class="fa-solid fa-chevron-right more-chevron"></i>
             </button>
+            <button class="tb-more-item" onclick="showScreen('followups')">
+              <div class="more-icon teal"><i class="fa-solid fa-bell"></i></div>
+              <span class="more-label">Follow-Ups</span>
+              <i class="fa-solid fa-chevron-right more-chevron"></i>
+            </button>
+            <button class="tb-more-item" onclick="showScreen('message-templates')">
+              <div class="more-icon blue"><i class="fa-solid fa-message"></i></div>
+              <span class="more-label">Message Templates</span>
+              <i class="fa-solid fa-chevron-right more-chevron"></i>
+            </button>
             <button class="tb-more-item" onclick="showScreen('referrals')">
               <div class="more-icon green"><i class="fa-solid fa-link"></i></div>
               <span class="more-label">Referral Program</span>
@@ -2286,6 +2331,71 @@
               <i class="fa-solid fa-chevron-right more-chevron"></i>
             </button>
           </div>
+        </section>
+
+        <!-- FOLLOW-UPS -->
+        <section id="screen-followups" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="more"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 style="margin:0;font-size:20px;font-weight:700;">Follow-Ups</h2>
+            <button class="btn-sm" style="background:var(--accent);color:white;" onclick="openNewFollowupForm()"><i class="fa-solid fa-plus"></i> New</button>
+          </div>
+          <div id="followup-new-form" style="display:none;background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <h3 style="margin:0 0 12px;font-size:15px;">New Follow-Up</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <select id="followup-type" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;">
+                <option value="call">📞 Call</option>
+                <option value="text">💬 Text</option>
+                <option value="email">✉️ Email</option>
+                <option value="visit">🏠 Visit</option>
+              </select>
+              <input type="date" id="followup-due-date" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;" />
+              <select id="followup-client-id" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;">
+                <option value="">— No client —</option>
+              </select>
+              <textarea id="followup-notes" placeholder="Notes..." rows="3" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;resize:none;"></textarea>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-primary btn-sm" style="flex:1;" onclick="createFollowup()">Save</button>
+                <button class="btn-secondary btn-sm" onclick="closeFollowupForm()">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
+            <button class="filter-tab active" data-followup-filter="all" onclick="filterFollowups('all',this)">All</button>
+            <button class="filter-tab" data-followup-filter="pending" onclick="filterFollowups('pending',this)">Pending</button>
+            <button class="filter-tab" data-followup-filter="completed" onclick="filterFollowups('completed',this)">Completed</button>
+          </div>
+          <div id="followup-list"></div>
+          <div id="followup-empty" style="text-align:center;padding:40px;color:var(--muted);">No follow-ups yet</div>
+        </section>
+
+        <!-- MESSAGE TEMPLATES -->
+        <section id="screen-message-templates" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="more"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 style="margin:0;font-size:20px;font-weight:700;">Message Templates</h2>
+            <button class="btn-sm" style="background:var(--accent);color:white;" onclick="openNewTemplateForm()"><i class="fa-solid fa-plus"></i> New</button>
+          </div>
+          <div id="template-form" style="display:none;background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <h3 id="template-form-title" style="margin:0 0 12px;font-size:15px;">New Template</h3>
+            <input type="hidden" id="template-edit-id" value="" />
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <input type="text" id="template-name" placeholder="Template name" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;" />
+              <select id="template-trigger" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;">
+                <option value="manual">Manual</option>
+                <option value="quote_sent">When Quote Sent</option>
+                <option value="invoice_sent">When Invoice Sent</option>
+                <option value="job_complete">When Job Complete</option>
+              </select>
+              <textarea id="template-body" placeholder="Message body..." rows="4" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:14px;resize:none;"></textarea>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-primary btn-sm" style="flex:1;" onclick="saveMessageTemplate()">Save</button>
+                <button class="btn-secondary btn-sm" onclick="closeTemplateForm()">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div id="template-list"></div>
+          <div id="template-empty" style="text-align:center;padding:40px;color:var(--muted);">No templates yet</div>
         </section>
 
         <!-- REPORTS -->
