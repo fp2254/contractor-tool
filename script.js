@@ -2698,6 +2698,10 @@ function showScreen(screenId) {
     loadTradeContacts();
   }
 
+  if (screenId === "client-contacts") {
+    loadClientContacts();
+  }
+
   updateBottomNav(screenId);
 }
 
@@ -2729,6 +2733,7 @@ function updateBottomNav(screenId) {
     'trade-deals': 'more',
     'trade-contacts': 'more',
     'trade-contact-form': 'more',
+    'client-contacts': 'more',
     'subscription': 'more'
   };
   const activeNav = navMap[screenId] || 'dashboard';
@@ -12782,6 +12787,7 @@ function renderTradeContacts(contacts) {
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
           ${phone ? `<a href="tel:${escapeHtml(phone)}" onclick="event.stopPropagation()" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;"><i class="fa-solid fa-phone"></i></a>` : ""}
+          <button onclick="event.stopPropagation();sendTradeReferralSMS(${JSON.stringify(c.name)},${JSON.stringify(occupation)},${JSON.stringify(phone)})" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;border:none;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;cursor:pointer;" title="Send referral text to customer"><i class="fa-solid fa-message"></i></button>
         </div>
       </div>
     `;
@@ -12872,6 +12878,33 @@ async function deleteTradeContact() {
   }
 }
 
+function sendTradeReferralSMS(name, occupation, phone) {
+  const modal = document.getElementById("trade-referral-sms-modal");
+  const textarea = document.getElementById("trade-referral-sms-text");
+  if (!modal || !textarea) return;
+
+  const phoneDisplay = phone || "(no number saved)";
+  const draft = phone
+    ? `Hi! I wanted to refer you to ${name}, a ${occupation} I trust. Feel free to give them a call on ${phone}. Let me know if you need anything else!`
+    : `Hi! I wanted to refer you to ${name}, a ${occupation} I trust. I'll get their number for you shortly!`;
+
+  textarea.value = draft;
+
+  const sendBtn = document.getElementById("trade-referral-sms-send");
+  if (sendBtn) {
+    sendBtn.onclick = () => {
+      const msg = textarea.value.trim();
+      if (!msg) return;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const smsUrl = isIOS ? `sms:&body=${encodeURIComponent(msg)}` : `sms:?body=${encodeURIComponent(msg)}`;
+      window.open(smsUrl, "_blank");
+      modal.style.display = "none";
+    };
+  }
+
+  modal.style.display = "flex";
+}
+
 function initTradeContacts() {
   const btnNew = document.getElementById("btn-new-trade-contact");
   if (btnNew) btnNew.addEventListener("click", openTradeContactNew);
@@ -12881,6 +12914,93 @@ function initTradeContacts() {
 
   const btnDelete = document.getElementById("btn-delete-trade-contact");
   if (btnDelete) btnDelete.addEventListener("click", deleteTradeContact);
+
+  const closeReferral = document.getElementById("trade-referral-sms-close");
+  if (closeReferral) closeReferral.addEventListener("click", () => {
+    document.getElementById("trade-referral-sms-modal").style.display = "none";
+  });
+}
+
+// ─── CLIENT CONTACTS ─────────────────────────────────────────────────────────
+
+function loadClientContacts() {
+  const clients = window._allClients || [];
+  renderClientContacts(clients);
+
+  if (clients.length === 0 && navigator.onLine) {
+    apiFetch("/api/clients").then(r => r.ok ? r.json() : []).then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        window._allClients = data;
+        renderClientContacts(data);
+      }
+    }).catch(() => {});
+  }
+}
+
+function renderClientContacts(clients) {
+  const list = document.getElementById("client-contacts-list");
+  const empty = document.getElementById("client-contacts-empty");
+  if (!list) return;
+
+  const sorted = [...clients].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  if (!sorted || sorted.length === 0) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+
+  let currentLetter = "";
+  list.innerHTML = sorted.map(c => {
+    const name = c.name || "Unknown";
+    const firstLetter = name[0].toUpperCase();
+    let letterHeader = "";
+    if (firstLetter !== currentLetter) {
+      currentLetter = firstLetter;
+      letterHeader = `<div style="padding:8px 4px 4px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:4px;">${firstLetter}</div>`;
+    }
+    const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const hash = name.split("").reduce((acc, ch) => ch.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const hue = Math.abs(hash) % 360;
+    const color = `hsl(${hue}, 55%, 42%)`;
+    const phone = c.phone || "";
+    const email = c.email || "";
+    const address = c.address || "";
+
+    return `${letterHeader}
+      <div class="tb-card" style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+        <div style="width:46px;height:46px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;">
+          ${initials}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:2px;">${escapeHtml(name)}</div>
+          ${phone ? `<div style="font-size:13px;color:var(--muted);margin-bottom:1px;"><i class="fa-solid fa-phone" style="width:14px;margin-right:4px;font-size:11px;"></i>${escapeHtml(phone)}</div>` : ""}
+          ${email ? `<div style="font-size:13px;color:var(--muted);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-envelope" style="width:14px;margin-right:4px;font-size:11px;"></i>${escapeHtml(email)}</div>` : ""}
+          ${address ? `<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-location-dot" style="width:14px;margin-right:4px;font-size:11px;"></i>${escapeHtml(address)}</div>` : ""}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+          ${phone ? `<a href="tel:${escapeHtml(phone)}" style="width:34px;height:34px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:13px;"><i class="fa-solid fa-phone"></i></a>` : ""}
+          ${phone ? `<a href="${(() => { const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent); return isIOS ? `sms:${phone}` : `sms:${phone}`; })()}" style="width:34px;height:34px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:13px;"><i class="fa-solid fa-message"></i></a>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function filterClientContacts(query) {
+  const all = window._allClients || [];
+  if (!query || !query.trim()) {
+    renderClientContacts(all);
+    return;
+  }
+  const q = query.toLowerCase().trim();
+  const filtered = all.filter(c =>
+    (c.name || "").toLowerCase().includes(q) ||
+    (c.phone || "").toLowerCase().includes(q) ||
+    (c.email || "").toLowerCase().includes(q) ||
+    (c.address || "").toLowerCase().includes(q)
+  );
+  renderClientContacts(filtered);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

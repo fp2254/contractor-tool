@@ -1218,6 +1218,26 @@
           </div>
         </section>
 
+        <!-- CLIENT CONTACTS -->
+        <section id="screen-client-contacts" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="more"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Client Contacts</h2>
+          </div>
+
+          <div style="padding:0 0 12px;">
+            <input type="search" id="client-contacts-search" placeholder="Search clients..." style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-alt);color:var(--text);font-size:14px;box-sizing:border-box;" oninput="filterClientContacts(this.value)" />
+          </div>
+
+          <div id="client-contacts-list" class="list"></div>
+
+          <div id="client-contacts-empty" class="empty-state" style="display:none;">
+            <i class="fa-solid fa-address-card empty-state-icon"></i>
+            <p class="empty-state-title">No clients yet</p>
+            <p class="empty-state-desc">Your clients will appear here once you add them as Leads</p>
+          </div>
+        </section>
+
         <!-- TRADE CONTACTS -->
         <section id="screen-trade-contacts" class="screen">
           <div class="screen-header">
@@ -2067,6 +2087,11 @@
             <h2 style="margin: 0; font-size: 20px; font-weight: 700;">More</h2>
           </div>
           <div class="tb-more-list">
+            <button class="tb-more-item" onclick="showScreen('client-contacts')">
+              <div class="more-icon teal"><i class="fa-solid fa-address-card"></i></div>
+              <span class="more-label">Client Contacts</span>
+              <i class="fa-solid fa-chevron-right more-chevron"></i>
+            </button>
             <button class="tb-more-item" onclick="showScreen('trade-contacts')">
               <div class="more-icon blue"><i class="fa-solid fa-address-book"></i></div>
               <span class="more-label">Trade Contacts</span>
@@ -2293,6 +2318,21 @@
     </table>
     <div id="invoice-totals" style="text-align: right; font-size: 14px; border-top: 2px solid #333; padding-top: 10px; color: #000 !important;"></div>
     <div id="invoice-footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px; color: #666 !important;"></div>
+  </div>
+
+  <!-- Trade Referral SMS Modal -->
+  <div id="trade-referral-sms-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:500px;width:100%;background:#fff;border-radius:16px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;color:#1B3A5C;font-size:17px;"><i class="fa-solid fa-message" style="margin-right:8px;color:#2B5EA7;"></i>Referral Message</h3>
+        <button id="trade-referral-sms-close" style="background:none;border:none;font-size:22px;color:#6b7280;cursor:pointer;line-height:1;">&times;</button>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">Edit the message below, then tap Send to open your Messages app.</p>
+      <textarea id="trade-referral-sms-text" rows="5" style="width:100%;padding:12px;border-radius:10px;border:1px solid #e5e7eb;font-size:14px;color:#1B3A5C;background:#F5F5F5;box-sizing:border-box;resize:vertical;"></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button id="trade-referral-sms-send" style="flex:1;padding:13px;background:#2B5EA7;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i>Open in Messages</button>
+      </div>
+    </div>
   </div>
 
   <!-- Inline Add Client Modal (for invoice/quote forms) -->
