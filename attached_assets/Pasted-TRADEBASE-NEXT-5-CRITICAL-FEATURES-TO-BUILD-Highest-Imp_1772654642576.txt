@@ -1,0 +1,230 @@
+TRADEBASE — NEXT 5 CRITICAL FEATURES TO BUILD  
+(Highest Impact Order for Contractor Workflow)
+
+--------------------------------
+1. ONE-TAP QUOTE → JOB → INVOICE FLOW
+--------------------------------
+
+Goal: Eliminate re-entering data.
+
+From a Quote screen the user should see:
+
+[Send Quote]  
+[Convert to Job]  
+[Convert to Invoice]
+
+Behavior:
+
+Convert to Job:
+• Creates Job
+• Copies quote line items
+• Links customer
+• Links quote
+• Sets status = Scheduled
+
+Convert to Invoice:
+• Creates Invoice
+• Copies line items
+• Copies totals
+• Links customer
+• Links quote or job
+
+Purpose:
+Contractors should NEVER need to recreate the same work twice.
+
+
+--------------------------------
+2. QUOTE BUILDER SPEED MODE
+--------------------------------
+
+Goal: Create quotes in under 20 seconds.
+
+Add Service Presets.
+
+Example presets:
+
+Radon Mitigation System — $1200  
+Sump Pump Install — $650  
+Diagnostic Visit — $150  
+
+When a preset is tapped:
+
+• Adds line item automatically
+• Auto-fills price
+• Auto-fills quantity
+
+Example quote item:
+
+Service: Radon Mitigation System  
+Qty: 1  
+Price: $1200  
+Subtotal: $1200
+
+This allows extremely fast quoting in the field.
+
+
+--------------------------------
+3. JOB SCHEDULING CALENDAR
+--------------------------------
+
+Goal: Visual job planning.
+
+Views:
+
+Day View  
+Week View  
+Month View  
+
+Jobs appear as blocks or dots.
+
+Example:
+
+● Smith Radon Install  
+● Johnson Basement System  
+
+Tapping a job opens the job details.
+
+Future improvements:
+
+• Drag to reschedule
+• Assign technician
+• Route optimization
+
+
+--------------------------------
+4. SEND QUOTE / INVOICE BY EMAIL
+--------------------------------
+
+Goal: Deliver documents instantly to customers.
+
+Buttons needed:
+
+Send Quote  
+Send Invoice  
+
+Email example:
+
+Subject:
+Your Estimate from TradeBase
+
+Body:
+
+Hi John,
+
+Attached is your estimate for the work discussed.
+
+Please review and let us know if you would like to move forward.
+
+Thanks,
+Your Company Name
+
+Attachments:
+
+• Quote PDF
+• Invoice PDF
+
+Email service: Resend (already integrated).
+
+
+--------------------------------
+5. PHOTO SYSTEM (JOB DOCUMENTATION)
+--------------------------------
+
+Goal: Document work and job conditions.
+
+Photos attach to:
+
+• Jobs
+• Leads
+• Customers
+• Invoices
+
+Common use cases:
+
+Before photos  
+After photos  
+Basement layout  
+Equipment install  
+Damage documentation  
+
+Features:
+
+• Take photo with camera
+• Upload from gallery
+• Fullscreen viewer
+• Delete photo
+• Grid gallery layout
+
+
+--------------------------------
+WHY THESE 5 FEATURES FIRST
+--------------------------------
+
+These match the real contractor workflow:
+
+Lead  
+↓  
+Quote  
+↓  
+Job  
+↓  
+Photos  
+↓  
+Invoice  
+↓  
+Payment
+
+The faster this workflow is, the more valuable the software becomes.
+
+
+--------------------------------
+NEXT TIER FEATURES
+--------------------------------
+
+After the above features are complete:
+
+Customer Portal  
+Online Payments (Stripe / Square)  
+Recurring Jobs  
+Route Optimization  
+Team Member Roles
+
+
+--------------------------------
+CURRENT STATUS OF TRADEBASE
+--------------------------------
+
+Already built or partially built:
+
+Leads  
+Quotes  
+Jobs  
+Invoices  
+Customers  
+Calendar  
+Business Profile  
+Search  
+Photos  
+
+Estimated completion level:
+
+60–70% of a full contractor CRM platform.
+
+
+--------------------------------
+END GOAL
+--------------------------------
+
+TradeBase becomes a contractor platform similar to:
+
+Jobber  
+Housecall Pro  
+ServiceTitan  
+
+But optimized for:
+
+• Solo contractors  
+• Small crews  
+• Mobile-first field work  
+• Extremely fast quoting  
+• Simple workflows
