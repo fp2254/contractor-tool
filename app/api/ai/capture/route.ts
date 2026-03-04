@@ -52,6 +52,7 @@ export async function POST(req: Request) {
       "id,service_name,description,price_type,flat_rate,hourly_rate,estimated_hours,unit,tags,category"
     )
     .eq("org_id", orgId!)
+    .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
   const hasPresets = presets && presets.length > 0;

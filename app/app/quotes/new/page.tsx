@@ -16,6 +16,7 @@ export default async function NewQuotePage() {
       .from("service_presets")
       .select("id,service_name,description,price_type,flat_rate,hourly_rate,estimated_hours")
       .eq("org_id", orgId!)
+      .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);
 

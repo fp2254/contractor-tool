@@ -104,6 +104,88 @@ export async function saveAutomation(formData: FormData) {
   });
 }
 
+export type PresetData = {
+  service_name: string;
+  description: string;
+  price_type: "flat" | "hourly";
+  flat_rate: number | null;
+  hourly_rate: number | null;
+  estimated_hours: number | null;
+  material_cost: number | null;
+  unit: string;
+  default_qty: number;
+  category: string;
+  tags: string[];
+  is_active: boolean;
+};
+
+export async function createPreset(data: PresetData): Promise<void> {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  await admin.from("service_presets").insert({
+    org_id: orgId!,
+    service_name: data.service_name.trim(),
+    description: data.description.trim() || null,
+    price_type: data.price_type,
+    flat_rate: data.flat_rate,
+    hourly_rate: data.hourly_rate,
+    estimated_hours: data.estimated_hours,
+    material_cost: data.material_cost,
+    unit: data.unit || "each",
+    default_qty: data.default_qty || 1,
+    category: data.category.trim() || null,
+    tags: data.tags.filter(Boolean),
+    is_active: data.is_active,
+  });
+  revalidatePath("/app/profile");
+  revalidatePath("/app/quotes/new");
+}
+
+export async function updatePreset(id: string, data: PresetData): Promise<void> {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  await admin
+    .from("service_presets")
+    .update({
+      service_name: data.service_name.trim(),
+      description: data.description.trim() || null,
+      price_type: data.price_type,
+      flat_rate: data.flat_rate,
+      hourly_rate: data.hourly_rate,
+      estimated_hours: data.estimated_hours,
+      material_cost: data.material_cost,
+      unit: data.unit || "each",
+      default_qty: data.default_qty || 1,
+      category: data.category.trim() || null,
+      tags: data.tags.filter(Boolean),
+      is_active: data.is_active,
+    })
+    .eq("id", id)
+    .eq("org_id", orgId!);
+  revalidatePath("/app/profile");
+  revalidatePath("/app/quotes/new");
+}
+
+export async function togglePresetActive(id: string, currentValue: boolean): Promise<void> {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  await admin
+    .from("service_presets")
+    .update({ is_active: !currentValue })
+    .eq("id", id)
+    .eq("org_id", orgId!);
+  revalidatePath("/app/profile");
+  revalidatePath("/app/quotes/new");
+}
+
+export async function removePreset(id: string): Promise<void> {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  await admin.from("service_presets").delete().eq("id", id).eq("org_id", orgId!);
+  revalidatePath("/app/profile");
+  revalidatePath("/app/quotes/new");
+}
+
 export async function addServicePreset(formData: FormData) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();

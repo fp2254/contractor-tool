@@ -7,9 +7,8 @@ import {
   saveInvoiceDefaults,
   savePaymentSettings,
   saveAutomation,
-  addServicePreset,
-  deleteServicePreset,
 } from "./actions";
+import { ServicePresetsManager } from "@/components/ServicePresetsManager";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -248,62 +247,10 @@ export default async function ProfilePage() {
 
       {/* ── Service Presets ── */}
       <Section title="Service Pricing Presets" emoji="⚡">
-        {presets && presets.length > 0 && (
-          <div className="space-y-2 mb-4">
-            {presets.map((p) => {
-              const price = p.price_type === "flat"
-                ? p.flat_rate ? `$${Number(p.flat_rate).toLocaleString()}` : "—"
-                : p.hourly_rate ? `$${Number(p.hourly_rate)}/hr` : "—";
-              return (
-                <div key={p.id} className="flex items-start justify-between bg-gray-50 rounded-xl p-3">
-                  <div>
-                    <p className="font-semibold text-sm text-slate-800">{p.service_name}</p>
-                    {p.description && <p className="text-xs text-gray-500">{p.description}</p>}
-                    <p className="text-xs font-medium text-[#1B3A6B] mt-0.5">{price} · {p.price_type}</p>
-                  </div>
-                  <form action={deleteServicePreset}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <button type="submit" className="text-red-400 text-sm font-medium ml-2">Remove</button>
-                  </form>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Add Service</p>
-        <form action={addServicePreset} className="space-y-3">
-          <input name="service_name" required placeholder="Service name *" className={inputCls} />
-          <textarea name="description" rows={2} placeholder="Short description" className={inputCls} />
-          <div>
-            <label className={labelCls}>Price Type</label>
-            <select name="price_type" className={inputCls}>
-              <option value="flat">Flat Rate</option>
-              <option value="hourly">Hourly</option>
-            </select>
-          </div>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>Flat Rate ($)</label>
-              <input name="flat_rate" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Hourly Rate ($)</label>
-              <input name="hourly_rate" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
-            </div>
-          </div>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>Est. Hours</label>
-              <input name="estimated_hours" type="number" step="0.5" min={0} placeholder="0" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Material Cost ($)</label>
-              <input name="material_cost" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
-            </div>
-          </div>
-          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#22C55E" }}>+ Add Service</button>
-        </form>
+        <div className="bg-blue-50 rounded-xl p-3 mb-4 text-xs text-blue-700">
+          <span className="font-semibold">AI Job Capture uses this price sheet.</span> Active services are matched to job descriptions — no guessing.
+        </div>
+        <ServicePresetsManager initialPresets={presets ?? []} />
       </Section>
 
       {/* ── Payment Settings ── */}
