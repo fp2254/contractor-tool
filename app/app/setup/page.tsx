@@ -1,23 +1,26 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-export default function SetupPage() {
-  let sql = "";
+function readSql(filename: string) {
   try {
-    sql = readFileSync(join(process.cwd(), "supabase/migration_phase1.sql"), "utf-8");
+    return readFileSync(join(process.cwd(), `supabase/${filename}`), "utf-8");
   } catch {
-    sql = "-- Migration file not found";
+    return "-- File not found";
   }
+}
+
+export default function SetupPage() {
+  const phase1 = readSql("migration_phase1.sql");
+  const phase2 = readSql("migration_phase2.sql");
 
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-xl font-bold text-slate-800">Database Setup</h1>
 
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-        <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Action Required</p>
+        <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Run Both Migrations</p>
         <p className="text-sm text-amber-700">
-          Some Phase 1 features (Leads, Payments, Notes) require new database tables.
-          Copy the SQL below and run it in your Supabase SQL Editor.
+          Copy each SQL block below and run it in your Supabase SQL Editor.
         </p>
         <a href="https://supabase.com/dashboard/project/lrtrbocvcqgfnklknlnu/sql"
           target="_blank" rel="noreferrer"
@@ -26,17 +29,21 @@ export default function SetupPage() {
         </a>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <p className="text-sm font-semibold text-slate-700">migration_phase1.sql</p>
-          <p className="text-xs text-gray-400">Copy all → paste → Run in Supabase</p>
+      {[
+        { title: "Phase 1 — Leads, Payments, Notes", sql: phase1 },
+        { title: "Phase 2 — Business Profile (org_settings, service_presets)", sql: phase2 },
+      ].map(({ title, sql }) => (
+        <div key={title} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <p className="text-sm font-semibold text-slate-700">{title}</p>
+          </div>
+          <pre className="p-4 text-xs text-slate-700 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto bg-gray-50">
+            {sql}
+          </pre>
         </div>
-        <pre className="p-4 text-xs text-slate-700 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto bg-gray-50">
-          {sql}
-        </pre>
-      </div>
+      ))}
 
-      <p className="text-xs text-gray-400 text-center">After running the SQL, all Phase 1 features will be fully active.</p>
+      <p className="text-xs text-gray-400 text-center">After running both migrations, all features will be fully active.</p>
     </div>
   );
 }

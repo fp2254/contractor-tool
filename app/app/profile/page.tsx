@@ -1,0 +1,422 @@
+import Link from "next/link";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ensureUserOrg } from "@/lib/auth";
+import {
+  saveBusinessIdentity,
+  saveQuoteDefaults,
+  saveInvoiceDefaults,
+  savePaymentSettings,
+  saveAutomation,
+  addServicePreset,
+  deleteServicePreset,
+} from "./actions";
+
+const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
+const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
+const gridCls = "grid grid-cols-2 gap-3";
+const saveBtnCls = "w-full rounded-xl py-2.5 text-white text-sm font-semibold mt-4";
+
+function Section({ title, emoji, children, open }: { title: string; emoji: string; children: React.ReactNode; open?: boolean }) {
+  return (
+    <details className="bg-white rounded-2xl shadow-sm overflow-hidden" open={open}>
+      <summary className="flex items-center gap-3 px-4 py-4 cursor-pointer select-none list-none">
+        <span className="text-xl">{emoji}</span>
+        <span className="flex-1 font-semibold text-slate-800">{title}</span>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400 details-chevron" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="px-4 pb-4 border-t border-gray-100 pt-4">{children}</div>
+    </details>
+  );
+}
+
+export default async function ProfilePage() {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+
+  const [{ data: org }, { data: settings }, { data: presets }] = await Promise.all([
+    admin.from("orgs").select("*").eq("id", orgId!).single(),
+    admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+    admin.from("service_presets").select("*").eq("org_id", orgId!).order("created_at", { ascending: true }),
+  ]);
+
+  const s = settings ?? {};
+  const methods = ((s as any).accepted_payment_methods ?? "cash,check,card").split(",").map((m: string) => m.trim()).filter(Boolean);
+  const followupDays = ((s as any).quote_followup_days ?? "3,7").split(",").map((d: string) => d.trim()).filter(Boolean);
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex items-center gap-3 mb-2">
+        <Link href="/app/more" className="text-gray-400">
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </Link>
+        <h1 className="text-xl font-bold text-slate-800">Business Profile</h1>
+      </div>
+
+      {/* ── Business Identity ── */}
+      <Section title="Business Identity" emoji="🏢" open>
+        <form action={saveBusinessIdentity} className="space-y-3">
+          <div>
+            <label className={labelCls}>Business Name</label>
+            <input name="business_name" defaultValue={org?.name ?? ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>DBA Name</label>
+            <input name="dba_name" defaultValue={(s as any).dba_name ?? ""} placeholder="Doing business as…" className={inputCls} />
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Primary Phone</label>
+              <input name="primary_phone" type="tel" defaultValue={(s as any).primary_phone ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Business Email</label>
+              <input name="business_email" type="email" defaultValue={(s as any).business_email ?? ""} className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Website</label>
+            <input name="website" defaultValue={(s as any).website ?? ""} placeholder="https://…" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Address</label>
+            <input name="address" defaultValue={(s as any).address ?? ""} className={inputCls} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={labelCls}>City</label>
+              <input name="city" defaultValue={(s as any).city ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>State</label>
+              <input name="state" defaultValue={(s as any).state ?? ""} maxLength={2} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>ZIP</label>
+              <input name="zip" defaultValue={(s as any).zip ?? ""} className={inputCls} />
+            </div>
+          </div>
+
+          <p className="text-xs font-bold text-gray-400 uppercase pt-2">Licenses & Certs</p>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>License #</label>
+              <input name="license_number" defaultValue={(s as any).license_number ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Insurance #</label>
+              <input name="insurance_number" defaultValue={(s as any).insurance_number ?? ""} className={inputCls} />
+            </div>
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>EPA Cert #</label>
+              <input name="epa_cert_number" defaultValue={(s as any).epa_cert_number ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Service Area</label>
+              <input name="service_area" defaultValue={(s as any).service_area ?? ""} placeholder="e.g. Central Maine" className={inputCls} />
+            </div>
+          </div>
+
+          <p className="text-xs font-bold text-gray-400 uppercase pt-2">Signature Block</p>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Owner Name</label>
+              <input name="owner_name" defaultValue={(s as any).owner_name ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Title</label>
+              <input name="owner_title" defaultValue={(s as any).owner_title ?? ""} placeholder="Owner, President…" className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Footer Text</label>
+            <textarea name="signature_footer" rows={2}
+              defaultValue={(s as any).signature_footer ?? ""}
+              placeholder="Thank you for choosing our company."
+              className={inputCls} />
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Business Info</button>
+        </form>
+      </Section>
+
+      {/* ── Quote Defaults ── */}
+      <Section title="Quote Defaults" emoji="📋">
+        <form action={saveQuoteDefaults} className="space-y-3">
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Expiration (days)</label>
+              <input name="quote_expiration_days" type="number" min={1}
+                defaultValue={(s as any).quote_expiration_days ?? 14} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Default Status</label>
+              <select name="quote_default_status" defaultValue={(s as any).quote_default_status ?? "draft"} className={inputCls}>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Quote Number Format</label>
+            <input name="quote_number_format" defaultValue={(s as any).quote_number_format ?? "QUO-{N}"}
+              placeholder="QUO-{N}" className={inputCls} />
+            <p className="text-xs text-gray-400 mt-1">Use &#123;N&#125; for auto-increment</p>
+          </div>
+          <div>
+            <label className={labelCls}>Default Notes Template</label>
+            <textarea name="quote_notes_template" rows={3}
+              defaultValue={(s as any).quote_notes_template ?? ""}
+              placeholder="This estimate includes all materials and labor necessary to complete the work described."
+              className={inputCls} />
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Tax Rate (%)</label>
+              <input name="default_tax_rate" type="number" step="0.01" min={0}
+                defaultValue={(s as any).default_tax_rate ?? 0} className={inputCls} />
+            </div>
+            <div className="flex items-end pb-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input name="tax_applied_auto" type="checkbox"
+                  defaultChecked={(s as any).tax_applied_auto ?? false}
+                  className="h-4 w-4 rounded accent-blue-700" />
+                <span className="text-sm text-slate-700">Auto-apply tax</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Deposit Type</label>
+            <select name="deposit_type" defaultValue={(s as any).deposit_type ?? "none"} className={inputCls}>
+              <option value="none">No Deposit</option>
+              <option value="flat">Flat Amount ($)</option>
+              <option value="percentage">Percentage (%)</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Deposit Amount / %</label>
+            <input name="deposit_value" type="number" step="0.01" min={0}
+              defaultValue={(s as any).deposit_value ?? ""} placeholder="0" className={inputCls} />
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Quote Defaults</button>
+        </form>
+      </Section>
+
+      {/* ── Invoice Defaults ── */}
+      <Section title="Invoice Defaults" emoji="💵">
+        <form action={saveInvoiceDefaults} className="space-y-3">
+          <div>
+            <label className={labelCls}>Payment Terms</label>
+            <select name="payment_terms" defaultValue={(s as any).payment_terms ?? "net14"} className={inputCls}>
+              <option value="receipt">Due on Receipt</option>
+              <option value="net7">Net 7</option>
+              <option value="net14">Net 14</option>
+              <option value="net30">Net 30</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Invoice Number Format</label>
+            <input name="invoice_number_format" defaultValue={(s as any).invoice_number_format ?? "INV-{N}"}
+              placeholder="INV-{N}" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Invoice Footer</label>
+            <textarea name="invoice_footer_template" rows={3}
+              defaultValue={(s as any).invoice_footer_template ?? ""}
+              placeholder="Payment due upon receipt. Thank you for your business."
+              className={inputCls} />
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Late Fee (%)</label>
+              <input name="late_fee_percentage" type="number" step="0.01" min={0}
+                defaultValue={(s as any).late_fee_percentage ?? ""} placeholder="0" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Grace Period (days)</label>
+              <input name="late_fee_grace_days" type="number" min={0}
+                defaultValue={(s as any).late_fee_grace_days ?? ""} placeholder="0" className={inputCls} />
+            </div>
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Invoice Defaults</button>
+        </form>
+      </Section>
+
+      {/* ── Service Presets ── */}
+      <Section title="Service Pricing Presets" emoji="⚡">
+        {presets && presets.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {presets.map((p) => {
+              const price = p.price_type === "flat"
+                ? p.flat_rate ? `$${Number(p.flat_rate).toLocaleString()}` : "—"
+                : p.hourly_rate ? `$${Number(p.hourly_rate)}/hr` : "—";
+              return (
+                <div key={p.id} className="flex items-start justify-between bg-gray-50 rounded-xl p-3">
+                  <div>
+                    <p className="font-semibold text-sm text-slate-800">{p.service_name}</p>
+                    {p.description && <p className="text-xs text-gray-500">{p.description}</p>}
+                    <p className="text-xs font-medium text-[#1B3A6B] mt-0.5">{price} · {p.price_type}</p>
+                  </div>
+                  <form action={deleteServicePreset}>
+                    <input type="hidden" name="id" value={p.id} />
+                    <button type="submit" className="text-red-400 text-sm font-medium ml-2">Remove</button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Add Service</p>
+        <form action={addServicePreset} className="space-y-3">
+          <input name="service_name" required placeholder="Service name *" className={inputCls} />
+          <textarea name="description" rows={2} placeholder="Short description" className={inputCls} />
+          <div>
+            <label className={labelCls}>Price Type</label>
+            <select name="price_type" className={inputCls}>
+              <option value="flat">Flat Rate</option>
+              <option value="hourly">Hourly</option>
+            </select>
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Flat Rate ($)</label>
+              <input name="flat_rate" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Hourly Rate ($)</label>
+              <input name="hourly_rate" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
+            </div>
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Est. Hours</label>
+              <input name="estimated_hours" type="number" step="0.5" min={0} placeholder="0" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Material Cost ($)</label>
+              <input name="material_cost" type="number" step="0.01" min={0} placeholder="0.00" className={inputCls} />
+            </div>
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#22C55E" }}>+ Add Service</button>
+        </form>
+      </Section>
+
+      {/* ── Payment Settings ── */}
+      <Section title="Payment Settings" emoji="💳">
+        <form action={savePaymentSettings} className="space-y-3">
+          <div>
+            <label className={labelCls}>Accepted Payment Methods</label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {["cash","check","card","venmo","paypal","other"].map(m => (
+                <label key={m} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                  <input type="checkbox" name="accepted_payment_methods" value={m}
+                    defaultChecked={methods.includes(m)}
+                    className="h-4 w-4 rounded accent-blue-700" />
+                  <span className="capitalize">{m}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Payment Instructions</label>
+            <textarea name="payment_instructions" rows={3}
+              defaultValue={(s as any).payment_instructions ?? ""}
+              placeholder="Checks payable to…"
+              className={inputCls} />
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Payment Settings</button>
+        </form>
+      </Section>
+
+      {/* ── Automation ── */}
+      <Section title="Automation" emoji="🤖">
+        <form action={saveAutomation} className="space-y-4">
+          <div>
+            <label className={labelCls}>Quote Follow-Up Days</label>
+            <div className="flex gap-4 mt-1">
+              {["3","7","14"].map(d => (
+                <label key={d} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                  <input type="checkbox" name="quote_followup_days" value={d}
+                    defaultChecked={followupDays.includes(d)}
+                    className="h-4 w-4 rounded accent-blue-700" />
+                  {d} days
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className={gridCls}>
+            <div>
+              <label className={labelCls}>Invoice Reminder Before Due (days)</label>
+              <input name="invoice_reminder_before" type="number" min={0}
+                defaultValue={(s as any).invoice_reminder_before ?? ""}
+                placeholder="e.g. 2" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Reminder After Due (days)</label>
+              <input name="invoice_reminder_after" type="number" min={0}
+                defaultValue={(s as any).invoice_reminder_after ?? ""}
+                placeholder="e.g. 3" className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Quote Sent Message</label>
+            <textarea name="quote_sent_template" rows={3}
+              defaultValue={(s as any).quote_sent_template ?? ""}
+              placeholder="Your estimate is ready. Please review and let us know if you have questions."
+              className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Invoice Reminder Message</label>
+            <textarea name="invoice_reminder_template" rows={3}
+              defaultValue={(s as any).invoice_reminder_template ?? ""}
+              placeholder="This is a friendly reminder that invoice payment is due."
+              className={inputCls} />
+          </div>
+          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Automation</button>
+        </form>
+      </Section>
+
+      {/* ── Data Export ── */}
+      <Section title="Data Export" emoji="📤">
+        <div className="space-y-2">
+          {[
+            { label: "Export Customers (CSV)", href: "/api/export/customers" },
+            { label: "Export Quotes (CSV)", href: "/api/export/quotes" },
+            { label: "Export Invoices (CSV)", href: "/api/export/invoices" },
+          ].map(({ label, href }) => (
+            <a key={href} href={href}
+              className="flex items-center justify-between w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-slate-700 bg-gray-50">
+              {label}
+              <span className="text-gray-400">↓</span>
+            </a>
+          ))}
+        </div>
+      </Section>
+
+      {/* ── Team Members ── */}
+      <Section title="Team Members" emoji="👥">
+        <div className="rounded-xl bg-blue-50 p-4 text-sm text-blue-700">
+          Team management is coming soon. You will be able to invite Admins, Technicians, and Office Staff with custom permissions.
+        </div>
+      </Section>
+
+      {/* ── Danger Zone ── */}
+      <Section title="Danger Zone" emoji="⚠️">
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">These actions are permanent and cannot be undone.</p>
+          <button disabled
+            className="w-full rounded-xl py-2.5 text-sm font-semibold border border-red-200 text-red-400 bg-red-50 opacity-60 cursor-not-allowed">
+            Delete Organization (Contact Support)
+          </button>
+        </div>
+      </Section>
+
+      <div className="h-6" />
+    </div>
+  );
+}

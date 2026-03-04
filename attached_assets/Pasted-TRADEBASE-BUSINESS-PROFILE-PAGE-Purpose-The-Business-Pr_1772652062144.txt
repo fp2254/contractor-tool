@@ -1,0 +1,261 @@
+TRADEBASE – BUSINESS PROFILE PAGE
+
+Purpose:
+The Business Profile page controls company identity, defaults, pricing presets, payment settings, and automation rules. These settings automatically populate quotes, invoices, jobs, and customer records.
+
+==================================================
+SECTION 1 – BUSINESS IDENTITY
+==================================================
+
+Fields:
+
+Business Name
+DBA Name (optional)
+Logo Upload
+Primary Phone
+Business Email
+Website
+Business Address
+City
+State
+Zip Code
+
+Optional Professional Fields:
+
+License Number
+Insurance Policy Number
+EPA Certification Number
+Service Area
+
+Signature Block (Used on Quotes/Invoices):
+
+Owner Name
+Title
+Signature Footer Text
+
+Example Footer:
+"Thank you for choosing Central Maine Radon & Water Mitigation."
+
+
+
+==================================================
+SECTION 2 – QUOTE DEFAULTS
+==================================================
+
+Default Quote Settings:
+
+Quote Expiration Days (Default: 14)
+Default Quote Status (Draft / Sent)
+
+Default Quote Notes Template
+
+Example:
+"This estimate includes all materials and labor necessary to complete the work described."
+
+Quote Number Format:
+
+Example Options:
+QUO-000001
+Q-1001
+CUSTOM FORMAT
+
+Tax Defaults:
+
+Default Tax Rate
+Tax Applied Automatically (Toggle)
+
+Deposit Settings:
+
+No Deposit
+Flat Deposit Amount
+Percentage Deposit
+
+
+
+==================================================
+SECTION 3 – INVOICE DEFAULTS
+==================================================
+
+Default Payment Terms:
+
+Due on Receipt
+Net 7
+Net 14
+Net 30
+
+Invoice Number Format
+
+Example:
+INV-000001
+
+Invoice Footer Template
+
+Example:
+"Payment due upon receipt. Thank you for your business."
+
+Late Payment Settings (Optional):
+
+Late Fee Percentage
+Grace Period Days
+
+
+
+==================================================
+SECTION 4 – SERVICE PRICING PRESETS
+==================================================
+
+Purpose:
+Speed up quote creation.
+
+Fields:
+
+Service Name
+Service Description
+Price Type
+Flat Rate / Hourly
+
+Labor Rate
+Estimated Labor Hours
+
+Material Cost
+
+Example Services:
+
+Radon Mitigation System
+Radon Fan Replacement
+Radon Diagnostic Test
+Well Water Aeration Install
+
+Packages (Optional):
+
+Fan Replacement Package
+Full Radon System Install
+
+
+
+==================================================
+SECTION 5 – PAYMENT SETTINGS
+==================================================
+
+Accepted Payment Methods:
+
+Cash
+Check
+Card
+Venmo
+PayPal
+Other
+
+Payment Instructions Text
+
+Example:
+"Checks payable to Central Maine Radon & Water Mitigation."
+
+Online Payment Integration (Future):
+
+Stripe
+Square
+
+
+
+==================================================
+SECTION 6 – TEAM MEMBERS (FUTURE SCALING)
+==================================================
+
+Roles:
+
+Owner
+Admin
+Technician
+Office Staff
+Read Only
+
+Permissions Examples:
+
+Create Quotes
+Edit Invoices
+Delete Records
+View Financial Data
+
+
+
+==================================================
+SECTION 7 – AUTOMATION SETTINGS
+==================================================
+
+Quote Follow-Up Automation:
+
+Follow Up After 3 Days
+Follow Up After 7 Days
+Follow Up After 14 Days
+
+Invoice Reminder Automation:
+
+Reminder Before Due Date
+Reminder After Due Date
+
+Message Templates:
+
+Quote Sent Message
+
+Example:
+"Your estimate is ready. Please review and let us know if you have questions."
+
+Invoice Reminder Message
+
+Example:
+"This is a friendly reminder that invoice payment is due."
+
+
+
+==================================================
+SECTION 8 – DATA MANAGEMENT
+==================================================
+
+Export Data Options:
+
+Export Customers CSV
+Export Quotes CSV
+Export Invoices CSV
+
+Danger Zone:
+
+Reset Demo Data
+Delete Organization (Requires Confirmation)
+
+
+
+==================================================
+DESIGN PRINCIPLES
+==================================================
+
+Keep the page simple.
+
+Use collapsible sections:
+
+Business Info
+Quote Defaults
+Invoice Defaults
+Services
+Payments
+Automation
+Data
+
+Goal:
+Everything in this page should reduce repetitive typing when creating quotes, jobs, and invoices.
+
+
+
+==================================================
+END GOAL
+==================================================
+
+Business Profile acts as the control center for:
+
+Company identity
+Financial defaults
+Pricing templates
+Automation
+Scaling to teams
+
+Every quote, invoice, and job should automatically pull defaults from these settings.
