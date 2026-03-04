@@ -1,0 +1,441 @@
+TRADEBASE PLATFORM MASTER BLUEPRINT
+Field Service CRM for Contractors
+Design Philosophy: FAST • SIMPLE • OFFLINE-FIRST • BUILT FOR TRADES
+
+============================================================
+CORE WORKFLOW (THE GOLDEN PATH)
+============================================================
+
+Lead
+↓
+Customer
+↓
+Quote
+↓
+Job
+↓
+Invoice
+↓
+Payment
+
+Every step should convert to the next with ONE BUTTON.
+
+Example workflow:
+
+New Lead
+→ Convert to Customer
+→ Create Quote
+→ Convert Quote to Job
+→ Complete Job
+→ Create Invoice
+→ Mark Paid
+
+
+============================================================
+CURRENT CORE MODULES (ALREADY BUILT)
+============================================================
+
+Leads
+Pipeline system to track potential customers.
+
+Pipeline stages:
+
+New
+Contacted
+Quoted
+Scheduled
+Won
+Lost
+
+Lead actions:
+
+Create Customer
+Create Quote
+Call Lead
+Text Lead
+Add Notes
+Attach Photos
+
+
+------------------------------------------------------------
+
+Quotes
+Estimate builder for work.
+
+Features:
+
+Inline new client creation
+Add line items
+Add materials
+Add labor
+Add tax
+Add notes
+
+Quote actions:
+
+Send Quote
+Duplicate Quote
+Convert to Job
+Convert to Invoice
+Download Quote PDF
+
+
+------------------------------------------------------------
+
+Jobs
+Represents scheduled work.
+
+Job features:
+
+Create Job
+Schedule Job
+Update Status
+Navigate to Job Location
+Upload Photos
+Add Job Notes
+Create Invoice
+
+
+Job statuses:
+
+Scheduled
+In Progress
+Completed
+Cancelled
+
+
+------------------------------------------------------------
+
+Invoices
+Track money owed.
+
+Invoice features:
+
+Create Invoice
+Mark Paid
+Select Payment Method
+Add Notes
+Send Invoice
+Download Invoice PDF
+
+Payment methods:
+
+Cash
+Check
+Card
+Venmo
+PayPal
+Other
+
+
+------------------------------------------------------------
+
+Customers
+Permanent client records.
+
+Customer profile shows:
+
+Quotes
+Jobs
+Invoices
+Notes
+Photos
+
+Customer actions:
+
+Create Quote
+Schedule Job
+Create Invoice
+Add Notes
+Upload Photos
+Call Customer
+
+
+------------------------------------------------------------
+
+Business Profile
+Company control center.
+
+Sections:
+
+Business Identity
+Quote Defaults
+Invoice Defaults
+Service Pricing Presets
+Payment Settings
+Automation Templates
+Data Export
+
+
+------------------------------------------------------------
+
+Search
+Global search across all records.
+
+Search fields:
+
+Customer Name
+Phone Number
+Address
+Invoice Number
+Quote Number
+Job ID
+
+
+------------------------------------------------------------
+
+Notes
+Notes can be attached to:
+
+Leads
+Customers
+Jobs
+Invoices
+
+
+============================================================
+WHAT IS READY BUT NOT FULLY UTILIZED
+============================================================
+
+Automation system stores templates for:
+
+Quote Follow-ups
+Invoice reminders
+Customer messages
+
+
+Team members section is placeholder for:
+
+Multi-user support
+Permissions
+Role management
+
+
+Data export allows downloading:
+
+Customers CSV
+Quotes CSV
+Invoices CSV
+
+
+============================================================
+FEATURES TO BUILD NEXT (HIGH PRIORITY)
+============================================================
+
+1. SCHEDULING CALENDAR
+
+Add visual job scheduling.
+
+Views:
+
+Day View
+Week View
+Month View
+
+Features:
+
+Drag job to reschedule
+Assign crew
+Navigate to job location
+
+
+------------------------------------------------------------
+
+2. QUOTE PDF GENERATOR
+
+Quotes should generate professional PDFs containing:
+
+Logo
+Business information
+Customer information
+Line items
+Subtotal
+Tax
+Total
+Signature area
+
+
+------------------------------------------------------------
+
+3. INVOICE PDF GENERATOR
+
+Invoice PDF should include:
+
+Invoice number
+Customer information
+Work performed
+Total amount
+Payment instructions
+
+
+------------------------------------------------------------
+
+4. PHOTO ATTACHMENTS
+
+Allow uploading photos to:
+
+Jobs
+Customers
+Leads
+Invoices
+
+Common use cases:
+
+Before / after job photos
+Basement layouts
+Radon system installs
+Equipment documentation
+
+
+------------------------------------------------------------
+
+5. QUICK QUOTE BUILDER
+
+Quote creation should take under 20 seconds.
+
+Example workflow:
+
+New Quote
+Select Customer
+Add Service
+Enter Price
+Send
+
+
+============================================================
+UI STRUCTURE (RECOMMENDED NAVIGATION)
+============================================================
+
+Home
+Leads
+Schedule
+Jobs
+Money
+More
+
+
+------------------------------------------------------------
+
+Home Dashboard
+
+Displays:
+
+New Leads
+Jobs Today
+Unpaid Invoices
+Pending Quotes
+
+Quick Actions:
+
+New Quote
+Add Lead
+Collect Payment
+Schedule Job
+
+
+------------------------------------------------------------
+
+Money Section
+
+Tracks financials.
+
+Sections:
+
+Open Invoices
+Paid Invoices
+Overdue Invoices
+All Transactions
+
+
+============================================================
+FUTURE FEATURES (PHASE 2)
+============================================================
+
+Customer portal
+
+Online payments (Stripe / Square)
+
+Digital contract signing
+
+Route optimization
+
+Recurring jobs
+
+Inventory tracking
+
+Material cost tracking
+
+QuickBooks export
+
+Crew management
+
+
+============================================================
+AI FEATURES (PHASE 3)
+============================================================
+
+Voice command job creation
+
+Example:
+
+"Create quote for John Smith for $1,200 radon system."
+
+
+AI quote builder
+
+AI job note generation
+
+AI scheduling assistant
+
+
+============================================================
+OFFLINE MODE (CRITICAL FEATURE)
+============================================================
+
+The system must function without internet.
+
+Users should be able to:
+
+Create leads
+Create quotes
+Create jobs
+Add notes
+Upload photos
+
+Data syncs automatically when connection returns.
+
+
+============================================================
+TRADEBASE DIFFERENTIATORS
+============================================================
+
+Ultra fast interface
+
+Built specifically for contractors
+
+Offline-first capability
+
+Minimal screens
+
+Large tap targets for jobsite use
+
+Everything reachable in two taps or less
+
+
+============================================================
+END GOAL
+============================================================
+
+TradeBase becomes a contractor platform similar to:
+
+Jobber
+Housecall Pro
+ServiceTitan
+
+But optimized for:
+
+Solo contractors
+Small crews
+Field workers
+Offline environments
+Simple workflows
