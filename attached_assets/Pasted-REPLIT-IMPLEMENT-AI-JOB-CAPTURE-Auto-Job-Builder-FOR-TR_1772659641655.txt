@@ -1,0 +1,157 @@
+REPLIT — IMPLEMENT “AI JOB CAPTURE” (Auto Job Builder) FOR TRADEBASE
+===============================================================
+
+Goal:
+Add an AI feature that lets a contractor type or speak a short description of a job/estimate and TradeBase automatically generates structured records (Customer/Lead, Quote, Job, Invoice drafts) WITHOUT breaking the existing KISS workflow.
+
+IMPORTANT RULES:
+- AI is optional and must NEVER block normal workflows.
+- AI can only create DRAFTS. User must review/edit before saving/sending.
+- Do NOT expose AI keys on the client. Server-only API routes.
+- Do NOT change existing database schema unless strictly necessary.
+- Keep UI minimal: 1 screen + 1 modal + 1 review step.
+
+---------------------------------------------------------------
+FEATURE NAME: AI Job Capture (Auto Job Builder)
+---------------------------------------------------------------
+
+UI ADDITIONS:
+1) Add a button in Jobs + Quotes + Leads (or in a “Quick Actions” menu):
+   - “AI Capture”
+
+2) AI Capture opens a modal with:
+   - Text area: “Describe the job / quote in one sentence”
+   - Optional mic button (Phase 2) for voice
+   - Button: “Generate Draft”
+
+3) After generation, show a Review screen with editable fields:
+   - Customer (existing match or new draft)
+   - Job Title
+   - Address
+   - Suggested Quote line items (checkboxes + editable)
+   - Suggested Job Notes
+   - Suggested Total
+   - Suggested Schedule date/time (optional)
+   - Buttons:
+     [Create Draft Quote]
+     [Create Draft Job]
+     [Create Draft Invoice]
+     [Cancel]
+
+No auto-send. No auto-email. No forced creation.
+
+---------------------------------------------------------------
+BACKEND / API
+---------------------------------------------------------------
+
+Create server routes:
+
+POST /api/ai/capture
+Input JSON:
+{
+  "org_id": "...",
+  "user_id": "...",
+  "mode": "quote" | "job" | "invoice",
+  "text": "freeform user description",
+  "customer_hint": { "name": "", "phone": "", "email": "" } (optional),
+  "address_hint": "" (optional),
+  "service_presets": [ ... ] (optional from org settings)
+}
+
+Output JSON STRICT:
+{
+  "customer": {
+    "match_customer_id": "uuid or null",
+    "name": "",
+    "phone": "",
+    "email": "",
+    "address": ""
+  },
+  "job": {
+    "title": "",
+    "scheduled_date": null,
+    "status": "Scheduled",
+    "notes": ""
+  },
+  "quote": {
+    "status": "Draft",
+    "line_items": [
+      { "description": "", "qty": 1, "unit_price": 0 }
+    ],
+    "tax_rate": 0,
+    "notes": ""
+  },
+  "invoice": {
+    "status": "Draft",
+    "line_items": [
+      { "description": "", "qty": 1, "unit_price": 0 }
+    ],
+    "notes": ""
+  }
+}
+
+AI provider:
+- Use OpenAI (or existing provider already in project).
+- Add env var: OPENAI_API_KEY in Replit Secrets.
+- Use server-side SDK only.
+
+GUARDRAILS:
+- Cap tokens and enforce JSON-only response.
+- Validate/parse output safely (Zod).
+- If AI fails, show friendly error and allow manual entry.
+
+---------------------------------------------------------------
+DATA WRITE (DRAFT CREATION)
+---------------------------------------------------------------
+
+When user clicks [Create Draft Quote] / [Create Draft Job] / [Create Draft Invoice]:
+
+1) Resolve customer:
+   - If match_customer_id exists → link to that customer
+   - Else create new customer (minimal fields) under org_id
+
+2) Create chosen record(s):
+   - Quote: create quote + quote_items with AI suggested line items
+   - Job: create job linked to customer
+   - Invoice: create invoice + invoice_items
+
+3) Attach AI-generated notes to the Job/Quote/Invoice notes table if supported.
+4) Return created IDs and redirect user to the new record detail page.
+
+Do NOT create extra records that user didn’t choose.
+
+---------------------------------------------------------------
+MINIMUM VERSION (PHASE 1)
+---------------------------------------------------------------
+
+Deliver Phase 1 first:
+- Text input only (no voice)
+- AI suggests job title + line items + notes
+- Review screen
+- Create Draft Quote / Job / Invoice
+
+Optional Phase 2:
+- Voice input
+- Better customer matching
+- Schedule suggestion
+
+---------------------------------------------------------------
+WHY THIS FEATURE MATTERS
+---------------------------------------------------------------
+
+This turns multiple screens of typing into:
+“Describe job → AI drafts → approve → done”
+It makes TradeBase feel like a funded startup product, while keeping workflows simple.
+
+---------------------------------------------------------------
+ACCEPTANCE CRITERIA
+---------------------------------------------------------------
+
+- AI key never appears in client bundle.
+- AI endpoint returns strict JSON and is validated.
+- Users can create drafts reliably.
+- All drafts are editable before saving/sending.
+- Normal quote/job/invoice creation still works without AI.
+- Works on mobile.
+
+Implement this now.
