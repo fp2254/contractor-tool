@@ -12775,19 +12775,21 @@ function renderTradeContacts(contacts) {
     const notes = c.notes || "";
 
     return `
-      <div class="tb-card" style="display:flex;align-items:center;gap:14px;cursor:pointer;" onclick="openTradeContactEdit('${c.id}')">
-        <div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0;">
-          ${initials}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:2px;">${escapeHtml(c.name)}</div>
-          <div style="font-size:13px;color:#fff;background:${color};border-radius:99px;display:inline-block;padding:2px 10px;margin-bottom:4px;">${escapeHtml(occupation)}</div>
-          ${phone ? `<div style="font-size:13px;color:var(--muted);"><i class="fa-solid fa-phone" style="margin-right:5px;font-size:11px;"></i>${escapeHtml(phone)}</div>` : ""}
-          ${notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(notes)}</div>` : ""}
+      <div class="tb-card" style="display:flex;align-items:center;gap:14px;">
+        <div onclick="openTradeContactEdit('${c.id}')" style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer;">
+          <div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0;">
+            ${initials}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:2px;">${escapeHtml(c.name)}</div>
+            <div style="font-size:13px;color:#fff;background:${color};border-radius:99px;display:inline-block;padding:2px 10px;margin-bottom:4px;">${escapeHtml(occupation)}</div>
+            ${phone ? `<div style="font-size:13px;color:var(--muted);"><i class="fa-solid fa-phone" style="margin-right:5px;font-size:11px;"></i>${escapeHtml(phone)}</div>` : ""}
+            ${notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(notes)}</div>` : ""}
+          </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
-          ${phone ? `<a href="tel:${escapeHtml(phone)}" onclick="event.stopPropagation()" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;"><i class="fa-solid fa-phone"></i></a>` : ""}
-          <button onclick="event.stopPropagation();sendTradeReferralSMS(${JSON.stringify(c.name)},${JSON.stringify(occupation)},${JSON.stringify(phone)})" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;border:none;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;cursor:pointer;" title="Send referral text to customer"><i class="fa-solid fa-message"></i></button>
+          ${phone ? `<a href="tel:${escapeHtml(phone)}" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;"><i class="fa-solid fa-phone"></i></a>` : ""}
+          <button onclick="sendTradeReferralSMS(${JSON.stringify(c.name)},${JSON.stringify(occupation)},${JSON.stringify(phone)})" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;border:none;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;cursor:pointer;" title="Send referral text to customer"><i class="fa-solid fa-message"></i></button>
         </div>
       </div>
     `;
