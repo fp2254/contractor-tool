@@ -1,0 +1,26 @@
+{
+  "name": "TradeBase",
+  "short_name": "TradeBase",
+  "description": "CRM and quoting for trade contractors",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1B3A6B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["business", "productivity"]
+}
