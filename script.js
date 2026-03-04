@@ -2702,6 +2702,17 @@ function showScreen(screenId) {
     loadClientContacts();
   }
 
+  if (screenId === "property-history") {
+    initPropertyHistory();
+  }
+
+  if (screenId === "dashboard") {
+    renderTodaysJobs();
+    updateNeedsAttention();
+    updateMoneySnapshot();
+    loadDashboardActivity();
+  }
+
   updateBottomNav(screenId);
 }
 
@@ -2734,6 +2745,7 @@ function updateBottomNav(screenId) {
     'trade-contacts': 'more',
     'trade-contact-form': 'more',
     'client-contacts': 'more',
+    'property-history': 'more',
     'subscription': 'more'
   };
   const activeNav = navMap[screenId] || 'dashboard';
@@ -4245,6 +4257,7 @@ async function loadQuotes(showArchived = false) {
   }
 
   if (!showArchived) {
+    window._allQuotes = quotes;
     const elEstimates = document.getElementById("dash-estimates");
     if (elEstimates) elEstimates.textContent = quotes.filter(q => (q.status || 'draft') !== 'accepted').length;
   }
@@ -7358,15 +7371,23 @@ function wireJobsUI() {
       document.getElementById("job-address").value = currentJob.address || "";
       document.getElementById("job-type").value = currentJob.job_type || "";
       document.getElementById("job-notes").value = currentJob.notes || "";
+      const sdEl = document.getElementById("job-scheduled-date");
+      const stEl = document.getElementById("job-start-time");
+      const cpEl = document.getElementById("job-client-phone");
+      if (sdEl) sdEl.value = currentJob.scheduled_date ? currentJob.scheduled_date.substring(0,10) : "";
+      if (stEl) stEl.value = currentJob.start_time || "";
+      if (cpEl) cpEl.value = currentJob.client_phone || currentJob.client_phone_from_client || "";
       showScreen("job-form");
     });
   }
 
+  // Old close button removed from HTML; lifecycle handled by job-lifecycle-bar
+  // Keep a fallback if element still exists
   const btnCloseJob = document.getElementById("btn-close-job");
   if (btnCloseJob) {
     btnCloseJob.addEventListener("click", async () => {
       if (!currentJob) return;
-      await updateJobStatus(currentJob.id, "closed");
+      await advanceJobStatus(currentJob.id, currentJob.status);
     });
   }
 
@@ -7423,6 +7444,7 @@ async function loadJobs() {
     const res = await apiFetch("/api/jobs");
     if (res.ok) {
       allJobs = await res.json();
+      window._allJobs = allJobs;
       renderJobsList(allJobs);
       updateJobStats();
     } else {
@@ -7556,6 +7578,7 @@ async function viewJobDetail(jobId) {
     showToast("Error loading job");
   }
 }
+window.viewJobDetail = viewJobDetail;
 
 function renderJobDetail(job) {
   if (!job) return;
@@ -7565,23 +7588,96 @@ function renderJobDetail(job) {
   document.getElementById("job-detail-address").textContent = job.address || "-";
   document.getElementById("job-detail-type").textContent = job.job_type || "-";
   document.getElementById("job-detail-notes").textContent = job.notes || "No notes";
-  document.getElementById("job-detail-date").textContent = job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
+
+  const phoneEl = document.getElementById("job-detail-phone");
+  if (phoneEl) {
+    const phone = job.client_phone || job.client_phone_from_client || "-";
+    phoneEl.textContent = phone;
+  }
+
+  const scheduledEl = document.getElementById("job-detail-scheduled");
+  if (scheduledEl) {
+    let scheduledText = "-";
+    if (job.scheduled_date) {
+      const d = new Date(job.scheduled_date + "T00:00:00");
+      scheduledText = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      if (job.start_time) scheduledText += " at " + formatTime(job.start_time);
+    }
+    scheduledEl.textContent = scheduledText;
+  }
 
   const statusEl = document.getElementById("job-detail-status");
   if (statusEl) {
-    statusEl.textContent = (job.status || "open").charAt(0).toUpperCase() + (job.status || "open").slice(1);
+    const statusMap = { pending: "Pending", scheduled: "Scheduled", arrived: "Arrived", in_progress: "In Progress", completed: "Completed", closed: "Closed", open: "Open", archived: "Archived" };
+    statusEl.textContent = statusMap[job.status] || (job.status || "Open");
     statusEl.className = "status-badge";
-    if (job.status === "open") statusEl.style.color = "var(--primary)";
-    else if (job.status === "closed") statusEl.style.color = "#4CAF50";
-    else statusEl.style.color = "var(--muted)";
+    const statusColors = { completed: "#10b981", closed: "#10b981", in_progress: "#f59e0b", arrived: "#3b82f6", scheduled: "#8b5cf6", pending: "var(--muted)" };
+    statusEl.style.color = statusColors[job.status] || "var(--primary)";
   }
 
-  const btnClose = document.getElementById("btn-close-job");
-  if (btnClose) {
-    btnClose.style.display = job.status === "closed" ? "none" : "inline-flex";
+  // Timestamps
+  const tsContainer = document.getElementById("job-timestamps");
+  const tsArrived = document.getElementById("job-ts-arrived");
+  const tsStarted = document.getElementById("job-ts-started");
+  const tsCompleted = document.getElementById("job-ts-completed");
+  if (tsContainer) {
+    const hasTs = job.arrived_at || job.started_at || job.completed_at;
+    tsContainer.style.display = hasTs ? "block" : "none";
+    if (tsArrived) tsArrived.textContent = job.arrived_at ? "Arrived: " + new Date(job.arrived_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+    if (tsStarted) tsStarted.textContent = job.started_at ? "Started: " + new Date(job.started_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+    if (tsCompleted) tsCompleted.textContent = job.completed_at ? "Completed: " + new Date(job.completed_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
   }
+
+  // Lifecycle bar
+  renderJobLifecycleBar(job);
+
+  // Complete prompt
+  const completePrompt = document.getElementById("job-complete-prompt");
+  if (completePrompt) completePrompt.style.display = job.status === "completed" ? "block" : "none";
 
   renderJobLinkedItems(job);
+  loadJobMaterials(job.id);
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return "";
+  try {
+    const [h, m] = timeStr.split(":");
+    const d = new Date();
+    d.setHours(parseInt(h), parseInt(m));
+    return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  } catch { return timeStr; }
+}
+
+function renderJobLifecycleBar(job) {
+  const bar = document.getElementById("job-lifecycle-bar");
+  if (!bar) return;
+
+  const status = job.status || "pending";
+  const LIFECYCLE = [
+    { from: ["pending", "scheduled", "open"], status: "arrived", label: "Arrive", icon: "fa-location-dot", color: "#3b82f6" },
+    { from: ["arrived"], status: "in_progress", label: "Start Job", icon: "fa-play", color: "#f59e0b" },
+    { from: ["in_progress"], status: "completed", label: "Complete Job", icon: "fa-flag-checkered", color: "#10b981" },
+  ];
+
+  const nextStep = LIFECYCLE.find(s => s.from.includes(status));
+
+  if (!nextStep || status === "completed" || status === "closed" || status === "archived") {
+    if (status === "completed") {
+      bar.innerHTML = `<div class="job-lifecycle-done"><i class="fa-solid fa-circle-check"></i> Job Completed</div>`;
+    } else if (status === "archived") {
+      bar.innerHTML = `<div class="job-lifecycle-done" style="color:var(--muted);"><i class="fa-solid fa-box-archive"></i> Archived</div>`;
+    } else {
+      bar.innerHTML = "";
+    }
+    return;
+  }
+
+  bar.innerHTML = `
+    <button class="job-lifecycle-btn" style="background:${nextStep.color};" onclick="advanceJobStatus('${job.id}', '${status}')">
+      <i class="fa-solid ${nextStep.icon}"></i> ${nextStep.label}
+    </button>
+  `;
 }
 
 function renderJobLinkedItems(job) {
@@ -7895,7 +7991,10 @@ async function handleJobSubmit(e) {
     client_name: document.getElementById("job-client-name").value.trim(),
     address: document.getElementById("job-address").value.trim(),
     job_type: document.getElementById("job-type").value,
-    notes: document.getElementById("job-notes").value.trim()
+    notes: document.getElementById("job-notes").value.trim(),
+    scheduled_date: document.getElementById("job-scheduled-date")?.value || null,
+    start_time: document.getElementById("job-start-time")?.value || null,
+    client_phone: document.getElementById("job-client-phone")?.value.trim() || null,
   };
 
   if (!payload.client_name) {
@@ -7964,6 +8063,45 @@ async function updateJobStatus(jobId, newStatus) {
     console.error("Error updating job:", err);
     showToast("Error updating job");
   }
+}
+
+async function advanceJobStatus(jobId, currentStatus) {
+  const NEXT = {
+    "pending": "arrived", "open": "arrived", "scheduled": "arrived",
+    "arrived": "in_progress",
+    "in_progress": "completed",
+  };
+  const newStatus = NEXT[currentStatus];
+  if (!newStatus) return;
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      currentJob = { ...currentJob, ...updated };
+      // Update in allJobs array
+      const idx = allJobs.findIndex(j => j.id === jobId);
+      if (idx !== -1) allJobs[idx] = { ...allJobs[idx], ...updated };
+      renderJobDetail(currentJob);
+      const labels = { arrived: "Arrived at job site", in_progress: "Job started", completed: "Job completed!" };
+      showToast(labels[newStatus] || "Status updated", "success");
+    } else {
+      showToast("Failed to update status", "error");
+    }
+  } catch (err) {
+    console.error("advanceJobStatus:", err);
+    showToast("Error updating status", "error");
+  }
+}
+window.advanceJobStatus = advanceJobStatus;
+
+async function toggleTodayJobStatus(jobId, currentStatus) {
+  await advanceJobStatus(jobId, currentStatus);
+  renderTodaysJobs();
 }
 
 async function handleJobDelete() {
@@ -8414,236 +8552,13 @@ function wireAdminPanel() {
   });
 }
 
-async function loadAdminUsers() {
-  if (!currentUser) return;
 
-  try {
-    const res = await apiFetch("/api/admin/users");
-    if (res.ok) {
-      const users = await res.json();
-      adminUsersList = users;
-      const list = document.getElementById("admin-users-list");
-      if (list) {
-        list.innerHTML = users.map(u => `
-          <div class="list-item" onclick="selectAdminUser('${u.id}', '${u.email}')" style="cursor: pointer;">
-            <div>${u.email}</div>
-            <div style="font-size: 12px; color: var(--muted);">Joined ${new Date(u.created_at).toLocaleDateString()}</div>
-          </div>
-        `).join("");
-      }
-    }
-  } catch (err) {
-    console.error("Error loading admin users:", err);
-  }
-}
-
-function toggleUserSearch(show) {
-  const container = document.getElementById("admin-user-search-container");
-  const sendBtn = document.getElementById("admin-send-btn");
-  
-  if (container) {
-    container.style.display = show ? "block" : "none";
-  }
-  
-  if (!show) {
-    clearSelectedUser();
-    if (sendBtn) sendBtn.textContent = "Send to All Users";
-  }
-}
-
-function filterAdminUserList() {
-  const searchInput = document.getElementById("admin-user-search");
-  const resultsDiv = document.getElementById("admin-user-search-results");
-  
-  if (!searchInput || !resultsDiv) return;
-  
-  const query = searchInput.value.toLowerCase().trim();
-  
-  if (!query) {
-    resultsDiv.style.display = "none";
-    return;
-  }
-  
-  const filtered = adminUsersList.filter(u => 
-    u.email.toLowerCase().includes(query)
-  ).slice(0, 10);
-  
-  if (filtered.length === 0) {
-    resultsDiv.innerHTML = '<div style="padding: 12px; color: var(--muted);">No users found</div>';
-  } else {
-    resultsDiv.innerHTML = filtered.map(u => `
-      <div class="list-item" style="cursor: pointer; padding: 10px 12px;" onclick="selectAdminUser('${u.id}', '${u.email}')">
-        <div>${u.email}</div>
-      </div>
-    `).join("");
-  }
-  
-  resultsDiv.style.display = "block";
-}
-
-function selectAdminUser(userId, email) {
-  selectedAdminUser = { id: userId, email: email };
-  
-  const searchInput = document.getElementById("admin-user-search");
-  const resultsDiv = document.getElementById("admin-user-search-results");
-  const selectedDiv = document.getElementById("admin-selected-user");
-  const selectedEmail = document.getElementById("admin-selected-user-email");
-  const sendBtn = document.getElementById("admin-send-btn");
-  
-  if (searchInput) searchInput.value = "";
-  if (resultsDiv) resultsDiv.style.display = "none";
-  if (selectedDiv) selectedDiv.style.display = "block";
-  if (selectedEmail) selectedEmail.textContent = email;
-  if (sendBtn) sendBtn.textContent = `Send to ${email}`;
-  
-  // Scroll the selected user panel into view
-  if (selectedDiv) selectedDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  showToast(`Selected: ${email}`);
-}
-
-function clearSelectedUser() {
-  selectedAdminUser = null;
-  
-  const searchInput = document.getElementById("admin-user-search");
-  const selectedDiv = document.getElementById("admin-selected-user");
-  const sendBtn = document.getElementById("admin-send-btn");
-  const recipientRadio = document.querySelector('input[name="admin-recipient"][value="all"]');
-  
-  if (searchInput) searchInput.value = "";
-  if (selectedDiv) selectedDiv.style.display = "none";
-  
-  const isSpecificSelected = document.querySelector('input[name="admin-recipient"][value="specific"]')?.checked;
-  if (sendBtn) {
-    sendBtn.textContent = isSpecificSelected ? "Select a user first" : "Send to All Users";
-  }
-}
-
-async function enableAIForUser() {
-  if (!selectedAdminUser) {
-    showToast("Please select a user first");
-    return;
-  }
-  
-  try {
-    const res = await apiFetch("/api/admin/enable-ai", {
-      method: "POST",
-      body: JSON.stringify({ 
-        target_user_id: selectedAdminUser.id, 
-        enabled: true 
-      })
-    });
-    
-    if (res.ok) {
-      showToast(`AI enabled for ${selectedAdminUser.email}!`);
-    } else {
-      showToast("Failed to enable AI - check admin access");
-    }
-  } catch (err) {
-    console.error("Error enabling AI:", err);
-    showToast("Failed to enable AI");
-  }
-}
-
-async function grantLifetimeToUser() {
-  if (!selectedAdminUser) {
-    showToast("Please select a user first");
-    return;
-  }
-  
-  try {
-    const res = await apiFetch("/api/admin/grant-lifetime", {
-      method: "POST",
-      body: JSON.stringify({ email: selectedAdminUser.email })
-    });
-    
-    if (res.ok) {
-      showToast(`Lifetime membership granted to ${selectedAdminUser.email}!`);
-    } else {
-      const data = await res.json();
-      showToast(data.error || "Failed to grant lifetime");
-    }
-  } catch (err) {
-    console.error("Error granting lifetime:", err);
-    showToast("Failed to grant lifetime membership");
-  }
-}
 
 function initAdminReferralLink() {
   const linkInput = document.getElementById("admin-referral-link");
   if (linkInput) {
     const referralLink = `${window.location.origin}/?ref=SKIPPY_ADMIN`;
     linkInput.value = referralLink;
-  }
-}
-
-function copyAdminReferralLink() {
-  const linkInput = document.getElementById("admin-referral-link");
-  const copiedMsg = document.getElementById("admin-referral-copied");
-  
-  if (!linkInput) return;
-  
-  navigator.clipboard.writeText(linkInput.value).then(() => {
-    if (copiedMsg) {
-      copiedMsg.style.display = "block";
-      setTimeout(() => { copiedMsg.style.display = "none"; }, 2000);
-    }
-    showToast("Referral link copied!");
-  }).catch(() => {
-    linkInput.select();
-    document.execCommand("copy");
-    showToast("Referral link copied!");
-  });
-}
-
-async function sendAdminMessage() {
-  const titleEl = document.getElementById("admin-message-title");
-  const contentEl = document.getElementById("admin-message-content");
-  const typeEl = document.getElementById("admin-message-type");
-  const isSpecific = document.querySelector('input[name="admin-recipient"][value="specific"]')?.checked;
-
-  if (!titleEl || !contentEl) return;
-
-  const title = titleEl.value;
-  const content = contentEl.value;
-  const message_type = typeEl?.value || "info";
-
-  if (!title || !content) {
-    showToast("Please fill in title and message");
-    return;
-  }
-
-  if (isSpecific && !selectedAdminUser) {
-    showToast("Please select a user first");
-    return;
-  }
-
-  try {
-    const payload = { 
-      title, 
-      content, 
-      message_type, 
-      target_users: isSpecific && selectedAdminUser ? [selectedAdminUser.id] : null 
-    };
-
-    const res = await apiFetch("/api/admin/send-message", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-      const recipient = isSpecific ? selectedAdminUser.email : "all users";
-      showToast(`Message sent to ${recipient}!`);
-      titleEl.value = "";
-      contentEl.value = "";
-      clearSelectedUser();
-      document.querySelector('input[name="admin-recipient"][value="all"]').checked = true;
-      toggleUserSearch(false);
-    } else {
-      showToast("Failed to send message - check admin access");
-    }
-  } catch (err) {
-    console.error("Error sending admin message:", err);
-    showToast("Failed to send message");
   }
 }
 
@@ -13007,4 +12922,413 @@ function filterClientContacts(query) {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTradeContacts();
+  initJobMaterialsUI();
+  initJobCompletePrompt();
 });
+
+// ─── DASHBOARD: TODAY'S JOBS ──────────────────────────────────────────────────
+
+function renderTodaysJobs() {
+  const container = document.getElementById("dash-today-jobs");
+  if (!container) return;
+
+  const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD local
+  const todayJobs = allJobs.filter(j => {
+    if (!j.scheduled_date) return false;
+    const sd = typeof j.scheduled_date === "string" ? j.scheduled_date.substring(0, 10) : "";
+    return sd === todayStr;
+  }).sort((a, b) => (a.start_time || "99:99").localeCompare(b.start_time || "99:99"));
+
+  if (todayJobs.length === 0) {
+    container.innerHTML = `
+      <div class="dash-today-empty">
+        <i class="fa-solid fa-calendar-xmark" style="color:var(--muted);font-size:24px;margin-bottom:8px;"></i>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 12px;">No jobs scheduled today.</p>
+        <button class="btn-primary" style="font-size:13px;padding:8px 16px;" onclick="showScreen('calendar')">Schedule Job</button>
+      </div>`;
+    return;
+  }
+
+  const statusMap = {
+    pending: { label: "Pending", color: "#6b7280" },
+    scheduled: { label: "Scheduled", color: "#8b5cf6" },
+    arrived: { label: "Arrived", color: "#3b82f6" },
+    in_progress: { label: "In Progress", color: "#f59e0b" },
+    completed: { label: "Completed", color: "#10b981" },
+    open: { label: "Scheduled", color: "#8b5cf6" },
+  };
+
+  const NEXT_LABEL = { pending: "Arrive", open: "Arrive", scheduled: "Arrive", arrived: "Start", in_progress: "Complete" };
+
+  container.innerHTML = todayJobs.map(job => {
+    const sm = statusMap[job.status] || { label: job.status, color: "#6b7280" };
+    const timeLabel = job.start_time ? formatTime(job.start_time) : "All day";
+    const phone = job.client_phone || job.client_phone_from_client || "";
+    const address = job.address || "";
+    const nextLabel = NEXT_LABEL[job.status];
+    const mapsUrl = address ? `https://maps.google.com/?q=${encodeURIComponent(address)}` : "";
+
+    return `
+      <div class="dash-today-job-card" onclick="viewJobDetail('${job.id}')">
+        <div class="dash-today-time">${escapeHtml(timeLabel)}</div>
+        <div class="dash-today-info">
+          <div class="dash-today-name">${escapeHtml(job.client_name || job.folder_name || "Job")}</div>
+          <div class="dash-today-meta">${escapeHtml(job.job_type || "")}${address ? " · " + escapeHtml(address.split(",")[0]) : ""}</div>
+          <span class="dash-today-status" style="background:${sm.color};">${sm.label}</span>
+        </div>
+        <div class="dash-today-actions" onclick="event.stopPropagation()">
+          ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" class="dash-today-btn" title="Directions"><i class="fa-solid fa-location-dot"></i></a>` : ""}
+          ${phone ? `<a href="tel:${escapeHtml(phone)}" class="dash-today-btn" title="Call"><i class="fa-solid fa-phone"></i></a>` : ""}
+          ${nextLabel ? `<button class="dash-today-btn advance" title="${nextLabel}" onclick="toggleTodayJobStatus('${job.id}','${job.status}')"><i class="fa-solid fa-forward-step"></i></button>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+}
+window.toggleTodayJobStatus = toggleTodayJobStatus;
+
+// ─── DASHBOARD: NEEDS ATTENTION ──────────────────────────────────────────────
+
+function updateNeedsAttention() {
+  const list = document.getElementById("attention-list");
+  if (!list) return;
+
+  const items = [];
+
+  // 1. Unpaid invoices
+  const invoices = window._allInvoices || [];
+  const unpaid = invoices.filter(inv => (inv.payment_status || "unpaid") !== "paid");
+  if (unpaid.length > 0) {
+    items.push({
+      icon: "fa-file-invoice-dollar",
+      color: "#ef4444",
+      text: `${unpaid.length} unpaid invoice${unpaid.length !== 1 ? "s" : ""}`,
+      action: () => showScreen("invoices")
+    });
+  }
+
+  // 2. Quotes needing follow-up (sent >3 days ago)
+  const allQ = window._allQuotes || [];
+  const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000);
+  const staleQuotes = allQ.filter(q => q.status === "sent" && new Date(q.created_at || 0).getTime() < cutoff);
+  if (staleQuotes.length > 0) {
+    items.push({
+      icon: "fa-clock-rotate-left",
+      color: "#f59e0b",
+      text: `${staleQuotes.length} quote${staleQuotes.length !== 1 ? "s" : ""} need follow-up`,
+      action: () => showScreen("quotes")
+    });
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="tb-attention-empty"><i class="fa-solid fa-circle-check" style="color:#10b981;margin-right:6px;"></i>All caught up.</div>`;
+    return;
+  }
+
+  const capped = items.slice(0, 3);
+  list.innerHTML = capped.map((item, i) => `
+    <button class="tb-attention-item" id="attn-btn-${i}">
+      <div class="attention-icon" style="background:${item.color}20;">
+        <i class="fa-solid ${item.icon}" style="color:${item.color};font-size:13px;"></i>
+      </div>
+      <div class="attention-text"><strong>${item.text}</strong></div>
+      <i class="fa-solid fa-chevron-right attention-chevron"></i>
+    </button>
+  `).join("");
+  capped.forEach((item, i) => {
+    const btn = list.querySelector(`#attn-btn-${i}`);
+    if (btn) btn.addEventListener("click", item.action);
+  });
+}
+
+// ─── DASHBOARD: MONEY SNAPSHOT ───────────────────────────────────────────────
+
+function updateMoneySnapshot() {
+  const weekEl = document.getElementById("snap-week");
+  const monthEl = document.getElementById("snap-month");
+  const outstandingEl = document.getElementById("snap-outstanding");
+  if (!weekEl) return;
+
+  const invoices = window._allInvoices || [];
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  let weekTotal = 0, monthTotal = 0, outstanding = 0;
+
+  for (const inv of invoices) {
+    const total = parseFloat(inv.total || inv.total_amount || 0);
+    const isPaid = (inv.payment_status || "").toLowerCase() === "paid";
+    const updatedAt = new Date(inv.updated_at || inv.created_at || 0);
+
+    if (isPaid) {
+      if (updatedAt >= weekAgo) weekTotal += total;
+      if (updatedAt >= monthStart) monthTotal += total;
+    } else {
+      outstanding += total;
+    }
+  }
+
+  const fmt = (v) => v >= 1000 ? "$" + (v / 1000).toFixed(1) + "k" : "$" + v.toFixed(0);
+  weekEl.textContent = fmt(weekTotal);
+  monthEl.textContent = fmt(monthTotal);
+  outstandingEl.textContent = fmt(outstanding);
+
+  // Also update the dashboard-outstanding stat card
+  const dashOut = document.getElementById("dashboard-outstanding");
+  if (dashOut) dashOut.textContent = fmt(outstanding);
+}
+
+// ─── DASHBOARD: RECENT ACTIVITY ──────────────────────────────────────────────
+
+async function loadDashboardActivity() {
+  const container = document.getElementById("dash-recent-activity");
+  if (!container) return;
+
+  try {
+    const res = await apiFetch("/api/activity-log?limit=5");
+    if (!res.ok) throw new Error("Failed");
+    const logs = await res.json();
+
+    if (!logs || logs.length === 0) {
+      container.innerHTML = `<div class="dash-activity-empty">No recent activity yet.</div>`;
+      return;
+    }
+
+    // Each log row is a flat activity entry
+    const top5 = logs.slice(0, 5);
+    container.innerHTML = top5.map(a => {
+      const icon = getActionIcon(a.action_type || "");
+      const time = formatTimeAgo(a.created_at || new Date().toISOString());
+      return `
+        <div class="dash-activity-item">
+          <span class="dash-activity-icon">${icon}</span>
+          <span class="dash-activity-text">${escapeHtml(a.summary || a.action_type || "Activity")}</span>
+          <span class="dash-activity-time">${time}</span>
+        </div>`;
+    }).join("");
+
+  } catch (err) {
+    container.innerHTML = `<div class="dash-activity-empty">No recent activity yet.</div>`;
+  }
+}
+
+// ─── JOB MATERIALS ───────────────────────────────────────────────────────────
+
+let currentJobMaterials = [];
+
+async function loadJobMaterials(jobId) {
+  if (!jobId) return;
+  const list = document.getElementById("job-materials-list");
+  const empty = document.getElementById("job-materials-empty");
+  const totalEl = document.getElementById("job-materials-total");
+  if (!list) return;
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/materials`);
+    if (!res.ok) throw new Error("Failed");
+    currentJobMaterials = await res.json();
+  } catch (_) {
+    currentJobMaterials = [];
+  }
+
+  renderJobMaterials(currentJobMaterials, jobId);
+}
+
+function renderJobMaterials(materials, jobId) {
+  const list = document.getElementById("job-materials-list");
+  const empty = document.getElementById("job-materials-empty");
+  const totalEl = document.getElementById("job-materials-total");
+  if (!list) return;
+
+  if (!materials || materials.length === 0) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    if (totalEl) totalEl.style.display = "none";
+    return;
+  }
+
+  if (empty) empty.style.display = "none";
+  let total = 0;
+
+  list.innerHTML = materials.map(m => {
+    const qty = parseFloat(m.quantity || 1);
+    const cost = parseFloat(m.unit_cost || 0);
+    const subtotal = qty * cost;
+    total += subtotal;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${escapeHtml(m.name)}</div>
+          <div style="font-size:12px;color:var(--muted);">${qty}${m.unit ? " " + m.unit : ""} × $${cost.toFixed(2)}</div>
+        </div>
+        <div style="font-weight:700;color:var(--text);">$${subtotal.toFixed(2)}</div>
+        <button onclick="deleteJobMaterial('${m.id}','${jobId}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:4px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>`;
+  }).join("");
+
+  if (totalEl) {
+    totalEl.textContent = `Materials Total: $${total.toFixed(2)}`;
+    totalEl.style.display = "block";
+  }
+}
+
+async function saveJobMaterial(jobId) {
+  const name = document.getElementById("mat-name")?.value.trim();
+  const qty = document.getElementById("mat-qty")?.value || "1";
+  const unit = document.getElementById("mat-unit")?.value.trim();
+  const cost = document.getElementById("mat-cost")?.value || "0";
+
+  if (!name) { showToast("Material name is required", "error"); return; }
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/materials`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, quantity: parseFloat(qty), unit, unit_cost: parseFloat(cost) })
+    });
+    if (!res.ok) throw new Error("Failed");
+    document.getElementById("job-add-material-form").style.display = "none";
+    document.getElementById("mat-name").value = "";
+    document.getElementById("mat-qty").value = "";
+    document.getElementById("mat-unit").value = "";
+    document.getElementById("mat-cost").value = "";
+    await loadJobMaterials(jobId);
+    showToast("Material added", "success");
+  } catch (err) {
+    showToast("Failed to add material", "error");
+  }
+}
+
+async function deleteJobMaterial(materialId, jobId) {
+  if (!confirm("Remove this material?")) return;
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/materials/${materialId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed");
+    await loadJobMaterials(jobId);
+    showToast("Material removed", "success");
+  } catch {
+    showToast("Failed to remove material", "error");
+  }
+}
+window.deleteJobMaterial = deleteJobMaterial;
+
+function initJobMaterialsUI() {
+  const btnAddMat = document.getElementById("btn-add-material");
+  if (btnAddMat) {
+    btnAddMat.addEventListener("click", () => {
+      const form = document.getElementById("job-add-material-form");
+      if (form) form.style.display = form.style.display === "none" ? "block" : "none";
+    });
+  }
+
+  const btnSaveMat = document.getElementById("btn-save-material");
+  if (btnSaveMat) {
+    btnSaveMat.addEventListener("click", () => {
+      if (currentJob) saveJobMaterial(currentJob.id);
+    });
+  }
+
+  const btnCancelMat = document.getElementById("btn-cancel-material");
+  if (btnCancelMat) {
+    btnCancelMat.addEventListener("click", () => {
+      const form = document.getElementById("job-add-material-form");
+      if (form) form.style.display = "none";
+    });
+  }
+}
+
+function initJobCompletePrompt() {
+  const btnGenInv = document.getElementById("btn-generate-invoice-from-job");
+  if (btnGenInv) {
+    btnGenInv.addEventListener("click", () => {
+      if (!currentJob) return;
+      // Pre-fill new invoice with job data
+      document.getElementById("job-complete-prompt").style.display = "none";
+      showScreen("new-invoice");
+      // Pre-fill client name if field exists
+      setTimeout(() => {
+        const clientInput = document.getElementById("invoice-client-name") || document.getElementById("client-name-input");
+        if (clientInput) clientInput.value = currentJob.client_name || "";
+        const notesInput = document.getElementById("invoice-notes");
+        if (notesInput) notesInput.value = currentJob.notes ? `Job: ${currentJob.job_type || ""}\n${currentJob.notes}` : (currentJob.job_type || "");
+      }, 200);
+    });
+  }
+
+  const btnSkipPrompt = document.getElementById("btn-skip-invoice-prompt");
+  if (btnSkipPrompt) {
+    btnSkipPrompt.addEventListener("click", () => {
+      const el = document.getElementById("job-complete-prompt");
+      if (el) el.style.display = "none";
+    });
+  }
+}
+
+// ─── PROPERTY HISTORY ────────────────────────────────────────────────────────
+
+function initPropertyHistory() {
+  const input = document.getElementById("property-history-search");
+  const results = document.getElementById("property-history-results");
+  const empty = document.getElementById("property-history-empty");
+  if (results) results.innerHTML = "";
+  if (empty) empty.style.display = "block";
+  if (input) input.value = "";
+}
+
+async function searchPropertyHistory(query) {
+  const results = document.getElementById("property-history-results");
+  const empty = document.getElementById("property-history-empty");
+  if (!results) return;
+
+  if (!query || query.trim().length < 2) {
+    results.innerHTML = "";
+    if (empty) { empty.style.display = "block"; empty.querySelector("p.empty-state-title").textContent = "Search for a property"; }
+    return;
+  }
+
+  // Ensure we have jobs loaded
+  let jobs = allJobs;
+  if (!jobs || jobs.length === 0) {
+    try {
+      const res = await apiFetch("/api/jobs");
+      if (res.ok) { allJobs = await res.json(); jobs = allJobs; }
+    } catch (_) {}
+  }
+
+  const q = query.toLowerCase().trim();
+  const matched = jobs.filter(j => (j.address || "").toLowerCase().includes(q));
+
+  if (matched.length === 0) {
+    results.innerHTML = "";
+    if (empty) { empty.style.display = "block"; empty.querySelector(".empty-state-title").textContent = "No job history found"; }
+    return;
+  }
+
+  if (empty) empty.style.display = "none";
+
+  const statusMap = { pending: { label: "Pending", color: "#6b7280" }, scheduled: { label: "Scheduled", color: "#8b5cf6" }, arrived: { label: "Arrived", color: "#3b82f6" }, in_progress: { label: "In Progress", color: "#f59e0b" }, completed: { label: "Completed", color: "#10b981" }, closed: { label: "Completed", color: "#10b981" }, open: { label: "Open", color: "#2B5EA7" } };
+
+  const sorted = [...matched].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  results.innerHTML = `
+    <div style="font-size:13px;color:var(--muted);padding:4px 0 12px;">${sorted.length} job${sorted.length !== 1 ? "s" : ""} found at this address</div>
+    ${sorted.map(job => {
+      const sm = statusMap[job.status] || { label: job.status, color: "#6b7280" };
+      const date = job.scheduled_date ? new Date(job.scheduled_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : new Date(job.created_at || 0).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      return `
+        <div class="tb-card" style="cursor:pointer;display:flex;align-items:center;gap:14px;" onclick="viewJobDetail('${job.id}')">
+          <div style="width:42px;height:42px;border-radius:50%;background:${sm.color}20;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fa-solid fa-briefcase" style="color:${sm.color};"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:15px;">${escapeHtml(job.client_name || job.folder_name || "Job")}</div>
+            <div style="font-size:13px;color:var(--muted);">${escapeHtml(job.job_type || "General")} · ${date}</div>
+            <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(job.address || "")}</div>
+          </div>
+          <span style="font-size:12px;color:${sm.color};font-weight:600;white-space:nowrap;">${sm.label}</span>
+        </div>`;
+    }).join("")}`;
+}
+window.searchPropertyHistory = searchPropertyHistory;

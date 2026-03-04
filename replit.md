@@ -65,9 +65,24 @@ TradeBase is a full-stack web application utilizing Node.js with Express.js for 
 - **Supabase Usage Policy**: `sb` (frontend) for authentication only. `supabaseAdmin` (backend) for storage only. `pgPool` (backend) for ALL database operations.
 - **Supabase Schema**: Production schema is discovered at startup. Server code aliases production column names to frontend names. Development uses `DATABASE_URL` with different column names. All writes are through `pgPool`.
 
+**Phase 1 — Daily Command Center + Contractor Memory (completed):**
+- **Dashboard Today's Jobs**: `#dash-today-jobs` section shows jobs scheduled for today, sorted by start_time. Each card: time, client, address, status pill, + Directions / Call / Advance-status buttons.
+- **Needs Attention**: Live section checks unpaid invoices (`window._allInvoices`) and stale quotes (`window._allQuotes`, sent >3 days). Tappable rows, max 3 items.
+- **Money Snapshot**: Three tiles — This Week, This Month, Outstanding — computed from `window._allInvoices`. Tap to invoices screen.
+- **Recent Activity**: Fetches `/api/activity-log?limit=5` and shows last 5 entries with icon + time-ago.
+- **Job Lifecycle Bar**: Dynamic button in job detail that advances status: pending/scheduled/open → arrived → in_progress → completed. Server auto-stamps `arrived_at`, `started_at`, `completed_at` on PATCH.
+- **Generate Invoice Prompt**: Shown after marking a job complete. Navigates to new-invoice screen pre-filled with job data.
+- **Materials Used**: Per-job materials tracking via `/api/jobs/:jobId/materials`. CRUD inline form in job detail. Shows materials total.
+- **Property History**: Screen accessible from More menu. Search bar filters `allJobs` by address. Results show timeline of past jobs at that address with status and tap-to-detail.
+- **Job form fields added**: `scheduled_date`, `start_time`, `client_phone` — saved and displayed in job detail.
+
+**New DB columns (jobs table):** `scheduled_date DATE`, `start_time TEXT`, `client_phone TEXT`, `arrived_at TIMESTAMPTZ`, `started_at TIMESTAMPTZ`, `completed_at TIMESTAMPTZ` — all added via `ALTER TABLE IF NOT EXISTS`.
+
+**New table:** `job_materials (id UUID, job_id UUID, user_id UUID, name TEXT, quantity DECIMAL, unit TEXT, unit_cost DECIMAL, created_at TIMESTAMPTZ)`.
+
 **Modular Server Structure (v141):**
 ```
-server.js           - Main bootstrap (813 lines) with invoice/quote routes
+server.js           - Main bootstrap with invoice/quote routes
 src/
   utils/
     config.js       - Build version, AI models config
@@ -86,9 +101,11 @@ src/
     payment.js      - Payment links CRUD, URL generation
     inventory.js    - Inventory management
     calendar.js     - Calendar events
-    jobs.js         - Job folders
+    jobs.js         - Job folders with lifecycle timestamps
+    job_materials.js - Materials per job (GET/POST/DELETE)
     messages.js     - System messages
     admin.js        - Admin endpoints
+    trade_contacts.js - Trade contacts CRUD
 ```
 
 ## External Dependencies
