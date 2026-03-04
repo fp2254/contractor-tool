@@ -813,16 +813,16 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
 
     const result = await sendEmail({
       to: email,
-      subject: "Welcome to Skippy Stack!",
+      subject: "Welcome to TradeBase!",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">Skippy Stack</h1>
+            <h1 style="color: #2563eb; margin: 0;">TradeBase</h1>
             <p style="color: #666; margin: 5px 0;">Invoice & Business Management for Tradespeople</p>
           </div>
           <div style="background: #f9fafb; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
             <h2 style="margin: 0 0 15px 0; color: #111;">Welcome aboard!</h2>
-            <p style="color: #333; line-height: 1.6;">Your account is ready to go. You can log in right now and start using Skippy Stack.</p>
+            <p style="color: #333; line-height: 1.6;">Your account is ready to go. You can log in right now and start using TradeBase.</p>
             <div style="text-align: center; margin: 24px 0;">
               <a href="${appUrl}" style="background: #2563eb; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600; display: inline-block;">Log In Now</a>
             </div>
@@ -835,7 +835,7 @@ app.post("/api/send-signup-confirmation", async (req, res) => {
             </ul>
           </div>
           <div style="text-align: center; padding: 20px;">
-            <p style="color: #999; font-size: 12px;">Skippy Stack - Built for tradespeople</p>
+            <p style="color: #999; font-size: 12px;">TradeBase - Built for tradespeople</p>
           </div>
         </div>
       `

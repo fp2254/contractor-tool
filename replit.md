@@ -1,7 +1,7 @@
-# Skippy Stack - Invoice & Billing App
+# TradeBase - Invoice & Billing App
 
 ## Overview
-Skippy Stack is a full-stack web application for tradespeople, offering client management, invoice/estimate creation, job photo tracking, cost calculation, and a referral program. It aims to streamline business operations through multi-language support, customizable invoice templates, and robust financial tracking. The project's ambition is to provide a comprehensive solution for managing business operations.
+TradeBase (formerly Skippy Stack) is a full-stack web application for tradespeople, offering client management, invoice/estimate creation, job photo tracking, cost calculation, and a referral program. It aims to streamline business operations through multi-language support, customizable invoice templates, and robust financial tracking. The project's ambition is to provide a comprehensive solution for managing business operations.
 
 ## User Preferences
 - "Keep it stupid simple" philosophy for non-technical users
@@ -10,25 +10,31 @@ Skippy Stack is a full-stack web application for tradespeople, offering client m
 - Referral system: Coming Soon (disabled for Phase 1)
 
 ## System Architecture
-Skippy Stack is a full-stack web application utilizing Node.js with Express.js for the backend and Vanilla JavaScript for a Single-Page Application (SPA) frontend. Supabase provides authentication and file storage, while PostgreSQL (accessed via `pgPool`) handles all database operations. Stripe is integrated for payment processing.
+TradeBase is a full-stack web application utilizing Node.js with Express.js for the backend and Vanilla JavaScript for a Single-Page Application (SPA) frontend. Supabase provides authentication and file storage, while PostgreSQL (accessed via `pgPool`) handles all database operations. Stripe is integrated for payment processing.
 
-**UI/UX Decisions:**
-- Light/dark mode toggle with preference persistence.
-- Responsive design targeting mobile breakpoints.
-- Customizable invoice and quote previews.
-- Color-coded payment status badges (Paid, Unpaid, Pending).
-- Prominent language picker.
-- Demo mode showcasing invoice templates and AI features.
-- Notification center with system messages.
-- Dashboard with AI Assistant, Calendar, and "Coming Soon" Trade Deals.
-- Multi-select for bulk actions (Delete, Archive).
+**UI/UX Design (TradeBase Redesign):**
+- Dark navy header (#1B3A5C) with white TradeBase logo and notification bell
+- Bottom 5-tab navigation: Home, Leads, Jobs, Money, More
+- White/light gray (#F5F5F5) content backgrounds for app screens
+- Dark theme (:root) for auth/landing pages, light theme scoped to #app-container
+- Dashboard with stat cards (New Leads, Jobs Today, Unpaid, Estimates), Needs Attention section, Quick Actions (2x2 grid)
+- Leads screen with filter tabs (All/New/Contacted/Scheduled/Won/Lost) and card-based client display
+- Jobs screen with filter tabs (All/Today/Scheduled/In Progress/Completed) and card-based job display
+- Money screen with filter tabs (Overdue/Open/Paid/All) and card-based invoice display
+- More menu with list navigation to: Trade Contacts, Inventory, Referral Program, Reports, Business Profile, Settings, Support, Log Out
+- Reports, Support, and Business Profile sub-pages with back navigation to More
+- Responsive design targeting mobile breakpoints
+- Color-coded payment status badges (Paid, Unpaid, Pending)
+- Demo mode showcasing invoice templates and AI features
+- Notification center with system messages
+- Multi-select for bulk actions (Delete, Archive)
 
 **Technical Implementations & System Design:**
 - **Authentication**: Supabase Authentication with email/password and server-side JWT validation.
 - **Subscription Flow**: 14-day free trial, managed by Stripe webhooks, including a separate AI Add-On subscription.
 - **Payment Collection**: Stripe Payment Links for invoice payments, automatic status updates, and manual payment controls.
 - **Multi-Language System**: UI translation in 5 languages using `data-i18n` attributes.
-- **Invoice Template System**: 4 distinct, dynamic invoice templates with "Powered by Skippy Stack" footer.
+- **Invoice Template System**: 4 distinct, dynamic invoice templates with "Powered by TradeBase" footer.
 - **Offline PWA**: Progressive Web App with offline-first architecture using Service Worker and IndexedDB for invoice management. Invoices save locally first, then sync to the cloud.
 - **Job Folders**: Automatic organization of job-related assets (invoices, quotes, photos, voice notes).
 - **Notification Center**: In-app system for announcements.

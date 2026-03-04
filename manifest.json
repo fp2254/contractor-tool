@@ -1,6 +1,6 @@
 {
-  "name": "Skippy Stack - Invoice & Billing",
-  "short_name": "Skippy Stack",
+  "name": "TradeBase - Invoice & Billing",
+  "short_name": "TradeBase",
   "description": "Professional invoicing and billing app for tradespeople. Create invoices, quotes, manage clients and inventory - works offline!",
   "start_url": "/app",
   "display": "standalone",

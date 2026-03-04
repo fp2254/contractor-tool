@@ -1,7 +1,7 @@
 // BUILD VERSION - Used for cache busting
 const BUILD_VERSION = 140;
 window.__BUILD_VERSION__ = BUILD_VERSION;
-console.log('[Skippy Stack] Build version:', BUILD_VERSION);
+console.log('[TradeBase] Build version:', BUILD_VERSION);
 
 // Global error handler to prevent uncaught errors from breaking the app
 window.onerror = function(message, source, lineno, colno, error) {
@@ -118,7 +118,7 @@ document.addEventListener('click', (() => {
 if (typeof window.API_BASE_URL === 'undefined') {
   window.API_BASE_URL = "";
 }
-console.log('[Skippy Stack] API_BASE_URL:', JSON.stringify(window.API_BASE_URL));
+console.log('[TradeBase] API_BASE_URL:', JSON.stringify(window.API_BASE_URL));
 
 // Automatic version check and cache bust - DISABLED to prevent logout loop
 // The version check was causing page reloads during quote saves
@@ -2017,7 +2017,7 @@ async function handleSignup(e) {
 
     if (accessToken) {
       currentUser = data.user;
-      showToast("Account created! Welcome to Skippy Stack.");
+      showToast("Account created! Welcome to TradeBase.");
       showScreen("dashboard");
       loadDashboard();
       return;
@@ -2187,16 +2187,174 @@ function wireDashboardUI() {
 
   document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
   
-  // Language selector in app header
   const appLangSelect = document.getElementById("app-language-select");
   if (appLangSelect) {
-    // Don't set value here - it will be set in onLoggedIn/tour mode functions
     appLangSelect.addEventListener("change", (e) => {
       setLanguage(e.target.value);
-      // Save preference to profile (also updates dropdown value)
       saveLanguagePreference(e.target.value);
     });
   }
+
+  const btnShowAddClient = document.getElementById("btn-show-add-client");
+  if (btnShowAddClient) {
+    btnShowAddClient.addEventListener("click", () => {
+      const form = document.getElementById("client-form");
+      if (form) form.style.display = form.style.display === "none" ? "" : "none";
+    });
+  }
+
+  const btnHeaderMenu = document.getElementById("btn-header-menu");
+  if (btnHeaderMenu) {
+    btnHeaderMenu.addEventListener("click", () => {
+      showScreen("more");
+    });
+  }
+
+  const btnMoreLogout = document.getElementById("btn-more-logout");
+  if (btnMoreLogout) {
+    btnMoreLogout.addEventListener("click", () => {
+      const logoutBtn = document.getElementById("btn-logout");
+      if (logoutBtn) logoutBtn.click();
+    });
+  }
+
+  document.querySelectorAll('.tb-filter-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const parent = this.closest('.tb-filter-tabs');
+      parent.querySelectorAll('.tb-filter-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const filter = this.dataset.filter;
+      const tabGroup = parent.id;
+      if (tabGroup === 'leads-filter-tabs') filterLeads(filter);
+      else if (tabGroup === 'jobs-filter-tabs') filterJobs(filter);
+      else if (tabGroup === 'money-filter-tabs') filterMoney(filter);
+    });
+  });
+}
+
+function filterLeads(filter) {
+  const clients = window._allClients || [];
+  if (!filter || filter === 'all') { renderClientsList(clients); return; }
+  const now = Date.now();
+  let filtered;
+  if (filter === 'new') {
+    filtered = clients.filter(c => {
+      const s = (c.status || 'new').toLowerCase();
+      if (s === 'new') return true;
+      if (!c.created_at) return false;
+      return (now - new Date(c.created_at).getTime()) < 7 * 86400000;
+    });
+  } else {
+    filtered = clients.filter(c => (c.status || 'new').toLowerCase() === filter);
+  }
+  renderClientsList(filtered);
+}
+
+function filterJobs(filter) {
+  if (!filter || filter === 'all') { renderJobsList(allJobs); return; }
+  const today = new Date().toDateString();
+  let filtered;
+  if (filter === 'today') {
+    filtered = allJobs.filter(j => {
+      const d = j.scheduled_date || j.created_at;
+      return d && new Date(d).toDateString() === today;
+    });
+  } else if (filter === 'scheduled') {
+    filtered = allJobs.filter(j => j.status === 'scheduled' || (j.scheduled_date && j.status === 'open'));
+  } else if (filter === 'in-progress') {
+    filtered = allJobs.filter(j => j.status === 'open');
+  } else if (filter === 'completed') {
+    filtered = allJobs.filter(j => j.status === 'closed');
+  } else {
+    filtered = allJobs;
+  }
+  renderJobsList(filtered);
+}
+
+function filterMoney(filter) {
+  const invoices = window._allInvoices || [];
+  if (!filter || filter === 'all') { renderInvoicesList(invoices); return; }
+  let filtered;
+  if (filter === 'overdue') {
+    filtered = invoices.filter(inv => {
+      if ((inv.payment_status || '').toLowerCase() === 'paid') return false;
+      if (!inv.due_date) return false;
+      return new Date(inv.due_date) < Date.now();
+    });
+  } else if (filter === 'open') {
+    filtered = invoices.filter(inv => (inv.payment_status || 'unpaid').toLowerCase() !== 'paid');
+  } else if (filter === 'paid') {
+    filtered = invoices.filter(inv => (inv.payment_status || '').toLowerCase() === 'paid');
+  } else {
+    filtered = invoices;
+  }
+  renderInvoicesList(filtered);
+}
+
+function renderInvoicesList(invoices) {
+  const list = document.getElementById("invoices-list");
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!invoices || !invoices.length) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-file-invoice empty-state-icon"></i>
+      <p class="empty-state-title">No invoices found</p>
+    </div>`;
+    return;
+  }
+
+  invoices.forEach((inv) => {
+    const isOffline = isOfflineId(inv.id);
+    const isUnsynced = inv.sync_status === 'unsynced' || isOffline;
+    const initials = getInitials(inv.client_name);
+    const paymentStatus = inv.payment_status || 'unpaid';
+    const badgeClass = paymentStatus === 'paid' ? 'paid' : paymentStatus === 'pending' ? 'open' : 'overdue';
+    const badgeLabel = paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'pending' ? 'Open' : 'Unpaid';
+    const syncBadge = isUnsynced ? '<span class="sync-badge unsynced" style="font-size:11px;">Local</span>' : '';
+    const dateStr = inv.due_date ? new Date(inv.due_date).toLocaleDateString() :
+                    inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '';
+    let dueBadge = '';
+    if (inv.due_date && paymentStatus !== 'paid') {
+      const daysUntil = Math.ceil((new Date(inv.due_date) - Date.now()) / 86400000);
+      if (daysUntil < 0) dueBadge = `<span class="tb-card-badge overdue">Overdue</span>`;
+      else if (daysUntil <= 7) dueBadge = `<span class="tb-card-badge due-soon">Due in ${daysUntil}d</span>`;
+    }
+
+    const content = `
+      <div class="tb-card">
+        <div class="tb-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="client-avatar">${initials}</div>
+            <div>
+              <strong>${inv.client_name || "Unknown Client"} ${syncBadge}</strong>
+              <div class="tb-card-detail" style="margin-top:2px">INV #${inv.invoice_number || inv.id}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:700;color:var(--text)">${formatCurrency(inv.total || 0)}</div>
+            <span class="tb-card-badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+        </div>
+        <div class="tb-card-details">
+          ${dateStr ? `<div class="tb-card-detail"><i class="fa-solid fa-calendar"></i> ${dateStr}</div>` : ''}
+          ${dueBadge}
+        </div>
+      </div>
+    `;
+
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewInvoiceDetail(inv.id) },
+      { icon: "fa-solid fa-box-archive", label: "Archive", class: "archive-action", handler: () => archiveInvoice(inv.id) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("invoice", inv.invoice_number || inv.id, () => deleteInvoice(inv.id));
+      }}
+    ];
+
+    const itemMeta = { type: "invoice", id: inv.id, data: inv };
+    const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
+    list.appendChild(item);
+  });
 }
 
 // QUICK PAY FUNCTIONS
@@ -2508,7 +2666,6 @@ function toggleMoreTools() {
 }
 
 function showScreen(screenId) {
-  // Exit multi-select mode when changing screens
   if (typeof exitMultiSelectMode === 'function' && typeof multiSelectMode !== 'undefined' && multiSelectMode) {
     exitMultiSelectMode();
   }
@@ -2519,23 +2676,79 @@ function showScreen(screenId) {
   const el = document.getElementById(`screen-${screenId}`);
   if (el) el.classList.add("active");
   
-  // Apply translations when switching screens to ensure all text is in correct language
   applyLanguage();
   
-  // Load calendar events when navigating to calendar screen
   if (screenId === "calendar") {
     loadCalendarEvents();
   }
   
-  // Load activity log when navigating to activity-log screen
   if (screenId === "activity-log") {
     showActivityLog();
   }
   
-  // Initialize admin referral link when navigating to admin screen
   if (screenId === "admin") {
     initAdminReferralLink();
   }
+
+  if (screenId === "business-profile") {
+    updateBusinessProfile();
+  }
+
+  updateBottomNav(screenId);
+}
+
+function updateBottomNav(screenId) {
+  const navMap = {
+    'dashboard': 'dashboard',
+    'clients': 'clients',
+    'jobs': 'jobs',
+    'job-detail': 'jobs',
+    'job-form': 'jobs',
+    'invoices': 'invoices',
+    'invoice-detail': 'invoices',
+    'new-invoice': 'invoices',
+    'quotes': 'invoices',
+    'quote-detail': 'invoices',
+    'new-quote': 'invoices',
+    'payments': 'invoices',
+    'more': 'more',
+    'settings': 'more',
+    'inventory': 'more',
+    'inventory-form': 'more',
+    'referrals': 'more',
+    'reports': 'more',
+    'support': 'more',
+    'business-profile': 'more',
+    'admin': 'more',
+    'calendar': 'dashboard',
+    'activity-log': 'more',
+    'trade-deals': 'more',
+    'subscription': 'more'
+  };
+  const activeNav = navMap[screenId] || 'dashboard';
+  document.querySelectorAll('.bottom-nav-item').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-nav') === activeNav);
+  });
+}
+
+function updateBusinessProfile() {
+  const nameEl = document.getElementById('bp-name');
+  const websiteEl = document.getElementById('bp-website');
+  const addressEl = document.getElementById('bp-address');
+  const phoneEl = document.getElementById('bp-phone');
+  const emailEl = document.getElementById('bp-email');
+  
+  const bName = document.getElementById('business-name');
+  const bWebsite = document.getElementById('business-website');
+  const bAddress = document.getElementById('business-address');
+  const bPhone = document.getElementById('business-phone');
+  const bEmail = document.getElementById('business-email');
+  
+  if (nameEl && bName) nameEl.textContent = bName.value || 'Your Business';
+  if (websiteEl && bWebsite) websiteEl.textContent = bWebsite.value || '';
+  if (addressEl && bAddress) addressEl.textContent = bAddress.value || 'Not set';
+  if (phoneEl && bPhone) phoneEl.textContent = bPhone.value || 'Not set';
+  if (emailEl && bEmail) emailEl.textContent = bEmail.value || 'Not set';
 }
 
 // INITIAL LOAD
@@ -2554,7 +2767,7 @@ async function loadInitialData() {
   // Check for checkout success/cancel
   const params = new URLSearchParams(window.location.search);
   if (params.get("checkout") === "success") {
-    showToast("Subscription activated! Welcome to Skippy Stack.");
+    showToast("Subscription activated! Welcome to TradeBase.");
     window.history.replaceState({}, '', '/');
   } else if (params.get("checkout") === "cancel") {
     showToast("Checkout canceled. You can subscribe anytime!");
@@ -3587,31 +3800,23 @@ async function loadClients() {
     return;
   }
 
+  window._allClients = clients;
+  const newLeadsCount = clients.filter(c => {
+    if (!c.created_at) return false;
+    const diff = Date.now() - new Date(c.created_at).getTime();
+    return diff < 7 * 24 * 60 * 60 * 1000;
+  }).length;
+  const elNewLeads = document.getElementById("dash-new-leads");
+  if (elNewLeads) elNewLeads.textContent = newLeadsCount;
+  const navBadge = document.getElementById("nav-leads-badge");
+  if (navBadge) {
+    navBadge.textContent = newLeadsCount;
+    navBadge.style.display = newLeadsCount > 0 ? "" : "none";
+  }
+
+  renderClientsList(clients);
+
   clients.forEach((c) => {
-    const isOffline = isOfflineId(c.id);
-    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning);">📱</span>' : '';
-    
-    const content = `
-      <div class="list-item-header">
-        <strong>${c.name}${offlineBadge}</strong>
-        <span>${c.phone || ""}</span>
-      </div>
-      <div class="list-item-sub">${c.email || ""}</div>
-      <div class="list-item-sub">${c.address || ""}</div>
-    `;
-    
-    const actions = [
-      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => editClient(c.id) },
-      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
-        showDeleteConfirmModal("client", c.name, () => deleteClient(c.id));
-      }}
-    ];
-    
-    const itemMeta = { type: "client", id: c.id, data: c };
-    const item = createSwipeableItem(content, actions, () => editClient(c.id), itemMeta);
-    list.appendChild(item);
-    
-    // Add to datalists for invoice and quote forms
     if (invoiceDatalist) {
       const option = document.createElement("option");
       option.value = c.name;
@@ -3622,6 +3827,64 @@ async function loadClients() {
       option.value = c.name;
       quoteDatalist.appendChild(option);
     }
+  });
+}
+
+function renderClientsList(clients) {
+  const list = document.getElementById("clients-list");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (!clients.length) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-solid fa-user-plus empty-state-icon"></i>
+      <p class="empty-state-title">No leads yet</p>
+      <p class="empty-state-desc">Add your first lead using the button above</p>
+    </div>`;
+    return;
+  }
+
+  clients.forEach((c) => {
+    const isOffline = isOfflineId(c.id);
+    const offlineBadge = isOffline ? '<span style="font-size: 11px; color: var(--warning);">📱</span>' : '';
+    const initials = getInitials(c.name);
+    const status = c.status || 'new';
+    const badgeClass = status === 'new' ? 'new' : status === 'contacted' ? 'contacted' : status === 'scheduled' ? 'scheduled' : status === 'won' ? 'paid' : status === 'lost' ? 'overdue' : '';
+    const timeAgo = c.created_at ? getTimeAgo(c.created_at) : '';
+
+    const content = `
+      <div class="tb-card">
+        <div class="tb-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="client-avatar">${initials}</div>
+            <div>
+              <strong>${c.name}${offlineBadge}</strong>
+              ${c.address ? `<div class="tb-card-detail"><i class="fa-solid fa-location-dot"></i> ${c.address}</div>` : ''}
+            </div>
+          </div>
+          <span class="tb-card-badge ${badgeClass}">${status}${timeAgo ? ' · ' + timeAgo : ''}</span>
+        </div>
+        <div class="tb-card-details">
+          ${c.phone ? `<div class="tb-card-detail"><i class="fa-solid fa-phone"></i> ${c.phone}</div>` : ''}
+          ${c.email ? `<div class="tb-card-detail"><i class="fa-solid fa-envelope"></i> ${c.email}</div>` : ''}
+        </div>
+        <div class="tb-card-actions">
+          ${c.phone ? `<a href="tel:${c.phone}" class="tb-card-action-btn" onclick="event.stopPropagation()"><i class="fa-solid fa-phone"></i></a>` : ''}
+          ${c.phone ? `<a href="sms:${c.phone}" class="tb-card-action-btn" onclick="event.stopPropagation()"><i class="fa-solid fa-message"></i></a>` : ''}
+        </div>
+      </div>
+    `;
+
+    const actions = [
+      { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => editClient(c.id) },
+      { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
+        showDeleteConfirmModal("client", c.name, () => deleteClient(c.id));
+      }}
+    ];
+
+    const itemMeta = { type: "client", id: c.id, data: c };
+    const item = createSwipeableItem(content, actions, () => editClient(c.id), itemMeta);
+    list.appendChild(item);
   });
 }
 
@@ -3858,6 +4121,8 @@ async function loadInvoices(showArchived = false) {
 
   invoices.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
+  if (!showArchived) window._allInvoices = invoices;
+
   if (!invoices.length) {
     list.innerHTML = `<div class="empty-state">
       <i class="fa-solid fa-file-invoice empty-state-icon"></i>
@@ -3868,7 +4133,6 @@ async function loadInvoices(showArchived = false) {
     return;
   }
 
-  // Clear loading state before rendering items
   list.innerHTML = '';
 
   invoices.forEach((inv) => {
@@ -3876,28 +4140,50 @@ async function loadInvoices(showArchived = false) {
     const isUnsynced = inv.sync_status === 'unsynced' || isOffline;
     const initials = getInitials(inv.client_name);
     const paymentStatus = inv.payment_status || 'unpaid';
-    const statusIcon = paymentStatus === 'paid' ? '🟢' : paymentStatus === 'pending' ? '🟡' : '🔴';
-    
-    // Sync status badge
-    const syncBadge = isUnsynced 
-      ? '<span class="sync-badge unsynced" title="Not synced to cloud">📱 Local</span>'
-      : '<span class="sync-badge synced" title="Synced to cloud">☁️</span>';
-    
+    const badgeClass = paymentStatus === 'paid' ? 'paid' : paymentStatus === 'pending' ? 'open' : 'overdue';
+    const badgeLabel = paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'pending' ? 'Open' : 'Unpaid';
+
+    const syncBadge = isUnsynced
+      ? '<span class="sync-badge unsynced" title="Not synced to cloud" style="font-size:11px;">Local</span>'
+      : '';
+
+    const dateStr = inv.due_date ? new Date(inv.due_date).toLocaleDateString() :
+                    inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '';
+    let dueBadge = '';
+    if (inv.due_date && paymentStatus !== 'paid') {
+      const daysUntil = Math.ceil((new Date(inv.due_date) - Date.now()) / 86400000);
+      if (daysUntil < 0) dueBadge = `<span class="tb-card-badge overdue">Overdue</span>`;
+      else if (daysUntil <= 7) dueBadge = `<span class="tb-card-badge due-soon">Due in ${daysUntil}d</span>`;
+    }
+
     const content = `
-      <div class="list-item-simple">
-        <div class="client-avatar">${initials}</div>
-        <div class="list-item-info">
-          <div class="list-item-name">${inv.client_name || "Unknown Client"} ${syncBadge}</div>
-          <div class="list-item-meta">INV #${inv.invoice_number || inv.id} • ${statusIcon} ${paymentStatus}</div>
+      <div class="tb-card">
+        <div class="tb-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="client-avatar">${initials}</div>
+            <div>
+              <strong>${inv.client_name || "Unknown Client"} ${syncBadge}</strong>
+              <div class="tb-card-detail" style="margin-top:2px">INV #${inv.invoice_number || inv.id}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:700;color:var(--text)">${formatCurrency(inv.total || 0)}</div>
+            <span class="tb-card-badge ${badgeClass}">${badgeLabel}</span>
+          </div>
         </div>
-        <div class="list-item-amount">${formatCurrency(inv.total || 0)}</div>
+        <div class="tb-card-details">
+          ${dateStr ? `<div class="tb-card-detail"><i class="fa-solid fa-calendar"></i> ${dateStr}</div>` : ''}
+          ${dueBadge}
+        </div>
+        <div class="tb-card-actions">
+          ${inv.client_email ? `<a href="mailto:${inv.client_email}" class="tb-card-action-btn" onclick="event.stopPropagation()"><i class="fa-solid fa-envelope"></i></a>` : ''}
+        </div>
       </div>
     `;
-    
+
     const itemMeta = { type: "invoice", id: inv.id, data: inv };
-    
+
     if (showArchived) {
-      // Archived items get restore/delete actions
       const actions = [
         { icon: "fa-solid fa-box-open", label: "Restore", class: "unarchive-action", handler: () => unarchiveInvoice(inv.id) },
         { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
@@ -3907,7 +4193,6 @@ async function loadInvoices(showArchived = false) {
       const item = createSwipeableItem(content, actions, () => viewInvoiceDetail(inv.id), itemMeta);
       list.appendChild(item);
     } else {
-      // Active items get edit/archive/delete actions
       const actions = [
         { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewInvoiceDetail(inv.id) },
         { icon: "fa-solid fa-box-archive", label: "Archive", class: "archive-action", handler: () => archiveInvoice(inv.id) },
@@ -3946,6 +4231,11 @@ async function loadQuotes(showArchived = false) {
     } catch (error) {
       console.error('Failed to load quotes:', error);
     }
+  }
+
+  if (!showArchived) {
+    const elEstimates = document.getElementById("dash-estimates");
+    if (elEstimates) elEstimates.textContent = quotes.filter(q => (q.status || 'draft') !== 'accepted').length;
   }
 
   if (!quotes.length) {
@@ -5542,6 +5832,17 @@ function formatCurrency(amount) {
   return `$${n.toFixed(2)}`;
 }
 
+function getTimeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return Math.floor(days / 30) + 'mo ago';
+}
+
 function getInitials(name) {
   if (!name) return '??';
   const parts = name.trim().split(/\s+/);
@@ -5681,7 +5982,7 @@ async function downloadBlobAsPng(blob, filename, type = "File") {
           await navigator.share({
             files: [file],
             title: filename,
-            text: `${type} from Skippy Stack`
+            text: `${type} from TradeBase`
           });
           showToast(`${type} shared!`);
           return;
@@ -7159,37 +7460,41 @@ function renderJobsList(jobs) {
   list.innerHTML = "";
 
   jobs.forEach(job => {
-    const statusColor = job.status === "open" ? "var(--primary)" :
-                        job.status === "closed" ? "#4CAF50" : "var(--muted)";
-    const statusIcon = job.status === "open" ? "fa-folder-open" :
-                       job.status === "closed" ? "fa-check-circle" : "fa-box-archive";
-    const dateStr = job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
+    const statusLabel = job.status === "open" ? "In Progress" :
+                        job.status === "closed" ? "Completed" :
+                        job.status === "scheduled" ? "Scheduled" : job.status || "Open";
+    const badgeClass = job.status === "open" ? "in-progress" :
+                       job.status === "closed" ? "paid" :
+                       job.status === "scheduled" ? "scheduled" : "open";
+    const dateStr = job.scheduled_date ? new Date(job.scheduled_date).toLocaleDateString() :
+                    job.created_at ? new Date(job.created_at).toLocaleDateString() : "-";
 
     const content = `
-      <div class="list-item-info" style="flex: 1;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <i class="fa-solid ${statusIcon}" style="color: ${statusColor}; font-size: 18px;"></i>
+      <div class="tb-card">
+        <div class="tb-card-header">
           <div>
             <strong>${job.client_name || "Unnamed Job"}</strong>
-            <div style="font-size: 13px; color: var(--muted);">
-              ${job.address ? `<i class="fa-solid fa-map-marker-alt"></i> ${job.address}` : ""}
-              ${job.job_type ? `<span style="margin-left: 10px;"><i class="fa-solid fa-wrench"></i> ${job.job_type}</span>` : ""}
-            </div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
-              <i class="fa-solid fa-calendar"></i> ${dateStr}
-            </div>
+            ${job.job_type ? `<div class="tb-card-detail" style="margin-top:2px"><i class="fa-solid fa-wrench"></i> ${job.job_type}</div>` : ''}
           </div>
+          <span class="tb-card-badge ${badgeClass}">${statusLabel}</span>
+        </div>
+        <div class="tb-card-details">
+          ${job.address ? `<div class="tb-card-detail"><i class="fa-solid fa-location-dot"></i> ${job.address}</div>` : ''}
+          <div class="tb-card-detail"><i class="fa-solid fa-calendar"></i> ${dateStr}</div>
+        </div>
+        <div class="tb-card-actions">
+          <a href="#" class="tb-card-action-btn" onclick="event.preventDefault();event.stopPropagation();viewJobDetail(${typeof job.id === 'string' ? "'" + job.id + "'" : job.id})"><i class="fa-solid fa-file-lines"></i></a>
         </div>
       </div>
     `;
-    
+
     const actions = [
       { icon: "fa-solid fa-pen", label: "Edit", class: "edit-action", handler: () => viewJobDetail(job.id) },
       { icon: "fa-solid fa-trash", label: "Delete", class: "delete-action", handler: () => {
         showDeleteConfirmModal("job", job.client_name || job.id, () => deleteJob(job.id));
       }}
     ];
-    
+
     const itemMeta = { type: "job", id: job.id, data: job };
     const item = createSwipeableItem(content, actions, () => viewJobDetail(job.id), itemMeta);
     list.appendChild(item);
@@ -7208,6 +7513,14 @@ function updateJobStats() {
   if (elOpen) elOpen.textContent = openCount;
   if (elClosed) elClosed.textContent = closedCount;
   if (elTotal) elTotal.textContent = totalCount;
+
+  const today = new Date().toDateString();
+  const jobsToday = allJobs.filter(j => {
+    const d = j.scheduled_date || j.created_at;
+    return d && new Date(d).toDateString() === today;
+  }).length;
+  const elJobsToday = document.getElementById("dash-jobs-today");
+  if (elJobsToday) elJobsToday.textContent = jobsToday;
 }
 
 async function viewJobDetail(jobId) {
@@ -7720,7 +8033,7 @@ function wireNotificationsUI() {
 async function loadNotifications() {
   if (tourMode) {
     allNotifications = [
-      { id: 1, title: "Welcome to Skippy Stack!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
+      { id: 1, title: "Welcome to TradeBase!", content: "Thank you for joining. Start by creating your first quote!", message_type: "success", is_read: false, created_at: new Date().toISOString() },
       { id: 2, title: "Trial Reminder", content: "Your 30-day free trial has started. Enjoy all features!", message_type: "info", is_read: false, created_at: new Date(Date.now() - 86400000).toISOString() }
     ];
     renderNotifications(allNotifications);

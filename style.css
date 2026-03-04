@@ -8,11 +8,18 @@
   --muted: #a1a1b5;
   --accent: #4f8cff;
   --accent-dark: #7c5cff;
+  --primary: #2B5EA7;
   --danger: #ff4f6a;
   --success: #3dd68c;
   --border: #2b2b3a;
   --shadow: rgba(0, 0, 0, 0.6);
   --shadow-light: rgba(0, 0, 0, 0.4);
+  --header-bg: #1B3A5C;
+  --orange: #E8752A;
+  --green: #2E8B57;
+  --red: #C0392B;
+  --blue: #2B5EA7;
+  --nav-active: #1B3A5C;
 }
 
 :root[data-theme="light"] {
@@ -30,6 +37,25 @@
   --border: #e5e7eb;
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-light: rgba(0, 0, 0, 0.05);
+}
+
+#app-container {
+  --bg: #F5F5F5;
+  --bg-alt: #ffffff;
+  --tile: #ffffff;
+  --tile-hover: #f0f1f3;
+  --text: #1B3A5C;
+  --text-inverse: #ffffff;
+  --muted: #6b7280;
+  --accent: #2B5EA7;
+  --accent-dark: #1B3A5C;
+  --primary: #2B5EA7;
+  --danger: #dc2626;
+  --success: #059669;
+  --border: #e5e7eb;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-light: rgba(0, 0, 0, 0.05);
+  background: var(--bg);
 }
 
 *,
@@ -92,16 +118,23 @@ body {
 
 .app-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
+  color: #ffffff;
+}
+
+.app-header .app-title-icon {
+  margin-right: 8px;
+  font-size: 22px;
 }
 
 .app-header.compact {
-  padding: 8px 14px;
+  padding: 12px 16px;
 }
 
 .app-header.compact .app-title {
   font-size: 20px;
+  color: #ffffff;
 }
 
 .auth-logo {
@@ -247,13 +280,12 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px 6px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-alt);
+  padding: 12px 16px;
+  background: var(--header-bg);
   position: sticky;
   top: 0;
   z-index: 10;
-  backdrop-filter: blur(10px);
+  border-bottom: none;
 }
 
 .header-actions {
@@ -316,9 +348,9 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.3);
   background: transparent;
-  color: var(--muted);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -489,7 +521,7 @@ body {
 }
 
 #screen-container {
-  padding: 8px 8px 16px;
+  padding: 8px 12px 80px;
   max-width: 500px;
   margin: 0 auto;
 }
@@ -5335,4 +5367,753 @@ body.multi-select-mode .bottom-nav {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* ==================== TRADEBASE BOTTOM NAV ==================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  position: relative;
+  min-width: 56px;
+}
+
+.bottom-nav-item i {
+  font-size: 20px;
+  margin-bottom: 1px;
+}
+
+.bottom-nav-item.active {
+  color: var(--nav-active);
+}
+
+.bottom-nav-item.active i {
+  color: var(--nav-active);
+}
+
+.bottom-nav-item .nav-badge {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  background: #C0392B;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+/* ==================== TRADEBASE DASHBOARD ==================== */
+.tb-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 16px 0 10px;
+}
+
+.tb-stat-cards {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tb-stat-card {
+  flex: 1;
+  min-width: 70px;
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+.tb-stat-card .stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.95;
+  white-space: nowrap;
+}
+
+.tb-stat-card .stat-number {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.tb-stat-card.orange { background: var(--orange); }
+.tb-stat-card.green { background: var(--green); }
+.tb-stat-card.red { background: var(--red); }
+.tb-stat-card.blue { background: var(--blue); }
+
+.tb-attention-list {
+  background: var(--bg-alt);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.tb-attention-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  gap: 10px;
+}
+
+.tb-attention-item:last-child {
+  border-bottom: none;
+}
+
+.tb-attention-item .attention-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tb-attention-item .attention-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.tb-attention-item .attention-text strong {
+  font-weight: 700;
+}
+
+.tb-attention-item .attention-chevron {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tb-attention-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 14px;
+}
+
+.tb-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.tb-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(43, 94, 167, 0.3);
+}
+
+.tb-quick-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43, 94, 167, 0.4);
+}
+
+.tb-quick-btn:active {
+  transform: scale(0.97);
+}
+
+.tb-quick-btn i {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ==================== TRADEBASE FILTER TABS ==================== */
+.tb-filter-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tb-filter-tab {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.tb-filter-tab.active {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+.tb-filter-tab .tab-count {
+  background: rgba(255,255,255,0.3);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.tb-filter-tab:not(.active) .tab-count {
+  background: var(--blue);
+  color: white;
+}
+
+/* ==================== TRADEBASE ADD BUTTON ==================== */
+.tb-add-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tb-add-btn:hover {
+  background: #234d8e;
+}
+
+/* ==================== TRADEBASE LEAD/JOB/INVOICE CARDS ==================== */
+.tb-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.tb-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.tb-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.tb-card-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tb-card-badge.new { background: #E8752A; color: white; }
+.tb-card-badge.contacted { background: #2E8B57; color: white; }
+.tb-card-badge.in-progress { background: #D4A017; color: white; }
+.tb-card-badge.scheduled { background: var(--blue); color: white; }
+.tb-card-badge.overdue { background: var(--red); color: white; }
+.tb-card-badge.open { background: var(--blue); color: white; }
+.tb-card-badge.paid { background: var(--green); color: white; }
+.tb-card-badge.due-soon { background: #D4A017; color: white; }
+
+.tb-card-details {
+  margin-top: 4px;
+}
+
+.tb-card-detail {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 3px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-card-detail i {
+  width: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.tb-card-service {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #EBF0F7;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+.tb-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.tb-card-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--green);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tb-card-action-btn.msg {
+  color: var(--blue);
+}
+
+.tb-card-amount {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.tb-card-deposit {
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tb-card-deposit.green { color: var(--green); }
+.tb-card-deposit.red { color: var(--red); }
+
+/* ==================== TRADEBASE MORE MENU ==================== */
+.tb-more-list {
+  background: var(--bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tb-more-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  width: 100%;
+  text-align: left;
+  gap: 14px;
+  transition: background 0.15s;
+}
+
+.tb-more-item:last-child {
+  border-bottom: none;
+}
+
+.tb-more-item:hover {
+  background: var(--tile-hover);
+}
+
+.tb-more-item .more-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tb-more-item .more-icon.blue { background: #E8EFF8; color: var(--blue); }
+.tb-more-item .more-icon.brown { background: #F0E6D6; color: #8B6914; }
+.tb-more-item .more-icon.green { background: #E6F4E6; color: var(--green); }
+.tb-more-item .more-icon.navy { background: #E8EFF8; color: var(--text); }
+.tb-more-item .more-icon.gray { background: #EEEEEE; color: #666; }
+.tb-more-item .more-icon.teal { background: #E0F0F0; color: #2C7A7B; }
+.tb-more-item .more-icon.red { background: #FDE8E8; color: var(--red); }
+
+.tb-more-item .more-label {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tb-more-item.logout .more-label {
+  color: var(--red);
+}
+
+.tb-more-item .more-chevron {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ==================== TRADEBASE REPORTS ==================== */
+.tb-report-card {
+  display: flex;
+  align-items: center;
+  padding: 18px 16px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  gap: 14px;
+  transition: background 0.15s;
+}
+
+.tb-report-card:hover {
+  background: var(--tile-hover);
+}
+
+.tb-report-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tb-report-icon.green { background: #E6F4E6; color: var(--green); }
+.tb-report-icon.orange { background: #FDE8D0; color: var(--orange); }
+.tb-report-icon.blue { background: #E8EFF8; color: var(--blue); }
+.tb-report-icon.red { background: #FDE8E8; color: var(--red); }
+
+.tb-report-info {
+  flex: 1;
+}
+
+.tb-report-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tb-report-info p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ==================== TRADEBASE SUPPORT ==================== */
+.tb-support-contact {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 16px;
+  margin-bottom: 12px;
+}
+
+.tb-support-contact h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.tb-support-contact .contact-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.tb-support-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.tb-support-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.tb-support-btn.phone {
+  background: var(--blue);
+  color: white;
+}
+
+.tb-support-btn.email {
+  background: #EBF0F7;
+  color: var(--blue);
+  border: 1px solid var(--border);
+}
+
+.tb-support-list {
+  background: var(--bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tb-support-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  gap: 14px;
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  text-align: left;
+}
+
+.tb-support-item:last-child {
+  border-bottom: none;
+}
+
+.tb-support-item .support-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tb-support-item .support-icon.green { background: #E6F4E6; color: var(--green); }
+.tb-support-item .support-icon.blue { background: #E8EFF8; color: var(--blue); }
+.tb-support-item .support-icon.orange { background: #FDE8D0; color: var(--orange); }
+
+.tb-support-item .support-info {
+  flex: 1;
+}
+
+.tb-support-item .support-info h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tb-support-item .support-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ==================== TRADEBASE BUSINESS PROFILE ==================== */
+.tb-profile-header {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.tb-profile-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--header-bg);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 12px;
+}
+
+.tb-profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.tb-profile-website {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.tb-profile-details {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.tb-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.tb-profile-row:last-child {
+  border-bottom: none;
+}
+
+.tb-profile-row i {
+  color: var(--blue);
+  width: 18px;
+  text-align: center;
+}
+
+/* ==================== TRADEBASE SETTINGS ==================== */
+.tb-settings-list {
+  background: var(--bg-alt);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.tb-settings-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  gap: 14px;
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  text-align: left;
+}
+
+.tb-settings-item:last-child {
+  border-bottom: none;
+}
+
+.tb-settings-item .settings-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tb-settings-item .settings-icon.blue { background: #E8EFF8; color: var(--blue); }
+.tb-settings-item .settings-icon.orange { background: #FDE8D0; color: var(--orange); }
+.tb-settings-item .settings-icon.green { background: #E6F4E6; color: var(--green); }
+.tb-settings-item .settings-icon.teal { background: #E0F0F0; color: #2C7A7B; }
+.tb-settings-item .settings-icon.red { background: #FDE8E8; color: var(--red); }
+
+.tb-settings-item .settings-label {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tb-settings-item .settings-chevron {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tb-settings-item.signout .settings-label {
+  color: var(--red);
+}
+
+/* ==================== HEADER ADJUSTMENTS ==================== */
+.app-header .header-actions .language-select,
+.app-header .header-actions .online-status {
+  display: none;
+}
+
+.app-header .header-actions .logout-btn {
+  display: none;
+}
+
+.app-header .header-actions #theme-toggle {
+  color: white;
+  border-color: rgba(255,255,255,0.3);
+}
+
+.app-tagline {
+  display: none;
 }
