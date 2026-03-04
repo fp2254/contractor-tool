@@ -6,6 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const lineItemSchema = z.object({
+  description: z.string(),
+  qty: z.number(),
+  unit_price: z.number(),
+  preset_id: z.string().nullable().optional(),
+  unit: z.string().optional(),
+});
+
 const bodySchema = z.object({
   type: z.enum(["quote", "job", "invoice"]),
   customer: z.object({
@@ -17,12 +25,11 @@ const bodySchema = z.object({
   job: z.object({
     title: z.string(),
     scheduled_date: z.string().nullable(),
+    time_window: z.string().nullable().optional(),
     notes: z.string(),
   }),
   quote: z.object({
-    line_items: z.array(
-      z.object({ description: z.string(), qty: z.number(), unit_price: z.number() })
-    ),
+    line_items: z.array(lineItemSchema),
     notes: z.string(),
   }),
 });
@@ -31,7 +38,9 @@ export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
 
   const body = bodySchema.parse(await req.json());
@@ -57,7 +66,10 @@ export async function POST(req: Request) {
     .single();
 
   if (custErr || !customer) {
-    return NextResponse.json({ error: "Could not create customer" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Could not create customer" },
+      { status: 500 }
+    );
   }
 
   const total = body.quote.line_items.reduce(
@@ -80,7 +92,10 @@ export async function POST(req: Request) {
       .single();
 
     if (error || !quote) {
-      return NextResponse.json({ error: "Could not create quote" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Could not create quote" },
+        { status: 500 }
+      );
     }
 
     await admin.from("quote_items").insert(
@@ -91,6 +106,7 @@ export async function POST(req: Request) {
         quantity: i.qty,
         unit_price: i.unit_price,
         total_price: i.qty * i.unit_price,
+        ...(i.preset_id ? { preset_id: i.preset_id } : {}),
       }))
     );
 
@@ -98,6 +114,7 @@ export async function POST(req: Request) {
   }
 
   if (body.type === "job") {
+    const scheduleDate = body.job.scheduled_date || null;
     const { data: job, error } = await admin
       .from("jobs")
       .insert({
@@ -106,22 +123,32 @@ export async function POST(req: Request) {
         job_title: body.job.title,
         status: "scheduled",
         address: body.customer.address || null,
-        scheduled_date: body.job.scheduled_date || null,
+        scheduled_date: scheduleDate,
         created_by_user: userId,
       })
       .select("id")
       .single();
 
     if (error || !job) {
-      return NextResponse.json({ error: "Could not create job" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Could not create job" },
+        { status: 500 }
+      );
     }
 
-    if (body.job.notes) {
+    const noteLines = [
+      body.job.notes,
+      body.job.time_window ? `Time window: ${body.job.time_window}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (noteLines) {
       await admin.from("notes").insert({
         org_id: orgId!,
         entity_type: "job",
         entity_id: job.id,
-        body: body.job.notes,
+        body: noteLines,
         created_by: userId,
       });
     }
@@ -137,7 +164,9 @@ export async function POST(req: Request) {
       .single();
 
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + (org?.default_payment_terms_days ?? 14));
+    dueDate.setDate(
+      dueDate.getDate() + (org?.default_payment_terms_days ?? 14)
+    );
 
     const { data: invoice, error } = await admin
       .from("invoices")
@@ -154,7 +183,10 @@ export async function POST(req: Request) {
       .single();
 
     if (error || !invoice) {
-      return NextResponse.json({ error: "Could not create invoice" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Could not create invoice" },
+        { status: 500 }
+      );
     }
 
     await admin.from("invoice_items").insert(
@@ -165,6 +197,7 @@ export async function POST(req: Request) {
         quantity: i.qty,
         unit_price: i.unit_price,
         total_price: i.qty * i.unit_price,
+        ...(i.preset_id ? { preset_id: i.preset_id } : {}),
       }))
     );
 

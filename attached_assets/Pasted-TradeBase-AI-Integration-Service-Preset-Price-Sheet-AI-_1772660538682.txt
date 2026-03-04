@@ -1,0 +1,127 @@
+TradeBase AI Integration — “Service Preset / Price Sheet AI” (Copy-Paste for Replit)
+
+GOAL
+Make AI useful in a REAL contractor way: when a user types or speaks “radon mitigation job”, AI should NOT guess pricing. It must pull pricing from the company’s saved price sheet (service presets) and build the quote/job/invoice draft from that.
+
+KEY IDEA (NO “TRAINING” NEEDED)
+We do NOT train a custom model.
+We give the AI “context” at request-time (RAG style):
+- Pull this org’s service presets + pricing from the database
+- Send that list into the AI prompt
+- AI selects the closest matching preset(s)
+- AI returns strict JSON for line items using those preset prices
+This makes pricing accurate and company-specific.
+
+WHAT WE NEED TO BUILD
+
+1) Data Source: Service Presets / Price Sheet
+- Each business (org) has a price sheet stored in DB.
+- Table: service_presets
+  - id (uuid)
+  - org_id (uuid)
+  - name (text)             e.g. “Radon Mitigation Install”
+  - description (text)      e.g. “Standard sub-slab system…”
+  - default_qty (numeric)   usually 1
+  - unit (text)             “each”, “ft”, “hour”
+  - default_price (numeric) e.g. 1200
+  - tags (text[]) optional  e.g. ["radon","mitigation"]
+  - is_active (bool)
+
+Optional additions:
+- material_cost (numeric)
+- labor_hours (numeric)
+- category (text) “radon”, “crawlspace”, “water”
+- tax_code / taxable (bool)
+
+2) Admin UI: Business Profile → Service Pricing Presets
+- Add / edit / delete service presets
+- These show as “chips” in Quote Builder (quick add)
+- Also used by AI for matching
+
+3) AI Endpoint: /api/ai/job-capture (or similar)
+When user uses “AI Job Capture”:
+- Determine org_id from session
+- Fetch service_presets where org_id = current org and is_active = true
+- Provide presets to AI in the prompt as the “only allowed” price source
+
+4) Prompt Rules (IMPORTANT)
+- Do NOT invent prices if a matching preset exists
+- If no match exists, return “needs_manual_pricing: true” and a suggested description with unit_price = null
+- Return strict JSON only (no prose)
+
+5) Required AI Output JSON Shape
+Return exactly:
+
+{
+  "job_title": "string",
+  "customer": {
+    "name": "string|null",
+    "phone": "string|null",
+    "email": "string|null",
+    "address": "string|null"
+  },
+  "recommended_status": "lead|quote|job|invoice",
+  "schedule": {
+    "date": "YYYY-MM-DD|null",
+    "time_window": "string|null"
+  },
+  "line_items": [
+    {
+      "preset_id": "uuid|null",
+      "description": "string",
+      "qty": 1,
+      "unit": "each|ft|hour|etc",
+      "unit_price": 1200,
+      "needs_manual_pricing": false
+    }
+  ],
+  "notes": "string|null"
+}
+
+6) Matching Logic
+AI chooses best match using:
+- preset name
+- preset description
+- optional tags
+Example:
+User text: “radon mitigation system install”
+AI picks preset: “Radon Mitigation Install” ($1200)
+
+7) Commit Flow (Safety)
+AI does NOT auto-create records.
+Flow:
+- AI generates draft
+- UI shows review screen (editable)
+- User taps:
+  - “Create Quote” OR “Create Job” OR “Create Invoice”
+Then we insert rows into:
+- customers (if new)
+- quotes + quote_items OR jobs OR invoices + invoice_items
+
+8) Where Pricing Lives
+Pricing lives in:
+- service_presets (org-specific)
+NOT global internet pricing.
+No “average cost online” use unless user explicitly requests it.
+This avoids garbage estimates.
+
+9) Future Upgrade (Optional)
+Allow user to upload a CSV price sheet:
+- Parse CSV into service_presets
+Columns: name, description, unit, price, tags
+
+10) End Result
+User types:
+“Radon mitigation job for Mike Johnson at 45 Elm St”
+AI returns a draft quote with:
+- Correct preset line item pulled from service_presets
+- Correct price from that org’s database
+- Zero guessing
+
+IMPLEMENTATION CHECKLIST
+- [ ] Create service_presets table in Supabase (RLS by org_id)
+- [ ] Add UI in Business Profile to manage presets
+- [ ] Add fetch presets + inject into AI prompt
+- [ ] Enforce JSON-only response
+- [ ] Add “draft review” screen before saving
+- [ ] Save preset_id on line items for reporting later
