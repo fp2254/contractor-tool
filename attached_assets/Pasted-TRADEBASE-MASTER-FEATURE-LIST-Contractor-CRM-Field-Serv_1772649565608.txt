@@ -1,0 +1,486 @@
+TRADEBASE MASTER FEATURE LIST
+Contractor CRM / Field Service Platform
+Design Philosophy: FAST • SIMPLE • OFFLINE-FIRST • BUILT FOR TRADES
+
+====================================================
+CORE WORKFLOW (GOLDEN PATH)
+====================================================
+
+Lead
+↓
+Customer
+↓
+Quote
+↓
+Job
+↓
+Invoice
+↓
+Payment
+
+Every step should convert with ONE BUTTON.
+
+
+====================================================
+CORE FEATURES (PHASE 1 – MVP)
+====================================================
+
+1. DASHBOARD
+
+Displays key metrics and quick actions.
+
+Metrics:
+- New Leads
+- Jobs Today
+- Quotes Pending
+- Unpaid Invoices
+- Revenue This Week
+- Revenue This Month
+
+Sections:
+- Needs Attention
+- Upcoming Jobs
+- Recent Activity
+
+Quick Actions:
+- New Lead
+- New Quote
+- Schedule Job
+- Create Invoice
+- Collect Payment
+
+
+====================================================
+2. LEADS
+
+Purpose:
+Capture potential customers quickly.
+
+Lead fields:
+- Name
+- Phone
+- Email
+- Address
+- Lead Source
+- Job Type
+- Notes
+- Status
+
+Lead Status Pipeline:
+
+New
+Contacted
+Quoted
+Scheduled
+Won
+Lost
+
+Lead Actions:
+- Call Lead
+- Text Lead
+- Create Customer
+- Create Quote
+- Schedule Visit
+- Add Notes
+- Attach Photos
+
+Automation:
+Lead → Customer auto created when quote is made
+
+
+====================================================
+3. CUSTOMERS
+
+Permanent client records.
+
+Customer Fields:
+- Name
+- Phone
+- Email
+- Address
+- Notes
+- Tags
+- Lead Source
+- Created Date
+
+Customer Profile Sections:
+- Quotes
+- Jobs
+- Invoices
+- Payments
+- Photos
+- Notes
+- Documents
+
+Actions:
+- Create Quote
+- Schedule Job
+- Create Invoice
+- Add Photo
+- Add Note
+- Call / Text
+
+
+====================================================
+4. QUOTES / ESTIMATES
+
+Quote Fields:
+- Customer
+- Address
+- Line Items
+- Materials
+- Labor
+- Tax
+- Discount
+- Notes
+- Quote Total
+- Expiration Date
+
+Quote Status:
+
+Draft
+Sent
+Approved
+Declined
+Expired
+
+Quote Actions:
+- Send Quote
+- Duplicate Quote
+- Convert to Job
+- Convert to Invoice
+- Download PDF
+- Edit Quote
+
+Automation:
+Quote → Job
+Quote → Invoice
+
+
+====================================================
+5. JOBS
+
+Represents scheduled work.
+
+Job Fields:
+- Customer
+- Address
+- Scheduled Date
+- Start Time
+- End Time
+- Job Type
+- Crew Assigned
+- Job Notes
+- Photos
+- Materials Used
+
+Job Status:
+
+Scheduled
+In Progress
+Completed
+Cancelled
+
+Job Actions:
+- Navigate to Job
+- Upload Photos
+- Add Notes
+- Mark Complete
+- Create Invoice
+- Reschedule
+
+
+====================================================
+6. INVOICES
+
+Invoice Fields:
+
+- Customer
+- Line Items
+- Labor
+- Materials
+- Tax
+- Discount
+- Total
+- Due Date
+- Notes
+
+Invoice Status:
+
+Draft
+Sent
+Paid
+Overdue
+Void
+
+Invoice Actions:
+
+- Send Invoice
+- Download PDF
+- Mark Paid
+- Collect Payment
+- Duplicate Invoice
+
+
+====================================================
+7. PAYMENTS
+
+Payment Fields:
+
+- Invoice
+- Customer
+- Amount
+- Payment Method
+- Date
+- Notes
+
+Payment Methods:
+
+Cash
+Check
+Card
+Venmo
+PayPal
+Other
+
+Payment History:
+Logged under customer profile.
+
+
+====================================================
+8. SCHEDULING
+
+Simple calendar system.
+
+Views:
+
+Day View
+Week View
+Month View
+
+Actions:
+
+Schedule Job
+Drag Job
+Reschedule
+Assign Crew
+
+
+====================================================
+9. SEARCH
+
+Global search across:
+
+Customers
+Leads
+Addresses
+Phone Numbers
+Invoices
+Quotes
+Jobs
+
+Fast search bar accessible from anywhere.
+
+
+====================================================
+10. PHOTOS
+
+Attach photos to:
+
+Leads
+Customers
+Jobs
+Invoices
+
+Examples:
+
+Radon system install
+Before/after
+Basement layout
+Pipe runs
+Documentation
+
+
+====================================================
+11. NOTES
+
+Add notes to:
+
+Leads
+Customers
+Jobs
+Invoices
+
+Notes include:
+
+Date
+Author
+Text
+
+
+====================================================
+AUTOMATIONS (PHASE 2)
+====================================================
+
+Lead Follow-Up:
+
+3 days → reminder
+7 days → reminder
+14 days → final reminder
+
+Quote Follow-Up:
+
+3 days after sending
+7 days after sending
+
+Invoice Reminder:
+
+3 days before due
+1 day after due
+
+
+====================================================
+ADVANCED FEATURES (PHASE 3)
+====================================================
+
+Calendar Route Optimization
+
+AI Scheduling Assistant
+
+Customer Portal
+
+Online Payments
+
+Contract Signing
+
+Document Storage
+
+QuickBooks Export
+
+Recurring Jobs
+
+Job Costing
+
+Crew Management
+
+
+====================================================
+AI FEATURES (PHASE 4)
+====================================================
+
+Voice Commands
+
+Examples:
+
+"Create quote for John Smith 1200 dollars radon system."
+
+"Schedule job tomorrow at 9 AM."
+
+"Mark invoice #103 paid cash."
+
+AI Lead Capture
+
+AI Quote Builder
+
+AI Job Notes Generator
+
+
+====================================================
+OFFLINE MODE (CRITICAL)
+
+App must function without internet.
+
+Local storage for:
+
+Leads
+Customers
+Quotes
+Jobs
+Invoices
+
+Sync automatically when connection returns.
+
+
+====================================================
+DATABASE STRUCTURE
+====================================================
+
+Tables Required:
+
+users
+organizations
+organization_members
+
+customers
+leads
+
+quotes
+quote_items
+
+jobs
+
+invoices
+invoice_items
+
+payments
+
+notes
+photos
+
+tasks
+
+activity_log
+
+
+====================================================
+KEY DESIGN PRINCIPLES
+====================================================
+
+Keep UI simple.
+
+Large buttons.
+
+Minimal screens.
+
+Everything reachable in 2 taps.
+
+Focus on speed for field workers.
+
+
+====================================================
+FUTURE FEATURES
+====================================================
+
+Inventory management
+
+Material cost tracking
+
+SMS automation
+
+Customer reminders
+
+Crew mobile tracking
+
+Route optimization
+
+Job profitability tracking
+
+White label versions
+
+
+====================================================
+END GOAL
+====================================================
+
+TradeBase becomes a simple, fast contractor platform similar to:
+
+Jobber
+Housecall Pro
+ServiceTitan
+
+But optimized for:
+
+Small contractors
+Tradespeople
+Solo operators
+Offline environments
