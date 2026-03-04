@@ -6390,3 +6390,161 @@ body.multi-select-mode .bottom-nav {
   background: #e5e7eb;
   color: #374151;
 }
+
+/* ==================== JOB COMPLETE PROMPT ==================== */
+
+.job-complete-prompt-card {
+  background: #f0fdf4;
+  border: 1.5px solid #10b981;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.job-complete-prompt-title {
+  font-weight: 700;
+  color: #065f46;
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.job-complete-prompt-actions {
+  display: flex;
+  gap: 8px;
+}
+.job-prompt-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.job-prompt-btn i {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+.job-prompt-btn.green { background: #10b981; color: #fff; }
+.job-prompt-btn.blue  { background: #2B5EA7; color: #fff; }
+.job-prompt-btn.gray  { background: #e5e7eb; color: #374151; }
+
+/* ==================== FLOATING VOICE FAB ==================== */
+
+.voice-fab {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary, #2B5EA7);
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 990;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.voice-fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ==================== JOB PHOTOS ==================== */
+
+.job-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+.job-photo-item {
+  position: relative;
+  aspect-ratio: 1;
+}
+.job-photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  cursor: pointer;
+}
+.photo-tag-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: capitalize;
+  pointer-events: none;
+}
+.photo-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(239,68,68,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.photo-tag-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--primary, #2B5EA7);
+  background: transparent;
+  color: var(--primary, #2B5EA7);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.photo-tag-btn:active,
+.photo-tag-btn:hover {
+  background: var(--primary, #2B5EA7);
+  color: #fff;
+}
+.photo-tag-btn-cancel {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ==================== MONEY SNAPSHOT IMPROVEMENTS ==================== */
+
+.dash-money-icon {
+  font-size: 16px;
+  margin-bottom: 4px;
+  opacity: 0.65;
+  color: var(--primary, #2B5EA7);
+}
+.dash-money-tile.red .dash-money-icon {
+  color: #ef4444;
+}
+.dash-money-amount {
+  font-size: 26px !important;
+  font-weight: 900 !important;
+}

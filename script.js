@@ -514,6 +514,7 @@ function handleOnline() {
   isOnline = true;
   updateOnlineStatus();
   syncPendingChanges();
+  syncJobUpdateQueue();
 }
 
 function handleOffline() {
@@ -7445,6 +7446,11 @@ async function loadJobs() {
     if (res.ok) {
       allJobs = await res.json();
       window._allJobs = allJobs;
+      // Cache for offline use
+      try {
+        localStorage.setItem("tb_jobs_cache", JSON.stringify(allJobs));
+        localStorage.setItem("tb_jobs_cache_ts", Date.now().toString());
+      } catch {}
       renderJobsList(allJobs);
       updateJobStats();
     } else {
@@ -7637,6 +7643,7 @@ function renderJobDetail(job) {
 
   renderJobLinkedItems(job);
   loadJobMaterials(job.id);
+  loadJobPhotos(job.id);
 }
 
 function formatTime(timeStr) {
@@ -8641,8 +8648,6 @@ function updateAIUI(data = {}) {
     if (planDisplay && data.ai_plan) {
       planDisplay.textContent = data.ai_plan === "yearly" ? "Yearly" : "Monthly";
     }
-    
-    // Update usage indicator
     if (data.usage) {
       updateAIUsageDisplay(data.usage);
     }
@@ -8651,6 +8656,7 @@ function updateAIUI(data = {}) {
     activeSection?.classList.add("hidden");
     voiceRecorder?.classList.add("hidden");
   }
+  updateVoiceFab();
 }
 
 function updateAIUsageDisplay(usage) {
@@ -12924,6 +12930,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initTradeContacts();
   initJobMaterialsUI();
   initJobCompletePrompt();
+  initJobPhotosUI();
+  _patchVoiceOverlay();
 });
 
 // ─── DASHBOARD: TODAY'S JOBS ──────────────────────────────────────────────────
@@ -12933,7 +12941,24 @@ function renderTodaysJobs() {
   if (!container) return;
 
   const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD local
-  const todayJobs = allJobs.filter(j => {
+
+  let jobsSource = allJobs;
+
+  // Offline cache fallback: if no jobs in memory and we're offline, try localStorage
+  if (jobsSource.length === 0 && !navigator.onLine) {
+    try {
+      const cached = localStorage.getItem("tb_jobs_cache");
+      if (cached) {
+        jobsSource = JSON.parse(cached);
+        container.insertAdjacentHTML("afterbegin", `
+          <div style="background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-wifi-slash"></i> Showing cached data — you're offline
+          </div>`);
+      }
+    } catch {}
+  }
+
+  const todayJobs = jobsSource.filter(j => {
     if (!j.scheduled_date) return false;
     const sd = typeof j.scheduled_date === "string" ? j.scheduled_date.substring(0, 10) : "";
     return sd === todayStr;
@@ -13257,6 +13282,15 @@ function initJobCompletePrompt() {
     });
   }
 
+  const btnCollectPayment = document.getElementById("btn-collect-payment-from-job");
+  if (btnCollectPayment) {
+    btnCollectPayment.addEventListener("click", () => {
+      const el = document.getElementById("job-complete-prompt");
+      if (el) el.style.display = "none";
+      showScreen("payments");
+    });
+  }
+
   const btnSkipPrompt = document.getElementById("btn-skip-invoice-prompt");
   if (btnSkipPrompt) {
     btnSkipPrompt.addEventListener("click", () => {
@@ -13332,3 +13366,222 @@ async function searchPropertyHistory(query) {
     }).join("")}`;
 }
 window.searchPropertyHistory = searchPropertyHistory;
+
+// ─── FLOATING VOICE FAB ───────────────────────────────────────────────────────
+
+function updateVoiceFab() {
+  const fab = document.getElementById("voice-fab");
+  if (!fab) return;
+  fab.style.display = aiEnabled ? "flex" : "none";
+}
+window.updateVoiceFab = updateVoiceFab;
+
+// Hide FAB when voice overlay opens, restore when closed
+function _patchVoiceOverlay() {
+  function hideFab() { const f = document.getElementById("voice-fab"); if (f) f.style.display = "none"; }
+  function restoreFab() { const f = document.getElementById("voice-fab"); if (f && aiEnabled) f.style.display = "flex"; }
+
+  const orig = window.startCommandMic;
+  if (typeof orig === "function") {
+    window.startCommandMic = function(...args) { hideFab(); return orig.apply(this, args); };
+  }
+  const origStop = window.stopCommandMic;
+  if (typeof origStop === "function") {
+    window.stopCommandMic = function(...args) { restoreFab(); return origStop.apply(this, args); };
+  }
+  const origCancel = window.cancelCommandMic;
+  if (typeof origCancel === "function") {
+    window.cancelCommandMic = function(...args) { restoreFab(); return origCancel.apply(this, args); };
+  }
+}
+
+// ─── JOB PHOTOS ───────────────────────────────────────────────────────────────
+
+let _pendingPhotoFile = null;
+
+function initJobPhotosUI() {
+  const btnAdd = document.getElementById("btn-add-photo");
+  const fileInput = document.getElementById("photo-file-input");
+  const tagSelector = document.getElementById("photo-tag-selector");
+
+  if (btnAdd) {
+    btnAdd.addEventListener("click", () => {
+      if (fileInput) fileInput.click();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      _pendingPhotoFile = file;
+      if (tagSelector) tagSelector.style.display = "flex";
+      fileInput.value = "";
+    });
+  }
+
+  document.querySelectorAll(".photo-tag-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tag = btn.getAttribute("data-tag");
+      if (_pendingPhotoFile && currentJob) {
+        uploadJobPhoto(currentJob.id, _pendingPhotoFile, tag);
+      }
+      _pendingPhotoFile = null;
+      if (tagSelector) tagSelector.style.display = "none";
+    });
+  });
+}
+
+function cancelPhotoUpload() {
+  _pendingPhotoFile = null;
+  const tagSelector = document.getElementById("photo-tag-selector");
+  if (tagSelector) tagSelector.style.display = "none";
+}
+window.cancelPhotoUpload = cancelPhotoUpload;
+
+async function loadJobPhotos(jobId) {
+  if (!jobId) return;
+  const grid = document.getElementById("job-photos-grid");
+  const empty = document.getElementById("job-photos-empty");
+  if (!grid) return;
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/photos`);
+    if (!res.ok) throw new Error("Failed");
+    const photos = await res.json();
+    renderJobPhotos(photos, jobId);
+  } catch {
+    renderJobPhotos([], jobId);
+  }
+}
+
+function renderJobPhotos(photos, jobId) {
+  const grid = document.getElementById("job-photos-grid");
+  const empty = document.getElementById("job-photos-empty");
+  if (!grid) return;
+
+  if (!photos || photos.length === 0) {
+    grid.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+
+  if (empty) empty.style.display = "none";
+  grid.innerHTML = photos.map(p => `
+    <div class="job-photo-item">
+      <img class="job-photo-thumb" src="${escapeHtml(p.url)}" alt="${escapeHtml(p.tag)}" loading="lazy" onclick="viewJobPhoto('${escapeHtml(p.url)}')">
+      <span class="photo-tag-badge">${escapeHtml(p.tag)}</span>
+      <button class="photo-delete-btn" onclick="deleteJobPhoto('${p.id}','${jobId}')" title="Delete">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  `).join("");
+}
+
+async function uploadJobPhoto(jobId, file, tag) {
+  showToast("Uploading photo...", "info");
+  const formData = new FormData();
+  formData.append("photo", file);
+  formData.append("tag", tag);
+
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/photos`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Upload failed");
+    }
+    showToast("Photo saved", "success");
+    await loadJobPhotos(jobId);
+  } catch (err) {
+    console.error("uploadJobPhoto:", err);
+    showToast("Failed to upload photo: " + err.message, "error");
+  }
+}
+
+async function deleteJobPhoto(photoId, jobId) {
+  if (!confirm("Delete this photo?")) return;
+  try {
+    const res = await apiFetch(`/api/jobs/${jobId}/photos/${photoId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed");
+    showToast("Photo deleted", "success");
+    await loadJobPhotos(jobId);
+  } catch {
+    showToast("Failed to delete photo", "error");
+  }
+}
+window.deleteJobPhoto = deleteJobPhoto;
+
+function viewJobPhoto(url) {
+  window.open(url, "_blank");
+}
+window.viewJobPhoto = viewJobPhoto;
+
+// ─── OFFLINE CACHING FOR TODAY'S JOBS ────────────────────────────────────────
+
+let jobUpdateQueue = [];
+
+(function loadJobQueueFromStorage() {
+  try {
+    const saved = localStorage.getItem("tb_job_update_queue");
+    if (saved) jobUpdateQueue = JSON.parse(saved) || [];
+  } catch { jobUpdateQueue = []; }
+})();
+
+async function syncJobUpdateQueue() {
+  if (jobUpdateQueue.length === 0) return;
+  const queue = [...jobUpdateQueue];
+  jobUpdateQueue = [];
+  localStorage.removeItem("tb_job_update_queue");
+
+  let synced = 0;
+  for (const item of queue) {
+    try {
+      const res = await apiFetch(`/api/jobs/${item.jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: item.newStatus })
+      });
+      if (res.ok) synced++;
+      else jobUpdateQueue.push(item);
+    } catch {
+      jobUpdateQueue.push(item);
+    }
+  }
+
+  if (jobUpdateQueue.length > 0) {
+    localStorage.setItem("tb_job_update_queue", JSON.stringify(jobUpdateQueue));
+  }
+  if (synced > 0) {
+    showToast(`${synced} job update${synced > 1 ? "s" : ""} synced`, "success");
+    await loadJobs();
+    renderTodaysJobs();
+  }
+}
+
+// Patch advanceJobStatus to handle offline
+const _origAdvanceJobStatus = advanceJobStatus;
+window.advanceJobStatus = async function(jobId, currentStatus) {
+  if (!navigator.onLine) {
+    const NEXT = { pending: "arrived", open: "arrived", scheduled: "arrived", arrived: "in_progress", in_progress: "completed" };
+    const newStatus = NEXT[currentStatus];
+    if (!newStatus) return;
+
+    const queueItem = { jobId, currentStatus, newStatus, timestamp: Date.now() };
+    jobUpdateQueue.push(queueItem);
+    try { localStorage.setItem("tb_job_update_queue", JSON.stringify(jobUpdateQueue)); } catch {}
+
+    const idx = allJobs.findIndex(j => j.id === jobId);
+    if (idx !== -1) allJobs[idx] = { ...allJobs[idx], status: newStatus };
+    if (currentJob && currentJob.id === jobId) {
+      currentJob = { ...currentJob, status: newStatus };
+      renderJobDetail(currentJob);
+    }
+    renderTodaysJobs();
+    showToast("Saved offline — will sync when connected", "info");
+    return;
+  }
+  return _origAdvanceJobStatus.apply(this, [jobId, currentStatus]);
+};

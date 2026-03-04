@@ -602,14 +602,17 @@
           </div>
           <div class="dash-money-grid">
             <button class="dash-money-tile" onclick="showScreen('invoices')">
+              <div class="dash-money-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
               <div class="dash-money-label">This Week</div>
               <div class="dash-money-amount" id="snap-week">$0</div>
             </button>
             <button class="dash-money-tile" onclick="showScreen('invoices')">
+              <div class="dash-money-icon"><i class="fa-solid fa-calendar-check"></i></div>
               <div class="dash-money-label">This Month</div>
               <div class="dash-money-amount" id="snap-month">$0</div>
             </button>
             <button class="dash-money-tile red" onclick="showScreen('invoices')">
+              <div class="dash-money-icon"><i class="fa-solid fa-hourglass-half"></i></div>
               <div class="dash-money-label">Outstanding</div>
               <div class="dash-money-amount" id="snap-outstanding">$0</div>
             </button>
@@ -1919,11 +1922,12 @@
           <div id="job-lifecycle-bar" class="job-lifecycle-bar"></div>
 
           <!-- GENERATE INVOICE PROMPT (shown after completing) -->
-          <div id="job-complete-prompt" style="display:none;" class="tb-card" style="background:#f0fdf4;border:1px solid #10b981;">
-            <p style="font-weight:700;color:#065f46;margin:0 0 12px;"><i class="fa-solid fa-circle-check" style="margin-right:6px;color:#10b981;"></i>Job Complete! What's next?</p>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button id="btn-generate-invoice-from-job" class="btn-primary" style="flex:1;"><i class="fa-solid fa-file-invoice-dollar"></i> Generate Invoice</button>
-              <button id="btn-skip-invoice-prompt" class="btn-secondary" style="flex:1;">Skip</button>
+          <div id="job-complete-prompt" style="display:none;" class="job-complete-prompt-card">
+            <p class="job-complete-prompt-title"><i class="fa-solid fa-circle-check" style="margin-right:6px;color:#10b981;"></i>Job Complete! What's next?</p>
+            <div class="job-complete-prompt-actions">
+              <button id="btn-generate-invoice-from-job" class="job-prompt-btn green"><i class="fa-solid fa-file-invoice-dollar"></i><span>Generate Invoice</span></button>
+              <button id="btn-collect-payment-from-job" class="job-prompt-btn blue"><i class="fa-solid fa-dollar-sign"></i><span>Collect Payment</span></button>
+              <button id="btn-skip-invoice-prompt" class="job-prompt-btn gray"><i class="fa-solid fa-forward"></i><span>Skip</span></button>
             </div>
           </div>
 
@@ -1980,6 +1984,30 @@
             <div id="job-materials-list" style="padding:8px;"></div>
             <div id="job-materials-empty" style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No materials recorded</div>
             <div id="job-materials-total" style="display:none;padding:12px 16px;border-top:1px solid var(--border);text-align:right;font-weight:700;color:var(--text);">Total: $0.00</div>
+          </div>
+
+          <!-- JOB PHOTOS -->
+          <div class="feature-status-card" style="margin-top:20px;" id="job-photos-section">
+            <div class="feature-status-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-camera"></i>
+                <h3>Job Photos</h3>
+              </div>
+              <button id="btn-add-photo" class="btn-sm" style="background:var(--accent);color:white;"><i class="fa-solid fa-plus"></i> Add Photo</button>
+            </div>
+            <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none">
+            <div id="photo-tag-selector" style="display:none;flex-direction:column;padding:12px;border-top:1px solid var(--border);">
+              <p style="margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:600;">Tag this photo:</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="photo-tag-btn" data-tag="before">Before</button>
+                <button class="photo-tag-btn" data-tag="after">After</button>
+                <button class="photo-tag-btn" data-tag="install">Install</button>
+                <button class="photo-tag-btn" data-tag="other">Other</button>
+                <button class="photo-tag-btn-cancel" onclick="cancelPhotoUpload()">Cancel</button>
+              </div>
+            </div>
+            <div id="job-photos-grid" class="job-photos-grid"></div>
+            <div id="job-photos-empty" style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No photos yet</div>
           </div>
 
           <div class="feature-status-card" style="margin-top: 20px;">
@@ -2383,6 +2411,11 @@
           <button class="tb-add-btn" onclick="showScreen('settings')"><i class="fa-solid fa-pen"></i> Edit Profile</button>
         </section>
       </main>
+
+      <!-- FLOATING VOICE FAB -->
+      <button id="voice-fab" class="voice-fab" onclick="startCommandMic()" aria-label="Talk to Work" style="display:none;">
+        <i class="fa-solid fa-microphone"></i>
+      </button>
 
       <!-- BOTTOM NAVIGATION BAR -->
       <nav class="bottom-nav" id="bottom-nav">

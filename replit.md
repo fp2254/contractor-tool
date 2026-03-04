@@ -68,17 +68,22 @@ TradeBase is a full-stack web application utilizing Node.js with Express.js for 
 **Phase 1 — Daily Command Center + Contractor Memory (completed):**
 - **Dashboard Today's Jobs**: `#dash-today-jobs` section shows jobs scheduled for today, sorted by start_time. Each card: time, client, address, status pill, + Directions / Call / Advance-status buttons.
 - **Needs Attention**: Live section checks unpaid invoices (`window._allInvoices`) and stale quotes (`window._allQuotes`, sent >3 days). Tappable rows, max 3 items.
-- **Money Snapshot**: Three tiles — This Week, This Month, Outstanding — computed from `window._allInvoices`. Tap to invoices screen.
+- **Money Snapshot**: Three tiles — This Week, This Month, Outstanding — computed from `window._allInvoices`. Large bold amounts with icons. Outstanding tile has red tint when value > 0.
 - **Recent Activity**: Fetches `/api/activity-log?limit=5` and shows last 5 entries with icon + time-ago.
 - **Job Lifecycle Bar**: Dynamic button in job detail that advances status: pending/scheduled/open → arrived → in_progress → completed. Server auto-stamps `arrived_at`, `started_at`, `completed_at` on PATCH.
-- **Generate Invoice Prompt**: Shown after marking a job complete. Navigates to new-invoice screen pre-filled with job data.
+- **Job Complete Prompt**: 3-option card shown after marking a job complete: Generate Invoice (→ new-invoice pre-filled), Collect Payment (→ payments screen), Skip.
 - **Materials Used**: Per-job materials tracking via `/api/jobs/:jobId/materials`. CRUD inline form in job detail. Shows materials total.
+- **Job Photos**: Per-job photo capture/upload via `/api/jobs/:jobId/photos`. 3-column grid with tag badges (before/after/install/other). Camera opens on mobile; file picker on desktop. Delete supported.
+- **Floating Voice FAB**: Blue microphone button fixed bottom-right, visible when AI is enabled. Launches voice command overlay. Hidden while overlay is active.
 - **Property History**: Screen accessible from More menu. Search bar filters `allJobs` by address. Results show timeline of past jobs at that address with status and tap-to-detail.
 - **Job form fields added**: `scheduled_date`, `start_time`, `client_phone` — saved and displayed in job detail.
+- **Offline Caching**: `loadJobs()` writes to `localStorage` (tb_jobs_cache). `renderTodaysJobs()` falls back to cache when offline, shows yellow banner. `advanceJobStatus()` queues offline status changes to `tb_job_update_queue`, syncs when back online via `syncJobUpdateQueue()`.
 
 **New DB columns (jobs table):** `scheduled_date DATE`, `start_time TEXT`, `client_phone TEXT`, `arrived_at TIMESTAMPTZ`, `started_at TIMESTAMPTZ`, `completed_at TIMESTAMPTZ` — all added via `ALTER TABLE IF NOT EXISTS`.
 
-**New table:** `job_materials (id UUID, job_id UUID, user_id UUID, name TEXT, quantity DECIMAL, unit TEXT, unit_cost DECIMAL, created_at TIMESTAMPTZ)`.
+**New tables:**
+- `job_materials (id UUID, job_id UUID, user_id UUID, name TEXT, quantity DECIMAL, unit TEXT, unit_cost DECIMAL, created_at TIMESTAMPTZ)`
+- `job_photos (id UUID, job_id UUID, user_id UUID, url TEXT, tag TEXT DEFAULT 'other', created_at TIMESTAMPTZ)` — paired with Supabase Storage bucket `job-photos`
 
 **Modular Server Structure (v141):**
 ```
@@ -103,6 +108,7 @@ src/
     calendar.js     - Calendar events
     jobs.js         - Job folders with lifecycle timestamps
     job_materials.js - Materials per job (GET/POST/DELETE)
+    job_photos.js   - Photos per job (GET/POST/DELETE, Supabase Storage)
     messages.js     - System messages
     admin.js        - Admin endpoints
     trade_contacts.js - Trade contacts CRUD
