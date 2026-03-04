@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { SendEmailButton } from "@/components/SendEmailButton";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -171,6 +172,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       {quote.status !== "declined" && (
         <div className="space-y-3">
+          <SendEmailButton
+            apiPath={`/api/quotes/${quote.id}/send`}
+            label="Send Quote to Customer"
+            customerEmail={customer?.email}
+          />
+
           {!quote.invoice_id ? (
             <form action={convertToInvoice}>
               <input type="hidden" name="quote_id" value={quote.id} />

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { SendEmailButton } from "@/components/SendEmailButton";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -150,6 +151,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <p className="text-green-700 font-semibold">✅ Invoice Paid</p>
         </div>
       )}
+
+      <SendEmailButton
+        apiPath={`/api/invoices/${invoice.id}/send`}
+        label="Send Invoice to Customer"
+        customerEmail={customer?.email}
+      />
 
       <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />
 
