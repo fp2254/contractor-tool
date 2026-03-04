@@ -6,8 +6,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const { Pool } = pg;
 
-const rawDbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-const isDev = !process.env.SUPABASE_DB_URL;
+const rawDbUrl = process.env.TB_POOL_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+const isDev = !process.env.TB_POOL_URL && !process.env.SUPABASE_DB_URL;
 
 function sanitizeConnectionString(str) {
   if (!str) return str;
