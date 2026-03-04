@@ -1,113 +1,130 @@
 # TradeBase
 
-Mobile-first PWA for tradespeople — leads, quotes, invoices, jobs, and follow-ups.
+Mobile-first PWA for tradespeople — leads, quotes, invoices, jobs, payments, and customer portal.
 
 ## Stack
 
 - **Frontend/Backend**: Next.js 16 (App Router, TypeScript, Tailwind CSS)
 - **Database**: Supabase (PostgreSQL) via `@supabase/ssr`
 - **Auth**: Supabase Auth (SSR cookies)
-- **UI Theme**: Dark navy blue (#1B3A6B) header + white cards + gray background
+- **Email**: Resend (via Replit integration) — quote/invoice/portal emails
+- **PDF**: `@react-pdf/renderer` — branded quote and invoice PDFs
+- **Storage**: Supabase Storage (`tradebase-photos` bucket) — job/customer photos
+- **UI Theme**: Navy #1B3A6B header + white cards + gray-100 background
 
 ## Project Structure
 
 ```
-app/                  Next.js App Router pages
-  app/                Authenticated app routes
-    page.tsx          Dashboard (stat cards, needs attention, quick actions)
-    leads/            Leads list and detail
-    jobs/             Jobs list and detail
-    money/            Money / invoices overview
-    more/             More menu (links to sub-pages)
-    trade-contacts/   Trade contacts (static demo)
-    inventory/        Inventory (static demo)
-    reports/          Reports menu
-    referral/         Referral program
-    customers/        Customer management
-    quotes/           Quote builder
-    invoices/         Invoice CRUD
-    followups/        Follow-up management
-  auth/               Auth routes (login)
-  globals.css         Global styles
-  layout.tsx          Root layout
+app/
+  app/              Authenticated contractor routes (guarded by ensureUserOrg)
+    page.tsx        Dashboard
+    leads/          Leads pipeline
+    customers/      Customer profiles
+    quotes/         Quote builder + detail
+    jobs/           Job management
+    invoices/       Invoice CRUD
+    schedule/       Scheduling calendar
+    money/          Payments overview
+    more/           More menu
+    trade-contacts/ Trade contacts (empty state)
+    inventory/      Inventory (empty state)
+  auth/             Login / signup
+  portal/[token]/   Public customer portal (no auth — token-based)
+  api/
+    quotes/[id]/pdf       Download quote PDF (contractor)
+    quotes/[id]/send      Email quote to customer
+    invoices/[id]/pdf     Download invoice PDF (contractor)
+    invoices/[id]/send    Email invoice to customer
+    portal/generate       Generate + email customer portal link
+    portal/[token]/quote/[quoteId]/pdf    Public quote PDF (portal)
+    portal/[token]/invoice/[invoiceId]/pdf Public invoice PDF (portal)
+    photos/upload, photos/[id]            Photo CRUD
+    quotes/new/api        Create quote
 components/
-  AppShell.tsx        Dark navy header + bottom nav (Home/Leads/Jobs/Money/More)
-  ui/                 Reusable UI primitives (Button, Card, Input, Modal)
+  AppShell.tsx          Nav shell (Home/Leads/Schedule/Jobs/Money/More)
+  forms/QuoteBuilder.tsx  Quote builder with presets + inline new client
+  PhotoGallery.tsx       Upload/view/delete photos
+  SendEmailButton.tsx    Client button — send quote/invoice email
+  SendPortalButton.tsx   Client button — send customer portal link
 lib/
-  auth.ts             ensureUserOrg() — org provisioning on sign-in (uses admin client)
+  auth.ts               ensureUserOrg() — org provisioning
+  email.ts              Resend client + HTML email templates
+  pdf/QuotePDF.tsx       Quote PDF template
+  pdf/InvoicePDF.tsx     Invoice PDF template
   supabase/
-    server.ts         Cookie-based Supabase client (server components)
-    client.ts         Browser Supabase client
-    admin.ts          Service-role admin client (bypasses RLS)
-    middleware.ts     Session refresh middleware
-  types.ts            Database type definitions
-  validation.ts       Zod validation schemas
-middleware.ts         Auth middleware (route protection)
+    server.ts, client.ts, admin.ts, middleware.ts
+  validation.ts         Zod schemas
+supabase/
+  migration_phase1.sql  ✅ applied
+  migration_phase2.sql  ✅ applied
+  migration_photos.sql  ✅ applied
+  migration_portal.sql  ✅ applied
 ```
 
 ## Environment Variables
 
-| Variable | Where | Notes |
-|---|---|---|
-| `SUPABASE_URL` | Shared env var | `https://lrtrbocvcqgfnklknlnu.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Shared env var | Same as SUPABASE_URL |
-| `SUPABASE_ANON_KEY` | Secret | Public anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Secret | Service role key (used by admin client) |
-| `TB_POOL_URL` | Secret | Supabase connection pooler URL |
+| Variable | Notes |
+|---|---|
+| `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` | `https://lrtrbocvcqgfnklknlnu.supabase.co` |
+| `SUPABASE_ANON_KEY` | Public anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role — used by admin client |
+| `TB_POOL_URL` | Supabase connection pooler |
 
-`next.config.ts` maps `SUPABASE_ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `TB_POOL_URL` → `DATABASE_URL` at runtime.
+`next.config.ts` maps secrets to `NEXT_PUBLIC_*` and `DATABASE_URL` at runtime.
 
 ## Workflow
 
-- **TradeBase**: `npm run dev -- -H 0.0.0.0 -p 5000` (port 5000)
+- **TradeBase**: `node scripts/start.js` → clears port 5000, then `next dev -H 0.0.0.0 -p 5000`
 
 ## Database
 
 - Supabase project: `lrtrbocvcqgfnklknlnu`
-- All data operations use the service-role admin client to reliably bypass RLS
+- Admin client bypasses RLS for all data ops
 - Org-based multi-tenancy: every row scoped to `org_id`
-- `ensureUserOrg()` in `lib/auth.ts` provisions org + org_member on first sign-in
+- Tables: orgs, org_members, org_settings, service_presets, customers, leads, quotes, quote_items, jobs, invoices, invoice_items, payments, notes, photos, customer_portal_tokens
 
-## UI Design
+## Features Complete
 
-- **Bottom navigation**: Home, Leads, Schedule, Jobs, Money, More (6 tabs)
-- **Color**: Navy #1B3A6B header; gray-100 page bg; white cards
-- **Stat cards** (dashboard): orange (New Leads), green (Jobs Today), red (Unpaid), blue (Estimates)
-- **Quick Actions**: 2×2 grid of navy dark buttons
-
-## Features Built
-
-### Phase 1 (Core)
-- Leads pipeline (New/Contacted/Quoted/Scheduled/Won/Lost), call/text/convert/note actions
-- Customers with linked quotes/jobs/invoices/notes
-- Quotes builder with line items, inline new client creation
-- Jobs with status updates (Scheduled/In Progress/Completed/Cancelled)
-- Invoices with mark-paid, payment method selection, notes
+### Core CRM
+- Leads pipeline (New/Contacted/Quoted/Scheduled/Won/Lost) with call/text/convert/note
+- Customers with full history (quotes, jobs, invoices, notes, photos)
+- Quote builder — line items, service preset chips, inline new client creation
+- Jobs — status, scheduling, Maps navigation, photos, notes
+- Invoices — mark paid with payment method, notes, photos
 - Global search across all records
+- Conversion flows: Lead→Customer, Lead→Quote, Quote→Job, Quote→Invoice, Job→Invoice
 
-### Phase 2 (Business Profile)
-- Business Identity, Quote/Invoice Defaults, Service Pricing Presets, Payment Settings, Automation, Data Export
-- CSV export API routes for customers/quotes/invoices
-- `org_settings` + `service_presets` tables
+### Business Profile
+- 8 settings sections: identity, defaults, service presets, payment methods, automation, export
+- CSV export for customers, quotes, invoices
 
-### Phase 3 (PDF + Calendar + Photos)
-- **Quote PDF**: `/api/quotes/[id]/pdf` — react-pdf template with business branding, line items, tax, totals
-- **Invoice PDF**: `/api/invoices/[id]/pdf` — react-pdf template with payment instructions, paid/overdue status
-- **Scheduling Calendar**: `/app/schedule` — Month/Week/Day views, colored job dots, tap to see jobs, Reschedule with date picker, navigate to job location
-- **Photo Attachments**: `PhotoGallery` component on Jobs/Customers/Leads/Invoices — 3-col grid, lightbox, delete; uploads via Supabase Storage bucket `tradebase-photos`
-- **Quick Quote Builder**: One-tap service preset buttons auto-populate line items from org's saved presets
+### PDFs
+- Quote PDF (`/api/quotes/[id]/pdf`) — branded, line items, totals, tax
+- Invoice PDF (`/api/invoices/[id]/pdf`) — branded, payment instructions, due date
 
-## Migrations Needed
-- `supabase/migration_phase1.sql` — leads, payments, notes, job columns ✅ applied
-- `supabase/migration_phase2.sql` — org_settings, service_presets ✅ applied
-- `supabase/migration_photos.sql` — photos table + storage bucket (run in Supabase SQL editor)
+### Scheduling Calendar
+- Month/Week/Day views, colored status dots, tap to open, inline reschedule, Maps link
 
-## Key Files
-- `components/AppShell.tsx` — nav shell
-- `components/forms/QuoteBuilder.tsx` — quote builder with presets + new client
-- `components/PhotoGallery.tsx` — photo upload/display/delete
-- `app/app/schedule/ScheduleClient.tsx` — calendar with month/week/day views
-- `lib/pdf/QuotePDF.tsx`, `lib/pdf/InvoicePDF.tsx` — PDF templates
-- `app/api/photos/upload/route.ts`, `app/api/photos/[id]/route.ts` — photo CRUD
-- `app/api/quotes/[id]/pdf/route.ts`, `app/api/invoices/[id]/pdf/route.ts` — PDF endpoints
-- `app/api/jobs/[id]/reschedule/route.ts` — update job scheduled_date
+### Photo Attachments
+- 3-column grid, fullscreen lightbox, delete on Jobs/Customers/Leads/Invoices
+- Supabase Storage bucket `tradebase-photos`
+
+### Email (Resend)
+- Send Quote by email — generates PDF, sends branded HTML email with attachment
+- Send Invoice by email — same for invoices
+- Customer Portal link email — branded with big CTA button
+
+### Customer Portal (`/portal/[token]`)
+- Public, no login required — UUID token (30-day expiry)
+- Customer sees all their quotes and invoices
+- Accept / Decline open quotes directly from the portal
+- Download PDF for any quote or invoice
+- Branded with contractor's business name
+- "Send Customer Portal Link" button on every customer detail page
+
+## Not Yet Built
+- Online payments (Stripe/Square)
+- Recurring jobs
+- Route optimization
+- Team member roles / multi-user
+- Offline mode (service worker)
