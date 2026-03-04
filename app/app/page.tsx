@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { AiCaptureModal } from "@/components/AiCaptureModal";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -83,7 +84,7 @@ export default async function DashboardPage() {
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h2 className="text-base font-bold text-slate-800 mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
@@ -98,6 +99,7 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+        <AiCaptureModal />
       </div>
     </div>
   );
