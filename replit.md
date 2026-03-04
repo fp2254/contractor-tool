@@ -10,6 +10,7 @@ Mobile-first PWA for tradespeople — leads, quotes, invoices, jobs, payments, a
 - **Email**: Resend (via Replit integration) — quote/invoice/portal emails
 - **PDF**: `@react-pdf/renderer` — branded quote and invoice PDFs
 - **Storage**: Supabase Storage (`tradebase-photos` bucket) — job/customer photos
+- **AI**: OpenAI via Replit AI Integrations (`gpt-5-mini`) — AI Job Capture feature
 - **UI Theme**: Navy #1B3A6B header + white cards + gray-100 background
 
 ## Project Structure
