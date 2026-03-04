@@ -11,8 +11,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.2",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
+    "@types/react-pdf": "^6.2.0",
     "drizzle-orm": "^0.39.1",
     "next": "^16.1.6",
     "react": "19.0.0",
