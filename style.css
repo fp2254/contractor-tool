@@ -39,7 +39,16 @@
   --shadow-light: rgba(0, 0, 0, 0.05);
 }
 
-#app-container {
+#app-container,
+#inline-add-client-modal,
+#template-preview-modal,
+#template-chooser-modal,
+#email-invoice-modal,
+#quick-pay-modal,
+#tos-modal,
+#voice-transcript-modal,
+.modal-overlay,
+.plans-modal-overlay {
   --bg: #F5F5F5;
   --bg-alt: #ffffff;
   --tile: #ffffff;
@@ -55,6 +64,10 @@
   --border: #e5e7eb;
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-light: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+#app-container {
   background: var(--bg);
 }
 
