@@ -1,28 +1,106 @@
-import Link from "next/link";
+"use client";
 
-const links = [
-  ["Dashboard", "/app"],
-  ["Customers", "/app/customers"],
-  ["Quotes", "/app/quotes"],
-  ["Follow-Ups", "/app/followups"],
-  ["Invoices", "/app/invoices"],
-  ["Jobs", "/app/jobs"],
-] as const;
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+function HomeIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill={active ? "#1B3A6B" : "none"} stroke={active ? "#1B3A6B" : "#9ca3af"} strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" />
+    </svg>
+  );
+}
+function LeadsIcon({ active }: { active: boolean }) {
+  const c = active ? "#1B3A6B" : "#9ca3af";
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={c} strokeWidth={2}>
+      <circle cx="12" cy="8" r="4" />
+      <path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
+  );
+}
+function JobsIcon({ active }: { active: boolean }) {
+  const c = active ? "#1B3A6B" : "#9ca3af";
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={c} strokeWidth={2}>
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path strokeLinecap="round" d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
+    </svg>
+  );
+}
+function MoneyIcon({ active }: { active: boolean }) {
+  const c = active ? "#1B3A6B" : "#9ca3af";
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={c} strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <path strokeLinecap="round" d="M12 6v12M9 9h4.5a1.5 1.5 0 010 3H10.5a1.5 1.5 0 000 3H15" />
+    </svg>
+  );
+}
+function MoreIcon({ active }: { active: boolean }) {
+  const c = active ? "#1B3A6B" : "#9ca3af";
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill={c}>
+      <circle cx="5" cy="12" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="19" cy="12" r="2" />
+    </svg>
+  );
+}
+
+const navItems = [
+  { label: "Home", href: "/app", Icon: HomeIcon, exact: true },
+  { label: "Leads", href: "/app/leads", Icon: LeadsIcon, exact: false },
+  { label: "Jobs", href: "/app/jobs", Icon: JobsIcon, exact: false },
+  { label: "Money", href: "/app/money", Icon: MoneyIcon, exact: false },
+  { label: "More", href: "/app/more", Icon: MoreIcon, exact: false },
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  function isActive(href: string, exact: boolean) {
+    if (exact) return pathname === href;
+    return pathname.startsWith(href);
+  }
+
   return (
-    <div className="mx-auto max-w-3xl p-4 pb-20">
-      <header className="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <p className="text-xl font-bold">TradeBase</p>
-        <nav className="mt-3 flex flex-wrap gap-2">
-          {links.map(([label, href]) => (
-            <Link key={href} href={href} className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium">
-              {label}
-            </Link>
-          ))}
-        </nav>
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#1B3A6B" }}>
+        <div className="flex items-center gap-2">
+          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="white">
+            <path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <rect x="9" y="14" width="6" height="7" rx="0.5" fill="white" />
+          </svg>
+          <span className="text-xl font-bold text-white">TradeBase</span>
+        </div>
+        <button className="text-white p-1">
+          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
+            <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+          </svg>
+        </button>
       </header>
-      {children}
+
+      <main className="flex-1 pt-14 pb-20 overflow-y-auto">
+        {children}
+      </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+        <div className="flex">
+          {navItems.map(({ label, href, Icon, exact }) => {
+            const active = isActive(href, exact);
+            return (
+              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5">
+                <Icon active={active} />
+                <span className={`text-xs font-medium ${active ? "text-[#1B3A6B]" : "text-gray-400"}`}>{label}</span>
+                {active && label === "Leads" && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
