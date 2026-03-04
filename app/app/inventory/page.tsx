@@ -1,12 +1,3 @@
-const DEMO_ITEMS = [
-  { name: "Radon Mitigation System", price: "$1,500", stock: "Stock: 2", icon: "🔧" },
-  { name: "PVC Piping", price: "$3/ft", stock: "Stock: 190 ft.", icon: "🔩" },
-  { name: "Dehumidifier", price: "$450", stock: "Stock: 4", icon: "💨" },
-  { name: "Sump Pump", price: "$350", stock: "Stock: 3", icon: "⚙️" },
-  { name: "50-Gallon Water Heater", price: "$800", stock: "Stock: 45 rolls", icon: "🏠" },
-  { name: "Duct Tape", price: "$6/1", stock: "Stock: 6/6", icon: "📦" },
-];
-
 export default function InventoryPage() {
   return (
     <div className="p-4 space-y-3">
@@ -32,21 +23,8 @@ export default function InventoryPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
-        {DEMO_ITEMS.map((item) => (
-          <div key={item.name} className="flex items-center gap-3 px-4 py-3">
-            <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-xl shrink-0">
-              {item.icon}
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-[#1B3A6B] text-sm">{item.price}</p>
-              <p className="text-xs text-gray-400">{item.stock}</p>
-            </div>
-          </div>
-        ))}
+      <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+        No items yet. Tap New Item to add your first.
       </div>
     </div>
   );

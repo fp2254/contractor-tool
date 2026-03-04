@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { QuoteBuilder } from "@/components/forms/QuoteBuilder";
+import { QuoteBuilder, QuotePayload } from "@/components/forms/QuoteBuilder";
 
 export default function NewQuoteClient({
   customers,
@@ -13,7 +13,7 @@ export default function NewQuoteClient({
   return (
     <QuoteBuilder
       customers={customers}
-      onSubmit={async (payload) => {
+      onSubmit={async (payload: QuotePayload) => {
         const response = await fetch("/app/quotes/new/api", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

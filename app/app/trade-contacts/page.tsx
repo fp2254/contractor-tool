@@ -1,14 +1,3 @@
-import Link from "next/link";
-
-const DEMO_CONTACTS = [
-  { name: "Mike P.", company: "Portland Electric", phone: "207) 555-3021" },
-  { name: "Louie T.", company: "Thompson Plumbing", phone: "207) 555-8912" },
-  { name: "Steve R.", company: "Augusta HVAC", phone: "207) 555-7645" },
-  { name: "Ed L.", company: "Reliable Construction", phone: "207) 555-6352" },
-  { name: "Pat H.", company: "Harris Landscaping", phone: "207) 555-4147" },
-  { name: "Dave G.", company: "Pine State Roofing", phone: "207) 555-1286" },
-];
-
 export default function TradeContactsPage() {
   return (
     <div className="p-4 space-y-3">
@@ -34,24 +23,8 @@ export default function TradeContactsPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
-        {DEMO_CONTACTS.map((contact) => (
-          <div key={contact.name} className="flex items-center gap-3 px-4 py-3">
-            <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-              style={{ backgroundColor: "#1B3A6B" }}>
-              {contact.name.charAt(0)}
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-slate-800 text-sm">{contact.name}</p>
-              <p className="text-xs text-gray-500">{contact.company}</p>
-              <p className="text-xs text-gray-500">📞 {contact.phone}</p>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400">
-              <span>📞</span><span>💬</span>
-              <span className="text-gray-300 text-lg">›</span>
-            </div>
-          </div>
-        ))}
+      <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+        No contacts yet. Tap Invite a Contractor to get started.
       </div>
     </div>
   );
