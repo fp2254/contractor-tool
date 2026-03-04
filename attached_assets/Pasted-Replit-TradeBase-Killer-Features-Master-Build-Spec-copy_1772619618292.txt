@@ -1,0 +1,229 @@
+Replit — TradeBase “Killer Features” Master Build Spec (copy/paste)
+
+OBJECTIVE
+Implement the full TradeBase feature set discussed (command center + job memory + revenue boosters + viral/network + premium anchor). Build in phases with clean, modular components. Keep UI contractor-simple (light theme, big tap targets, minimal clutter).
+
+========================================================
+PHASE 1 — DAILY COMMAND CENTER + CONTRACTOR MEMORY (MVP)
+========================================================
+
+1) HOME DASHBOARD = “DAILY COMMAND CENTER”
+Must answer instantly:
+- Where do I go today?
+- Who owes me money?
+- What needs attention?
+
+A) Today’s Jobs (top section)
+- Query jobs where scheduled_date == today (local timezone), sort by start_time
+- Each JobCard shows:
+  - time
+  - service type/title
+  - customer name
+  - city/town
+  - status pill: Scheduled / In Progress / Complete
+- Quick actions on each job card:
+  1) Directions (open maps with address)
+  2) Call (tel: customer phone)
+  3) Start/Complete toggle (updates status + logs activity)
+- Empty state: “No jobs scheduled today” + button “Schedule Job”
+
+B) Dashboard Stat Cards (keep your 4 cards)
+- New Leads = count leads with status “new”
+- Jobs Today = count today jobs
+- Unpaid = sum invoices where status unpaid/overdue
+- Estimates = count quotes where status sent and not accepted/declined
+- Each card navigates to filtered view
+
+C) Needs Attention (actionable)
+Show max 3 items + “View all”
+Rules:
+- If unpaid invoices > 0 -> “X unpaid invoices” (tap -> Money filtered)
+- If quotes sent older than 3 days -> “X quotes need follow-up” (tap -> Follow-ups list)
+- If jobs within 24h missing address/phone -> “Job missing info” (tap -> job)
+- If none -> “All caught up.”
+
+D) Quick Actions (keep existing)
+- New Quote
+- Add Lead
+- Collect Payment
+- Schedule Job
+
+E) Money Snapshot (new)
+- This Week Collected = sum payments last 7 days
+- This Month Revenue = sum paid invoices in current month
+- Outstanding = sum unpaid/overdue invoices
+- Each tile navigates to Money filtered view
+
+F) Recent Activity (new)
+- Show last 5 activity events (newest first)
+- Event types: quote_sent, quote_accepted/declined, invoice_created, payment_received, job_scheduled, job_completed
+- Tap opens the referenced record
+
+IMPORTANT UI CHANGE
+- REMOVE “0/300 AI actions” counter (confusing). Replace with helper text under Talk to Work:
+  “Say: ‘Create quote…’ ‘Add lead…’ ‘Schedule job…’ ‘Record payment…’”
+
+2) JOB LIFECYCLE WORKFLOW (must exist)
+In Job Detail screen:
+Buttons:
+- Arrive
+- Start Job
+- Complete Job
+On complete:
+- Prompt: “Generate Invoice?” (1 tap)
+- Prompt: “Collect Payment?” (if payment flow enabled)
+Track timestamps for arrive/start/complete and log activity.
+
+3) CONTRACTOR MEMORY (“THE CONTRACTOR BRAIN” STORAGE)
+Each job permanently stores:
+- notes (job_notes)
+- photos (job_photos with before/after tags)
+- materials used (job_materials)
+- time stamps (arrive/start/complete)
+- linked quote/invoice/payment
+Add “Property History” view:
+- Search by address
+- Show timeline of all jobs at that address
+
+========================================================
+PHASE 2 — REVENUE BOOSTERS (MONETIZATION CORE)
+========================================================
+
+4) AUTO-INVOICE FROM QUOTE (1 tap)
+Flow:
+Quote (Accepted) -> Convert to Job -> Generate Invoice
+Invoice/Job copies:
+- scope text
+- line items
+- pricing
+- customer + address
+
+5) QUOTE FOLLOW-UP AUTOMATION (big revenue lift)
+A) Follow-up List
+- Quotes status “sent” older than N days (default 3)
+- One button: “Send Reminder”
+B) Scheduled follow-ups
+- Day 3, Day 7, Day 14 default schedule (editable)
+- Support SMS/email templates (message_templates)
+- Log every follow-up to activity_log
+
+6) PROFIT PER JOB (simple + useful)
+On Job/Invoice show:
+- Job Revenue (invoice total)
+- Material Cost (sum job_materials)
+- Labor hours (computed from start/complete or manual entry)
+- Profit estimate = revenue - materials - (labor_hours * labor_rate)
+Allow setting default labor_rate in Settings.
+
+========================================================
+PHASE 3 — VIRAL + NETWORK EFFECT FEATURES (PLATFORM)
+========================================================
+
+7) QUOTE TEMPLATE LIBRARY (“STEAL THIS QUOTE”)
+In-app library:
+- Browse/search by trade + job type
+- “Use Template” creates a quote with prewritten scope + line items
+- Private templates (user-only)
+- Public templates (community)
+- Users can submit templates
+- Rating/usage counts (template_ratings + usage metric)
+
+8) QUOTE INTELLIGENCE (“MARKET PRICING”)
+Collect anonymized events whenever a quote/invoice is finalized:
+Store ONLY:
+- trade/service_type
+- region (zip or county bucket)
+- total price
+- labor hours bucket (optional)
+- material cost bucket (optional)
+NO customer names, addresses, phone numbers.
+Show:
+- low/avg/high price ranges in user’s region
+- “Create Quote Using Market Average” button
+
+9) CONTRACTOR NETWORK (LOCAL TRADE DIRECTORY)
+Directory inside app:
+- Contractors can create profile: trade, service areas, license#, insurance, rating
+- Search “Need a plumber/electrician/etc.”
+- Referral / invite-to-job action
+Monetization later: premium profiles, referral fee handling.
+
+10) LEAD EXCHANGE (“SELL THE JOB”)
+Contractor can list a lead they can’t take:
+- job type, rough scope, location radius, budget range, urgency
+Other contractors can buy/claim:
+- after purchase reveal customer contact info
+Add safeguards:
+- spam prevention
+- lead expiry
+- rating/report system
+Monetization:
+- lead fee ($20–$50) or credits
+
+========================================================
+PHASE 4 — PREMIUM $50/MO ANCHOR FEATURE
+========================================================
+
+11) AUTO PERMIT FINDER + PERMIT GENERATOR
+When creating a job, determine permit needs based on:
+- town/city + state
+- job type/service category
+Show:
+- permit required? yes/no
+- permit type
+- fee (if known)
+- link to town permit page
+Generate:
+- a PDF with contractor info + job scope auto-filled (where possible)
+Also add:
+- inspection reminders (rough/final) where applicable
+
+NOTE: This requires building a permit rules dataset per town (start with ME towns as MVP).
+
+========================================================
+CORE TECH REQUIREMENTS
+========================================================
+
+DATA (SUPABASE RECOMMENDED)
+Minimum tables:
+- customers, leads, jobs
+- quotes, quote_items
+- invoices, invoice_items
+- payments
+- job_notes, job_photos, job_materials
+- activity_log
+
+Automation tables (phase 2):
+- followups
+- message_templates
+
+Platform tables (phase 3):
+- quote_templates
+- template_ratings
+- quote_intelligence_events
+- contractor_profiles
+- lead_exchange_listings
+
+ACTIVITY LOGGING (REQUIRED)
+Log these actions:
+- job_created, job_scheduled, job_started, job_completed
+- quote_created, quote_sent, quote_accepted/declined
+- invoice_created, payment_received
+- followup_sent
+- template_used
+- lead_listed, lead_claimed
+
+UI REQUIREMENTS
+- Light theme, simple, contractor-friendly
+- Big buttons, minimal text, fast flows
+- Home is the command center; no dead/empty sections
+- Keep Talk to Work mic bar prominent
+- Do NOT show “AI usage counters” on the dashboard
+
+DELIVERABLES
+- Phase 1 fully working end-to-end with live data (or mock data with clean interfaces if data incomplete)
+- Componentized UI: JobCard, StatCard, AttentionItem, MoneyTile, ActivityItem
+- Navigation hooks for each dashboard section
+- Job workflow + contractor memory implemented
+
+END SPEC

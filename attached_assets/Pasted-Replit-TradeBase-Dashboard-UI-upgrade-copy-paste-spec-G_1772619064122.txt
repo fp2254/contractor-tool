@@ -1,0 +1,118 @@
+Replit — TradeBase Dashboard UI upgrade (copy/paste spec)
+
+GOAL
+Make the Home/Dashboard screen a true “daily command center” for contractors:
+1) Today’s jobs (with quick actions)
+2) Money snapshot (week/month/outstanding)
+3) Needs Attention (actionable alerts, not empty)
+4) Recent Activity feed (reassurance + audit trail)
+5) Keep Quick Actions grid (Quote/Lead/Payment/Schedule)
+6) Improve “Talk to Work” + remove confusing AI action counter
+
+DO NOT REMOVE
+- Top brand header + bell/menu icons
+- “Talk to Work” mic bar (keep as primary feature)
+- Bottom nav: Home / Leads / Jobs / Money / More
+- Quick Actions buttons (New Quote, Add Lead, Collect Payment, Schedule Job)
+
+REMOVE / CHANGE
+1) REMOVE the “0/300 AI actions” counter from the dashboard UI (confusing + feels like paywall).
+   - Replace with a simple helper line under Talk to Work:
+     “Say: ‘Create quote for…’ • ‘Add lead…’ • ‘Schedule job…’”
+
+2) REPLACE “Needs Attention: Nothing urgent.” with a real list of items if any exist.
+   - If empty, show: “All caught up.” with a subtle check icon.
+
+ADD SECTIONS (IN THIS ORDER)
+A) TODAY’S JOBS (new section ABOVE Dashboard cards)
+- Title: “Today’s Jobs”
+- Pull from jobs where scheduled_date == today (local timezone), sorted by start_time
+- Each job card shows:
+  - time window (e.g., 8:00 AM)
+  - job title/service type
+  - customer name
+  - city/town
+  - status pill (Scheduled / In Progress / Complete)
+- Each job card has 3 small quick buttons:
+  1) Directions (opens maps using job address)
+  2) Call (tel: customer phone)
+  3) Start/Complete (toggles status)
+- If no jobs today, show empty state:
+  “No jobs scheduled today.” + button “Schedule Job”
+
+B) DASHBOARD STAT CARDS (keep but adjust labels)
+- New Leads = count of leads with status “new” (last 7 days OR status new)
+- Jobs Today = count of today’s jobs
+- Unpaid = $ sum of invoices with status unpaid/overdue
+- Estimates = count of open estimates (sent + not accepted/declined)
+- Keep cards tappable:
+  - Leads card -> Leads screen filtered to new
+  - Jobs Today card -> Jobs screen filtered to today
+  - Unpaid card -> Money/Invoices filtered to unpaid
+  - Estimates card -> Estimates list filtered to open
+
+C) NEEDS ATTENTION (make it actionable)
+Show list items only when relevant, max 3 items + “View all”
+Rules:
+- If unpaid invoices > 0: “X unpaid invoices” (tap -> unpaid list)
+- If estimates sent > 0 and older than N days (default 3): “X quotes need follow-up” (tap -> follow-up list)
+- If jobs starting within next 24h missing address/phone: “Job missing info” (tap -> that job)
+- If empty: “All caught up.”
+
+D) QUICK ACTIONS (keep existing grid)
+- Keep same 4 buttons and layout
+- Optional: add a floating “+” button later (not required now)
+
+E) REVENUE SNAPSHOT (new section below Quick Actions OR below Recent Activity)
+- Title: “Money Snapshot”
+- 3 tiles:
+  - “This Week Collected” = sum of payments in last 7 days
+  - “This Month Revenue” = sum of paid invoices this calendar month
+  - “Outstanding” = sum unpaid/overdue invoices
+- Each tile tappable to relevant Money filtered view
+
+F) RECENT ACTIVITY (new section near bottom)
+- Title: “Recent Activity”
+- Show last 5 events (newest first):
+  - Quote sent
+  - Quote accepted/declined
+  - Invoice created
+  - Payment received
+  - Job scheduled/completed
+- Each item: icon + short text + timestamp (“2h ago”)
+- Tap opens the referenced entity (quote/invoice/job)
+
+OPTIONAL (NICE-TO-HAVE AFTER ABOVE)
+- “Weather” small widget (toggleable). Only add after the core sections are done.
+
+UI STYLE REQUIREMENTS
+- Light theme (white background) consistent with current mockups
+- Section headers bold + spaced
+- Cards rounded, high-contrast, large tap targets
+- Keep the app feeling “simple, fast, not corporate”
+
+DATA / API NOTES (IF USING SUPABASE)
+- Jobs table fields needed:
+  id, title/service_type, customer_id, scheduled_date, start_time, status, address, city, phone
+- Invoices:
+  id, customer_id, total_amount, status (paid/unpaid/overdue), created_at
+- Estimates/Quotes:
+  id, customer_id, total_amount, status (draft/sent/accepted/declined), sent_at
+- Payments:
+  id, invoice_id, amount, paid_at
+
+ACCEPTANCE CRITERIA
+1) Home screen shows Today’s Jobs section with real data and quick buttons.
+2) AI counter is removed and replaced with helper prompt text.
+3) Needs Attention shows real alerts or “All caught up.”
+4) Dashboard stat cards reflect live counts/sums and are clickable.
+5) Revenue Snapshot shows week/month/outstanding values.
+6) Recent Activity shows last 5 events and deep-links to records.
+7) Existing Quick Actions + bottom nav remain unchanged.
+
+DELIVERABLES
+- Updated /app (Home) page UI with the sections above
+- Any required components for JobCard, StatCard, ActivityItem
+- Hook up to existing data source; if missing tables, stub with mock data but keep interfaces ready.
+
+END
