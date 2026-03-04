@@ -6,6 +6,7 @@ import calendarRoutes from "./calendar.js";
 import jobsRoutes from "./jobs.js";
 import messagesRoutes from "./messages.js";
 import adminRoutes from "./admin.js";
+import tradeContactsRoutes from "./trade_contacts.js";
 
 export function registerRoutes(app) {
   app.use("/api/profile", profileRoutes);
@@ -16,4 +17,5 @@ export function registerRoutes(app) {
   app.use("/api/jobs", jobsRoutes);
   app.use("/api/messages", messagesRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/trade-contacts", tradeContactsRoutes);
 }

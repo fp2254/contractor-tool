@@ -1218,6 +1218,63 @@
           </div>
         </section>
 
+        <!-- TRADE CONTACTS -->
+        <section id="screen-trade-contacts" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="more"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2>Trade Contacts</h2>
+          </div>
+
+          <div class="screen-actions">
+            <button id="btn-new-trade-contact" class="btn-primary"><i class="fa-solid fa-plus"></i> Add Contact</button>
+          </div>
+
+          <div id="trade-contacts-list" class="list"></div>
+
+          <div id="trade-contacts-empty" class="empty-state" style="display: none;">
+            <i class="fa-solid fa-address-book empty-state-icon"></i>
+            <p class="empty-state-title">No trade contacts yet</p>
+            <p class="empty-state-desc">Save other tradespeople you can refer your customers to</p>
+          </div>
+        </section>
+
+        <!-- TRADE CONTACT FORM -->
+        <section id="screen-trade-contact-form" class="screen">
+          <div class="screen-header">
+            <button class="btn-back" data-back="trade-contacts"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <h2 id="trade-contact-form-title">Add Trade Contact</h2>
+          </div>
+
+          <form id="trade-contact-form" class="form">
+            <input type="hidden" id="tc-id" />
+
+            <div class="form-row">
+              <label>Full Name *</label>
+              <input type="text" id="tc-name" placeholder="e.g. Dave the Plumber" required />
+            </div>
+
+            <div class="form-row">
+              <label>Phone Number</label>
+              <input type="tel" id="tc-phone" placeholder="e.g. 0412 345 678" />
+            </div>
+
+            <div class="form-row">
+              <label>Occupation / Trade</label>
+              <input type="text" id="tc-occupation" placeholder="e.g. Plumber, Electrician, Painter" />
+            </div>
+
+            <div class="form-row">
+              <label>Notes</label>
+              <textarea id="tc-notes" rows="3" placeholder="Any extra info — area they cover, quality rating, etc."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" id="btn-save-trade-contact">Save Contact</button>
+              <button type="button" id="btn-delete-trade-contact" class="btn-danger" style="display:none;">Delete Contact</button>
+            </div>
+          </form>
+        </section>
+
         <!-- CALCULATOR -->
         <section id="screen-calculator" class="screen">
           <div class="screen-header">
@@ -2010,8 +2067,8 @@
             <h2 style="margin: 0; font-size: 20px; font-weight: 700;">More</h2>
           </div>
           <div class="tb-more-list">
-            <button class="tb-more-item" onclick="showScreen('clients')">
-              <div class="more-icon blue"><i class="fa-solid fa-users"></i></div>
+            <button class="tb-more-item" onclick="showScreen('trade-contacts')">
+              <div class="more-icon blue"><i class="fa-solid fa-address-book"></i></div>
               <span class="more-label">Trade Contacts</span>
               <i class="fa-solid fa-chevron-right more-chevron"></i>
             </button>

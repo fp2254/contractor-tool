@@ -2694,6 +2694,10 @@ function showScreen(screenId) {
     updateBusinessProfile();
   }
 
+  if (screenId === "trade-contacts") {
+    loadTradeContacts();
+  }
+
   updateBottomNav(screenId);
 }
 
@@ -2723,6 +2727,8 @@ function updateBottomNav(screenId) {
     'calendar': 'dashboard',
     'activity-log': 'more',
     'trade-deals': 'more',
+    'trade-contacts': 'more',
+    'trade-contact-form': 'more',
     'subscription': 'more'
   };
   const activeNav = navMap[screenId] || 'dashboard';
@@ -12693,3 +12699,190 @@ function copyAdminReferralLink() {
     document.execCommand("copy");
   });
 }
+
+// ─── TRADE CONTACTS ──────────────────────────────────────────────────────────
+
+let allTradeContacts = [];
+
+async function loadTradeContacts() {
+  const list = document.getElementById("trade-contacts-list");
+  const empty = document.getElementById("trade-contacts-empty");
+  if (!list) return;
+
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+  if (empty) empty.style.display = "none";
+
+  try {
+    const res = await apiFetch("/api/trade-contacts");
+    if (!res.ok) throw new Error("Failed to load");
+    allTradeContacts = await res.json();
+  } catch (err) {
+    allTradeContacts = [];
+    console.error("loadTradeContacts:", err.message);
+  }
+
+  renderTradeContacts(allTradeContacts);
+}
+
+const OCCUPATION_COLORS = {
+  plumber: "#2B5EA7",
+  electrician: "#f59e0b",
+  painter: "#10b981",
+  carpenter: "#8b5cf6",
+  tiler: "#ef4444",
+  roofer: "#06b6d4",
+  landscaper: "#84cc16",
+  builder: "#1B3A5C",
+  concreter: "#6b7280",
+  plasterer: "#f97316",
+};
+
+function getOccupationColor(occupation) {
+  if (!occupation) return "#6b7280";
+  const key = occupation.toLowerCase().trim();
+  for (const [k, v] of Object.entries(OCCUPATION_COLORS)) {
+    if (key.includes(k)) return v;
+  }
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 60%, 40%)`;
+}
+
+function renderTradeContacts(contacts) {
+  const list = document.getElementById("trade-contacts-list");
+  const empty = document.getElementById("trade-contacts-empty");
+  if (!list) return;
+
+  if (!contacts || contacts.length === 0) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+
+  if (empty) empty.style.display = "none";
+
+  list.innerHTML = contacts.map(c => {
+    const initials = (c.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const color = getOccupationColor(c.occupation);
+    const occupation = c.occupation || "Trade";
+    const phone = c.phone || "";
+    const notes = c.notes || "";
+
+    return `
+      <div class="tb-card" style="display:flex;align-items:center;gap:14px;cursor:pointer;" onclick="openTradeContactEdit('${c.id}')">
+        <div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0;">
+          ${initials}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:2px;">${escapeHtml(c.name)}</div>
+          <div style="font-size:13px;color:#fff;background:${color};border-radius:99px;display:inline-block;padding:2px 10px;margin-bottom:4px;">${escapeHtml(occupation)}</div>
+          ${phone ? `<div style="font-size:13px;color:var(--muted);"><i class="fa-solid fa-phone" style="margin-right:5px;font-size:11px;"></i>${escapeHtml(phone)}</div>` : ""}
+          ${notes ? `<div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(notes)}</div>` : ""}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+          ${phone ? `<a href="tel:${escapeHtml(phone)}" onclick="event.stopPropagation()" style="width:36px;height:36px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;color:#2B5EA7;font-size:14px;"><i class="fa-solid fa-phone"></i></a>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openTradeContactNew() {
+  document.getElementById("tc-id").value = "";
+  document.getElementById("tc-name").value = "";
+  document.getElementById("tc-phone").value = "";
+  document.getElementById("tc-occupation").value = "";
+  document.getElementById("tc-notes").value = "";
+  document.getElementById("trade-contact-form-title").textContent = "Add Trade Contact";
+  document.getElementById("btn-delete-trade-contact").style.display = "none";
+  showScreen("trade-contact-form");
+}
+
+function openTradeContactEdit(id) {
+  const contact = allTradeContacts.find(c => c.id === id);
+  if (!contact) return;
+  document.getElementById("tc-id").value = contact.id;
+  document.getElementById("tc-name").value = contact.name || "";
+  document.getElementById("tc-phone").value = contact.phone || "";
+  document.getElementById("tc-occupation").value = contact.occupation || "";
+  document.getElementById("tc-notes").value = contact.notes || "";
+  document.getElementById("trade-contact-form-title").textContent = "Edit Trade Contact";
+  document.getElementById("btn-delete-trade-contact").style.display = "block";
+  showScreen("trade-contact-form");
+}
+
+async function saveTradeContact(e) {
+  e.preventDefault();
+  const id = document.getElementById("tc-id").value;
+  const name = document.getElementById("tc-name").value.trim();
+  const phone = document.getElementById("tc-phone").value.trim();
+  const occupation = document.getElementById("tc-occupation").value.trim();
+  const notes = document.getElementById("tc-notes").value.trim();
+
+  if (!name) {
+    showToast("Name is required", "error");
+    return;
+  }
+
+  const btn = document.getElementById("btn-save-trade-contact");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
+  try {
+    const method = id ? "PUT" : "POST";
+    const url = id ? `/api/trade-contacts/${id}` : "/api/trade-contacts";
+    const res = await apiFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, occupation, notes }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to save");
+    }
+    showToast(id ? "Contact updated" : "Contact saved", "success");
+    showScreen("trade-contacts");
+    loadTradeContacts();
+  } catch (err) {
+    showToast(err.message || "Failed to save contact", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save Contact";
+  }
+}
+
+async function deleteTradeContact() {
+  const id = document.getElementById("tc-id").value;
+  if (!id) return;
+  const name = document.getElementById("tc-name").value;
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+
+  try {
+    const res = await apiFetch(`/api/trade-contacts/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to delete");
+    }
+    showToast("Contact deleted", "success");
+    showScreen("trade-contacts");
+    loadTradeContacts();
+  } catch (err) {
+    showToast(err.message || "Failed to delete contact", "error");
+  }
+}
+
+function initTradeContacts() {
+  const btnNew = document.getElementById("btn-new-trade-contact");
+  if (btnNew) btnNew.addEventListener("click", openTradeContactNew);
+
+  const form = document.getElementById("trade-contact-form");
+  if (form) form.addEventListener("submit", saveTradeContact);
+
+  const btnDelete = document.getElementById("btn-delete-trade-contact");
+  if (btnDelete) btnDelete.addEventListener("click", deleteTradeContact);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initTradeContacts();
+});
