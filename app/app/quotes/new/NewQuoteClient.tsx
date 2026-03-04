@@ -3,16 +3,26 @@
 import { useRouter } from "next/navigation";
 import { QuoteBuilder, QuotePayload } from "@/components/forms/QuoteBuilder";
 
+export type ServicePreset = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+};
+
 export default function NewQuoteClient({
   customers,
+  presets,
 }: {
   customers: { id: string; name: string }[];
+  presets: ServicePreset[];
 }) {
   const router = useRouter();
 
   return (
     <QuoteBuilder
       customers={customers}
+      presets={presets}
       onSubmit={async (payload: QuotePayload) => {
         const response = await fetch("/app/quotes/new/api", {
           method: "POST",

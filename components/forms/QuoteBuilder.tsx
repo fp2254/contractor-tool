@@ -18,11 +18,20 @@ export type QuotePayload = {
   new_customer?: NewCustomer;
 };
 
+export type ServicePreset = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+};
+
 export function QuoteBuilder({
   customers,
+  presets = [],
   onSubmit,
 }: {
   customers: { id: string; name: string }[];
+  presets?: ServicePreset[];
   onSubmit: (payload: QuotePayload) => Promise<void>;
 }) {
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "__new__");
@@ -44,6 +53,20 @@ export function QuoteBuilder({
   );
 
   const isNew = customerId === "__new__";
+
+  function addPreset(preset: ServicePreset) {
+    setItems((prev) => {
+      const empty = prev.find(i => !i.description.trim());
+      if (empty) {
+        return prev.map(i =>
+          !i.description.trim()
+            ? { description: preset.name, quantity: 1, unit_price: preset.price }
+            : i
+        );
+      }
+      return [...prev, { description: preset.name, quantity: 1, unit_price: preset.price }];
+    });
+  }
 
   function updateItem(i: number, field: keyof Item, value: string | number) {
     setItems((prev) =>
@@ -72,6 +95,7 @@ export function QuoteBuilder({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      {/* Client selector */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1">Client</label>
         <select
@@ -119,6 +143,26 @@ export function QuoteBuilder({
         </div>
       )}
 
+      {/* Quick-add service presets */}
+      {presets.length > 0 && (
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Quick Add Services</label>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => addPreset(preset)}
+                className="flex flex-col items-start rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left active:bg-blue-50 active:border-blue-200 transition-colors">
+                <span className="text-xs font-semibold text-slate-700 leading-tight">{preset.name}</span>
+                <span className="text-xs text-[#1B3A6B] font-bold mt-0.5">${preset.price.toLocaleString()}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Line Items */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-2">Line Items</label>
         <div className="space-y-2">
@@ -173,6 +217,7 @@ export function QuoteBuilder({
         </button>
       </div>
 
+      {/* Notes */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1">Notes</label>
         <textarea
@@ -184,6 +229,7 @@ export function QuoteBuilder({
         />
       </div>
 
+      {/* Total */}
       <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
         <span className="text-sm font-semibold text-slate-700">Total</span>
         <span className="text-lg font-bold text-[#1B3A6B]">${total.toFixed(2)}</span>

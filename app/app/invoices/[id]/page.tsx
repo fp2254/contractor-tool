@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -63,10 +64,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: invoice }, { data: items }, { data: notes }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: notes }, { data: photos }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
+    admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
   ]);
 
   if (!invoice) return notFound();
@@ -148,6 +150,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <p className="text-green-700 font-semibold">✅ Invoice Paid</p>
         </div>
       )}
+
+      <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>

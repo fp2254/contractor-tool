@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -100,9 +101,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: job }, { data: notes }] = await Promise.all([
+  const [{ data: job }, { data: notes }, { data: photos }] = await Promise.all([
     admin.from("jobs").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("notes").select("*").eq("entity_type", "job").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
+    admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "job").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
   ]);
 
   if (!job) return notFound();
@@ -171,6 +173,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </Link>
         )}
       </div>
+
+      <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>

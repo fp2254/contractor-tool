@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { PhotoGallery } from "@/components/PhotoGallery";
 
 const STATUS_OPTIONS = ["new","contacted","quoted","scheduled","won","lost"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -82,9 +83,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: lead }, { data: notes }] = await Promise.all([
+  const [{ data: lead }, { data: notes }, { data: photos }] = await Promise.all([
     admin.from("leads").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("notes").select("*").eq("entity_type", "lead").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
+    admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "lead").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
   ]);
 
   if (!lead) return notFound();
@@ -162,6 +164,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           📋 Create Quote
         </Link>
       </div>
+
+      <PhotoGallery entityType="lead" entityId={lead.id} initialPhotos={photos ?? []} />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>

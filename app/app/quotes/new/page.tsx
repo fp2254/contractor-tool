@@ -6,11 +6,18 @@ export default async function NewQuotePage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const { data: customers } = await admin
-    .from("customers")
-    .select("id,first_name,last_name,company_name")
-    .eq("org_id", orgId!)
-    .order("created_at", { ascending: false });
+  const [{ data: customers }, { data: presets }] = await Promise.all([
+    admin
+      .from("customers")
+      .select("id,first_name,last_name,company_name")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false }),
+    admin
+      .from("service_presets")
+      .select("id,service_name,description,price_type,flat_rate,hourly_rate,estimated_hours")
+      .eq("org_id", orgId!)
+      .order("sort_order", { ascending: true }),
+  ]);
 
   const customerOptions = (customers ?? []).map((c) => ({
     id: c.id,
@@ -20,11 +27,21 @@ export default async function NewQuotePage() {
       "Unnamed",
   }));
 
+  const presetOptions = (presets ?? []).map((p) => ({
+    id: p.id,
+    name: p.service_name,
+    description: p.description,
+    price:
+      p.price_type === "flat"
+        ? (p.flat_rate ?? 0)
+        : (p.hourly_rate ?? 0) * (p.estimated_hours ?? 1),
+  }));
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">New Quote</h1>
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <NewQuoteClient customers={customerOptions} />
+        <NewQuoteClient customers={customerOptions} presets={presetOptions} />
       </div>
     </div>
   );
