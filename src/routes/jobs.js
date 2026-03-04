@@ -7,6 +7,7 @@ const router = express.Router();
 
 async function ensureJobColumns() {
   const cols = [
+    "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS client_id UUID",
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS scheduled_date DATE",
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS start_time TIME",
     "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS client_phone TEXT",

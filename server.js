@@ -283,8 +283,8 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     const isBigInt = /^\d+$/.test(invoiceIdParam);
 
     const invoiceQuery = isBigInt
-      ? `SELECT i.*, i.number as invoice_number, i.date as issue_date, i.tax as tax_amount, i.payment_link as payment_url, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address FROM invoices i LEFT JOIN clients c ON i.client_id = c.id WHERE i.id = $1 AND i.user_id = $2`
-      : `SELECT i.*, i.number as invoice_number, i.date as issue_date, i.tax as tax_amount, i.payment_link as payment_url, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_full_address FROM invoices i LEFT JOIN clients c ON i.client_id = c.id WHERE i.number = $1 AND i.user_id = $2`;
+      ? `SELECT i.*, i.number as invoice_number, i.date as issue_date, i.tax as tax_amount, i.payment_link as payment_url, COALESCE(i.client_name, c.name) as client_name, COALESCE(i.client_address, c.address) as client_address, c.email as client_email, c.phone as client_phone, c.address as client_full_address FROM invoices i LEFT JOIN clients c ON i.client_id = c.id WHERE i.id = $1 AND i.user_id = $2`
+      : `SELECT i.*, i.number as invoice_number, i.date as issue_date, i.tax as tax_amount, i.payment_link as payment_url, COALESCE(i.client_name, c.name) as client_name, COALESCE(i.client_address, c.address) as client_address, c.email as client_email, c.phone as client_phone, c.address as client_full_address FROM invoices i LEFT JOIN clients c ON i.client_id = c.id WHERE i.number = $1 AND i.user_id = $2`;
 
     const { rows: invoices } = await pgPool.query(invoiceQuery, [invoiceIdParam, userId]);
 
@@ -307,6 +307,8 @@ app.get("/api/invoices/:id", requireSubscription, async (req, res) => {
     let client = null;
     if (invoice.client_id) {
       client = { id: invoice.client_id, name: invoice.client_name, email: invoice.client_email, phone: invoice.client_phone, address: invoice.client_full_address };
+    } else if (invoice.client_name) {
+      client = { id: null, name: invoice.client_name, email: null, phone: null, address: invoice.client_address || null };
     }
 
     let job = null;
@@ -479,17 +481,18 @@ app.post("/api/quotes", requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-  const { client_id, client_name, client_address, quote_date, quote_number, notes, template, subtotal, tax, total, items, valid_until } = req.body;
+  const { client_id, client_name, client_address, client_phone, quote_date, quote_number, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
   const client = await pgPool.connect();
   try {
     await client.query("BEGIN");
+    try { await pgPool.query("ALTER TABLE quotes ADD COLUMN IF NOT EXISTS client_phone TEXT"); } catch (_) {}
 
     const quoteResult = await client.query(
-      `INSERT INTO quotes (user_id, client_id, client_name, client_address, quote_date, due_date, quote_number, notes, template, subtotal, tax, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO quotes (user_id, client_id, client_name, client_address, client_phone, quote_date, due_date, quote_number, notes, template, subtotal, tax, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id, quote_number`,
-      [userId, client_id || null, client_name || null, client_address || null, quote_date || new Date().toISOString().split("T")[0], valid_until || null, quote_number || null, notes || null, template || "basic_clean", subtotal || 0, tax || 0, total || 0, "draft"]
+      [userId, client_id || null, client_name || null, client_address || null, client_phone || null, quote_date || new Date().toISOString().split("T")[0], valid_until || null, quote_number || null, notes || null, template || "basic_clean", subtotal || 0, tax || 0, total || 0, "draft"]
     );
 
     const quote = quoteResult.rows[0];
@@ -523,7 +526,7 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
 
   const quoteId = req.params.id;
   if (!quoteId) return res.status(400).json({ error: "Invalid quote ID" });
-  const { client_id, client_name, client_address, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
+  const { client_id, client_name, client_address, client_phone, quote_date, notes, template, subtotal, tax, total, items, valid_until } = req.body;
 
   const toNull = (v) => (v === "" || v === undefined || v === null ? null : v);
   const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -544,10 +547,11 @@ app.put("/api/quotes/:id", requireAuth, async (req, res) => {
     const { rows: updated } = await dbClient.query(
       `UPDATE quotes SET 
         client_id = $1, client_name = COALESCE($2, client_name), client_address = COALESCE($3, client_address),
-        quote_date = COALESCE($4, quote_date), due_date = COALESCE($5, due_date), subtotal = $6, tax = $7, total = $8,
-        notes = COALESCE($9, notes), template = COALESCE($10, template)
-       WHERE id = $11 AND user_id = $12 RETURNING *`,
-      [toUUID(client_id), toNull(client_name), toNull(client_address), toNull(quote_date), toNull(valid_until), subtotal || 0, tax || 0, total || 0, toNull(notes), template || null, quoteId, userId]
+        client_phone = COALESCE($4, client_phone),
+        quote_date = COALESCE($5, quote_date), due_date = COALESCE($6, due_date), subtotal = $7, tax = $8, total = $9,
+        notes = COALESCE($10, notes), template = COALESCE($11, template)
+       WHERE id = $12 AND user_id = $13 RETURNING *`,
+      [toUUID(client_id), toNull(client_name), toNull(client_address), toNull(client_phone), toNull(quote_date), toNull(valid_until), subtotal || 0, tax || 0, total || 0, toNull(notes), template || null, quoteId, userId]
     );
 
     const quote = updated[0];

@@ -3325,6 +3325,10 @@ function editQuote(quote) {
   
   // Populate form fields AFTER showScreen
   document.getElementById("quote-client-name").value = quote.client_name || (quote.client ? quote.client.name : '');
+  const qPhoneEl = document.getElementById("quote-client-phone");
+  if (qPhoneEl) qPhoneEl.value = quote.client_phone || '';
+  const qAddrEl = document.getElementById("quote-client-address");
+  if (qAddrEl) qAddrEl.value = quote.client_address || '';
   document.getElementById("quote-date").value = quote.issue_date || new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = quote.notes || '';
   
@@ -3373,10 +3377,40 @@ function editQuote(quote) {
   }
 }
 
+async function handleQuoteClientSelection(e) {
+  const clientName = e.target.value.trim();
+  if (!clientName) return;
+
+  const clients = window._allClients || [];
+  let matched = clients.find(c => c.name === clientName);
+
+  if (!matched) {
+    try {
+      const res = await apiFetch("/api/clients");
+      if (res.ok) {
+        const data = await res.json();
+        window._allClients = data;
+        matched = data.find(c => c.name === clientName);
+      }
+    } catch {}
+  }
+
+  if (matched) {
+    const phoneEl = document.getElementById("quote-client-phone");
+    const addrEl = document.getElementById("quote-client-address");
+    if (phoneEl && !phoneEl.value) phoneEl.value = matched.phone || '';
+    if (addrEl && !addrEl.value) addrEl.value = matched.address || '';
+  }
+}
+
 // Reset quote form to create mode
 function resetQuoteForm() {
   editingQuoteId = null;
   document.getElementById("quote-client-name").value = '';
+  const qPhone = document.getElementById("quote-client-phone");
+  if (qPhone) qPhone.value = '';
+  const qAddr = document.getElementById("quote-client-address");
+  if (qAddr) qAddr.value = '';
   document.getElementById("quote-date").value = new Date().toISOString().split('T')[0];
   document.getElementById("quote-notes").value = '';
   
@@ -6692,6 +6726,8 @@ async function handleQuoteSubmit(e) {
   }
 
   const clientName = document.getElementById("quote-client-name").value.trim();
+  const clientPhone = document.getElementById("quote-client-phone")?.value.trim() || "";
+  const clientAddress = document.getElementById("quote-client-address")?.value.trim() || "";
   const quoteDate = document.getElementById("quote-date").value;
   let notes = document.getElementById("quote-notes").value;
   const template = document.getElementById("quote-template").value || "basic_clean";
@@ -6722,6 +6758,8 @@ async function handleQuoteSubmit(e) {
 
   const quoteData = {
     client_name: clientName,
+    client_phone: clientPhone || undefined,
+    client_address: clientAddress || undefined,
     issue_date: quoteDate,
     notes,
     template,
@@ -6952,10 +6990,11 @@ function wireQuotesUI() {
     quotePreviewToggle.addEventListener("click", toggleQuotePreview);
   }
 
-  // Wire up live preview updates for quotes
+  // Wire up live preview updates for quotes + client auto-fill
   const quoteClientName = document.getElementById("quote-client-name");
   if (quoteClientName) {
     quoteClientName.addEventListener("input", updateQuotePreview);
+    quoteClientName.addEventListener("change", handleQuoteClientSelection);
   }
   const quoteDate = document.getElementById("quote-date");
   if (quoteDate) {
