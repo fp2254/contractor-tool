@@ -101,9 +101,9 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+        <PermitAssistant />
         <AiCaptureModal />
         <VoiceJobModal />
-        <PermitAssistant />
       </div>
     </div>
   );
