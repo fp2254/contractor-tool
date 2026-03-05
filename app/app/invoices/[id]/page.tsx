@@ -193,6 +193,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           ))}
         </div>
       </div>
+      <EntityAiSection entityType="invoice" entityId={invoice.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

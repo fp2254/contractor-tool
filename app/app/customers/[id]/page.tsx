@@ -187,6 +187,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           ))}
         </div>
       </div>
+      <EntityAiSection entityType="customer" entityId={customer.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

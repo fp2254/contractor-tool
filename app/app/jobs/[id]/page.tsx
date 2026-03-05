@@ -215,6 +215,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           ))}
         </div>
       </div>
+      <EntityAiSection entityType="job" entityId={job.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

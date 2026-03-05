@@ -113,6 +113,17 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   if (!quote) return notFound();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aiAttachmentsRaw } = await (admin as any)
+    .from("ai_attachments")
+    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "quote")
+    .eq("entity_id", id)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
+
   const { data: customer } = await admin
     .from("customers")
     .select("first_name,last_name,company_name,phone,email,address_line1,city,state")
@@ -236,6 +247,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </form>
         </div>
       )}
+      <EntityAiSection entityType="quote" entityId={quote.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

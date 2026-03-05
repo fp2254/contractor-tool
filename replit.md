@@ -44,6 +44,10 @@ app/
     photos/upload, photos/[id]              Photo CRUD
     quotes/new/api        Create quote (supports inline new customer)
     ai/capture, ai/voice, ai/permit, ai/create  AI features
+    ai/run/save, ai/attach, ai/attach/[id]      AI answer attachment CRUD
+    entities/search                             Entity search for attach modal
+    inventory/api, inventory/api/[id]           Inventory CRUD
+    trade-contacts/api, trade-contacts/api/[id] Trade contacts CRUD
 components/
   AppShell.tsx            Nav shell (Home/Leads/Schedule/Jobs/Money/More)
   forms/QuoteBuilder.tsx  Quote builder with presets + inline new client
@@ -51,8 +55,13 @@ components/
   SendEmailButton.tsx     Client button — send quote/invoice email
   PortalLinkCard.tsx      Client component — send/revoke customer portal link on quote page
   SignatureCapture.tsx    Client component — canvas signature for portal quote acceptance
-  PermitAssistant.tsx     AI permit lookup bottom sheet
+  PermitAssistant.tsx     AI permit lookup bottom sheet (saves run, attach to any entity)
   VoiceJobModal.tsx       Voice job creation 3-step modal
+  EntityAiSection.tsx     AI answers panel on entity detail pages (jobs/leads/customers/quotes/invoices)
+  AiAnswerCard.tsx        Renders AI output (permit, job capture, etc.)
+  AiAttachModal.tsx       Bottom sheet to attach an AI run to any entity
+  InventoryClient.tsx     Inventory list + inline create + qty adjust (app/app/inventory/)
+  TradeContactsClient.tsx Trade contacts list + inline create (app/app/trade-contacts/)
 lib/
   auth.ts               ensureUserOrg() — org provisioning
   email.ts              Resend client + HTML email templates
@@ -67,7 +76,10 @@ supabase/
   migration_phase2.sql       ✅ applied
   migration_photos.sql       ✅ applied
   migration_portal.sql       ✅ applied
-  migration_portal_v2.sql    ⚠️ PENDING — run in Supabase SQL Editor (/app/setup)
+  migration_portal_v2.sql          ⚠️ PENDING — run in Supabase SQL Editor (/app/setup)
+  migration_ai_attachments.sql     ⚠️ PENDING — ai_runs + ai_attachments tables
+  migration_inventory.sql          ⚠️ PENDING — inventory_items table
+  migration_trade_contacts.sql     ⚠️ PENDING — trade_contacts table
 ```
 
 ## Environment Variables

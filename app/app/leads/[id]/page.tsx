@@ -199,6 +199,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           ))}
         </div>
       </div>
+      <EntityAiSection entityType="lead" entityId={lead.id} initialAttachments={aiAttachments} />
     </div>
   );
 }
