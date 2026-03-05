@@ -30,6 +30,16 @@ CREATE INDEX IF NOT EXISTS quote_signatures_quote_idx
 
 -- Row-level security: only allow service role (admin client) to read/write
 ALTER TABLE public.quote_signatures ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "service_role_all_signatures"
-  ON public.quote_signatures FOR ALL
-  USING (true) WITH CHECK (true);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'quote_signatures'
+    AND policyname = 'service_role_all_signatures'
+  ) THEN
+    EXECUTE 'CREATE POLICY "service_role_all_signatures"
+      ON public.quote_signatures FOR ALL
+      USING (true) WITH CHECK (true)';
+  END IF;
+END $$;
