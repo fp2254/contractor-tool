@@ -19,13 +19,12 @@ function LeadsIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
-function ScheduleIcon({ active }: { active: boolean }) {
+function QuotesIcon({ active }: { active: boolean }) {
   const c = active ? "#1B3A6B" : "#9ca3af";
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={c} strokeWidth={2}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 8h6M9 16h4" />
+      <rect x="3" y="3" width="18" height="18" rx="2" />
     </svg>
   );
 }
@@ -59,12 +58,12 @@ function MoreIcon({ active }: { active: boolean }) {
 }
 
 const navItems = [
-  { label: "Home",     href: "/app",          Icon: HomeIcon,     exact: true  },
-  { label: "Leads",    href: "/app/leads",    Icon: LeadsIcon,    exact: false },
-  { label: "Schedule", href: "/app/schedule", Icon: ScheduleIcon, exact: false },
-  { label: "Jobs",     href: "/app/jobs",     Icon: JobsIcon,     exact: false },
-  { label: "Money",    href: "/app/money",    Icon: MoneyIcon,    exact: false },
-  { label: "More",     href: "/app/more",     Icon: MoreIcon,     exact: false },
+  { label: "Home",   href: "/app",          Icon: HomeIcon,   exact: true  },
+  { label: "Leads",  href: "/app/leads",    Icon: LeadsIcon,  exact: false },
+  { label: "Quotes", href: "/app/quotes",   Icon: QuotesIcon, exact: false },
+  { label: "Jobs",   href: "/app/jobs",     Icon: JobsIcon,   exact: false },
+  { label: "Money",  href: "/app/money",    Icon: MoneyIcon,  exact: false },
+  { label: "More",   href: "/app/more",     Icon: MoreIcon,   exact: false },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
