@@ -245,7 +245,7 @@ export function AiCaptureModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-[60] flex flex-col"
       style={{ background: "rgba(0,0,0,0.55)" }}
     >
       <div

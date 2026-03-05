@@ -265,7 +265,7 @@ export function VoiceJobModal() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={close} />
           <div className="relative bg-white rounded-t-3xl shadow-xl max-h-[94vh] flex flex-col">
 
