@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { SendEmailButton } from "@/components/SendEmailButton";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -105,7 +106,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const admin = createAdminClient();
 
   const [{ data: quote }, { data: items }] = await Promise.all([
-    admin.from("quotes").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
+    admin.from("quotes").select("*,public_token").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("quote_items").select("*").eq("quote_id", id).eq("org_id", orgId!),
   ]);
 
@@ -169,6 +170,21 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           ))}
         </form>
       </div>
+
+      {quote.public_token && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Public Quote Link</p>
+          <p className="text-xs text-gray-400">Share this link with your customer so they can review and accept the quote online.</p>
+          <CopyLinkButton path={`/q/${quote.public_token}`} />
+          <a
+            href={`/q/${quote.public_token}`}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-center text-xs text-[#1B3A6B] font-semibold py-1">
+            Preview public page ↗
+          </a>
+        </div>
+      )}
 
       {quote.status !== "declined" && (
         <div className="space-y-3">
