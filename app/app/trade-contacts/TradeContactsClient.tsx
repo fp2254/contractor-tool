@@ -130,10 +130,38 @@ function NewContactForm({ onCreated, onCancel }: { onCreated: (c: TradeContact) 
   );
 }
 
+function buildShareText(contact: TradeContact): string {
+  const lines: string[] = [];
+  lines.push(`Contact: ${contact.name}`);
+  if (contact.trade) lines.push(contact.company ? `${contact.trade} · ${contact.company}` : contact.trade);
+  else if (contact.company) lines.push(contact.company);
+  if (contact.phone) lines.push(`📞 ${contact.phone}`);
+  if (contact.email) lines.push(`✉️ ${contact.email}`);
+  if (contact.notes) lines.push(`Notes: ${contact.notes}`);
+  return lines.join("\n");
+}
+
 function ContactCard({ contact, onDelete }: { contact: TradeContact; onDelete: (id: string) => void }) {
   const [deleting, setDeleting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [shared, setShared] = useState(false);
   const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
+
+  async function handleShare() {
+    const text = buildShareText(contact);
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: contact.name, text });
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch {
+        // user cancelled — do nothing
+      }
+    } else {
+      // Fallback: open SMS app with body pre-filled
+      window.open(`sms:?body=${encodeURIComponent(text)}`, "_blank");
+    }
+  }
 
   async function handleDelete() {
     if (!confirm(`Remove ${contact.name}?`)) return;
@@ -183,6 +211,12 @@ function ContactCard({ contact, onDelete }: { contact: TradeContact; onDelete: (
               {contact.notes && (
                 <p className="text-xs text-gray-500 italic">{contact.notes}</p>
               )}
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full transition-colors"
+                style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
+                {shared ? "✓ Shared!" : "📤 Share this contact"}
+              </button>
             </div>
           )}
         </div>
