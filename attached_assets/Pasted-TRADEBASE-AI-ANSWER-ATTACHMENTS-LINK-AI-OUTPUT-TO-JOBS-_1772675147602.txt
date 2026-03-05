@@ -1,0 +1,172 @@
+TRADEBASE — AI ANSWER ATTACHMENTS (LINK AI OUTPUT TO JOBS / CUSTOMERS / ETC)
+============================================================================
+
+GOAL
+Allow any saved AI result (permit answer, follow-up draft, quote draft, job capture, etc.)
+to be permanently attached to a specific entity:
+- Lead
+- Customer
+- Job
+- Quote
+- Invoice
+
+Then show those AI answers directly inside that entity’s detail page under:
+“AI Notes / AI Answers / AI Attachments”.
+
+WHY THIS MATTERS
+- Permit assistant answers should live with the Job
+- Follow-up drafts should live with the Lead/Invoice
+- Job capture drafts should be recoverable from the Job
+- Reuse past answers instantly without re-asking AI
+
+DATABASE (RECOMMENDED: POLYMORPHIC ATTACHMENTS)
+-----------------------------------------------
+
+1) Keep ai_runs table (history of AI calls)
+
+ai_runs (already specified)
+- id (uuid pk)
+- org_id
+- user_id
+- feature
+- input_text
+- input_json (jsonb)
+- output_json (jsonb)
+- output_text (text)
+- created_at
+
+2) Add a new join table: ai_attachments
+
+ai_attachments
+- id (uuid pk)
+- org_id (uuid, indexed)
+- ai_run_id (uuid, fk → ai_runs.id, indexed)
+- entity_type (text)  ENUM-ish: "lead" | "customer" | "job" | "quote" | "invoice"
+- entity_id (uuid, indexed)
+- title (text nullable)  e.g. "Permit Guidance — Augusta ME"
+- note (text nullable)   optional user-added note
+- is_pinned (bool default false)
+- created_by (uuid user_id)
+- created_at (timestamptz default now())
+
+INDEXES
+- (org_id, entity_type, entity_id)
+- (org_id, ai_run_id)
+
+RLS / SECURITY
+--------------
+Enable RLS on ai_attachments
+
+Policies:
+- SELECT: user can read attachments where org_id matches their org
+- INSERT: user can attach ai_run_id only if both:
+  a) ai_runs.org_id = current org
+  b) entity belongs to current org (lead/customer/job/quote/invoice org_id)
+- DELETE/UPDATE: allowed for:
+  - attachment created_by = current user OR org admin
+
+IMPORTANT:
+Never allow cross-org linking.
+
+API ENDPOINTS
+-------------
+
+GET /api/entities/:entity_type/:entity_id/ai
+- returns list of attached AI runs (join ai_attachments -> ai_runs)
+
+POST /api/ai/attach
+Body:
+{
+  "ai_run_id": "uuid",
+  "entity_type": "job|lead|customer|quote|invoice",
+  "entity_id": "uuid",
+  "title": "string optional",
+  "note": "string optional",
+  "is_pinned": false
+}
+
+PATCH /api/ai/attach/:id
+- update title, note, is_pinned
+
+DELETE /api/ai/attach/:id
+
+UI/UX
+-----
+
+A) On AI Result Screens (Permit Assistant, Job Capture, Follow-up Draft, etc.)
+Add button:
+- “Attach to…”
+Opens modal:
+- Select entity type (Lead/Customer/Job/Quote/Invoice)
+- Search entity (typeahead)
+- Optional title field
+- Optional note field
+- Save
+
+Also add quick option if user is currently in a Job/Lead/etc context:
+- “Attach to this Job” (one-tap)
+
+B) On Entity Detail Pages
+Add section/tab:
+- “AI Answers”
+
+Display list items:
+- Badge: feature (permit_assistant / followup_draft / quote_builder / etc.)
+- Title (or default generated title)
+- Created date + who created it
+- Pin icon
+
+When clicked open detail modal:
+- Show question (input_text)
+- Show formatted answer (render from output_json by feature)
+Buttons:
+- Copy
+- Pin
+- Remove attachment
+- (Optional) Re-run with same input
+
+C) Default Titles (if user doesn’t enter one)
+- Permit assistant: "Permit Guidance — {City}, {State}"
+- Follow-up: "Follow-up Draft — {Lead/Invoice Name}"
+- Job capture: "AI Job Capture Draft — {Job Title}"
+
+OPTIONAL: “AUTO ATTACH” RULES (NICE)
+------------------------------------
+Add checkbox “Auto-attach to current record” for AI tools used inside that record.
+Examples:
+- Permit assistant run from a Job page → auto attach to that job
+- Follow-up draft run from an Invoice → auto attach to that invoice
+
+This will massively improve usability.
+
+RENDERING OUTPUT (KEEP IT SIMPLE)
+---------------------------------
+Do NOT store HTML.
+Store output_json + optionally output_text.
+
+Render on UI by feature:
+
+permit_assistant:
+- Permit Requirement
+- Permit Type
+- Local Authority (who to call)
+- Permit Process
+- Inspection Notes
+- Disclaimer
+
+followup_draft:
+- SMS draft
+- Email subject + body
+
+quote_builder / job_capture:
+- Job title
+- Line items
+- Notes
+
+DONE DEFINITION
+---------------
+- AI runs saved in ai_runs
+- User can attach any ai_run to any entity in same org
+- Attached AI answers appear in entity detail pages
+- Users can pin, rename, remove attachments
+- RLS prevents cross-org access

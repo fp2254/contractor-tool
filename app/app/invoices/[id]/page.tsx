@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { SendEmailButton } from "@/components/SendEmailButton";
+import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -65,12 +66,24 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: invoice }, { data: items }, { data: notes }, { data: photos }] = await Promise.all([
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const aiAttachmentsPromise = (admin as any)
+    .from("ai_attachments")
+    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "invoice")
+    .eq("entity_id", id)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  const [{ data: invoice }, { data: items }, { data: notes }, { data: photos }, { data: aiAttachmentsRaw }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
     admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
+    aiAttachmentsPromise,
   ]);
+  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
   if (!invoice) return notFound();
 

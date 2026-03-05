@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AiAttachModal } from "@/components/AiAttachModal";
 
 type PermitResult = {
   permit_required: string;
@@ -33,14 +34,17 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
   const [cityState, setCityState] = useState("");
   const [result, setResult] = useState<PermitResult | null>(null);
   const [error, setError] = useState("");
+  const [aiRunId, setAiRunId] = useState<string | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [attached, setAttached] = useState(false);
+  const [showAttachModal, setShowAttachModal] = useState(false);
 
   function openModal() {
     setStep("form");
     setResult(null);
     setError("");
     setAttached(false);
+    setAiRunId(null);
     setDescription(defaultDescription);
     setAddress(defaultAddress);
     setCityState("");
@@ -49,12 +53,15 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
 
   function close() {
     setOpen(false);
+    setShowAttachModal(false);
   }
 
   async function handleCheck(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setStep("loading");
+    setAiRunId(null);
+    setAttached(false);
 
     try {
       const res = await fetch("/api/ai/permit", {
@@ -71,6 +78,21 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
       const data = (await res.json()) as PermitResult;
       setResult(data);
       setStep("result");
+
+      // Save run to ai_runs table (fire-and-forget, non-blocking)
+      fetch("/api/ai/run/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature: "permit_assistant",
+          input_text: [description.trim(), address, cityState].filter(Boolean).join(" — "),
+          input_json: { description, address, cityState },
+          output_json: data,
+        }),
+      })
+        .then((r) => r.json())
+        .then((j: { id?: string }) => { if (j.id) setAiRunId(j.id); })
+        .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setStep("form");
@@ -78,32 +100,18 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
   }
 
   async function attachToJob() {
-    if (!result || !jobId) return;
+    if (!aiRunId || !jobId) return;
     setAttaching(true);
-
-    const noteBody = [
-      "📋 PERMIT ASSISTANT REPORT",
-      "",
-      `Permit Required: ${result.permit_required}`,
-      result.permit_required_detail,
-      "",
-      `Permit Type: ${result.permit_type}`,
-      "",
-      `Local Authority: ${result.local_authority}`,
-      "",
-      "Relevant Codes:",
-      ...(result.relevant_codes ?? []).map((c) => `• ${c}`),
-      "",
-      `Inspection Notes: ${result.inspection_notes}`,
-      "",
-      `⚠️ ${result.disclaimer}`,
-    ].join("\n");
-
     try {
-      await fetch(`/api/jobs/${jobId}/notes`, {
+      await fetch("/api/ai/attach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: noteBody }),
+        body: JSON.stringify({
+          ai_run_id: aiRunId,
+          entity_type: "job",
+          entity_id: jobId,
+          title: result ? `Permit: ${result.permit_type}` : "Permit Assistant",
+        }),
       });
       setAttached(true);
     } finally {
@@ -252,24 +260,25 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
                   </div>
 
                   <div className="flex flex-col gap-2 pt-1 pb-2">
-                    {jobId && (
+                    {jobId && aiRunId && (
                       <button
                         onClick={attachToJob}
                         disabled={attaching || attached}
                         className="w-full rounded-xl py-3 font-semibold text-sm transition-colors disabled:opacity-60"
-                        style={{
-                          backgroundColor: attached ? "#22C55E" : "#1B3A6B",
-                          color: "white",
-                        }}>
-                        {attached
-                          ? "✓ Attached to Job Notes"
-                          : attaching
-                          ? "Attaching…"
-                          : "Attach to Job Notes"}
+                        style={{ backgroundColor: attached ? "#22C55E" : "#1B3A6B", color: "white" }}>
+                        {attached ? "✓ Attached to this Job" : attaching ? "Attaching…" : "📌 Attach to this Job"}
+                      </button>
+                    )}
+                    {aiRunId && (
+                      <button
+                        onClick={() => setShowAttachModal(true)}
+                        className="w-full rounded-xl py-3 font-semibold text-sm border-2 transition-colors"
+                        style={{ borderColor: "#1B3A6B", color: "#1B3A6B" }}>
+                        📎 Attach to Another Record…
                       </button>
                     )}
                     <button
-                      onClick={() => { setStep("form"); setResult(null); setAttached(false); }}
+                      onClick={() => { setStep("form"); setResult(null); setAttached(false); setAiRunId(null); }}
                       className="w-full rounded-xl py-3 border border-gray-200 text-slate-600 font-semibold text-sm">
                       Check Another Job
                     </button>
@@ -279,6 +288,16 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
             </div>
           </div>
         </div>
+      )}
+
+      {showAttachModal && aiRunId && (
+        <AiAttachModal
+          aiRunId={aiRunId}
+          defaultEntityType={jobId ? "job" : undefined}
+          defaultEntityId={jobId}
+          onAttached={() => setAttached(true)}
+          onClose={() => setShowAttachModal(false)}
+        />
       )}
     </>
   );

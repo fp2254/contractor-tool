@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 
 const STATUS_OPTIONS = ["new","contacted","quoted","scheduled","won","lost"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -90,6 +91,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   ]);
 
   if (!lead) return notFound();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aiAttachmentsRaw } = await (admin as any)
+    .from("ai_attachments")
+    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "lead")
+    .eq("entity_id", id)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
   const statusColor = STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-600";
 

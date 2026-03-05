@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { SendEmailButton } from "@/components/SendEmailButton";
 import { PortalLinkCard } from "@/components/PortalLinkCard";
+import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",

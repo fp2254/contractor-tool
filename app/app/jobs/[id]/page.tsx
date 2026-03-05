@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { PermitAssistant } from "@/components/PermitAssistant";
+import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -109,6 +110,17 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   ]);
 
   if (!job) return notFound();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aiAttachmentsRaw } = await (admin as any)
+    .from("ai_attachments")
+    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "job")
+    .eq("entity_id", id)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
   const { data: customer } = await admin.from("customers").select("first_name,last_name,phone").eq("id", job.customer_id).single();
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Unknown";

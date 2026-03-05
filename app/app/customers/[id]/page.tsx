@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { SendPortalButton } from "@/components/SendPortalButton";
+import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 
 async function addNote(formData: FormData) {
   "use server";
@@ -41,6 +42,17 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   ]);
 
   if (!customer) return notFound();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aiAttachmentsRaw } = await (admin as any)
+    .from("ai_attachments")
+    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "customer")
+    .eq("entity_id", id)
+    .order("is_pinned", { ascending: false })
+    .order("created_at", { ascending: false });
+  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.company_name || "Customer";
   const totalPaid = invoices?.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.total_amount), 0) ?? 0;
