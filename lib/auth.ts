@@ -49,6 +49,59 @@ async function ensureDefaultTemplates(orgId: string, userId: string) {
   }
 }
 
+const TABLES_WITH_ORG_ID = [
+  "customers",
+  "quotes",
+  "quote_items",
+  "jobs",
+  "invoices",
+  "invoice_items",
+  "leads",
+  "notes",
+  "message_templates",
+  "org_settings",
+  "service_presets",
+  "customer_portal_tokens",
+  "inventory_items",
+  "trade_contacts",
+  "payments",
+  "followups",
+];
+
+async function consolidateDuplicateOrgs(
+  realOrgId: string,
+  duplicateOrgIds: string[],
+  userId: string
+) {
+  if (duplicateOrgIds.length === 0) return;
+  const admin = getAdminClient();
+
+  for (const table of TABLES_WITH_ORG_ID) {
+    try {
+      await (admin as any)
+        .from(table)
+        .update({ org_id: realOrgId })
+        .in("org_id", duplicateOrgIds);
+    } catch {
+      // table may not exist — skip
+    }
+  }
+
+  await admin
+    .from("org_members")
+    .delete()
+    .in("org_id", duplicateOrgIds)
+    .eq("user_id", userId);
+
+  for (const orgId of duplicateOrgIds) {
+    try {
+      await admin.from("orgs").delete().eq("id", orgId);
+    } catch {
+      // FK constraints may prevent deletion — leave the org shell
+    }
+  }
+}
+
 export async function ensureUserOrg() {
   const supabase = await createClient();
   const { data: userResp, error: userError } = await supabase.auth.getUser();
@@ -60,15 +113,24 @@ export async function ensureUserOrg() {
   const userId = userResp.user.id;
   const admin = getAdminClient();
 
-  const { data: member } = await admin
+  const { data: members } = await admin
     .from("org_members")
-    .select("org_id")
+    .select("org_id, created_at")
     .eq("user_id", userId)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
-  if (member?.org_id) {
-    await ensureDefaultTemplates(member.org_id, userId);
-    return member.org_id;
+  if (members && members.length > 0) {
+    const realOrgId = members[0].org_id;
+
+    if (members.length > 1) {
+      const duplicateOrgIds = members.slice(1).map((m) => m.org_id);
+      consolidateDuplicateOrgs(realOrgId, duplicateOrgIds, userId).catch(
+        () => {}
+      );
+    }
+
+    await ensureDefaultTemplates(realOrgId, userId);
+    return realOrgId;
   }
 
   const { data: org, error: orgError } = await admin
