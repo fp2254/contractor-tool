@@ -7,6 +7,8 @@ import { ensureUserOrg } from "@/lib/auth";
 import { SendEmailButton } from "@/components/SendEmailButton";
 import { PortalLinkCard } from "@/components/PortalLinkCard";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
+import { ShareCard } from "@/components/ShareCard";
+import { WarrantyCard } from "@/components/WarrantyCard";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -101,6 +103,31 @@ async function convertToJob(formData: FormData) {
   redirect(`/app/jobs/${job.id}`);
 }
 
+async function saveWarrantyNote(quoteId: string, warrantyText: string | null) {
+  "use server";
+  const orgId = await ensureUserOrg();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+  await (admin as any)
+    .from("notes")
+    .delete()
+    .eq("org_id", orgId!)
+    .eq("entity_type", "quote")
+    .eq("entity_id", quoteId)
+    .like("body", "__warranty__%");
+  if (warrantyText) {
+    await admin.from("notes").insert({
+      org_id: orgId!,
+      entity_type: "quote",
+      entity_id: quoteId,
+      body: `__warranty__:${warrantyText}`,
+      created_by: user?.id ?? null,
+    });
+  }
+  revalidatePath(`/app/quotes/${quoteId}`);
+}
+
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const orgId = await ensureUserOrg();
@@ -112,6 +139,22 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   ]);
 
   if (!quote) return notFound();
+
+  const [{ data: org }, { data: warrantyNotes }] = await Promise.all([
+    admin.from("orgs").select("name").eq("id", orgId!).single(),
+    (admin as any).from("notes")
+      .select("body")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("entity_id", id)
+      .like("body", "__warranty__%")
+      .limit(1),
+  ]);
+  const orgName = org?.name ?? "Your Company";
+  const warrantyNote = (warrantyNotes as any[])?.[0] ?? null;
+  const warrantyText = warrantyNote
+    ? String(warrantyNote.body).replace("__warranty__:", "")
+    : null;
 
   let aiAttachments: AiAttachment[] = [];
   try {
@@ -166,6 +209,8 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   } catch {
     activeToken = null;
   }
+
+  const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
   return (
     <div className="p-4 space-y-4">
@@ -228,6 +273,18 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         customerName={customerName}
         activeToken={activeToken?.token ?? null}
       />
+
+      <ShareCard
+        type="quote"
+        customerName={customerName}
+        customerPhone={customer?.phone ?? null}
+        customerEmail={customer?.email ?? null}
+        amount={Number(quote.total_amount)}
+        portalToken={activeToken?.token ?? null}
+        orgName={orgName}
+      />
+
+      <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
 
       {quote.status !== "declined" && (
         <div className="space-y-3">

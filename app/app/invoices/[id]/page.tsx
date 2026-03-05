@@ -7,6 +7,8 @@ import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { SendEmailButton } from "@/components/SendEmailButton";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
+import { ShareCard } from "@/components/ShareCard";
+import { WarrantyCard } from "@/components/WarrantyCard";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -61,6 +63,31 @@ async function addNote(formData: FormData) {
   revalidatePath(`/app/invoices/${id}`);
 }
 
+async function saveWarrantyNote(invoiceId: string, warrantyText: string | null) {
+  "use server";
+  const orgId = await ensureUserOrg();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+  await (admin as any)
+    .from("notes")
+    .delete()
+    .eq("org_id", orgId!)
+    .eq("entity_type", "invoice")
+    .eq("entity_id", invoiceId)
+    .like("body", "__warranty__%");
+  if (warrantyText) {
+    await admin.from("notes").insert({
+      org_id: orgId!,
+      entity_type: "invoice",
+      entity_id: invoiceId,
+      body: `__warranty__:${warrantyText}`,
+      created_by: user?.id ?? null,
+    });
+  }
+  revalidatePath(`/app/invoices/${invoiceId}`);
+}
+
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const orgId = await ensureUserOrg();
@@ -76,14 +103,20 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const [{ data: invoice }, { data: items }, { data: notes }, { data: photos }, { data: aiAttachmentsRaw }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: photos }, { data: aiAttachmentsRaw }, { data: org }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
     admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
     aiAttachmentsPromise,
+    admin.from("orgs").select("name").eq("id", orgId!).single(),
   ]);
   const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
+
+  const notes = (allNotes ?? []).filter((n: any) => !n.body.startsWith("__warranty__"));
+  const warrantyNote = (allNotes ?? []).find((n: any) => n.body.startsWith("__warranty__")) ?? null;
+  const warrantyText = warrantyNote ? String(warrantyNote.body).replace("__warranty__:", "") : null;
+  const orgName = org?.name ?? "Your Company";
 
   if (!invoice) return notFound();
 
@@ -96,6 +129,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     ? Math.round((new Date(invoice.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
   const dueLabel = dueDays === null ? null : dueDays < 0 ? `${Math.abs(dueDays)}d overdue` : dueDays === 0 ? "Due today" : `Due in ${dueDays}d`;
+
+  const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
   return (
     <div className="p-4 space-y-4">
@@ -164,6 +199,18 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <p className="text-green-700 font-semibold">✅ Invoice Paid</p>
         </div>
       )}
+
+      <ShareCard
+        type="invoice"
+        customerName={customerName}
+        customerPhone={customer?.phone ?? null}
+        customerEmail={customer?.email ?? null}
+        amount={Number(invoice.total_amount)}
+        portalToken={null}
+        orgName={orgName}
+      />
+
+      <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
 
       <SendEmailButton
         apiPath={`/api/invoices/${invoice.id}/send`}
