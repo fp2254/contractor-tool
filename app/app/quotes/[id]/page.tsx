@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { SendEmailButton } from "@/components/SendEmailButton";
-import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { PortalLinkCard } from "@/components/PortalLinkCard";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -106,15 +106,33 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const admin = createAdminClient();
 
   const [{ data: quote }, { data: items }] = await Promise.all([
-    admin.from("quotes").select("*,public_token").eq("id", id).eq("org_id", orgId!).maybeSingle(),
+    admin.from("quotes").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("quote_items").select("*").eq("quote_id", id).eq("org_id", orgId!),
   ]);
 
   if (!quote) return notFound();
 
-  const { data: customer } = await admin.from("customers").select("first_name,last_name,company_name,phone,email,address_line1,city,state").eq("id", quote.customer_id).single();
+  const { data: customer } = await admin
+    .from("customers")
+    .select("first_name,last_name,company_name,phone,email,address_line1,city,state")
+    .eq("id", quote.customer_id)
+    .single();
+
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.company_name || "Unknown";
   const statusColor = STATUS_COLORS[quote.status] ?? "bg-gray-100 text-gray-600";
+
+  // Fetch active portal token for this customer (non-expired, non-revoked)
+  const now = new Date().toISOString();
+  const { data: activeToken } = await admin
+    .from("customer_portal_tokens")
+    .select("token")
+    .eq("org_id", orgId!)
+    .eq("customer_id", quote.customer_id)
+    .gt("expires_at", now)
+    .is("revoked_at" as never, null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   return (
     <div className="p-4 space-y-4">
@@ -171,20 +189,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </form>
       </div>
 
-      {quote.public_token && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase">Public Quote Link</p>
-          <p className="text-xs text-gray-400">Share this link with your customer so they can review and accept the quote online.</p>
-          <CopyLinkButton path={`/q/${quote.public_token}`} />
-          <a
-            href={`/q/${quote.public_token}`}
-            target="_blank"
-            rel="noreferrer"
-            className="block text-center text-xs text-[#1B3A6B] font-semibold py-1">
-            Preview public page ↗
-          </a>
-        </div>
-      )}
+      <PortalLinkCard
+        customerId={quote.customer_id}
+        customerEmail={customer?.email ?? null}
+        customerName={customerName}
+        activeToken={activeToken?.token ?? null}
+      />
 
       {quote.status !== "declined" && (
         <div className="space-y-3">

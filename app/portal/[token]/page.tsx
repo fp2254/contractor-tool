@@ -1,37 +1,7 @@
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-async function acceptQuote(formData: FormData) {
-  "use server";
-  const token = String(formData.get("token"));
-  const quoteId = String(formData.get("quote_id"));
-  const admin = createAdminClient();
-
-  const { data: pt } = await admin
-    .from("customer_portal_tokens")
-    .select("customer_id,expires_at")
-    .eq("token", token)
-    .single();
-
-  if (!pt || new Date(pt.expires_at) < new Date()) return;
-
-  const { data: quote } = await admin
-    .from("quotes")
-    .select("id")
-    .eq("id", quoteId)
-    .eq("customer_id", pt.customer_id)
-    .single();
-
-  if (!quote) return;
-
-  await admin
-    .from("quotes")
-    .update({ status: "accepted", accepted_at: new Date().toISOString() })
-    .eq("id", quoteId);
-
-  revalidatePath(`/portal/${token}`);
-}
+import { SignatureCapture } from "@/components/SignatureCapture";
 
 async function declineQuote(formData: FormData) {
   "use server";
@@ -41,7 +11,7 @@ async function declineQuote(formData: FormData) {
 
   const { data: pt } = await admin
     .from("customer_portal_tokens")
-    .select("customer_id,expires_at")
+    .select("customer_id,org_id,expires_at")
     .eq("token", token)
     .single();
 
@@ -52,6 +22,7 @@ async function declineQuote(formData: FormData) {
     .select("id")
     .eq("id", quoteId)
     .eq("customer_id", pt.customer_id)
+    .eq("org_id", pt.org_id)
     .single();
 
   if (!quote) return;
@@ -83,11 +54,16 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
   const { data: pt } = await admin
     .from("customer_portal_tokens")
-    .select("customer_id,org_id,expires_at")
+    .select("*")
     .eq("token", token)
     .single();
 
-  if (!pt || new Date(pt.expires_at) < new Date()) return notFound();
+  if (!pt) return notFound();
+  if (new Date(pt.expires_at) < new Date()) return notFound();
+
+  // Check revoked_at if the column exists (post-migration)
+  const revokedAt = (pt as Record<string, unknown>).revoked_at;
+  if (revokedAt && new Date(revokedAt as string) <= new Date()) return notFound();
 
   const [
     { data: customer },
@@ -98,13 +74,14 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
     admin.from("customers").select("first_name,last_name,company_name,email").eq("id", pt.customer_id).single(),
     admin.from("quotes").select("id,status,total_amount,notes,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("invoices").select("id,status,total_amount,invoice_number,due_date,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
-    admin.from("orgs").select("business_name,phone,email").eq("id", pt.org_id).single(),
+    admin.from("orgs").select("name,phone").eq("id", pt.org_id).single(),
   ]);
 
   if (!customer) return notFound();
 
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.company_name || "Customer";
-  const businessName = org?.business_name ?? "Your Contractor";
+  const businessName = (org as Record<string, unknown> | null)?.name as string ?? "Your Contractor";
+  const orgPhone = (org as Record<string, unknown> | null)?.phone as string | undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -115,9 +92,9 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
 
       <div className="max-w-lg mx-auto p-4 space-y-5">
         <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
-          <p className="text-lg font-bold text-slate-800">Hi {customer.first_name || customerName} 👋</p>
+          <p className="text-lg font-bold text-slate-800">Hi {customer.first_name || customerName}</p>
           <p className="text-sm text-gray-500 mt-1">Here are your documents from {businessName}.</p>
-          {org?.phone && <p className="text-xs text-gray-400 mt-2">Questions? Call {org.phone}</p>}
+          {orgPhone && <p className="text-xs text-gray-400 mt-2">Questions? Call {orgPhone}</p>}
         </div>
 
         {quotes && quotes.length > 0 && (
@@ -154,29 +131,29 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                       </a>
                       {canAct && (
                         <>
-                          <form action={acceptQuote} className="flex-1">
-                            <input type="hidden" name="token" value={token} />
-                            <input type="hidden" name="quote_id" value={q.id} />
-                            <button
-                              type="submit"
-                              className="w-full rounded-lg py-2 text-xs font-semibold text-white bg-green-500"
-                            >
-                              Accept
-                            </button>
-                          </form>
+                          <SignatureCapture
+                            token={token}
+                            quoteId={q.id}
+                            quoteNum={`#${q.id.slice(0, 8).toUpperCase()}`}
+                          />
                           <form action={declineQuote} className="flex-1">
                             <input type="hidden" name="token" value={token} />
                             <input type="hidden" name="quote_id" value={q.id} />
                             <button
                               type="submit"
-                              className="w-full rounded-lg py-2 text-xs font-semibold text-white bg-red-400"
-                            >
+                              className="w-full rounded-lg py-2 text-xs font-semibold text-white bg-red-400">
                               Decline
                             </button>
                           </form>
                         </>
                       )}
                     </div>
+
+                    {canAct && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        Accepting this quote authorizes work to proceed. Your signature is recorded.
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -200,9 +177,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-700">{inv.invoice_number ?? `#${inv.id.slice(0,8).toUpperCase()}`}</p>
-                        {dueDate && (
-                          <p className="text-xs text-gray-400">Due {dueDate}</p>
-                        )}
+                        {dueDate && <p className="text-xs text-gray-400">Due {dueDate}</p>}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-base font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</p>

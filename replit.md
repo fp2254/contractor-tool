@@ -37,29 +37,37 @@ app/
     invoices/[id]/pdf     Download invoice PDF (contractor)
     invoices/[id]/send    Email invoice to customer
     portal/generate       Generate + email customer portal link
-    portal/[token]/quote/[quoteId]/pdf    Public quote PDF (portal)
-    portal/[token]/invoice/[invoiceId]/pdf Public invoice PDF (portal)
-    photos/upload, photos/[id]            Photo CRUD
-    quotes/new/api        Create quote
+    portal/[token]/quote/[quoteId]/pdf     Public quote PDF (portal)
+    portal/[token]/invoice/[invoiceId]/pdf  Public invoice PDF (portal)
+    portal/[token]/accept                   Accept quote with digital signature
+    portal/[token]/revoke                   Revoke portal token
+    photos/upload, photos/[id]              Photo CRUD
+    quotes/new/api        Create quote (supports inline new customer)
+    ai/capture, ai/voice, ai/permit, ai/create  AI features
 components/
-  AppShell.tsx          Nav shell (Home/Leads/Schedule/Jobs/Money/More)
+  AppShell.tsx            Nav shell (Home/Leads/Schedule/Jobs/Money/More)
   forms/QuoteBuilder.tsx  Quote builder with presets + inline new client
-  PhotoGallery.tsx       Upload/view/delete photos
-  SendEmailButton.tsx    Client button — send quote/invoice email
-  SendPortalButton.tsx   Client button — send customer portal link
+  PhotoGallery.tsx        Upload/view/delete photos
+  SendEmailButton.tsx     Client button — send quote/invoice email
+  PortalLinkCard.tsx      Client component — send/revoke customer portal link on quote page
+  SignatureCapture.tsx    Client component — canvas signature for portal quote acceptance
+  PermitAssistant.tsx     AI permit lookup bottom sheet
+  VoiceJobModal.tsx       Voice job creation 3-step modal
 lib/
   auth.ts               ensureUserOrg() — org provisioning
   email.ts              Resend client + HTML email templates
+  openai.ts             OpenAI client via Replit AI Integrations
   pdf/QuotePDF.tsx       Quote PDF template
   pdf/InvoicePDF.tsx     Invoice PDF template
   supabase/
     server.ts, client.ts, admin.ts, middleware.ts
   validation.ts         Zod schemas
 supabase/
-  migration_phase1.sql  ✅ applied
-  migration_phase2.sql  ✅ applied
-  migration_photos.sql  ✅ applied
-  migration_portal.sql  ✅ applied
+  migration_phase1.sql       ✅ applied
+  migration_phase2.sql       ✅ applied
+  migration_photos.sql       ✅ applied
+  migration_portal.sql       ✅ applied
+  migration_portal_v2.sql    ⚠️ PENDING — run in Supabase SQL Editor (/app/setup)
 ```
 
 ## Environment Variables
@@ -116,12 +124,23 @@ supabase/
 - Customer Portal link email — branded with big CTA button
 
 ### Customer Portal (`/portal/[token]`)
-- Public, no login required — UUID token (30-day expiry)
-- Customer sees all their quotes and invoices
-- Accept / Decline open quotes directly from the portal
+- Public, no login required — UUID token (30-day expiry, revoke support after migration)
+- Token stored in `customer_portal_tokens` (separate from quote IDs — unguessable)
+- Customer sees all their quotes and invoices for that org
+- Accept quotes with canvas digital signature — stored in `quote_signatures` table
+- Decline quotes via server action
 - Download PDF for any quote or invoice
 - Branded with contractor's business name
-- "Send Customer Portal Link" button on every customer detail page
+- "Send Customer Portal Link" on every quote detail page (`PortalLinkCard`)
+  - Reuses existing active token, or creates new one
+  - Revoke button soft-deletes (sets revoked_at) or hard-deletes (pre-migration fallback)
+  - "Resend" revokes old token and issues a fresh one
+- Setup page at `/app/setup` shows migration SQL and live status checks
+
+### AI Features
+- **AI Job Capture**: natural language → structured job fields
+- **Voice Job Creation**: Web Speech API → AI extraction → create quote/job/invoice
+- **Permit Assistant**: permit requirement lookup by job type + location
 
 ## Not Yet Built
 - Online payments (Stripe/Square)
