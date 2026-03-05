@@ -98,8 +98,9 @@ export async function POST(req: Request) {
       );
     }
 
-    await admin.from("quote_items").insert(
-      body.quote.line_items.map((i) => ({
+    const lineItemRows = body.quote.line_items
+      .filter((i) => i.description.trim())
+      .map((i) => ({
         org_id: orgId!,
         quote_id: quote.id,
         description: i.description,
@@ -107,8 +108,11 @@ export async function POST(req: Request) {
         unit_price: i.unit_price,
         total_price: i.qty * i.unit_price,
         ...(i.preset_id ? { preset_id: i.preset_id } : {}),
-      }))
-    );
+      }));
+
+    if (lineItemRows.length > 0) {
+      await admin.from("quote_items").insert(lineItemRows);
+    }
 
     return NextResponse.json({ type: "quote", id: quote.id });
   }

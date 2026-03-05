@@ -113,38 +113,59 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   if (!quote) return notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aiAttachmentsRaw } = await (admin as any)
-    .from("ai_attachments")
-    .select("id, title, note, is_pinned, created_at, ai_runs(id, feature, input_text, output_json, output_text, created_at)")
-    .eq("org_id", orgId!)
-    .eq("entity_type", "quote")
-    .eq("entity_id", id)
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
-  const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
+  let aiAttachments: AiAttachment[] = [];
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: attachments } = await (admin as any)
+      .from("ai_attachments")
+      .select("id, title, note, is_pinned, created_at, ai_run_id")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("entity_id", id)
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      const runIds = attachments.map((a: { ai_run_id: string }) => a.ai_run_id).filter(Boolean);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: runs } = runIds.length > 0
+        ? await (admin as any).from("ai_runs").select("id, feature, input_text, output_json, output_text, created_at").in("id", runIds)
+        : { data: [] };
+      const runsById = Object.fromEntries((runs ?? []).map((r: { id: string }) => [r.id, r]));
+      aiAttachments = attachments.map((a: { id: string; title: string | null; note: string | null; is_pinned: boolean; created_at: string; ai_run_id: string | null }) => ({
+        ...a,
+        ai_runs: a.ai_run_id ? runsById[a.ai_run_id] ?? null : null,
+      }));
+    }
+  } catch {
+    aiAttachments = [];
+  }
 
   const { data: customer } = await admin
     .from("customers")
     .select("first_name,last_name,company_name,phone,email,address_line1,city,state")
-    .eq("id", quote.customer_id)
-    .single();
+    .eq("id", quote.customer_id ?? "")
+    .maybeSingle();
 
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.company_name || "Unknown";
   const statusColor = STATUS_COLORS[quote.status] ?? "bg-gray-100 text-gray-600";
 
-  // Fetch active portal token for this customer (non-expired, non-revoked)
-  const now = new Date().toISOString();
-  const { data: activeToken } = await admin
-    .from("customer_portal_tokens")
-    .select("token")
-    .eq("org_id", orgId!)
-    .eq("customer_id", quote.customer_id)
-    .gt("expires_at", now)
-    .is("revoked_at" as never, null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let activeToken: { token: string } | null = null;
+  try {
+    const now = new Date().toISOString();
+    const { data } = await admin
+      .from("customer_portal_tokens")
+      .select("token")
+      .eq("org_id", orgId!)
+      .eq("customer_id", quote.customer_id ?? "")
+      .gt("expires_at", now)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    activeToken = data ?? null;
+  } catch {
+    activeToken = null;
+  }
 
   return (
     <div className="p-4 space-y-4">
