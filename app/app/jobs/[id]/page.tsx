@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
+import { PermitAssistant } from "@/components/PermitAssistant";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -149,6 +150,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           ))}
         </form>
       </div>
+
+      <PermitAssistant
+        defaultDescription={job.job_title}
+        defaultAddress={job.address ?? ""}
+        jobId={job.id}
+      />
 
       <div className="grid grid-cols-2 gap-3">
         {job.scheduled_date && (

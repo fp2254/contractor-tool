@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
+import { PermitAssistant } from "@/components/PermitAssistant";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -100,6 +101,7 @@ export default async function DashboardPage() {
           ))}
         </div>
         <AiCaptureModal />
+        <PermitAssistant />
       </div>
     </div>
   );
