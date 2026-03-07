@@ -35,6 +35,17 @@ export default function LoginPage() {
               required
               className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
+              <input
+                type="checkbox"
+                name="remember_me"
+                defaultChecked
+                className="w-4 h-4 rounded border-gray-300 accent-[#1B3A6B] cursor-pointer"
+              />
+              <span className="text-sm text-slate-600">Remember me</span>
+            </label>
+
             {state?.error && (
               <p className="text-sm text-red-600">{state.error}</p>
             )}
