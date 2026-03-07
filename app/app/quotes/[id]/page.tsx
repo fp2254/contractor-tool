@@ -269,8 +269,10 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       <PortalLinkCard
         customerId={quote.customer_id}
+        customerPhone={customer?.phone ?? null}
         customerEmail={customer?.email ?? null}
         customerName={customerName}
+        orgName={orgName}
         activeToken={activeToken?.token ?? null}
       />
 
@@ -280,6 +282,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         customerPhone={customer?.phone ?? null}
         customerEmail={customer?.email ?? null}
         amount={Number(quote.total_amount)}
+        customerId={quote.customer_id ?? ""}
         portalToken={activeToken?.token ?? null}
         orgName={orgName}
       />

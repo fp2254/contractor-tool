@@ -206,6 +206,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         customerPhone={customer?.phone ?? null}
         customerEmail={customer?.email ?? null}
         amount={Number(invoice.total_amount)}
+        customerId={invoice.customer_id ?? ""}
         portalToken={null}
         orgName={orgName}
       />
