@@ -37,6 +37,8 @@ export const quoteSchema = z.object({
   customer_id: z.string().uuid().or(z.literal("")),
   notes: z.string().optional(),
   items: z.array(quoteItemSchema).min(1),
+  scope_items: z.array(z.string()).optional(),
+  estimated_time: z.string().optional(),
 });
 
 export const jobSchema = z.object({

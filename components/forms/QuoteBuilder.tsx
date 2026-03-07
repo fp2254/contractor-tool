@@ -15,6 +15,8 @@ export type QuotePayload = {
   customer_id: string;
   notes: string;
   items: Item[];
+  scope_items?: string[];
+  estimated_time?: string;
   new_customer?: NewCustomer;
 };
 
@@ -45,6 +47,9 @@ export function QuoteBuilder({
     phone: "",
     email: "",
   });
+  const [scopeItems, setScopeItems] = useState<string[]>([""]);
+  const [estimatedTime, setEstimatedTime] = useState("");
+  const [generatingScope, setGeneratingScope] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const total = useMemo(
@@ -78,14 +83,48 @@ export function QuoteBuilder({
     setItems((prev) => prev.filter((_, idx) => idx !== i));
   }
 
+  function updateScope(i: number, value: string) {
+    setScopeItems((prev) => prev.map((s, idx) => (idx === i ? value : s)));
+  }
+
+  function addScopeLine() {
+    setScopeItems((prev) => [...prev, ""]);
+  }
+
+  function removeScope(i: number) {
+    setScopeItems((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function generateScope() {
+    const filled = items.filter(i => i.description.trim());
+    if (!filled.length) return;
+    setGeneratingScope(true);
+    try {
+      const res = await fetch("/api/ai/scope", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: filled }),
+      });
+      const json = await res.json() as { bullets?: string[] };
+      if (json.bullets?.length) {
+        setScopeItems(json.bullets);
+      }
+    } finally {
+      setGeneratingScope(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const cleanScope = scopeItems.filter(s => s.trim());
       await onSubmit({
         customer_id: isNew ? "" : customerId,
         notes,
         items,
+        scope_items: cleanScope.length ? cleanScope : undefined,
+        estimated_time: estimatedTime.trim() || undefined,
         ...(isNew ? { new_customer: newCustomer } : {}),
       });
     } finally {
@@ -215,6 +254,59 @@ export function QuoteBuilder({
           className="mt-2 text-sm font-medium text-[#1B3A6B] py-2">
           + Add Line Item
         </button>
+      </div>
+
+      {/* Scope of Work */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-semibold text-slate-700">Scope of Work</label>
+          <button
+            type="button"
+            onClick={generateScope}
+            disabled={generatingScope || !items.some(i => i.description.trim())}
+            className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 disabled:opacity-40 active:bg-purple-100">
+            {generatingScope ? (
+              <span className="animate-pulse">Generating…</span>
+            ) : (
+              <>✨ AI Generate</>
+            )}
+          </button>
+        </div>
+        <div className="space-y-2">
+          {scopeItems.map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-gray-400 text-sm">•</span>
+              <input
+                placeholder={`Scope item ${i + 1} (e.g. Radon fan installation)`}
+                value={s}
+                onChange={(e) => updateScope(i, e.target.value)}
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              {scopeItems.length > 1 && (
+                <button type="button" onClick={() => removeScope(i)}
+                  className="text-red-400 text-base leading-none px-1">✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addScopeLine}
+          className="mt-2 text-sm font-medium text-[#1B3A6B] py-1">
+          + Add Bullet
+        </button>
+      </div>
+
+      {/* Estimated Time */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1">Estimated Install Time</label>
+        <input
+          placeholder="e.g. 3–5 hours, 1–2 days"
+          value={estimatedTime}
+          onChange={(e) => setEstimatedTime(e.target.value)}
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+        />
+        <p className="text-xs text-gray-400 mt-1">Shown to the customer on their quote</p>
       </div>
 
       {/* Notes */}

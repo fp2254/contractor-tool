@@ -7,9 +7,10 @@ type Props = {
   token: string;
   quoteId: string;
   quoteNum: string;
+  large?: boolean;
 };
 
-export function SignatureCapture({ token, quoteId, quoteNum }: Props) {
+export function SignatureCapture({ token, quoteId, quoteNum, large }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [drawing, setDrawing] = useState(false);
@@ -107,7 +108,13 @@ export function SignatureCapture({ token, quoteId, quoteNum }: Props) {
   }
 
   if (!open) {
-    return (
+    return large ? (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full rounded-2xl py-4 text-base font-bold text-white bg-green-500 active:bg-green-600 shadow-md shadow-green-200">
+        ✓ Accept Quote
+      </button>
+    ) : (
       <button
         onClick={() => setOpen(true)}
         className="flex-1 rounded-lg py-2 text-xs font-semibold text-white bg-green-500 active:bg-green-600">

@@ -61,7 +61,9 @@ export async function POST(req: Request) {
       total_amount: totalAmount,
       notes: parsed.notes ?? "",
       created_by_user: userId,
-    })
+      ...(parsed.scope_items?.length ? { scope_items: parsed.scope_items.join("\n") } : {}),
+      ...(parsed.estimated_time ? { estimated_time: parsed.estimated_time } : {}),
+    } as Record<string, unknown>)
     .select("id")
     .single();
 
