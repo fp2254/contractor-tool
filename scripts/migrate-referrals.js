@@ -1,8 +1,29 @@
 #!/usr/bin/env node
 const { Client } = require("pg");
 
+function parseConnStr(connStr) {
+  const withoutProto = connStr.replace(/^postgresql:\/\//, "").replace(/^postgres:\/\//, "");
+  const lastAt = withoutProto.lastIndexOf("@");
+  const userPass = withoutProto.substring(0, lastAt);
+  const hostDbPart = withoutProto.substring(lastAt + 1);
+  const firstColon = userPass.indexOf(":");
+  const user = userPass.substring(0, firstColon);
+  const password = userPass.substring(firstColon + 1);
+  const slashIdx = hostDbPart.indexOf("/");
+  const hostPort = slashIdx >= 0 ? hostDbPart.substring(0, slashIdx) : hostDbPart;
+  const database = slashIdx >= 0 ? hostDbPart.substring(slashIdx + 1).split("?")[0] : "postgres";
+  const colonIdx = hostPort.lastIndexOf(":");
+  const host = colonIdx >= 0 ? hostPort.substring(0, colonIdx) : hostPort;
+  const port = colonIdx >= 0 ? parseInt(hostPort.substring(colonIdx + 1)) : 5432;
+  return { host, port, user, password, database, ssl: { rejectUnauthorized: false } };
+}
+
 async function main() {
-  const client = new Client({ connectionString: process.env.SUPABASE_DB_URL });
+  const raw = process.env.SUPABASE_DB_URL;
+  if (!raw) throw new Error("SUPABASE_DB_URL not set");
+
+  const config = parseConnStr(raw);
+  const client = new Client(config);
   await client.connect();
   console.log("Connected to Supabase DB");
 
@@ -49,4 +70,4 @@ async function main() {
   console.log("Migration complete.");
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch(err => { console.error(err.message); process.exit(1); });
