@@ -4,7 +4,6 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
-import { SendEmailButton } from "@/components/SendEmailButton";
 import { PortalLinkCard } from "@/components/PortalLinkCard";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
@@ -306,12 +305,6 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               />
             </div>
           )}
-          <SendEmailButton
-            apiPath={`/api/quotes/${quote.id}/send`}
-            label="Send Quote to Customer"
-            customerEmail={customer?.email}
-          />
-
           {!quote.invoice_id ? (
             <form action={convertToInvoice}>
               <input type="hidden" name="quote_id" value={quote.id} />

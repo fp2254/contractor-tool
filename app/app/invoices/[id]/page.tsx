@@ -5,7 +5,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
-import { SendEmailButton } from "@/components/SendEmailButton";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
@@ -212,12 +211,6 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       />
 
       <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
-
-      <SendEmailButton
-        apiPath={`/api/invoices/${invoice.id}/send`}
-        label="Send Invoice to Customer"
-        customerEmail={customer?.email}
-      />
 
       <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />
 

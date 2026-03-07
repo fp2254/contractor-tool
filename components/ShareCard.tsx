@@ -63,18 +63,24 @@ export function ShareCard({
   }
 
   async function handleText() {
-    if (!customerPhone) return;
     setTextLoading(true);
     try {
       const token = await ensureToken();
       const msg = buildMessage(token);
-      window.location.href = `sms:${customerPhone}?body=${encodeURIComponent(msg)}`;
+      const smsUri = customerPhone
+        ? `sms:${customerPhone}?body=${encodeURIComponent(msg)}`
+        : `sms:?body=${encodeURIComponent(msg)}`;
+      window.location.href = smsUri;
     } finally {
       setTextLoading(false);
     }
   }
 
-  const emailHref = `mailto:${customerEmail ?? ""}?subject=${encodeURIComponent(`Your ${label} from ${orgName}`)}&body=${encodeURIComponent(buildMessage(portalToken))}`;
+  const emailSubject = encodeURIComponent(`Your ${label} from ${orgName}`);
+  const emailBody = encodeURIComponent(buildMessage(portalToken));
+  const emailHref = customerEmail
+    ? `mailto:${customerEmail}?subject=${emailSubject}&body=${emailBody}`
+    : `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
   const handleCopy = async () => {
     try {
@@ -96,7 +102,7 @@ export function ShareCard({
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={handleText}
-          disabled={!customerPhone || textLoading}
+          disabled={textLoading}
           className="flex flex-col items-center gap-1.5 bg-green-50 rounded-xl py-4 text-green-700 active:bg-green-100 disabled:opacity-40">
           {textLoading ? (
             <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -113,7 +119,7 @@ export function ShareCard({
 
         <a
           href={emailHref}
-          className={`flex flex-col items-center gap-1.5 bg-blue-50 rounded-xl py-4 text-blue-700 active:bg-blue-100 ${!customerEmail ? "opacity-40 pointer-events-none" : ""}`}>
+          className="flex flex-col items-center gap-1.5 bg-blue-50 rounded-xl py-4 text-blue-700 active:bg-blue-100">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
@@ -138,9 +144,11 @@ export function ShareCard({
         </button>
       </div>
 
-      {!customerPhone && !customerEmail && (
+      {(!customerPhone || !customerEmail) && (
         <p className="text-xs text-gray-400 text-center mt-3">
-          Add a phone or email to the customer to pre-fill the message.
+          {customerPhone && !customerEmail ? "Email will open without a pre-filled address." : ""}
+          {!customerPhone && customerEmail ? "Text will open without a pre-filled number." : ""}
+          {!customerPhone && !customerEmail ? "Text and email will open without pre-filled contact info." : ""}
         </p>
       )}
     </div>
