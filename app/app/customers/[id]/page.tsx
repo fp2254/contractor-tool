@@ -83,6 +83,32 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const jobsCompleted = jobs?.filter(j => j.status === "completed").length ?? 0;
   const quotesSent = quotes?.filter(q => q.status === "sent" || q.status === "accepted").length ?? 0;
 
+  const lastCompletedJob = jobs?.find(j => j.status === "completed");
+  const lastCompletedJobDate = lastCompletedJob?.scheduled_date ?? null;
+  const clientSince = customer.created_at;
+
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const hasFollowUpNeeded = quotes?.some(
+    q => q.status === "sent" && q.created_at < threeDaysAgo
+  ) ?? false;
+  const hasOverdueInvoice = invoices?.some(i => i.status === "overdue") ?? false;
+  const isRepeatClient = jobsCompleted > 1;
+  const isHighValue = lifetimeValue >= 5000;
+  const isNewClient = jobsCompleted === 0;
+
+  type Flag = { icon: string; label: string; style: string };
+  const flags: Flag[] = [];
+  if (hasFollowUpNeeded) flags.push({ icon: "⚠️", label: "Quote pending follow-up", style: "bg-amber-50 text-amber-700 border border-amber-200" });
+  if (hasOverdueInvoice)  flags.push({ icon: "⚠️", label: "Invoice overdue", style: "bg-red-50 text-red-700 border border-red-200" });
+  if (isHighValue)        flags.push({ icon: "⭐", label: "High Value Client", style: "bg-yellow-50 text-yellow-700 border border-yellow-200" });
+  if (isRepeatClient)     flags.push({ icon: "⭐", label: "Repeat Client", style: "bg-green-50 text-green-700 border border-green-200" });
+  if (isNewClient)        flags.push({ icon: "🆕", label: "New Client", style: "bg-blue-50 text-blue-700 border border-blue-100" });
+
+  function fmtDate(d: string | null) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
@@ -153,27 +179,47 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </Link>
       </div>
 
-      {/* Financial summary */}
+      {/* Client Intelligence Panel */}
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Financial Summary</p>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Client Insights</p>
+
+        {flags.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {flags.map((flag, i) => (
+              <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${flag.style}`}>
+                <span className="text-base leading-none">{flag.icon}</span>
+                <span>{flag.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2.5">
           <div className="bg-green-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 mb-0.5">Lifetime Value</p>
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Lifetime Value</p>
             <p className="text-lg font-bold text-green-700">${lifetimeValue.toLocaleString()}</p>
           </div>
           <div className={`rounded-xl p-3 ${outstandingBalance > 0 ? "bg-red-50" : "bg-gray-50"}`}>
-            <p className="text-xs text-gray-500 mb-0.5">Outstanding</p>
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Outstanding</p>
             <p className={`text-lg font-bold ${outstandingBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
               ${outstandingBalance.toLocaleString()}
             </p>
           </div>
           <div className="bg-blue-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 mb-0.5">Jobs Completed</p>
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Jobs Completed</p>
             <p className="text-lg font-bold text-blue-700">{jobsCompleted}</p>
           </div>
           <div className="bg-purple-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 mb-0.5">Quotes Sent</p>
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Quotes Sent</p>
             <p className="text-lg font-bold text-purple-700">{quotesSent}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3">
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Last Job</p>
+            <p className="text-sm font-bold text-slate-700">{fmtDate(lastCompletedJobDate)}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3">
+            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Client Since</p>
+            <p className="text-sm font-bold text-slate-700">{fmtDate(clientSince)}</p>
           </div>
         </div>
       </div>
