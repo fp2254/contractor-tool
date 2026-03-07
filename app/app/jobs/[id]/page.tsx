@@ -7,6 +7,7 @@ import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
+import { JobBrain } from "@/components/JobBrain";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -122,8 +123,25 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     .order("created_at", { ascending: false });
   const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
-  const { data: customer } = await admin.from("customers").select("first_name,last_name,phone").eq("id", job.customer_id).single();
+  const [{ data: customer }, { data: clientInvoices }, { data: clientJobs }] = await Promise.all([
+    admin.from("customers").select("first_name,last_name,phone,city,state").eq("id", job.customer_id).single(),
+    admin.from("invoices").select("status").eq("customer_id", job.customer_id).eq("org_id", orgId!),
+    admin.from("jobs").select("id,status").eq("customer_id", job.customer_id).eq("org_id", orgId!),
+  ]);
+
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Unknown";
+  const cityState = [customer?.city, customer?.state].filter(Boolean).join(", ") || null;
+
+  const jobAlerts: string[] = [];
+  const overdueCount = clientInvoices?.filter(i => i.status === "overdue").length ?? 0;
+  if (overdueCount > 0) jobAlerts.push(`${overdueCount} overdue invoice${overdueCount > 1 ? "s" : ""} for this client`);
+  const completedJobCount = clientJobs?.filter(j => j.status === "completed").length ?? 0;
+  if (completedJobCount > 0) jobAlerts.push(`${completedJobCount} previous job${completedJobCount > 1 ? "s" : ""} on record`);
+  if (notes && notes.length > 0) jobAlerts.push(`${notes.length} site note${notes.length > 1 ? "s" : ""} attached to this job`);
+
+  const clientHistory = completedJobCount > 0
+    ? `${completedJobCount} completed job${completedJobCount > 1 ? "s" : ""} on record`
+    : "New client — no previous jobs";
 
   const statusColor = STATUS_COLORS[job.status] ?? "bg-gray-100 text-gray-600";
   const statusLabel = STATUS_LABELS[job.status] ?? job.status;
@@ -149,6 +167,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         {customer?.phone && <a href={`tel:${customer.phone}`} className="text-sm text-slate-700">📞 {customer.phone}</a>}
         {job.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mt-2">{job.notes}</p>}
       </div>
+
+      <JobBrain
+        jobTitle={job.job_title}
+        description={job.notes}
+        address={job.address}
+        cityState={cityState}
+        notes={notes?.map(n => n.body).join(" | ")}
+        clientHistory={clientHistory}
+        alerts={jobAlerts}
+      />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
