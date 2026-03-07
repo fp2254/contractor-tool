@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getOpenAIClient } from "@/lib/openai";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildMessages } from "@/lib/ai/prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -58,48 +59,23 @@ export async function POST(req: Request) {
   const hasPresets = presets && presets.length > 0;
 
   const presetsJson = hasPresets
-    ? presets.map((p) => {
-        const price =
+    ? presets.map((p) => ({
+        id: p.id,
+        name: p.service_name,
+        description: p.description ?? "",
+        unit: p.unit ?? "each",
+        price:
           p.price_type === "flat"
             ? p.flat_rate
-            : (p.hourly_rate ?? 0) * (p.estimated_hours ?? 1);
-        return {
-          id: p.id,
-          name: p.service_name,
-          description: p.description ?? "",
-          unit: p.unit ?? "each",
-          price,
-          tags: p.tags ?? [],
-          category: p.category ?? "",
-        };
-      })
+            : (p.hourly_rate ?? 0) * (p.estimated_hours ?? 1),
+        tags: p.tags ?? [],
+        category: p.category ?? "",
+      }))
     : [];
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const systemPrompt = `You are an AI assistant for a contractor CRM called TradeBase. Today is ${today}.
-Extract structured information from a job description and return ONLY valid JSON — no other text.
-
-${
-  hasPresets
-    ? `## THIS ORG'S SERVICE PRICE SHEET
-The following presets are the ONLY allowed source of pricing. You MUST use them:
-
-${JSON.stringify(presetsJson, null, 2)}
-
-PRICING RULES (strictly enforced):
-1. Match the job description to the closest preset(s) using the name, description, tags, and category.
-2. When a preset matches: use its id as preset_id, its price as unit_price, and its unit as unit.
-3. When NO preset matches a needed line item: set preset_id to null, unit_price to null, and needs_manual_pricing to true.
-4. NEVER invent a price. NEVER use internet averages or guesses. If there is no matching preset, the price must be null.`
-    : `## NO SERVICE PRESETS CONFIGURED
-This org has not set up a service price sheet yet.
-For every line item, set preset_id to null, unit_price to null, and needs_manual_pricing to true.
-The contractor will fill in prices manually.`
-}
-
-## OUTPUT JSON SHAPE (return exactly this structure):
-{
+  const schema = `{
   "job_title": "string — clear professional title e.g. 'Radon Mitigation System Installation'",
   "customer": {
     "name": "string or empty string",
@@ -118,35 +94,46 @@ The contractor will fill in prices manually.`
       "description": "string",
       "qty": 1,
       "unit": "each | ft | hour | etc",
-      "unit_price": 1200,
+      "unit_price": 0,
       "needs_manual_pricing": false
     }
   ],
   "notes": "string or null"
-}
+}`;
 
-## RECOMMENDED STATUS RULES:
-- "lead": job is very vague, no details yet
-- "quote": customer wants pricing before committing
-- "job": customer has agreed and work needs to be scheduled
-- "invoice": work is already done and needs to be billed
+  const pricingRule = hasPresets
+    ? `When a line item matches a preset: use its id as preset_id, its price as unit_price, its unit as unit, and set needs_manual_pricing to false. When no preset matches: set preset_id to null, unit_price to null, needs_manual_pricing to true. Never invent a price.`
+    : `No service presets are configured. For every line item, set preset_id to null, unit_price to null, needs_manual_pricing to true.`;
 
-## GENERAL RULES:
-- Extract customer name, phone, email, address from the description (use "" if not found)
-- Convert relative dates ("next Friday", "tomorrow") to ISO date
-- All string fields: use "" not null
-- schedule.date and schedule.time_window: use null if not mentioned`;
+  const messages = buildMessages(
+    {
+      role: "You are an AI job intake assistant for TradeBase, a contractor CRM. Extract structured job information from a contractor's message and return it as JSON.",
+      rules: [
+        "Return valid JSON only — no markdown, no prose, no explanation.",
+        "Never invent pricing. Use only the supplied service presets as the source of prices.",
+        pricingRule,
+        "Convert relative dates (e.g. 'next Friday', 'tomorrow') to ISO date YYYY-MM-DD relative to today.",
+        "Use empty string '' for missing customer fields, not null.",
+        "recommended_status: 'lead' if vague, 'quote' if pricing needed, 'job' if agreed and schedulable, 'invoice' if work is done.",
+        "Use the supplied presets array to match line items. Match by name, description, tags, and category.",
+      ],
+      context: {
+        today,
+        service_presets: hasPresets ? JSON.stringify(presetsJson) : "none",
+      },
+      task: "Extract job title, customer info, schedule, line items, and a recommended status from the input text.",
+      schema,
+    },
+    body.text.trim()
+  );
 
   const openai = getOpenAIClient();
 
   let raw: string;
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: body.text.trim() },
-      ],
+      model: "gpt-4o-mini",
+      messages,
       response_format: { type: "json_object" },
       max_completion_tokens: 1200,
     });
