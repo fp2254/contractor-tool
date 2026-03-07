@@ -64,6 +64,7 @@ export default function ClientsListClient({ clients: initial }: { clients: Clien
     const name = `${c.first_name} ${c.last_name ?? ""}`.toLowerCase();
     return (
       name.includes(s) ||
+      (c.company_name ?? "").toLowerCase().includes(s) ||
       (c.phone ?? "").replace(/\D/g, "").includes(s.replace(/\D/g, "")) ||
       (c.email ?? "").toLowerCase().includes(s) ||
       (c.address_line1 ?? "").toLowerCase().includes(s) ||

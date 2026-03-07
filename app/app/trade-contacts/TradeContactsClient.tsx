@@ -12,6 +12,7 @@ export type TradeContact = {
   phone: string | null;
   email: string | null;
   notes: string | null;
+  archived: boolean | null;
   created_at: string;
 };
 
@@ -39,14 +40,10 @@ type ContactFormValues = {
   phone: string; email: string; notes: string;
 };
 const EMPTY: ContactFormValues = { name: "", company: "", trade: "", phone: "", email: "", notes: "" };
-
 type Mode = "idle" | "choosing" | "scanning" | "manual";
 
 function NewContactForm({
-  initial,
-  onCreated,
-  onCancel,
-  onScanInstead,
+  initial, onCreated, onCancel, onScanInstead,
 }: {
   initial: ContactFormValues;
   onCreated: (c: TradeContact) => void;
@@ -97,22 +94,22 @@ function NewContactForm({
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <input required placeholder="Full name *" value={name} onChange={(e) => setName(e.target.value)}
+        <input required placeholder="Full name *" value={name} onChange={e => setName(e.target.value)}
           className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
         <div className="grid grid-cols-2 gap-2">
-          <input placeholder="Company" value={company} onChange={(e) => setCompany(e.target.value)}
+          <input placeholder="Company" value={company} onChange={e => setCompany(e.target.value)}
             className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
-          <select value={trade} onChange={(e) => setTrade(e.target.value)}
+          <select value={trade} onChange={e => setTrade(e.target.value)}
             className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white">
             <option value="">Trade / Specialty</option>
-            {TRADES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
-        <input placeholder="Phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+        <input placeholder="Phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)}
           className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
-        <input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+        <input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)}
           className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
-        <textarea placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)}
+        <textarea placeholder="Notes (optional)" value={notes} onChange={e => setNotes(e.target.value)}
           rows={2} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none" />
         <div className="flex gap-2 pt-1">
           <button type="submit" disabled={saving}
@@ -131,8 +128,7 @@ function NewContactForm({
 }
 
 function buildShareText(contact: TradeContact): string {
-  const lines: string[] = [];
-  lines.push(`Contact: ${contact.name}`);
+  const lines: string[] = [`Contact: ${contact.name}`];
   if (contact.trade) lines.push(contact.company ? `${contact.trade} · ${contact.company}` : contact.trade);
   else if (contact.company) lines.push(contact.company);
   if (contact.phone) lines.push(`📞 ${contact.phone}`);
@@ -141,10 +137,20 @@ function buildShareText(contact: TradeContact): string {
   return lines.join("\n");
 }
 
-function ContactCard({ contact, onDelete }: { contact: TradeContact; onDelete: (id: string) => void }) {
+function ContactCard({
+  contact,
+  onDelete,
+  onArchiveToggle,
+}: {
+  contact: TradeContact;
+  onDelete: (id: string) => void;
+  onArchiveToggle: (id: string, archived: boolean) => void;
+}) {
   const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
+  const isArchived = contact.archived === true;
   const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
 
   async function handleShare() {
@@ -156,41 +162,98 @@ function ContactCard({ contact, onDelete }: { contact: TradeContact; onDelete: (
     }
   }
 
+  async function handleArchiveToggle() {
+    setToggling(true);
+    try {
+      const res = await fetch(`/app/trade-contacts/api/${contact.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: !isArchived }),
+      });
+      if (res.ok) onArchiveToggle(contact.id, !isArchived);
+    } finally {
+      setToggling(false);
+    }
+  }
+
   async function handleDelete() {
-    if (!confirm(`Remove ${contact.name}?`)) return;
+    if (!confirm(`Permanently delete ${contact.name}? This cannot be undone.`)) return;
     setDeleting(true);
-    try { await fetch(`/app/trade-contacts/api/${contact.id}`, { method: "DELETE" }); onDelete(contact.id); } finally { setDeleting(false); }
+    try {
+      await fetch(`/app/trade-contacts/api/${contact.id}`, { method: "DELETE" });
+      onDelete(contact.id);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4">
+    <div className={`rounded-2xl shadow-sm p-4 transition-opacity ${isArchived ? "bg-gray-50 opacity-70" : "bg-white"}`}>
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: "#1B3A6B" }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+          style={{ backgroundColor: isArchived ? "#94a3b8" : "#1B3A6B" }}>
           {contact.name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <button onClick={() => setExpanded((v) => !v)} className="text-left w-full">
-            <p className="text-sm font-bold text-slate-800 leading-snug">{contact.name}</p>
+          <button onClick={() => setExpanded(v => !v)} className="text-left w-full">
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-bold leading-snug ${isArchived ? "text-gray-400" : "text-slate-800"}`}>
+                {contact.name}
+              </p>
+              {isArchived && (
+                <span className="text-[10px] bg-gray-200 text-gray-500 rounded-full px-2 py-0.5 font-medium">Archived</span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {contact.trade && tradeColor && <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${tradeColor}`}>{contact.trade}</span>}
+              {contact.trade && tradeColor && (
+                <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${isArchived ? "bg-gray-100 text-gray-400" : tradeColor}`}>
+                  {contact.trade}
+                </span>
+              )}
               {contact.company && <span className="text-xs text-gray-400">{contact.company}</span>}
             </div>
           </button>
+
           {expanded && (
             <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-              {contact.phone && <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-[#1B3A6B] font-semibold">📞 {contact.phone}</a>}
-              {contact.email && <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-[#1B3A6B]">✉️ {contact.email}</a>}
+              {contact.phone && (
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-[#1B3A6B] font-semibold">
+                  📞 {contact.phone}
+                </a>
+              )}
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-sm text-[#1B3A6B]">
+                  ✉️ {contact.email}
+                </a>
+              )}
               {contact.notes && <p className="text-xs text-gray-500 italic">{contact.notes}</p>}
-              <button onClick={handleShare} className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full transition-colors"
-                style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
-                {shared ? "✓ Shared!" : "📤 Share this contact"}
-              </button>
+              {!isArchived && (
+                <button onClick={handleShare}
+                  className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full transition-colors"
+                  style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
+                  {shared ? "✓ Shared!" : "📤 Share this contact"}
+                </button>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleArchiveToggle} disabled={toggling}
+                  className="flex-1 rounded-xl py-2 text-sm font-semibold border border-gray-200 text-gray-600 bg-white disabled:opacity-50">
+                  {toggling ? "…" : isArchived ? "↩ Unarchive" : "Archive"}
+                </button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className="rounded-xl px-4 py-2 text-sm font-semibold text-red-500 border border-red-100 bg-white disabled:opacity-50">
+                  {deleting ? "…" : "Delete"}
+                </button>
+              </div>
             </div>
           )}
         </div>
+
         <div className="flex gap-2 flex-shrink-0">
-          {contact.phone && <a href={`tel:${contact.phone}`} className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-sm">📞</a>}
-          <button onClick={handleDelete} disabled={deleting} className="text-gray-300 hover:text-red-400 p-1 text-sm">{deleting ? "…" : "✕"}</button>
+          {contact.phone && !isArchived && (
+            <a href={`tel:${contact.phone}`} className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-sm">
+              📞
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -202,36 +265,51 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
   const [mode, setMode] = useState<Mode>("idle");
   const [prefilled, setPrefilled] = useState<ContactFormValues>(EMPTY);
   const [q, setQ] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
-  const filtered = contacts.filter(
-    (c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) ||
-      (c.trade ?? "").toLowerCase().includes(q.toLowerCase()) ||
-      (c.company ?? "").toLowerCase().includes(q.toLowerCase())
-  );
+  const isSearching = q.trim().length > 0;
+
+  const active = contacts.filter(c => !c.archived);
+  const archived = contacts.filter(c => c.archived === true);
+
+  const searchResults = isSearching
+    ? contacts.filter(c =>
+        c.name.toLowerCase().includes(q.toLowerCase()) ||
+        (c.trade ?? "").toLowerCase().includes(q.toLowerCase()) ||
+        (c.company ?? "").toLowerCase().includes(q.toLowerCase()) ||
+        (c.phone ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, "")) ||
+        (c.email ?? "").toLowerCase().includes(q.toLowerCase()) ||
+        (c.notes ?? "").toLowerCase().includes(q.toLowerCase())
+      )
+    : null;
 
   function handleScanned(data: CardScanResult) {
     const matchedTrade = TRADES.find(t => data.trade.toLowerCase().includes(t.toLowerCase())) ?? "";
     setPrefilled({
-      name: data.name,
-      company: data.company,
-      trade: matchedTrade,
-      phone: data.phone,
-      email: data.email,
+      name: data.name, company: data.company, trade: matchedTrade,
+      phone: data.phone, email: data.email,
       notes: [data.website, data.address].filter(Boolean).join(" · "),
     });
     setMode("manual");
   }
 
   function handleCreated(contact: TradeContact) {
-    setContacts((prev) => [contact, ...prev]);
+    setContacts(prev => [contact, ...prev]);
     setMode("idle");
     setPrefilled(EMPTY);
   }
 
-  function reset() {
-    setMode("idle");
-    setPrefilled(EMPTY);
+  function reset() { setMode("idle"); setPrefilled(EMPTY); }
+
+  function handleArchiveToggle(id: string, nowArchived: boolean) {
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, archived: nowArchived } : c));
   }
+
+  function handleDelete(id: string) {
+    setContacts(prev => prev.filter(c => c.id !== id));
+  }
+
+  const cardProps = { onDelete: handleDelete, onArchiveToggle: handleArchiveToggle };
 
   return (
     <div className="space-y-3">
@@ -274,31 +352,65 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
       )}
 
       {mode === "manual" && (
-        <NewContactForm
-          initial={prefilled}
-          onCreated={handleCreated}
-          onCancel={reset}
-          onScanInstead={() => setMode("scanning")}
-        />
+        <NewContactForm initial={prefilled} onCreated={handleCreated} onCancel={reset} onScanInstead={() => setMode("scanning")} />
       )}
 
       <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
         <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2}>
           <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
         </svg>
-        <input className="flex-1 text-sm outline-none bg-transparent" placeholder="Search contacts"
-          value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="flex-1 text-sm outline-none bg-transparent" placeholder="Search contacts (includes archived)"
+          value={q} onChange={e => setQ(e.target.value)} />
+        {q && (
+          <button onClick={() => setQ("")} className="text-gray-300 hover:text-gray-500 text-sm leading-none">✕</button>
+        )}
       </div>
 
-      {filtered.length === 0 && mode === "idle" && (
-        <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
-          {q ? `No contacts matching "${q}"` : "No contacts yet. Tap Add Contact to get started."}
-        </div>
+      {isSearching ? (
+        <>
+          {searchResults!.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+              No contacts matching &ldquo;{q}&rdquo;
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {searchResults!.map(c => (
+                <ContactCard key={c.id} contact={c} {...cardProps} />
+              ))}
+              <p className="text-xs text-center text-gray-400 pt-1">{searchResults!.length} result{searchResults!.length !== 1 ? "s" : ""} — including archived</p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {active.length === 0 && mode === "idle" && (
+            <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+              No contacts yet. Tap Add Contact to get started.
+            </div>
+          )}
+          <div className="space-y-2">
+            {active.map(c => <ContactCard key={c.id} contact={c} {...cardProps} />)}
+          </div>
+
+          {archived.length > 0 && (
+            <div className="pt-1">
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                className="flex items-center gap-2 text-xs font-semibold text-gray-400 w-full px-1 py-2">
+                <svg className={`w-3.5 h-3.5 transition-transform ${showArchived ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                {showArchived ? "Hide" : "Show"} archived ({archived.length})
+              </button>
+              {showArchived && (
+                <div className="space-y-2 mt-1">
+                  {archived.map(c => <ContactCard key={c.id} contact={c} {...cardProps} />)}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
-
-      <div className="space-y-2">
-        {filtered.map((c) => <ContactCard key={c.id} contact={c} onDelete={(id) => setContacts(p => p.filter(c => c.id !== id))} />)}
-      </div>
     </div>
   );
 }
