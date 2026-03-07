@@ -5,6 +5,7 @@ import { ensureUserOrg } from "@/lib/auth";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import { VoiceJobModal } from "@/components/VoiceJobModal";
+import OpsBoard from "@/components/OpsBoard";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -83,6 +84,8 @@ export default async function DashboardPage() {
         )}
         {estimatesCount === 0 && overdueInvoices.length === 0 && null}
       </div>
+
+      <OpsBoard />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <h2 className="text-base font-bold text-slate-800 mb-3">Quick Actions</h2>

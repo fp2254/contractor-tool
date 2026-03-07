@@ -1,0 +1,248 @@
+TRADEBASE — DAILY OPS BOARD (MISSION BOARD / COMMAND BOARD)
+===========================================================
+
+GOAL
+Add a Daily Ops Board to the Home dashboard that automatically generates the most important business tasks for the contractor each day.
+
+Purpose:
+Make contractors want to open the app every day because it immediately shows what needs attention and what actions will move the business forward.
+
+CORE IDEA
+The Ops Board should feel like a daily mission board.
+
+It should display:
+- urgent tasks
+- money-related tasks
+- quote follow-ups
+- scheduling needs
+- incomplete records
+
+Users should be able to tap any task and jump directly into the related screen.
+
+------------------------------------------------------------
+SECTION 1 — UI
+------------------------------------------------------------
+
+Add a new dashboard card called:
+
+TODAY’S OPS
+
+Display as a checklist or task list.
+
+Example:
+
+TODAY’S OPS
+
+☐ Follow up with 2 open quotes
+☐ 1 invoice is overdue
+☐ Schedule 1 unscheduled job
+☐ Log yesterday’s completed job
+☐ Reply to 1 trade referral
+
+At the top or bottom of the card show a progress bar:
+
+Daily Progress
+██████░░░░ 60%
+
+Optional text:
+3 of 5 tasks completed
+
+Each task should be tappable and take the user directly to the correct record or screen.
+
+------------------------------------------------------------
+SECTION 2 — TASK TYPES
+------------------------------------------------------------
+
+Generate tasks from real business data.
+
+Task categories should include:
+
+1. Quote Follow-Up
+Trigger:
+Quotes sent more than 3 days ago and not accepted or declined.
+
+Example task:
+Follow up with Mike Johnson about quote #104
+
+2. Overdue Invoices
+Trigger:
+Invoice due date has passed and invoice status is unpaid.
+
+Example task:
+Send reminder for overdue invoice #208
+
+3. Unscheduled Jobs
+Trigger:
+Job exists but has no scheduled date.
+
+Example task:
+Schedule radon install for Smith residence
+
+4. Jobs Due Today
+Trigger:
+Job scheduled for today but still in Scheduled status.
+
+Example task:
+Start job at 45 Elm St
+
+5. Completed Jobs Without Invoice
+Trigger:
+Job marked completed but no invoice exists.
+
+Example task:
+Create invoice for Johnson install
+
+6. Leads Not Contacted
+Trigger:
+Lead created but no contact action logged within X days.
+
+Example task:
+Call new lead John Miller
+
+7. Trade Network / Referrals
+Trigger:
+Referral received and not responded to.
+
+Example task:
+Respond to new trade referral
+
+8. Missing Job Documentation
+Trigger:
+Completed job has no notes or no photos.
+
+Example task:
+Add notes/photos for basement mitigation job
+
+------------------------------------------------------------
+SECTION 3 — PRIORITY LOGIC
+------------------------------------------------------------
+
+Sort tasks by priority.
+
+Priority order:
+
+1. Overdue invoices
+2. Completed jobs missing invoices
+3. Quotes needing follow-up
+4. Jobs due today
+5. Unscheduled jobs
+6. New leads not contacted
+7. Missing documentation
+8. Referral responses
+
+Display max 5 tasks initially.
+Allow “View All” if more exist.
+
+------------------------------------------------------------
+SECTION 4 — TASK COMPLETION
+------------------------------------------------------------
+
+A task should count as completed automatically when the related action is taken.
+
+Examples:
+
+Quote Follow-Up task completes when:
+- quote status changes
+- follow-up note/message logged
+
+Overdue Invoice task completes when:
+- invoice marked paid
+- reminder sent (optional if using reminders)
+
+Unscheduled Job task completes when:
+- scheduled_date is added
+
+Completed Job Without Invoice task completes when:
+- invoice is created
+
+Lead Not Contacted task completes when:
+- call, text, or note logged
+
+Missing Documentation task completes when:
+- note added
+- photo uploaded
+
+Progress bar updates live as tasks are completed.
+
+------------------------------------------------------------
+SECTION 5 — ENGAGEMENT / RETENTION
+------------------------------------------------------------
+
+Optional motivational elements:
+
+Daily Operations Streak
+Example:
+5-Day Ops Streak
+
+Message examples:
+“Nice work — you cleared your ops board today.”
+“You have 2 high-priority tasks left.”
+
+Do NOT make this childish or game-like.
+Tone should feel like a professional command center.
+
+------------------------------------------------------------
+SECTION 6 — DATA / IMPLEMENTATION
+------------------------------------------------------------
+
+No new major tables required if existing data already supports tasks.
+
+The Ops Board should query:
+
+quotes
+invoices
+jobs
+leads
+notes
+photos
+referrals
+
+If needed, add a lightweight table:
+
+daily_ops_log
+- id
+- org_id
+- user_id
+- date
+- task_type
+- related_entity_type
+- related_entity_id
+- completed_at
+
+This table is optional if task completion can be derived from existing records.
+
+------------------------------------------------------------
+SECTION 7 — AI LAYER (OPTIONAL BUT STRONG)
+------------------------------------------------------------
+
+Add an AI-generated summary line at the top:
+
+AI Suggestion:
+“Follow up with Mike Johnson about the radon quote sent 4 days ago.”
+
+AI should not create tasks from scratch unless backed by real data.
+AI should summarize and prioritize existing tasks.
+
+------------------------------------------------------------
+SECTION 8 — DESIGN REQUIREMENTS
+------------------------------------------------------------
+
+- Mobile-first
+- Clean checklist style
+- Large tap targets
+- Professional tone
+- Fast loading
+- Works without clutter
+
+------------------------------------------------------------
+END GOAL
+------------------------------------------------------------
+
+TradeBase should feel like a daily contractor command center.
+
+When the user opens the app each morning, they should immediately know:
+
+- what needs attention
+- where money is stuck
+- what jobs need to be scheduled
+- what tasks will move the business forward today
