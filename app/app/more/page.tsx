@@ -7,6 +7,7 @@ const menuItems = [
   { label: "Schedule", href: "/app/schedule", emoji: "📅", color: "#1B3A6B" },
   { label: "Trade Contacts", href: "/app/trade-contacts", emoji: "👥", color: "#1B3A6B" },
   { label: "Inventory", href: "/app/inventory", emoji: "📦", color: "#8B4513" },
+  { label: "Accounting Export", href: "/app/export", emoji: "📤", color: "#16A34A" },
   { label: "Earn With TradeBase", href: "/app/referral", emoji: "💰", color: "#16A34A" },
   { label: "Reports", href: "/app/reports", emoji: "📊", color: "#1B3A6B" },
   { label: "Business Profile", href: "/app/profile", emoji: "👤", color: "#6B7280" },
