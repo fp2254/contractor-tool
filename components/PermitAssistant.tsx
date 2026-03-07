@@ -2,28 +2,12 @@
 
 import { useState } from "react";
 import { AiAttachModal } from "@/components/AiAttachModal";
-
-type PermitResult = {
-  permit_required: string;
-  permit_required_detail: string;
-  permit_type: string;
-  local_authority: string;
-  relevant_codes: string[];
-  inspection_notes: string;
-  disclaimer: string;
-};
+import type { PermitResult } from "@/app/api/ai/permit/route";
 
 type Props = {
   defaultDescription?: string;
   defaultAddress?: string;
   jobId?: string;
-};
-
-const BADGE_COLORS: Record<string, string> = {
-  Yes: "bg-red-100 text-red-700",
-  No: "bg-green-100 text-green-700",
-  Likely: "bg-amber-100 text-amber-700",
-  "Depends on scope": "bg-blue-100 text-blue-700",
 };
 
 export function PermitAssistant({ defaultDescription = "", defaultAddress = "", jobId }: Props) {
@@ -79,7 +63,6 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
       setResult(data);
       setStep("result");
 
-      // Save run to ai_runs table (fire-and-forget, non-blocking)
       fetch("/api/ai/run/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,7 +93,7 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
           ai_run_id: aiRunId,
           entity_type: "job",
           entity_id: jobId,
-          title: result ? `Permit: ${result.permit_type}` : "Permit Assistant",
+          title: result ? `Permit: ${result.permit_type ?? "Check"}` : "Permit Assistant",
         }),
       });
       setAttached(true);
@@ -118,10 +101,6 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
       setAttaching(false);
     }
   }
-
-  const badgeColor = result
-    ? (BADGE_COLORS[result.permit_required] ?? "bg-gray-100 text-gray-700")
-    : "";
 
   return (
     <>
@@ -215,45 +194,76 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
 
               {step === "result" && result && (
                 <div className="space-y-4">
+
+                  {/* Permit Requirement */}
                   <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Permit Required</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${badgeColor}`}>
-                        {result.permit_required}
-                      </span>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Permit Requirement</p>
+                    <p className="text-sm font-semibold text-slate-800 mt-1">{result.permit_requirement}</p>
+                  </div>
+
+                  {/* Permit Type */}
+                  {result.permit_type && (
+                    <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Permit Type</p>
+                      <p className="text-sm font-semibold text-slate-800 mt-1">{result.permit_type}</p>
                     </div>
-                    <p className="text-sm text-slate-700 mt-2">{result.permit_required_detail}</p>
-                  </div>
+                  )}
 
-                  <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Permit Type</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-1">{result.permit_type}</p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Local Authority</p>
-                    <p className="text-sm text-slate-700 mt-1">{result.local_authority}</p>
-                  </div>
-
-                  {result.relevant_codes?.length > 0 && (
+                  {/* Permit Process */}
+                  {result.permit_process.length > 0 && (
                     <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Relevant Codes</p>
-                      <ul className="space-y-1">
-                        {result.relevant_codes.map((code, i) => (
-                          <li key={i} className="text-sm text-slate-700 flex gap-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Permit Process</p>
+                      <ol className="space-y-1.5">
+                        {result.permit_process.map((step, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                            <span className="text-[#1B3A6B] font-bold shrink-0 min-w-[16px]">{i + 1}.</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+
+                  {/* Local Authority */}
+                  {result.local_authority && (result.local_authority.office_name || result.local_authority.phone || result.local_authority.website) && (
+                    <div className="bg-gray-50 rounded-2xl p-4 space-y-1.5">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Local Authority</p>
+                      {result.local_authority.office_name && (
+                        <p className="text-sm font-semibold text-slate-800">{result.local_authority.office_name}</p>
+                      )}
+                      {result.local_authority.phone && (
+                        <a href={`tel:${result.local_authority.phone}`} className="text-sm text-blue-600">
+                          📞 {result.local_authority.phone}
+                        </a>
+                      )}
+                      {result.local_authority.email && (
+                        <p className="text-sm text-slate-600">✉️ {result.local_authority.email}</p>
+                      )}
+                      {result.local_authority.website && (
+                        <a href={result.local_authority.website} target="_blank" rel="noopener noreferrer"
+                          className="text-sm text-blue-600 block">
+                          🌐 {result.local_authority.website}
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Inspection Notes */}
+                  {result.inspection_notes.length > 0 && (
+                    <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inspection Notes</p>
+                      <ul className="space-y-1.5">
+                        {result.inspection_notes.map((note, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                             <span className="text-[#1B3A6B] font-bold shrink-0">•</span>
-                            <span>{code}</span>
+                            <span>{note}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  <div className="bg-gray-50 rounded-2xl p-4 space-y-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Inspection Notes</p>
-                    <p className="text-sm text-slate-700 mt-1">{result.inspection_notes}</p>
-                  </div>
-
+                  {/* Disclaimer */}
                   <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                     <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">⚠️ Disclaimer</p>
                     <p className="text-xs text-amber-800">{result.disclaimer}</p>

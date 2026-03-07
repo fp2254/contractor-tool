@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { AiFollowUpButton } from "@/components/AiFollowUpButton";
 
 async function sendReminder(formData: FormData) {
   "use server";
@@ -82,7 +83,7 @@ export default async function FollowupsPage() {
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id,customer_id,total_amount,sent_at,status,customers(first_name,last_name,city)")
+    .select("id,customer_id,total_amount,sent_at,status,customers(first_name,last_name,city,phone,email)")
     .eq("org_id", orgId!)
     .eq("status", "sent")
     .lte("sent_at", followupCutoff)
@@ -103,12 +104,22 @@ export default async function FollowupsPage() {
               <p className="font-semibold">{customerName}</p>
               <p className="text-sm text-slate-600">{customer?.city ?? "Unknown town"}</p>
               <p className="text-sm">Quote ${quote.total_amount} · {days} days since sent</p>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
+                <AiFollowUpButton
+                  recordType="quote"
+                  recordId={quote.id}
+                  clientName={customerName}
+                  recordTitle={`Quote #${quote.id.slice(0, 8).toUpperCase()}`}
+                  daysSinceSent={days}
+                  amount={Number(quote.total_amount)}
+                  customerPhone={(customer as Record<string, unknown>)?.phone as string | null}
+                  customerEmail={(customer as Record<string, unknown>)?.email as string | null}
+                />
                 <form action={sendReminder}>
                   <input type="hidden" name="quote_id" value={quote.id} />
                   <input type="hidden" name="customer_id" value={quote.customer_id} />
                   <input type="hidden" name="channel" value="sms" />
-                  <Button type="submit">Send Reminder</Button>
+                  <Button type="submit">Mark Sent</Button>
                 </form>
                 <form action={skipReminder}>
                   <input type="hidden" name="quote_id" value={quote.id} />

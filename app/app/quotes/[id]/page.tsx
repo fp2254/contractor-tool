@@ -9,6 +9,7 @@ import { PortalLinkCard } from "@/components/PortalLinkCard";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
+import { AiFollowUpButton } from "@/components/AiFollowUpButton";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -291,6 +292,20 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       {quote.status !== "declined" && (
         <div className="space-y-3">
+          {quote.status === "sent" && (
+            <div className="flex justify-end">
+              <AiFollowUpButton
+                recordType="quote"
+                recordId={quote.id}
+                clientName={customerName}
+                recordTitle={`Quote #${quote.id.slice(0, 8).toUpperCase()}`}
+                daysSinceSent={quote.sent_at ? Math.max(0, Math.floor((Date.now() - new Date(quote.sent_at).getTime()) / (24 * 60 * 60 * 1000))) : 0}
+                amount={Number(quote.total_amount)}
+                customerPhone={customer?.phone ?? null}
+                customerEmail={customer?.email ?? null}
+              />
+            </div>
+          )}
           <SendEmailButton
             apiPath={`/api/quotes/${quote.id}/send`}
             label="Send Quote to Customer"

@@ -1,16 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-type JobBrainResult = {
-  permit_likelihood?: { verdict: string; detail: string };
-  estimated_time?: { range: string; factors: string };
-  recommended_materials?: string[];
-  material_checklist?: string[];
-  inspection_considerations?: string[];
-  permit_guidance?: { office: string; process: string };
-  ai_suggestions?: string[];
-};
+import type { JobBrainResult } from "@/app/api/ai/job-brain/route";
 
 type Props = {
   jobTitle: string;
@@ -20,14 +11,6 @@ type Props = {
   notes?: string | null;
   clientHistory?: string | null;
   alerts?: string[];
-};
-
-const PERMIT_COLORS: Record<string, string> = {
-  "Required":          "bg-red-100 text-red-700",
-  "Likely Required":   "bg-amber-100 text-amber-700",
-  "Depends on Scope":  "bg-yellow-100 text-yellow-700",
-  "Unlikely":          "bg-blue-100 text-blue-700",
-  "Not Required":      "bg-green-100 text-green-700",
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -76,9 +59,10 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
     run();
   }
 
-  const permitColor = result?.permit_likelihood?.verdict
-    ? (PERMIT_COLORS[result.permit_likelihood.verdict] ?? "bg-gray-100 text-gray-600")
-    : "";
+  const allAlerts = [
+    ...(alerts ?? []),
+    ...(result?.job_alerts ?? []),
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -103,10 +87,10 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
       {open && (
         <div className="px-4 pb-4 space-y-4">
 
-          {/* Job alerts (data-driven, always shown) */}
-          {alerts.length > 0 && (
+          {/* Alerts (data-driven + AI-generated combined) */}
+          {allAlerts.length > 0 && (
             <div className="space-y-2">
-              {alerts.map((alert, i) => (
+              {allAlerts.map((alert, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2.5 bg-red-50 border border-red-200 text-sm text-red-700 font-medium">
                   <span>⚠️</span>
                   <span>{alert}</span>
@@ -135,28 +119,16 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
           {result && !loading && (
             <div className="space-y-4">
 
-              {/* Permit + Time row */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {result.permit_likelihood && (
-                  <div className="rounded-xl p-3 bg-gray-50">
-                    <p className="text-[11px] text-gray-500 font-medium mb-1">Permit Likelihood</p>
-                    <span className={`inline-block text-xs font-bold rounded-full px-2 py-0.5 mb-1 ${permitColor}`}>
-                      {result.permit_likelihood.verdict}
-                    </span>
-                    <p className="text-xs text-slate-600 leading-relaxed">{result.permit_likelihood.detail}</p>
-                  </div>
-                )}
-                {result.estimated_time && (
-                  <div className="rounded-xl p-3 bg-blue-50">
-                    <p className="text-[11px] text-gray-500 font-medium mb-1">Est. Install Time</p>
-                    <p className="text-lg font-bold text-blue-700 mb-1">{result.estimated_time.range}</p>
-                    <p className="text-xs text-slate-600 leading-relaxed">{result.estimated_time.factors}</p>
-                  </div>
-                )}
-              </div>
+              {/* Estimated Install Time */}
+              {result.estimated_install_time && (
+                <div className="rounded-xl p-3 bg-blue-50">
+                  <p className="text-[11px] text-gray-500 font-medium mb-1">Est. Install Time</p>
+                  <p className="text-xl font-bold text-blue-700">{result.estimated_install_time}</p>
+                </div>
+              )}
 
               {/* Material Checklist */}
-              {result.material_checklist && result.material_checklist.length > 0 && (
+              {result.material_checklist.length > 0 && (
                 <Section title="Material Checklist">
                   <div className="space-y-2">
                     {result.material_checklist.map((item, i) => (
@@ -170,7 +142,7 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
               )}
 
               {/* Recommended Materials */}
-              {result.recommended_materials && result.recommended_materials.length > 0 && (
+              {result.recommended_materials.length > 0 && (
                 <Section title="Recommended Materials">
                   <div className="flex flex-wrap gap-1.5">
                     {result.recommended_materials.map((m, i) => (
@@ -183,7 +155,7 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
               )}
 
               {/* Inspection Considerations */}
-              {result.inspection_considerations && result.inspection_considerations.length > 0 && (
+              {result.inspection_considerations.length > 0 && (
                 <Section title="Inspection Considerations">
                   <ul className="space-y-1.5">
                     {result.inspection_considerations.map((item, i) => (
@@ -196,27 +168,15 @@ export function JobBrain({ jobTitle, description, address, cityState, notes, cli
                 </Section>
               )}
 
-              {/* Permit Guidance */}
-              {result.permit_guidance && (
-                <Section title="Permit Guidance">
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 space-y-1">
-                    <p className="text-xs font-semibold text-amber-800">{result.permit_guidance.office}</p>
-                    <p className="text-xs text-slate-600 leading-relaxed">{result.permit_guidance.process}</p>
+              {/* Follow-up Suggestion */}
+              {result.follow_up_suggestion && (
+                <Section title="Follow-up Suggestion">
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      <span className="text-[#1B3A6B] font-bold mr-1">→</span>
+                      {result.follow_up_suggestion}
+                    </p>
                   </div>
-                </Section>
-              )}
-
-              {/* AI Suggestions */}
-              {result.ai_suggestions && result.ai_suggestions.length > 0 && (
-                <Section title="Suggestions">
-                  <ul className="space-y-2">
-                    {result.ai_suggestions.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                        <span className="text-[#1B3A6B] shrink-0 mt-0.5">→</span>
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </Section>
               )}
 

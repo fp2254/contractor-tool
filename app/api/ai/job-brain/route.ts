@@ -5,22 +5,13 @@ import { getOpenAIClient } from "@/lib/openai";
 import { buildMessages } from "@/lib/ai/prompt";
 
 const outputSchema = z.object({
-  permit_likelihood: z.object({
-    verdict: z.enum(["Required", "Likely Required", "Unlikely", "Not Required", "Depends on Scope"]),
-    detail: z.string(),
-  }),
-  estimated_time: z.object({
-    range: z.string(),
-    factors: z.string(),
-  }),
-  recommended_materials: z.array(z.string()),
-  material_checklist: z.array(z.string()),
-  inspection_considerations: z.array(z.string()),
-  permit_guidance: z.object({
-    office: z.string(),
-    process: z.string(),
-  }),
-  ai_suggestions: z.array(z.string()),
+  estimated_install_time: z.string().nullable().default(null),
+  recommended_materials: z.array(z.string()).default([]),
+  inspection_considerations: z.array(z.string()).default([]),
+  material_checklist: z.array(z.string()).default([]),
+  job_alerts: z.array(z.string()).default([]),
+  follow_up_suggestion: z.string().nullable().default(null),
+  needs_review: z.boolean().default(false),
 });
 
 export type JobBrainResult = z.infer<typeof outputSchema>;
@@ -42,34 +33,35 @@ export async function POST(req: Request) {
   }
 
   const schema = `{
-  "permit_likelihood": {
-    "verdict": "Required | Likely Required | Unlikely | Not Required | Depends on Scope",
-    "detail": "1-2 sentence explanation"
-  },
-  "estimated_time": {
-    "range": "e.g. 3-5 hours",
-    "factors": "1 sentence on what affects the time"
-  },
-  "recommended_materials": ["specific material string", "..."],
-  "material_checklist": ["checklist item", "..."],
-  "inspection_considerations": ["code point or inspection note", "..."],
-  "permit_guidance": {
-    "office": "building authority type",
-    "process": "2-3 sentence summary of typical permit process for this job type"
-  },
-  "ai_suggestions": ["actionable follow-up suggestion", "..."]
+  "estimated_install_time": "e.g. 3-5 hours or null",
+  "recommended_materials": [
+    "specific material string"
+  ],
+  "inspection_considerations": [
+    "code point or inspection note"
+  ],
+  "material_checklist": [
+    "pre-job checklist item"
+  ],
+  "job_alerts": [
+    "important alert or risk the contractor should know"
+  ],
+  "follow_up_suggestion": "one actionable follow-up suggestion string or null",
+  "needs_review": false
 }`;
 
   const messages = buildMessages(
     {
-      role: "You are Job Brain, an AI job planning assistant for skilled tradespeople using TradeBase. You produce concise, job-specific planning intelligence.",
+      role: "You are an AI job intelligence assistant inside TradeBase, a contractor CRM. Analyze a contractor job and provide planning insights.",
       rules: [
         "Return valid JSON only — no markdown, no prose.",
         "Tailor every answer to the specific job title and location — no generic filler.",
-        "recommended_materials must be 4–8 specific items a contractor should have on hand.",
-        "material_checklist must be 5–8 items to verify before starting.",
-        "inspection_considerations must be 2–4 items.",
-        "ai_suggestions must be 2–3 actionable, job-specific follow-up suggestions.",
+        "estimated_install_time: a concise time range string, or null if cannot be estimated.",
+        "recommended_materials: 4–8 specific items the contractor should have on hand.",
+        "inspection_considerations: 2–4 practical items covering inspections or code points.",
+        "material_checklist: 5–8 items to verify before starting the job.",
+        "job_alerts: 1–4 important risks or considerations the contractor should know about. Empty array if none.",
+        "follow_up_suggestion: one actionable follow-up suggestion, or null.",
         "Be concise and practical.",
       ],
       context: {
@@ -80,7 +72,7 @@ export async function POST(req: Request) {
         ...(body.notes ? { site_notes: body.notes.trim() } : {}),
         ...(body.clientHistory ? { client_history: body.clientHistory.trim() } : {}),
       },
-      task: "Generate a complete job intelligence report covering permits, time, materials, checklist, inspections, and follow-up suggestions.",
+      task: "Generate job intelligence insights covering estimated install time, materials, pre-job checklist, inspection considerations, alerts, and a follow-up suggestion.",
       schema,
     },
     body.jobTitle.trim()
