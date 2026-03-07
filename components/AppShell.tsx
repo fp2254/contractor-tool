@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { QuickCreate } from "@/components/QuickCreate";
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -58,12 +59,12 @@ function MoreIcon({ active }: { active: boolean }) {
 }
 
 const navItems = [
-  { label: "Home",   href: "/app",          Icon: HomeIcon,   exact: true  },
-  { label: "Leads",  href: "/app/leads",    Icon: LeadsIcon,  exact: false },
-  { label: "Quotes", href: "/app/quotes",   Icon: QuotesIcon, exact: false },
-  { label: "Jobs",   href: "/app/jobs",     Icon: JobsIcon,   exact: false },
-  { label: "Money",  href: "/app/money",    Icon: MoneyIcon,  exact: false },
-  { label: "More",   href: "/app/more",     Icon: MoreIcon,   exact: false },
+  { label: "Home",    href: "/app",             Icon: HomeIcon,   exact: true  },
+  { label: "Clients", href: "/app/customers",   Icon: LeadsIcon,  exact: false },
+  { label: "Quotes",  href: "/app/quotes",      Icon: QuotesIcon, exact: false },
+  { label: "Jobs",    href: "/app/jobs",         Icon: JobsIcon,   exact: false },
+  { label: "Money",   href: "/app/money",        Icon: MoneyIcon,  exact: false },
+  { label: "More",    href: "/app/more",         Icon: MoreIcon,   exact: false },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -94,6 +95,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pt-14 pb-20 overflow-y-auto">
         {children}
       </main>
+
+      <QuickCreate />
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
         <div className="flex">

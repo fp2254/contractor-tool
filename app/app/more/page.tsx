@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 const menuItems = [
+  { label: "Leads", href: "/app/leads", emoji: "🎯", color: "#F97316" },
   { label: "Schedule", href: "/app/schedule", emoji: "📅", color: "#1B3A6B" },
   { label: "Trade Contacts", href: "/app/trade-contacts", emoji: "👥", color: "#1B3A6B" },
   { label: "Inventory", href: "/app/inventory", emoji: "📦", color: "#8B4513" },

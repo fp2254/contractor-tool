@@ -1,0 +1,280 @@
+TRADEBASE FEATURE UPDATE
+========================
+
+This update includes two major UI improvements:
+
+1) Replace the Leads section with a Clients section
+2) Add a persistent Quick Create floating button across the app
+
+-------------------------------------
+
+CLIENTS TAB (REPLACES LEADS)
+=============================
+
+Purpose
+Clients should become the central record for every person the contractor works with. 
+All activity related to a client should be visible in one place: quotes, jobs, invoices, notes, photos, and AI results.
+
+Navigation Update
+
+Bottom navigation should now be:
+
+Home
+Clients
+Quotes
+Jobs
+Money
+More
+
+Remove "Leads" from the main navigation.
+
+-------------------------------------
+
+CLIENTS LIST PAGE
+=================
+
+Top Section
+
+Search Bar
+Search should match:
+- client name
+- phone number
+- email
+- street address
+- city/town
+
+Placeholder text:
+"Search clients, phone, or address"
+
+Primary Button
+
++ Add Client
+
+Fields when creating a client:
+
+Name
+Phone
+Email
+Address
+Notes
+
+-------------------------------------
+
+CLIENT LIST CARDS
+=================
+
+Each client card should display:
+
+Client Name
+Street Address + City
+Phone Number
+
+Secondary information:
+
+Lifetime Value (total paid)
+Last Job Date
+
+Optional badges:
+
+Overdue Invoice
+Upcoming Job
+Quote Pending
+
+Example card layout:
+
+Mike Johnson
+45 Elm St • Augusta
+(207) 555-0182
+
+$3,450 lifetime value
+Last job: Jan 10
+
+-------------------------------------
+
+CLIENT PROFILE PAGE
+===================
+
+Header Section
+
+Client Name
+Address
+Phone
+Email
+
+Quick Action Buttons
+
+Call
+Text
+Navigate
+New Quote
+Schedule Job
+
+-------------------------------------
+
+FINANCIAL SUMMARY
+=================
+
+Lifetime Value (total paid)
+Outstanding Balance
+Jobs Completed
+Quotes Sent
+
+-------------------------------------
+
+QUOTES SECTION
+==============
+
+List quotes linked to the client.
+
+Each quote should show:
+
+Quote Title
+Total Price
+Status
+Date
+
+Buttons:
+
+Open Quote
+Convert to Job
+Send Quote
+
+-------------------------------------
+
+JOBS SECTION
+============
+
+List jobs for the client.
+
+Each job should display:
+
+Job Title
+Scheduled Date
+Status
+
+Tapping opens the job detail page.
+
+-------------------------------------
+
+INVOICES SECTION
+================
+
+List invoices for the client.
+
+Each invoice should show:
+
+Invoice Number
+Amount
+Status (Paid / Unpaid / Overdue)
+Date
+
+-------------------------------------
+
+NOTES SECTION
+=============
+
+Allow freeform notes attached to the client.
+
+Example notes:
+
+Customer has low attic clearance
+Dog in basement
+Prefers text message communication
+
+-------------------------------------
+
+PHOTOS SECTION
+==============
+
+Store jobsite photos related to the client.
+
+Examples:
+
+Basement layout
+Radon system install
+Crawlspace
+
+Photos should open full screen when tapped.
+
+-------------------------------------
+
+AI ANSWERS SECTION
+==================
+
+Display AI-generated results related to the client.
+
+Examples:
+
+Permit Guidance — Augusta ME
+Follow-up message draft
+Job capture summary
+
+AI outputs should automatically attach when generated from the client page.
+
+-------------------------------------
+
+TIMELINE SECTION (OPTIONAL BUT RECOMMENDED)
+===========================================
+
+Show chronological activity history.
+
+Example:
+
+Jan 10 — Job completed
+Jan 8 — Quote sent
+Jan 5 — Client created
+
+-------------------------------------
+
+FLOATING QUICK CREATE BUTTON
+=============================
+
+Add a persistent floating button across the app.
+
+Location:
+Bottom-right corner above the navigation bar.
+
+Label:
+
++ Create
+
+Purpose:
+Allow users to create records instantly from any screen without switching tabs.
+
+When tapped, open an action menu with these options:
+
+New Client
+New Quote
+New Job
+New Invoice
+Add Note
+Upload Photo
+AI Job Capture
+
+Each option should immediately open the appropriate creation flow.
+
+Design requirements:
+
+Large mobile-friendly tap target
+Always visible on main screens
+Does not block important content
+Works on Home, Clients, Quotes, Jobs, and Money pages
+
+-------------------------------------
+
+CORE WORKFLOW PRINCIPLE
+=======================
+
+The platform should follow this workflow:
+
+Client
+↓
+Quote
+↓
+Job
+↓
+Invoice
+↓
+Payment
+
+All records should stay linked to the client.
