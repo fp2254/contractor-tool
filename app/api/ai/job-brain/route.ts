@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ensureUserOrg } from "@/lib/auth";
-import { getOpenAIClient } from "@/lib/openai";
-import { buildMessages } from "@/lib/ai/prompt";
+import { createClient } from "@/lib/supabase/server";
+import { handleAIRequest, AiServiceError } from "@/lib/ai/handler";
 
 const outputSchema = z.object({
   estimated_install_time: z.string().nullable().default(null),
@@ -17,7 +17,9 @@ const outputSchema = z.object({
 export type JobBrainResult = z.infer<typeof outputSchema>;
 
 export async function POST(req: Request) {
-  await ensureUserOrg();
+  const orgId = await ensureUserOrg();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const body = await req.json() as {
     jobTitle: string;
@@ -32,74 +34,53 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "jobTitle is required" }, { status: 400 });
   }
 
-  const schema = `{
+  try {
+    const { result } = await handleAIRequest({
+      feature: "job_brain",
+      orgId: orgId!,
+      userId: user?.id,
+      promptConfig: {
+        role: "You are an AI job intelligence assistant inside TradeBase, a contractor CRM. Analyze a contractor job and provide planning insights.",
+        rules: [
+          "Return valid JSON only — no markdown, no prose.",
+          "Tailor every answer to the specific job title and location — no generic filler.",
+          "estimated_install_time: a concise time range string, or null if cannot be estimated.",
+          "recommended_materials: 4–8 specific items the contractor should have on hand.",
+          "inspection_considerations: 2–4 practical items covering inspections or code points.",
+          "material_checklist: 5–8 items to verify before starting the job.",
+          "job_alerts: 1–4 important risks or considerations. Empty array if none.",
+          "follow_up_suggestion: one actionable follow-up suggestion, or null.",
+        ],
+        context: {
+          job_title: body.jobTitle.trim(),
+          ...(body.description ? { description: body.description.trim() } : {}),
+          ...(body.address ? { address: body.address.trim() } : {}),
+          ...(body.cityState ? { location: body.cityState.trim() } : {}),
+          ...(body.notes ? { site_notes: body.notes.trim() } : {}),
+          ...(body.clientHistory ? { client_history: body.clientHistory.trim() } : {}),
+        },
+        task: "Generate job intelligence insights: estimated install time, materials, pre-job checklist, inspection considerations, alerts, and a follow-up suggestion.",
+        schema: `{
   "estimated_install_time": "e.g. 3-5 hours or null",
-  "recommended_materials": [
-    "specific material string"
-  ],
-  "inspection_considerations": [
-    "code point or inspection note"
-  ],
-  "material_checklist": [
-    "pre-job checklist item"
-  ],
-  "job_alerts": [
-    "important alert or risk the contractor should know"
-  ],
-  "follow_up_suggestion": "one actionable follow-up suggestion string or null",
+  "recommended_materials": ["specific material"],
+  "inspection_considerations": ["code point or note"],
+  "material_checklist": ["pre-job checklist item"],
+  "job_alerts": ["important alert or risk"],
+  "follow_up_suggestion": "one actionable suggestion or null",
   "needs_review": false
-}`;
-
-  const messages = buildMessages(
-    {
-      role: "You are an AI job intelligence assistant inside TradeBase, a contractor CRM. Analyze a contractor job and provide planning insights.",
-      rules: [
-        "Return valid JSON only — no markdown, no prose.",
-        "Tailor every answer to the specific job title and location — no generic filler.",
-        "estimated_install_time: a concise time range string, or null if cannot be estimated.",
-        "recommended_materials: 4–8 specific items the contractor should have on hand.",
-        "inspection_considerations: 2–4 practical items covering inspections or code points.",
-        "material_checklist: 5–8 items to verify before starting the job.",
-        "job_alerts: 1–4 important risks or considerations the contractor should know about. Empty array if none.",
-        "follow_up_suggestion: one actionable follow-up suggestion, or null.",
-        "Be concise and practical.",
-      ],
-      context: {
-        job_title: body.jobTitle.trim(),
-        ...(body.description ? { description: body.description.trim() } : {}),
-        ...(body.address ? { address: body.address.trim() } : {}),
-        ...(body.cityState ? { location: body.cityState.trim() } : {}),
-        ...(body.notes ? { site_notes: body.notes.trim() } : {}),
-        ...(body.clientHistory ? { client_history: body.clientHistory.trim() } : {}),
+}`,
       },
-      task: "Generate job intelligence insights covering estimated install time, materials, pre-job checklist, inspection considerations, alerts, and a follow-up suggestion.",
-      schema,
-    },
-    body.jobTitle.trim()
-  );
-
-  const openai = getOpenAIClient();
-
-  let raw: string;
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      max_completion_tokens: 1200,
-      messages,
+      input: body.jobTitle.trim(),
+      schema: outputSchema,
+      inputJson: { jobTitle: body.jobTitle, description: body.description, address: body.address, cityState: body.cityState },
+      options: { maxTokens: 1200 },
     });
-    raw = completion.choices[0]?.message?.content ?? "{}";
+
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("OpenAI error:", err);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
+    if (err instanceof AiServiceError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  let result: JobBrainResult;
-  try {
-    result = outputSchema.parse(JSON.parse(raw));
-  } catch {
-    return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
-  }
-
-  return NextResponse.json(result);
 }

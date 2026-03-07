@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOpenAIClient } from "@/lib/openai";
-import { buildMessages } from "@/lib/ai/prompt";
+import { createClient } from "@/lib/supabase/server";
+import { handleAIRequest, AiServiceError } from "@/lib/ai/handler";
+
+export type FollowUpResult = z.infer<typeof outputSchema>;
 
 const outputSchema = z.object({
   sms: z.string(),
@@ -12,11 +14,11 @@ const outputSchema = z.object({
   needs_review: z.boolean().default(false),
 });
 
-export type FollowUpResult = z.infer<typeof outputSchema>;
-
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const body = await req.json() as {
     record_type: "quote" | "invoice";
@@ -31,77 +33,59 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "record_type and record_id are required" }, { status: 400 });
   }
 
-  const { data: org } = await admin
-    .from("org_settings")
-    .select("dba_name")
-    .eq("org_id", orgId!)
-    .maybeSingle();
-  const { data: orgRow } = await admin
-    .from("orgs")
-    .select("name")
-    .eq("id", orgId!)
-    .single();
+  const [{ data: orgSettings }, { data: orgRow }] = await Promise.all([
+    admin.from("org_settings").select("dba_name").eq("org_id", orgId!).maybeSingle(),
+    admin.from("orgs").select("name").eq("id", orgId!).single(),
+  ]);
 
-  const businessName = (org as Record<string, unknown> | null)?.dba_name as string
-    ?? orgRow?.name
-    ?? "Your Contractor";
+  const businessName =
+    (orgSettings as Record<string, unknown> | null)?.dba_name as string ??
+    orgRow?.name ?? "Your Contractor";
 
-  const schema = `{
-  "sms": "Short SMS text (max 160 chars) — conversational, polite, includes business name",
-  "email_subject": "Email subject line string",
-  "email_body": "Email body — 2-4 short paragraphs, professional but friendly, no HTML",
+  try {
+    const { result } = await handleAIRequest({
+      feature: "follow_up_generator",
+      orgId: orgId!,
+      userId: user?.id,
+      promptConfig: {
+        role: "You are a contractor follow-up assistant inside TradeBase, a contractor CRM. Write short, polite, professional follow-up drafts for quotes and invoices.",
+        rules: [
+          "Return valid JSON only — no markdown, no prose outside JSON values.",
+          "Keep messages concise — do not be pushy or aggressive.",
+          "sms must be 160 characters or fewer.",
+          "email_body must be plain text — no HTML, no bullet points, no headers.",
+          "Use only the provided details — do not invent job specifics.",
+          "Use a friendly but professional tone.",
+          "Always include the business name in the SMS.",
+          "Email body: greeting, brief reminder, and a call to action.",
+        ],
+        context: {
+          business_name: businessName,
+          client_name: body.client_name ?? "there",
+          record_type: body.record_type,
+          record_title: body.record_title ?? body.record_type,
+          days_since_sent: body.days_since_sent ?? 0,
+          ...(body.amount ? { amount: `$${body.amount.toLocaleString()}` } : {}),
+        },
+        task: "Write a follow-up message draft — both SMS (≤160 chars) and email formats.",
+        schema: `{
+  "sms": "Short SMS text ≤160 chars — conversational, polite, includes business name",
+  "email_subject": "Email subject line",
+  "email_body": "Email body — 2-4 short paragraphs, plain text, professional but friendly",
   "needs_review": false
-}`;
-
-  const messages = buildMessages(
-    {
-      role: "You are a contractor follow-up assistant inside TradeBase, a contractor CRM. Write short, polite, professional follow-up drafts for quotes and invoices.",
-      rules: [
-        "Return valid JSON only — no markdown, no prose outside the JSON values.",
-        "Keep messages concise — do not be pushy or aggressive.",
-        "sms must be 160 characters or fewer.",
-        "email_body must be plain text — no HTML, no bullet points, no headers.",
-        "Use only the provided details — do not invent job specifics.",
-        "Use a friendly but professional tone.",
-        "Always include the business name in the SMS.",
-        "Email body should have a greeting, a brief reminder, and a call to action.",
-      ],
-      context: {
-        business_name: businessName,
-        client_name: body.client_name ?? "there",
-        record_type: body.record_type,
-        record_title: body.record_title ?? body.record_type,
-        days_since_sent: body.days_since_sent ?? 0,
-        ...(body.amount ? { amount: `$${body.amount.toLocaleString()}` } : {}),
+}`,
       },
-      task: "Write a follow-up message draft — both SMS and email formats.",
-      schema,
-    },
-    `Follow up on a ${body.record_type} for ${body.client_name ?? "a client"}`
-  );
-
-  const openai = getOpenAIClient();
-
-  let raw: string;
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      max_completion_tokens: 600,
-      messages,
+      input: `Follow up on a ${body.record_type} for ${body.client_name ?? "a client"}`,
+      schema: outputSchema,
+      inputJson: body as Record<string, unknown>,
+      options: { maxTokens: 600 },
     });
-    raw = completion.choices[0]?.message?.content ?? "{}";
+
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("OpenAI error:", err);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
+    if (err instanceof AiServiceError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  let result: FollowUpResult;
-  try {
-    result = outputSchema.parse(JSON.parse(raw));
-  } catch {
-    return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
-  }
-
-  return NextResponse.json(result);
 }
