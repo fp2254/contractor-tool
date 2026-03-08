@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import ClientsListClient, { type ClientRow } from "./ClientsListClient";
@@ -52,7 +53,9 @@ export default async function ClientsPage() {
 
   return (
     <div className="p-4">
-      <ClientsListClient clients={clientData} />
+      <Suspense fallback={null}>
+        <ClientsListClient clients={clientData} />
+      </Suspense>
     </div>
   );
 }
