@@ -163,7 +163,7 @@ function ContactCard({
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const cardRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
   function snapTo(x: number) {
@@ -178,7 +178,7 @@ function ContactCard({
   }, [isSwipeOpen]);
 
   useEffect(() => {
-    const el = cardRef.current;
+    const el = rowRef.current;
     if (!el) return;
 
     let startX = 0;
@@ -268,7 +268,7 @@ function ContactCard({
       });
       if (res.ok) {
         setOpenId(null);
-        closeSwipe();
+        snapTo(0);
         onArchiveToggle(contact.id, !isArchived);
       }
     } finally {
@@ -288,7 +288,11 @@ function ContactCard({
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden shadow-sm">
+    <div
+      ref={rowRef}
+      className="relative rounded-2xl overflow-hidden shadow-sm"
+      style={{ touchAction: "pan-y" }}
+    >
       <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
         <button
           onClick={handleArchiveToggle}
@@ -338,7 +342,6 @@ function ContactCard({
       </div>
 
       <div
-        ref={cardRef}
         className={`relative ${isArchived ? "bg-gray-50" : "bg-white"}`}
         style={{
           transform: `translateX(${offset}px)`,
