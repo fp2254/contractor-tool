@@ -181,7 +181,7 @@ function ContactCard({
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     const target = e.target as HTMLElement;
-    if (target.closest("button") || target.closest("a")) return;
+    if (target.closest(".swipe-actions")) return;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     draggingRef.current = true;
@@ -278,7 +278,7 @@ function ContactCard({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
     >
-      <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
+      <div className="absolute inset-y-0 right-0 flex swipe-actions" style={{ width: REVEAL_WIDTH }}>
         <button
           onClick={handleArchiveToggle}
           disabled={toggling}
