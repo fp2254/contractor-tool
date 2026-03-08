@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import type { CardScanResult } from "@/app/api/ai/card-scan/route";
 
@@ -41,6 +41,8 @@ type ContactFormValues = {
 };
 const EMPTY: ContactFormValues = { name: "", company: "", trade: "", phone: "", email: "", notes: "" };
 type Mode = "idle" | "choosing" | "scanning" | "manual";
+
+const REVEAL_WIDTH = 148;
 
 function NewContactForm({
   initial, onCreated, onCancel, onScanInstead,
@@ -141,17 +143,106 @@ function ContactCard({
   contact,
   onDelete,
   onArchiveToggle,
+  openId,
+  setOpenId,
 }: {
   contact: TradeContact;
   onDelete: (id: string) => void;
   onArchiveToggle: (id: string, archived: boolean) => void;
+  openId: string | null;
+  setOpenId: (id: string | null) => void;
 }) {
-  const [deleting, setDeleting] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const isArchived = contact.archived === true;
+  const isSwipeOpen = openId === contact.id;
+  const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
+
+  const [offset, setOffset] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
-  const isArchived = contact.archived === true;
-  const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const direction = useRef<"none" | "horizontal" | "vertical">("none");
+  const isDragging = useRef(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  const closeSwipe = useCallback(() => {
+    setTransitioning(true);
+    setOffset(0);
+    setTimeout(() => setTransitioning(false), 250);
+  }, []);
+
+  const openSwipe = useCallback(() => {
+    setTransitioning(true);
+    setOffset(-REVEAL_WIDTH);
+    setTimeout(() => setTransitioning(false), 250);
+  }, []);
+
+  useEffect(() => {
+    if (!isSwipeOpen && offset !== 0) closeSwipe();
+  }, [isSwipeOpen, offset, closeSwipe]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    direction.current = "none";
+    isDragging.current = true;
+    setTransitioning(false);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!isDragging.current) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+
+    if (direction.current === "none" && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      direction.current = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
+    }
+
+    if (direction.current !== "horizontal") return;
+    e.preventDefault();
+
+    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
+    const raw = base + dx;
+    const clamped = Math.max(-REVEAL_WIDTH, Math.min(8, raw));
+    setOffset(clamped);
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!isDragging.current || direction.current !== "horizontal") {
+      isDragging.current = false;
+      return;
+    }
+    isDragging.current = false;
+
+    const dx = e.changedTouches[0].clientX - startX.current;
+    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
+    const final = base + dx;
+
+    if (!isSwipeOpen && final < -50) {
+      setOpenId(contact.id);
+      openSwipe();
+    } else if (isSwipeOpen && final > -REVEAL_WIDTH + 50) {
+      setOpenId(null);
+      closeSwipe();
+    } else if (!isSwipeOpen) {
+      closeSwipe();
+    } else {
+      openSwipe();
+    }
+  }
+
+  function handleCardTap() {
+    if (isSwipeOpen) {
+      setOpenId(null);
+      closeSwipe();
+      return;
+    }
+    setExpanded(v => !v);
+  }
 
   async function handleShare() {
     const text = buildShareText(contact);
@@ -170,7 +261,11 @@ function ContactCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ archived: !isArchived }),
       });
-      if (res.ok) onArchiveToggle(contact.id, !isArchived);
+      if (res.ok) {
+        setOpenId(null);
+        closeSwipe();
+        onArchiveToggle(contact.id, !isArchived);
+      }
     } finally {
       setToggling(false);
     }
@@ -188,34 +283,107 @@ function ContactCard({
   }
 
   return (
-    <div className={`rounded-2xl shadow-sm p-4 transition-opacity ${isArchived ? "bg-gray-50 opacity-70" : "bg-white"}`}>
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style={{ backgroundColor: isArchived ? "#94a3b8" : "#1B3A6B" }}>
-          {contact.name.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <button onClick={() => setExpanded(v => !v)} className="text-left w-full">
-            <div className="flex items-center gap-2">
-              <p className={`text-sm font-bold leading-snug ${isArchived ? "text-gray-400" : "text-slate-800"}`}>
-                {contact.name}
-              </p>
-              {isArchived && (
-                <span className="text-[10px] bg-gray-200 text-gray-500 rounded-full px-2 py-0.5 font-medium">Archived</span>
-              )}
+    <div className="relative rounded-2xl overflow-hidden shadow-sm" ref={rowRef}>
+      <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
+        <button
+          onClick={handleArchiveToggle}
+          disabled={toggling}
+          className="flex flex-col items-center justify-center gap-1 flex-1 text-white text-xs font-semibold disabled:opacity-60 active:opacity-80"
+          style={{ backgroundColor: isArchived ? "#16a34a" : "#64748b" }}>
+          {toggling ? (
+            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          ) : isArchived ? (
+            <>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Unarchive
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4v4m4-4v4" />
+              </svg>
+              Archive
+            </>
+          )}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="flex flex-col items-center justify-center gap-1 bg-red-500 text-white text-xs font-semibold disabled:opacity-60 active:opacity-80"
+          style={{ width: 72 }}>
+          {deleting ? (
+            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete
+            </>
+          )}
+        </button>
+      </div>
+
+      <div
+        className={`relative ${isArchived ? "bg-gray-50" : "bg-white"}`}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: transitioning ? "transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94)" : "none",
+          touchAction: "pan-y",
+          willChange: "transform",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}>
+
+        <div className="p-4">
+          <button onClick={handleCardTap} className="flex items-start gap-3 w-full text-left">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+              style={{ backgroundColor: isArchived ? "#94a3b8" : "#1B3A6B" }}>
+              {contact.name.charAt(0).toUpperCase()}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {contact.trade && tradeColor && (
-                <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${isArchived ? "bg-gray-100 text-gray-400" : tradeColor}`}>
-                  {contact.trade}
-                </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className={`text-sm font-bold leading-snug ${isArchived ? "text-gray-400" : "text-slate-800"}`}>
+                  {contact.name}
+                </p>
+                {isArchived && (
+                  <span className="text-[10px] bg-gray-200 text-gray-500 rounded-full px-2 py-0.5 font-medium shrink-0">Archived</span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {contact.trade && tradeColor && (
+                  <span className={`text-xs rounded-full px-2 py-0.5 font-semibold ${isArchived ? "bg-gray-100 text-gray-400" : tradeColor}`}>
+                    {contact.trade}
+                  </span>
+                )}
+                {contact.company && <span className="text-xs text-gray-400">{contact.company}</span>}
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              {contact.phone && !isArchived && (
+                <a href={`tel:${contact.phone}`}
+                  onClick={e => e.stopPropagation()}
+                  className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-sm">
+                  📞
+                </a>
               )}
-              {contact.company && <span className="text-xs text-gray-400">{contact.company}</span>}
+              <svg className={`w-4 h-4 text-gray-300 transition-transform ${expanded ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </div>
           </button>
 
           {expanded && (
-            <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+            <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
               {contact.phone && (
                 <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-[#1B3A6B] font-semibold">
                   📞 {contact.phone}
@@ -229,30 +397,13 @@ function ContactCard({
               {contact.notes && <p className="text-xs text-gray-500 italic">{contact.notes}</p>}
               {!isArchived && (
                 <button onClick={handleShare}
-                  className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full transition-colors"
+                  className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full"
                   style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
                   {shared ? "✓ Shared!" : "📤 Share this contact"}
                 </button>
               )}
-              <div className="flex gap-2 pt-1">
-                <button onClick={handleArchiveToggle} disabled={toggling}
-                  className="flex-1 rounded-xl py-2 text-sm font-semibold border border-gray-200 text-gray-600 bg-white disabled:opacity-50">
-                  {toggling ? "…" : isArchived ? "↩ Unarchive" : "Archive"}
-                </button>
-                <button onClick={handleDelete} disabled={deleting}
-                  className="rounded-xl px-4 py-2 text-sm font-semibold text-red-500 border border-red-100 bg-white disabled:opacity-50">
-                  {deleting ? "…" : "Delete"}
-                </button>
-              </div>
+              <p className="text-[11px] text-gray-300 text-center pt-1">← Swipe left for archive / delete</p>
             </div>
-          )}
-        </div>
-
-        <div className="flex gap-2 flex-shrink-0">
-          {contact.phone && !isArchived && (
-            <a href={`tel:${contact.phone}`} className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-sm">
-              📞
-            </a>
           )}
         </div>
       </div>
@@ -266,6 +417,7 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
   const [prefilled, setPrefilled] = useState<ContactFormValues>(EMPTY);
   const [q, setQ] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
 
   const isSearching = q.trim().length > 0;
 
@@ -309,7 +461,12 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
     setContacts(prev => prev.filter(c => c.id !== id));
   }
 
-  const cardProps = { onDelete: handleDelete, onArchiveToggle: handleArchiveToggle };
+  const sharedCardProps = {
+    onDelete: handleDelete,
+    onArchiveToggle: handleArchiveToggle,
+    openId: openSwipeId,
+    setOpenId: setOpenSwipeId,
+  };
 
   return (
     <div className="space-y-3">
@@ -374,10 +531,10 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
             </div>
           ) : (
             <div className="space-y-2">
-              {searchResults!.map(c => (
-                <ContactCard key={c.id} contact={c} {...cardProps} />
-              ))}
-              <p className="text-xs text-center text-gray-400 pt-1">{searchResults!.length} result{searchResults!.length !== 1 ? "s" : ""} — including archived</p>
+              {searchResults!.map(c => <ContactCard key={c.id} contact={c} {...sharedCardProps} />)}
+              <p className="text-xs text-center text-gray-400 pt-1">
+                {searchResults!.length} result{searchResults!.length !== 1 ? "s" : ""} — including archived
+              </p>
             </div>
           )}
         </>
@@ -389,13 +546,12 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
             </div>
           )}
           <div className="space-y-2">
-            {active.map(c => <ContactCard key={c.id} contact={c} {...cardProps} />)}
+            {active.map(c => <ContactCard key={c.id} contact={c} {...sharedCardProps} />)}
           </div>
 
           {archived.length > 0 && (
             <div className="pt-1">
-              <button
-                onClick={() => setShowArchived(v => !v)}
+              <button onClick={() => setShowArchived(v => !v)}
                 className="flex items-center gap-2 text-xs font-semibold text-gray-400 w-full px-1 py-2">
                 <svg className={`w-3.5 h-3.5 transition-transform ${showArchived ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -404,7 +560,7 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
               </button>
               {showArchived && (
                 <div className="space-y-2 mt-1">
-                  {archived.map(c => <ContactCard key={c.id} contact={c} {...cardProps} />)}
+                  {archived.map(c => <ContactCard key={c.id} contact={c} {...sharedCardProps} />)}
                 </div>
               )}
             </div>
