@@ -163,7 +163,9 @@ function ContactCard({
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const rowRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const draggingRef = useRef(false);
   const wasOpen = useRef(false);
 
   function snapTo(x: number) {
@@ -177,68 +179,48 @@ function ContactCard({
     wasOpen.current = isSwipeOpen;
   }, [isSwipeOpen]);
 
-  useEffect(() => {
-    const el = rowRef.current;
-    if (!el) return;
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a")) return;
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
 
-    let startX = 0;
-    let startY = 0;
-    let dir: "none" | "h" | "v" = "none";
-    let active = false;
-
-    function onTouchStart(e: TouchEvent) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      dir = "none";
-      active = true;
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    const dx = e.clientX - startXRef.current;
+    const dy = e.clientY - startYRef.current;
+    if (Math.abs(dy) > Math.abs(dx) * 2 && Math.abs(dx) < 10) {
+      draggingRef.current = false;
+      return;
     }
+    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
+    setOffset(Math.max(-REVEAL_WIDTH, Math.min(10, base + dx)));
+    setSnap(false);
+  }
 
-    function onTouchMove(e: TouchEvent) {
-      if (!active) return;
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-
-      if (dir === "none") {
-        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-        dir = Math.abs(dx) >= Math.abs(dy) ? "h" : "v";
-        if (dir === "v") { active = false; return; }
-      }
-
-      e.preventDefault();
-
-      const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
-      const raw = base + dx;
-      setOffset(Math.max(-REVEAL_WIDTH, Math.min(10, raw)));
-      setSnap(false);
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    const dx = e.clientX - startXRef.current;
+    if (Math.abs(dx) < 5) return;
+    if (!isSwipeOpen && dx < -50) {
+      setOpenId(contact.id);
+      snapTo(-REVEAL_WIDTH);
+    } else if (isSwipeOpen && dx > 50) {
+      setOpenId(null);
+      snapTo(0);
+    } else {
+      snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
     }
+  }
 
-    function onTouchEnd(e: TouchEvent) {
-      if (!active || dir !== "h") { active = false; return; }
-      active = false;
-
-      const dx = e.changedTouches[0].clientX - startX;
-
-      if (!isSwipeOpen && dx < -50) {
-        setOpenId(contact.id);
-        snapTo(-REVEAL_WIDTH);
-      } else if (isSwipeOpen && dx > 50) {
-        setOpenId(null);
-        snapTo(0);
-      } else {
-        snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
-      }
-    }
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isSwipeOpen, contact.id, setOpenId]);
+  function onPointerCancel() {
+    draggingRef.current = false;
+    snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
+  }
 
   function handleCardTap() {
     if (isSwipeOpen) {
@@ -289,9 +271,12 @@ function ContactCard({
 
   return (
     <div
-      ref={rowRef}
       className="relative rounded-2xl overflow-hidden shadow-sm"
-      style={{ touchAction: "pan-y" }}
+      style={{ touchAction: "pan-y", userSelect: "none" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
     >
       <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
         <button
