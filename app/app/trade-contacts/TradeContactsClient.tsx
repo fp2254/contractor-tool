@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import type { CardScanResult } from "@/app/api/ai/card-scan/route";
 
@@ -157,88 +157,93 @@ function ContactCard({
   const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
 
   const [offset, setOffset] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
+  const [snap, setSnap] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const direction = useRef<"none" | "horizontal" | "vertical">("none");
-  const isDragging = useRef(false);
-  const rowRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
 
-  const closeSwipe = useCallback(() => {
-    setTransitioning(true);
-    setOffset(0);
-    setTimeout(() => setTransitioning(false), 250);
-  }, []);
-
-  const openSwipe = useCallback(() => {
-    setTransitioning(true);
-    setOffset(-REVEAL_WIDTH);
-    setTimeout(() => setTransitioning(false), 250);
-  }, []);
+  function snapTo(x: number) {
+    setSnap(true);
+    setOffset(x);
+    setTimeout(() => setSnap(false), 230);
+  }
 
   useEffect(() => {
-    if (!isSwipeOpen && offset !== 0) closeSwipe();
-  }, [isSwipeOpen, offset, closeSwipe]);
+    if (wasOpen.current && !isSwipeOpen) snapTo(0);
+    wasOpen.current = isSwipeOpen;
+  }, [isSwipeOpen]);
 
-  function handleTouchStart(e: React.TouchEvent) {
-    startX.current = e.touches[0].clientX;
-    startY.current = e.touches[0].clientY;
-    direction.current = "none";
-    isDragging.current = true;
-    setTransitioning(false);
-  }
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
 
-  function handleTouchMove(e: React.TouchEvent) {
-    if (!isDragging.current) return;
-    const dx = e.touches[0].clientX - startX.current;
-    const dy = e.touches[0].clientY - startY.current;
+    let startX = 0;
+    let startY = 0;
+    let dir: "none" | "h" | "v" = "none";
+    let active = false;
 
-    if (direction.current === "none" && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-      direction.current = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
+    function onTouchStart(e: TouchEvent) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      dir = "none";
+      active = true;
     }
 
-    if (direction.current !== "horizontal") return;
-    e.preventDefault();
+    function onTouchMove(e: TouchEvent) {
+      if (!active) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
 
-    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
-    const raw = base + dx;
-    const clamped = Math.max(-REVEAL_WIDTH, Math.min(8, raw));
-    setOffset(clamped);
-  }
+      if (dir === "none") {
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        dir = Math.abs(dx) >= Math.abs(dy) ? "h" : "v";
+        if (dir === "v") { active = false; return; }
+      }
 
-  function handleTouchEnd(e: React.TouchEvent) {
-    if (!isDragging.current || direction.current !== "horizontal") {
-      isDragging.current = false;
-      return;
+      e.preventDefault();
+
+      const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
+      const raw = base + dx;
+      setOffset(Math.max(-REVEAL_WIDTH, Math.min(10, raw)));
+      setSnap(false);
     }
-    isDragging.current = false;
 
-    const dx = e.changedTouches[0].clientX - startX.current;
-    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
-    const final = base + dx;
+    function onTouchEnd(e: TouchEvent) {
+      if (!active || dir !== "h") { active = false; return; }
+      active = false;
 
-    if (!isSwipeOpen && final < -50) {
-      setOpenId(contact.id);
-      openSwipe();
-    } else if (isSwipeOpen && final > -REVEAL_WIDTH + 50) {
-      setOpenId(null);
-      closeSwipe();
-    } else if (!isSwipeOpen) {
-      closeSwipe();
-    } else {
-      openSwipe();
+      const dx = e.changedTouches[0].clientX - startX;
+
+      if (!isSwipeOpen && dx < -50) {
+        setOpenId(contact.id);
+        snapTo(-REVEAL_WIDTH);
+      } else if (isSwipeOpen && dx > 50) {
+        setOpenId(null);
+        snapTo(0);
+      } else {
+        snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
+      }
     }
-  }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isSwipeOpen, contact.id, setOpenId]);
 
   function handleCardTap() {
     if (isSwipeOpen) {
       setOpenId(null);
-      closeSwipe();
+      snapTo(0);
       return;
     }
     setExpanded(v => !v);
@@ -283,7 +288,7 @@ function ContactCard({
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden shadow-sm" ref={rowRef}>
+    <div className="relative rounded-2xl overflow-hidden shadow-sm">
       <div className="absolute inset-y-0 right-0 flex" style={{ width: REVEAL_WIDTH }}>
         <button
           onClick={handleArchiveToggle}
@@ -333,16 +338,13 @@ function ContactCard({
       </div>
 
       <div
+        ref={cardRef}
         className={`relative ${isArchived ? "bg-gray-50" : "bg-white"}`}
         style={{
           transform: `translateX(${offset}px)`,
-          transition: transitioning ? "transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94)" : "none",
-          touchAction: "pan-y",
+          transition: snap ? "transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94)" : "none",
           willChange: "transform",
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}>
+        }}>
 
         <div className="p-4">
           <button onClick={handleCardTap} className="flex items-start gap-3 w-full text-left">
