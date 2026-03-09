@@ -1,0 +1,111 @@
+Implement native-feeling swipe actions for Quotes and Contacts list items.
+
+GOAL
+On mobile, a user should be able to swipe a row/card to the left to reveal actions:
+- Archive
+- Delete
+
+This must work for:
+- Quotes list items
+- Contacts / Clients list items
+
+REQUIRED BEHAVIOR
+1. Default state:
+- Card is closed
+- No action buttons visible
+
+2. Swipe left:
+- Card moves left horizontally
+- Reveal action buttons behind the card on the right side
+- Buttons:
+  - Archive (first)
+  - Delete (second, destructive)
+
+3. Tap action:
+- Archive archives the record
+- Delete opens a confirmation prompt before permanent delete
+
+4. Swipe right:
+- Closes the row and hides actions
+
+5. Only one item can be open at a time
+- If user opens a new row, previously open row closes
+
+6. Vertical scrolling must still work naturally
+- Horizontal swipe should not block normal page scrolling unless horizontal intent is clear
+
+IMPLEMENTATION RULES
+- Do NOT use a hacky timeout-based approach
+- Do NOT guess
+- Use proper touch gesture handling
+- Prefer Pointer Events if stable, otherwise touch events
+- Detect horizontal swipe intent only after movement threshold
+- Ignore tiny accidental drags
+- Use CSS transform: translateX(...) for the card movement
+- Use transition for snap open / snap closed
+- Do not use browser swipe navigation
+- Keep it smooth on iPhone Safari
+
+THRESHOLDS
+- Swipe threshold to open: around 60px left
+- Max reveal width: around 140px total
+- If released before threshold, snap closed
+- If released after threshold, snap open
+
+UI DETAILS
+- Archive button color: muted/dark or amber
+- Delete button color: red/destructive
+- Buttons should fill full card height
+- Rounded corners should still look clean when opened
+- Open state should feel like iOS mail swipe actions
+
+COMPONENT STRUCTURE
+Create a reusable component:
+SwipeActionRow
+
+Props:
+- children
+- onArchive
+- onDelete
+- disabled
+- itemId
+- openItemId
+- setOpenItemId
+
+Use this same component for both:
+- Quote rows
+- Contact rows
+
+STATE RULES
+- Parent list controls which item is open
+- openItemId = currently open row
+- Swiping one row open automatically closes all others
+
+DELETE RULES
+- Delete must require confirmation
+- Use confirm modal or action sheet:
+  "Are you sure you want to delete this quote/contact?"
+- Do not instantly delete on swipe
+
+ARCHIVE RULES
+- Archive should be immediate
+- Row should animate closed after archive succeeds
+- Archived items should disappear from active list
+
+DEBUGGING INSTRUCTIONS
+Before changing code:
+1. Inspect current row/card component structure
+2. Check live browser console
+3. Check actual touch/pointer event flow
+4. Verify no parent container is blocking pointer events or overflow behavior
+5. Verify no CSS is breaking transform/overflow
+
+IMPORTANT
+Do not return with a guessed fix.
+Actually test the swipe behavior in the running preview and confirm:
+- swipe left opens
+- swipe right closes
+- vertical scroll still works
+- archive works
+- delete confirm works
+- only one row stays open

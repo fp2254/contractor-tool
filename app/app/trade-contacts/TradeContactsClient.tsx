@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import type { CardScanResult } from "@/app/api/ai/card-scan/route";
+import { SwipeActionRow } from "@/components/SwipeActionRow";
 
 export type TradeContact = {
   id: string;
@@ -141,7 +142,7 @@ function buildShareText(contact: TradeContact): string {
 
 function ContactCard({
   contact,
-  onDelete,
+  onDelete: onDeleteProp,
   onArchiveToggle,
   openId,
   setOpenId,
@@ -156,79 +157,23 @@ function ContactCard({
   const isSwipeOpen = openId === contact.id;
   const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
 
-  const [offset, setOffset] = useState(0);
-  const [snap, setSnap] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
-  const [toggling, setToggling] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const draggingRef = useRef(false);
-  const wasOpen = useRef(false);
-
-  function snapTo(x: number) {
-    setSnap(true);
-    setOffset(x);
-    setTimeout(() => setSnap(false), 230);
+  async function handleArchive() {
+    const res = await fetch(`/app/trade-contacts/api/${contact.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived: !isArchived }),
+    });
+    if (!res.ok) throw new Error("Archive failed");
+    onArchiveToggle(contact.id, !isArchived);
   }
 
-  useEffect(() => {
-    if (wasOpen.current && !isSwipeOpen) snapTo(0);
-    wasOpen.current = isSwipeOpen;
-  }, [isSwipeOpen]);
-
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    const target = e.target as HTMLElement;
-    if (target.closest(".swipe-actions")) return;
-    startXRef.current = e.clientX;
-    startYRef.current = e.clientY;
-    draggingRef.current = true;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!draggingRef.current) return;
-    const dx = e.clientX - startXRef.current;
-    const dy = e.clientY - startYRef.current;
-    if (Math.abs(dy) > Math.abs(dx) * 2 && Math.abs(dx) < 10) {
-      draggingRef.current = false;
-      return;
-    }
-    const base = isSwipeOpen ? -REVEAL_WIDTH : 0;
-    setOffset(Math.max(-REVEAL_WIDTH, Math.min(10, base + dx)));
-    setSnap(false);
-  }
-
-  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    const dx = e.clientX - startXRef.current;
-    if (Math.abs(dx) < 5) return;
-    if (!isSwipeOpen && dx < -50) {
-      setOpenId(contact.id);
-      snapTo(-REVEAL_WIDTH);
-    } else if (isSwipeOpen && dx > 50) {
-      setOpenId(null);
-      snapTo(0);
-    } else {
-      snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
-    }
-  }
-
-  function onPointerCancel() {
-    draggingRef.current = false;
-    snapTo(isSwipeOpen ? -REVEAL_WIDTH : 0);
-  }
-
-  function handleCardTap() {
-    if (isSwipeOpen) {
-      setOpenId(null);
-      snapTo(0);
-      return;
-    }
-    setExpanded(v => !v);
+  async function handleDelete() {
+    const res = await fetch(`/app/trade-contacts/api/${contact.id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Delete failed");
+    onDeleteProp(contact.id);
   }
 
   async function handleShare() {
@@ -240,100 +185,23 @@ function ContactCard({
     }
   }
 
-  async function handleArchiveToggle() {
-    setToggling(true);
-    try {
-      const res = await fetch(`/app/trade-contacts/api/${contact.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ archived: !isArchived }),
-      });
-      if (res.ok) {
-        setOpenId(null);
-        snapTo(0);
-        onArchiveToggle(contact.id, !isArchived);
-      }
-    } finally {
-      setToggling(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!confirm(`Permanently delete ${contact.name}? This cannot be undone.`)) return;
-    setDeleting(true);
-    try {
-      await fetch(`/app/trade-contacts/api/${contact.id}`, { method: "DELETE" });
-      onDelete(contact.id);
-    } finally {
-      setDeleting(false);
-    }
+  function handleCardTap() {
+    if (isSwipeOpen) { setOpenId(null); return; }
+    setExpanded(v => !v);
   }
 
   return (
-    <div
-      className="relative rounded-2xl overflow-hidden shadow-sm"
-      style={{ touchAction: "pan-y", userSelect: "none" }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
+    <SwipeActionRow
+      itemId={contact.id}
+      openItemId={openId}
+      setOpenItemId={setOpenId}
+      onArchive={handleArchive}
+      onDelete={handleDelete}
+      archiveLabel={isArchived ? "Unarchive" : "Archive"}
+      archiveColor={isArchived ? "#16a34a" : "#64748b"}
+      deleteConfirmMessage={`Permanently delete ${contact.name}? This cannot be undone.`}
     >
-      <div className="absolute inset-y-0 right-0 flex swipe-actions" style={{ width: REVEAL_WIDTH }}>
-        <button
-          onClick={handleArchiveToggle}
-          disabled={toggling}
-          className="flex flex-col items-center justify-center gap-1 flex-1 text-white text-xs font-semibold disabled:opacity-60 active:opacity-80"
-          style={{ backgroundColor: isArchived ? "#16a34a" : "#64748b" }}>
-          {toggling ? (
-            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-          ) : isArchived ? (
-            <>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
-              Unarchive
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8m-9 4v4m4-4v4" />
-              </svg>
-              Archive
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex flex-col items-center justify-center gap-1 bg-red-500 text-white text-xs font-semibold disabled:opacity-60 active:opacity-80"
-          style={{ width: 72 }}>
-          {deleting ? (
-            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Delete
-            </>
-          )}
-        </button>
-      </div>
-
-      <div
-        className={`relative ${isArchived ? "bg-gray-50" : "bg-white"}`}
-        style={{
-          transform: `translateX(${offset}px)`,
-          transition: snap ? "transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94)" : "none",
-          willChange: "transform",
-        }}>
-
+      <div className={isArchived ? "bg-gray-50" : "bg-white"}>
         <div className="p-4">
           <button onClick={handleCardTap} className="flex items-start gap-3 w-full text-left">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -397,7 +265,7 @@ function ContactCard({
           )}
         </div>
       </div>
-    </div>
+    </SwipeActionRow>
   );
 }
 
