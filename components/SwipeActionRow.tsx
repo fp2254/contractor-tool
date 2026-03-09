@@ -118,6 +118,9 @@ export function SwipeActionRow({
       await onArchive();
       setOpenItemId(null);
       snapTo(0);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Action failed";
+      window.alert(msg);
     } finally {
       setArchiving(false);
     }
@@ -128,6 +131,9 @@ export function SwipeActionRow({
     setDeleting(true);
     try {
       await onDelete();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      window.alert(msg);
     } finally {
       setDeleting(false);
     }

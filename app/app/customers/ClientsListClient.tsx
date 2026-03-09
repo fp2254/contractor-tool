@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import type { CardScanResult } from "@/app/api/ai/card-scan/route";
+import { SwipeActionRow } from "@/components/SwipeActionRow";
 
 export type ClientRow = {
   id: string;
@@ -21,6 +22,7 @@ export type ClientRow = {
   hasOverdue: boolean;
   hasUpcomingJob: boolean;
   hasQuotePending: boolean;
+  archived?: boolean | null;
 };
 
 type FormState = {
@@ -48,6 +50,7 @@ export default function ClientsListClient({ clients: initial }: { clients: Clien
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState("");
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -58,7 +61,9 @@ export default function ClientsListClient({ clients: initial }: { clients: Clien
     }
   }, [searchParams, router]);
 
-  const filtered = clients.filter(c => {
+  const active = clients.filter(c => !c.archived);
+
+  const filtered = active.filter(c => {
     if (!q.trim()) return true;
     const s = q.toLowerCase();
     const name = `${c.first_name} ${c.last_name ?? ""}`.toLowerCase();
@@ -115,6 +120,28 @@ export default function ClientsListClient({ clients: initial }: { clients: Clien
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleArchive(id: string) {
+    const res = await fetch(`/app/customers/api/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived: true }),
+    });
+    if (!res.ok) {
+      const j = await res.json() as { error?: string };
+      throw new Error(j.error ?? "Archive failed");
+    }
+    setClients(prev => prev.filter(c => c.id !== id));
+  }
+
+  async function handleDelete(id: string) {
+    const res = await fetch(`/app/customers/api/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const j = await res.json() as { error?: string };
+      throw new Error(j.error ?? "Delete failed");
+    }
+    setClients(prev => prev.filter(c => c.id !== id));
   }
 
   return (
@@ -262,35 +289,51 @@ export default function ClientsListClient({ clients: initial }: { clients: Clien
             const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company_name || "Unnamed";
             const address = [c.address_line1, c.city].filter(Boolean).join(" • ");
             return (
-              <Link key={c.id} href={`/app/customers/${c.id}`} className="block bg-white rounded-2xl p-4 shadow-sm active:bg-gray-50">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-                    style={{ backgroundColor: "#1B3A6B" }}>
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800">{name}</p>
-                    {address && <p className="text-xs text-gray-500 truncate">{address}</p>}
-                    {c.phone && <p className="text-xs text-gray-500">{c.phone}</p>}
-                    <div className="flex items-center gap-3 mt-1.5">
-                      {c.lifetimeValue > 0 && (
-                        <span className="text-xs font-semibold text-green-700">${c.lifetimeValue.toLocaleString()} lifetime</span>
-                      )}
-                      {c.lastJobDate && (
-                        <span className="text-xs text-gray-400">Last job: {new Date(c.lastJobDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+              <SwipeActionRow
+                key={c.id}
+                itemId={c.id}
+                openItemId={openSwipeId}
+                setOpenItemId={setOpenSwipeId}
+                onArchive={() => handleArchive(c.id)}
+                onDelete={() => handleDelete(c.id)}
+                archiveLabel="Archive"
+                archiveColor="#64748b"
+                deleteConfirmMessage={`Permanently delete ${name}? This cannot be undone.`}
+              >
+                <Link
+                  href={`/app/customers/${c.id}`}
+                  className="block bg-white p-4"
+                  style={{ pointerEvents: openSwipeId === c.id ? "none" : "auto" }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+                      style={{ backgroundColor: "#1B3A6B" }}>
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800">{name}</p>
+                      {address && <p className="text-xs text-gray-500 truncate">{address}</p>}
+                      {c.phone && <p className="text-xs text-gray-500">{c.phone}</p>}
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {c.lifetimeValue > 0 && (
+                          <span className="text-xs font-semibold text-green-700">${c.lifetimeValue.toLocaleString()} lifetime</span>
+                        )}
+                        {c.lastJobDate && (
+                          <span className="text-xs text-gray-400">Last job: {new Date(c.lastJobDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                        )}
+                      </div>
+                      {(c.hasOverdue || c.hasUpcomingJob || c.hasQuotePending) && (
+                        <div className="flex gap-1 mt-1.5 flex-wrap">
+                          {c.hasOverdue && <span className="text-[10px] bg-red-100 text-red-700 rounded-full px-2 py-0.5 font-medium">Overdue Invoice</span>}
+                          {c.hasUpcomingJob && <span className="text-[10px] bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium">Upcoming Job</span>}
+                          {c.hasQuotePending && <span className="text-[10px] bg-yellow-100 text-yellow-700 rounded-full px-2 py-0.5 font-medium">Quote Pending</span>}
+                        </div>
                       )}
                     </div>
-                    {(c.hasOverdue || c.hasUpcomingJob || c.hasQuotePending) && (
-                      <div className="flex gap-1 mt-1.5 flex-wrap">
-                        {c.hasOverdue && <span className="text-[10px] bg-red-100 text-red-700 rounded-full px-2 py-0.5 font-medium">Overdue Invoice</span>}
-                        {c.hasUpcomingJob && <span className="text-[10px] bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium">Upcoming Job</span>}
-                        {c.hasQuotePending && <span className="text-[10px] bg-yellow-100 text-yellow-700 rounded-full px-2 py-0.5 font-medium">Quote Pending</span>}
-                      </div>
-                    )}
+                    <span className="text-gray-300 mt-1 shrink-0">›</span>
                   </div>
-                  <span className="text-gray-300 mt-1 shrink-0">›</span>
-                </div>
-              </Link>
+                </Link>
+              </SwipeActionRow>
             );
           })}
         </div>
