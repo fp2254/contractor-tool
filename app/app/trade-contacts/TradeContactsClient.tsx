@@ -203,7 +203,14 @@ function ContactCard({
     >
       <div className={isArchived ? "bg-gray-50" : "bg-white"}>
         <div className="p-4">
-          <button onClick={handleCardTap} className="flex items-start gap-3 w-full text-left">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleCardTap}
+            onKeyDown={e => (e.key === "Enter" || e.key === " ") && handleCardTap()}
+            className="flex items-start gap-3 w-full text-left cursor-pointer"
+            style={{ touchAction: "pan-y" }}
+          >
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
               style={{ backgroundColor: isArchived ? "#94a3b8" : "#1B3A6B" }}>
               {contact.name.charAt(0).toUpperCase()}
@@ -238,7 +245,7 @@ function ContactCard({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </div>
-          </button>
+          </div>
 
           {expanded && (
             <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
