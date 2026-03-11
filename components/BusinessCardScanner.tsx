@@ -76,9 +76,8 @@ export function BusinessCardScanner({ onExtracted, onCancel }: Props) {
             ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
-            className="hidden"
             onChange={handleFile}
+            style={{ position: "fixed", top: "-200px", left: 0, width: "1px", height: "1px", opacity: 0 }}
           />
         </>
       )}
