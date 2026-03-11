@@ -6,12 +6,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
-  const body = await req.json() as { archived?: boolean };
+  const body = await req.json() as {
+    archived?: boolean;
+    name?: string;
+    company?: string;
+    trade?: string;
+    phone?: string;
+    email?: string;
+    notes?: string;
+  };
+
+  const updates: Record<string, unknown> = {};
+  if (body.archived !== undefined) updates.archived = body.archived;
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.company !== undefined) updates.company = body.company;
+  if (body.trade !== undefined) updates.trade = body.trade;
+  if (body.phone !== undefined) updates.phone = body.phone;
+  if (body.email !== undefined) updates.email = body.email;
+  if (body.notes !== undefined) updates.notes = body.notes;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from("trade_contacts")
-    .update({ archived: body.archived ?? false })
+    .update(updates)
     .eq("id", id)
     .eq("org_id", orgId!)
     .select()

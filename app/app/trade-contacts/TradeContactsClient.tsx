@@ -45,6 +45,79 @@ type Mode = "idle" | "choosing" | "scanning" | "manual";
 
 const REVEAL_WIDTH = 148;
 
+function EditContactForm({
+  contact,
+  onSaved,
+  onCancel,
+}: {
+  contact: TradeContact;
+  onSaved: (c: TradeContact) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(contact.name);
+  const [company, setCompany] = useState(contact.company ?? "");
+  const [trade, setTrade] = useState(contact.trade ?? "");
+  const [phone, setPhone] = useState(contact.phone ?? "");
+  const [email, setEmail] = useState(contact.email ?? "");
+  const [notes, setNotes] = useState(contact.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/app/trade-contacts/api/${contact.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, company, trade, phone, email, notes }),
+      });
+      const data = await res.json() as TradeContact & { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      onSaved(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <input required placeholder="Full name *" value={name} onChange={e => setName(e.target.value)}
+        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
+      <div className="grid grid-cols-2 gap-2">
+        <input placeholder="Company" value={company} onChange={e => setCompany(e.target.value)}
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
+        <select value={trade} onChange={e => setTrade(e.target.value)}
+          className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white">
+          <option value="">Trade</option>
+          {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+      <input placeholder="Phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
+      <input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white" />
+      <textarea placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)}
+        rows={2} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none" />
+      <div className="flex gap-2 pt-1">
+        <button type="submit" disabled={saving}
+          className="flex-1 rounded-xl py-2.5 text-white font-semibold text-sm disabled:opacity-60"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          {saving ? "Saving…" : "Save Changes"}
+        </button>
+        <button type="button" onClick={onCancel}
+          className="rounded-xl px-4 py-2.5 border border-gray-200 text-sm font-semibold text-slate-600">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function NewContactForm({
   initial, onCreated, onCancel, onScanInstead,
 }: {
@@ -144,12 +217,14 @@ function ContactCard({
   contact,
   onDelete: onDeleteProp,
   onArchiveToggle,
+  onEdit,
   openId,
   setOpenId,
 }: {
   contact: TradeContact;
   onDelete: (id: string) => void;
   onArchiveToggle: (id: string, archived: boolean) => void;
+  onEdit: (c: TradeContact) => void;
   openId: string | null;
   setOpenId: (id: string | null) => void;
 }) {
@@ -158,6 +233,7 @@ function ContactCard({
   const tradeColor = contact.trade ? (TRADE_COLORS[contact.trade] ?? "bg-gray-100 text-gray-600") : null;
 
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [shared, setShared] = useState(false);
 
   async function handleArchive() {
@@ -247,7 +323,7 @@ function ContactCard({
             </div>
           </div>
 
-          {expanded && (
+          {expanded && !editing && (
             <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
               {contact.phone && (
                 <a href={`tel:${contact.phone}`} className="flex items-center gap-2 text-sm text-[#1B3A6B] font-semibold">
@@ -260,15 +336,29 @@ function ContactCard({
                 </a>
               )}
               {contact.notes && <p className="text-xs text-gray-500 italic">{contact.notes}</p>}
-              {!isArchived && (
-                <button onClick={handleShare}
-                  className="flex items-center gap-2 text-sm font-semibold rounded-xl px-3 py-2 w-full"
-                  style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
-                  {shared ? "✓ Shared!" : "📤 Share this contact"}
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setEditing(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2"
+                  style={{ backgroundColor: "#F0F4FF", color: "#1B3A6B" }}>
+                  ✏️ Edit
                 </button>
-              )}
+                {!isArchived && (
+                  <button onClick={handleShare}
+                    className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2"
+                    style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
+                    {shared ? "✓ Shared!" : "📤 Share"}
+                  </button>
+                )}
+              </div>
               <p className="text-[11px] text-gray-300 text-center pt-1">← Swipe left for archive / delete</p>
             </div>
+          )}
+          {expanded && editing && (
+            <EditContactForm
+              contact={contact}
+              onSaved={(updated) => { onEdit(updated); setEditing(false); }}
+              onCancel={() => setEditing(false)}
+            />
           )}
         </div>
       </div>
@@ -326,9 +416,14 @@ export default function TradeContactsClient({ initialContacts }: { initialContac
     setContacts(prev => prev.filter(c => c.id !== id));
   }
 
+  function handleEdit(updated: TradeContact) {
+    setContacts(prev => prev.map(c => c.id === updated.id ? updated : c));
+  }
+
   const sharedCardProps = {
     onDelete: handleDelete,
     onArchiveToggle: handleArchiveToggle,
+    onEdit: handleEdit,
     openId: openSwipeId,
     setOpenId: setOpenSwipeId,
   };
