@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 
 type ReceiptItem = { description: string; quantity: number; unit_price: number; total: number };
 type ReceiptItemWithMeta = ReceiptItem & {
-  selected: boolean;
+  forInventory: boolean;
   inventory_match_id: string | null;
   inventory_match_name: string | null;
 };
@@ -26,8 +26,15 @@ type Expense = {
   line_items: ReceiptItem[] | null;
 };
 type Job = { id: string; job_title: string; customer_name: string; scheduled_date: string | null };
-type InventoryItem = { id: string; name: string; sku: string | null; category: string | null; quantity: number; unit_cost: number };
-type Mode = "list" | "capture" | "extracting" | "review" | "pick_job" | "pick_inventory";
+type InventoryItem = {
+  id: string;
+  name: string;
+  sku: string | null;
+  category: string | null;
+  quantity: number;
+  unit_cost: number;
+};
+type Mode = "list" | "capture" | "extracting" | "review";
 
 function readAsDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -40,6 +47,30 @@ function readAsDataURL(file: File): Promise<string> {
 
 function fmt(n: number) {
   return `$${Number(n).toFixed(2)}`;
+}
+
+function Checkbox({ checked, onChange, label, sublabel }: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  sublabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex items-start gap-3 w-full text-left py-1">
+      <span className={`mt-0.5 shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+        checked ? "bg-[#1B3A6B] border-[#1B3A6B]" : "border-gray-300 bg-white"
+      }`}>
+        {checked && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-slate-700">{label}</p>
+        {sublabel && <p className="text-xs text-gray-400 mt-0.5">{sublabel}</p>}
+      </div>
+    </button>
+  );
 }
 
 export default function ReceiptsClient({
@@ -58,11 +89,17 @@ export default function ReceiptsClient({
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [attachToJob, setAttachToJob] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [addToInventory, setAddToInventory] = useState(false);
+
   function suggestMatch(desc: string): { id: string; name: string } | null {
-    const d = desc.toLowerCase();
+    const d = desc.toLowerCase().trim();
+    if (!d) return null;
+    const words = d.split(/\s+/).filter(w => w.length > 2);
     const match = inventoryItems.find(item => {
       const n = item.name.toLowerCase();
-      return n.includes(d) || d.includes(n);
+      return n === d || words.some(w => n.includes(w));
     });
     return match ? { id: match.id, name: match.name } : null;
   }
@@ -72,6 +109,9 @@ export default function ReceiptsClient({
     setReceipt(null);
     setError("");
     setSaving(false);
+    setAttachToJob(false);
+    setSelectedJobId("");
+    setAddToInventory(false);
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -94,7 +134,7 @@ export default function ReceiptsClient({
           const match = suggestMatch(item.description);
           return {
             ...item,
-            selected: true,
+            forInventory: true,
             inventory_match_id: match?.id ?? null,
             inventory_match_name: match?.name ?? null,
           };
@@ -102,97 +142,10 @@ export default function ReceiptsClient({
       });
       setMode("review");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Scan failed");
+      setError(err instanceof Error ? err.message : "Scan failed — please try again");
       setMode("capture");
     } finally {
       if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
-  async function postExpense(jobId?: string | null): Promise<string | null> {
-    if (!receipt) return null;
-    const res = await fetch("/app/receipts/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        vendor: receipt.vendor,
-        receipt_date: receipt.date || null,
-        subtotal: receipt.subtotal,
-        tax_amount: receipt.tax,
-        total_amount: receipt.total,
-        job_id: jobId ?? null,
-        line_items: receipt.items.map(({ selected: _s, inventory_match_id: _mi, inventory_match_name: _mn, ...item }) => item),
-      }),
-    });
-    const json = await res.json() as { id?: string; error?: string };
-    if (!res.ok) throw new Error(json.error ?? "Save failed");
-    setExpenses(prev => [{
-      id: json.id ?? "",
-      vendor: receipt.vendor,
-      receipt_date: receipt.date || null,
-      total_amount: receipt.total,
-      job_id: jobId ?? null,
-      created_at: new Date().toISOString(),
-      line_items: receipt.items.map(({ selected: _s, inventory_match_id: _mi, inventory_match_name: _mn, ...item }) => item),
-    }, ...prev]);
-    return json.id ?? null;
-  }
-
-  async function handleSaveExpense() {
-    setSaving(true);
-    setError("");
-    try {
-      await postExpense(null);
-      reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
-      setSaving(false);
-    }
-  }
-
-  async function handleJobSelected(jobId: string) {
-    setSaving(true);
-    setError("");
-    try {
-      await postExpense(jobId);
-      reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
-      setSaving(false);
-    }
-  }
-
-  async function handleInventoryConfirm() {
-    if (!receipt) return;
-    setSaving(true);
-    setError("");
-    try {
-      const selected = receipt.items.filter(i => i.selected);
-      for (const item of selected) {
-        if (item.inventory_match_id) {
-          const existing = inventoryItems.find(i => i.id === item.inventory_match_id);
-          await fetch(`/app/inventory/api/${item.inventory_match_id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quantity: (existing?.quantity ?? 0) + item.quantity }),
-          });
-        } else {
-          await fetch("/app/inventory/api", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: item.description,
-              quantity: item.quantity,
-              unit_cost: item.unit_price,
-            }),
-          });
-        }
-      }
-      await postExpense(null);
-      reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Inventory update failed");
-      setSaving(false);
     }
   }
 
@@ -203,22 +156,99 @@ export default function ReceiptsClient({
   function updateItem(idx: number, field: keyof ReceiptItem, value: string | number) {
     setReceipt(prev => {
       if (!prev) return prev;
-      const items = prev.items.map((it, i) => {
-        if (i !== idx) return it;
-        const updated = { ...it, [field]: value };
-        updated.total = updated.quantity * updated.unit_price;
-        return updated;
-      });
-      return { ...prev, items };
+      return {
+        ...prev,
+        items: prev.items.map((it, i) => {
+          if (i !== idx) return it;
+          const updated = { ...it, [field]: value };
+          updated.total = Number(updated.quantity) * Number(updated.unit_price);
+          return updated;
+        }),
+      };
     });
   }
 
-  function toggleItem(idx: number) {
+  function toggleInventory(idx: number) {
     setReceipt(prev => {
       if (!prev) return prev;
-      const items = prev.items.map((it, i) => i === idx ? { ...it, selected: !it.selected } : it);
-      return { ...prev, items };
+      return {
+        ...prev,
+        items: prev.items.map((it, i) =>
+          i === idx ? { ...it, forInventory: !it.forInventory } : it
+        ),
+      };
     });
+  }
+
+  async function handleSave() {
+    if (!receipt) return;
+    if (attachToJob && !selectedJobId) {
+      setError("Please select a job to attach this receipt to.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const jobId = attachToJob ? selectedJobId : null;
+      const res = await fetch("/app/receipts/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vendor: receipt.vendor,
+          receipt_date: receipt.date || null,
+          subtotal: receipt.subtotal,
+          tax_amount: receipt.tax,
+          total_amount: receipt.total,
+          job_id: jobId || null,
+          line_items: receipt.items.map(({ forInventory: _fi, inventory_match_id: _mi, inventory_match_name: _mn, ...item }) => item),
+        }),
+      });
+      const json = await res.json() as { id?: string; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not save receipt");
+
+      setExpenses(prev => [{
+        id: json.id ?? "",
+        vendor: receipt.vendor,
+        receipt_date: receipt.date || null,
+        total_amount: receipt.total,
+        job_id: jobId || null,
+        created_at: new Date().toISOString(),
+        line_items: receipt.items.map(({ forInventory: _fi, inventory_match_id: _mi, inventory_match_name: _mn, ...item }) => item),
+      }, ...prev]);
+
+      if (addToInventory) {
+        const toAdd = receipt.items.filter(i => i.forInventory);
+        for (const item of toAdd) {
+          if (item.inventory_match_id) {
+            const existing = inventoryItems.find(i => i.id === item.inventory_match_id);
+            await fetch(`/app/inventory/api/${item.inventory_match_id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                quantity: (existing?.quantity ?? 0) + Number(item.quantity),
+                unit_cost: item.unit_price > 0 ? item.unit_price : (existing?.unit_cost ?? 0),
+              }),
+            });
+          } else {
+            await fetch("/app/inventory/api", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: item.description,
+                quantity: item.quantity,
+                unit_cost: item.unit_price,
+                description: `Added from ${receipt.vendor || "receipt"} on ${receipt.date || new Date().toISOString().slice(0, 10)}`,
+              }),
+            });
+          }
+        }
+      }
+
+      reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
   }
 
   if (mode === "extracting") {
@@ -234,29 +264,24 @@ export default function ReceiptsClient({
   if (mode === "capture") {
     return (
       <div className="space-y-3">
-        {error && (
-          <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3">{error}</div>
-        )}
+        {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3">{error}</div>}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <p className="text-sm font-bold text-[#1B3A6B]">Scan a Receipt</p>
           <p className="text-xs text-gray-500">Take a photo or upload an image of a supply or materials receipt. The AI will extract line items, totals, and vendor info.</p>
-          <label
-            htmlFor="receipt-file-input"
-            className="w-full border-2 border-dashed border-blue-200 rounded-2xl py-12 flex flex-col items-center gap-3 bg-blue-50 active:bg-blue-100 cursor-pointer">
+          <label className="w-full border-2 border-dashed border-blue-200 rounded-2xl py-12 flex flex-col items-center gap-3 bg-blue-50 active:bg-blue-100 cursor-pointer select-none">
             <span className="text-5xl">🧾</span>
             <div className="text-center">
               <p className="text-sm font-bold text-[#1B3A6B]">Take Photo or Upload Image</p>
-              <p className="text-xs text-gray-400 mt-1">Supports JPG, PNG, HEIC, screenshots</p>
+              <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC, screenshots</p>
             </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handleFile}
+            />
           </label>
-          <input
-            id="receipt-file-input"
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={handleFile}
-          />
           <button type="button" onClick={reset} className="w-full text-sm text-gray-400 py-2">Cancel</button>
         </div>
       </div>
@@ -264,24 +289,29 @@ export default function ReceiptsClient({
   }
 
   if (mode === "review" && receipt) {
+    const inventoryCount = receipt.items.filter(i => i.forInventory).length;
+
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 pb-6">
+        {/* Receipt header info */}
         <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
-          <p className="text-sm font-bold text-[#1B3A6B]">Review Extracted Data</p>
-          <p className="text-xs text-gray-400">Verify and edit before saving. Nothing is saved until you tap a button below.</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-[#1B3A6B]">Review Receipt</p>
+            <span className="text-xs text-gray-400">Edit before saving</span>
+          </div>
 
           <div className="space-y-2">
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-0.5 block">Vendor</label>
+              <label className="text-xs font-semibold text-gray-500 block mb-0.5">Vendor / Store</label>
               <input
                 value={receipt.vendor}
                 onChange={e => updateReceiptField("vendor", e.target.value)}
-                placeholder="Vendor / Store name"
+                placeholder="Vendor name"
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-0.5 block">Date</label>
+              <label className="text-xs font-semibold text-gray-500 block mb-0.5">Date</label>
               <input
                 type="date"
                 value={receipt.date}
@@ -291,223 +321,188 @@ export default function ReceiptsClient({
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-0.5 block">Subtotal</label>
+                <label className="text-xs font-semibold text-gray-500 block mb-0.5">Subtotal</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="number" step="0.01" min="0"
                   value={receipt.subtotal}
                   onChange={e => updateReceiptField("subtotal", Number(e.target.value))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-gray-200 px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-0.5 block">Tax</label>
+                <label className="text-xs font-semibold text-gray-500 block mb-0.5">Tax</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="number" step="0.01" min="0"
                   value={receipt.tax}
                   onChange={e => updateReceiptField("tax", Number(e.target.value))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-gray-200 px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-0.5 block">Total</label>
+                <label className="text-xs font-semibold text-gray-500 block mb-0.5">Total</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="number" step="0.01" min="0"
                   value={receipt.total}
                   onChange={e => updateReceiptField("total", Number(e.target.value))}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 font-bold"
+                  className="w-full rounded-xl border border-gray-200 px-2 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
           </div>
         </div>
 
+        {/* Line items */}
         {receipt.items.length > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
-            <p className="text-sm font-bold text-[#1B3A6B]">Line Items ({receipt.items.length})</p>
-            {receipt.items.map((item, idx) => (
-              <div key={idx} className="border border-gray-100 rounded-xl p-3 space-y-2">
-                <input
-                  value={item.description}
-                  onChange={e => updateItem(idx, "description", e.target.value)}
-                  placeholder="Description"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-400">Qty</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.quantity}
-                      onChange={e => updateItem(idx, "quantity", Number(e.target.value))}
-                      className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400">Unit $</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.unit_price}
-                      onChange={e => updateItem(idx, "unit_price", Number(e.target.value))}
-                      className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400">Total</label>
-                    <p className="text-sm font-bold text-slate-700 px-2 py-1.5">{fmt(item.total)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3">{error}</div>}
-
-        <div className="space-y-2">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSaveExpense}
-            className="w-full rounded-xl py-3 text-white font-semibold disabled:opacity-60"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            {saving ? "Saving…" : "Save as Expense"}
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => setMode("pick_job")}
-            className="w-full rounded-xl py-3 font-semibold border-2 border-[#1B3A6B] text-[#1B3A6B] bg-white disabled:opacity-60">
-            Attach to Job
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => setMode("pick_inventory")}
-            className="w-full rounded-xl py-3 font-semibold border border-gray-200 bg-white text-slate-700 disabled:opacity-60">
-            Add Items to Inventory
-          </button>
-          <button type="button" onClick={reset} disabled={saving} className="w-full text-sm text-gray-400 py-2">Cancel</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === "pick_job" && receipt) {
-    return (
-      <div className="space-y-3">
-        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
-          <p className="text-sm font-bold text-[#1B3A6B]">Attach to Job</p>
-          <p className="text-xs text-gray-400">Select a job to link this receipt to for job costing.</p>
-          <div className="text-xs text-gray-500 bg-gray-50 rounded-xl p-3 flex justify-between">
-            <span className="font-semibold">{receipt.vendor || "Receipt"}</span>
-            <span className="font-bold text-slate-700">{fmt(receipt.total)}</span>
-          </div>
-        </div>
-
-        {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3">{error}</div>}
-
-        {jobs.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
-            No active jobs found. Save as an expense instead.
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
-            {jobs.map(job => (
-              <button
-                key={job.id}
-                type="button"
-                disabled={saving}
-                onClick={() => handleJobSelected(job.id)}
-                className="w-full flex items-start justify-between px-4 py-3 text-left active:bg-blue-50 disabled:opacity-60">
-                <div>
-                  <p className="text-sm font-bold text-slate-800">{job.job_title}</p>
-                  {job.customer_name && <p className="text-xs text-gray-500">{job.customer_name}</p>}
-                </div>
-                {job.scheduled_date && (
-                  <span className="text-xs text-gray-400 shrink-0 mt-0.5">
-                    {new Date(job.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <button type="button" onClick={() => setMode("review")} disabled={saving} className="w-full text-sm text-gray-400 py-2">
-          ← Back to Review
-        </button>
-      </div>
-    );
-  }
-
-  if (mode === "pick_inventory" && receipt) {
-    const selected = receipt.items.filter(i => i.selected);
-    return (
-      <div className="space-y-3">
-        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
-          <p className="text-sm font-bold text-[#1B3A6B]">Add Items to Inventory</p>
-          <p className="text-xs text-gray-400">Select which items to add. Matched items will update existing stock quantities — new items will be created. Nothing changes until you confirm.</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
-          {receipt.items.map((item, idx) => (
-            <div key={idx} className="px-4 py-3 flex items-start gap-3">
-              <button
-                type="button"
-                onClick={() => toggleItem(idx)}
-                className={`shrink-0 w-5 h-5 rounded border-2 mt-0.5 flex items-center justify-center ${
-                  item.selected ? "bg-[#1B3A6B] border-[#1B3A6B]" : "border-gray-300 bg-white"
-                }`}>
-                {item.selected && <span className="text-white text-xs leading-none">✓</span>}
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 leading-tight">{item.description}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Qty: {item.quantity} · {fmt(item.unit_price)} each</p>
-                {item.inventory_match_name ? (
-                  <span className="inline-block text-[10px] bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 mt-1">
-                    Matches: {item.inventory_match_name}
-                  </span>
-                ) : (
-                  <span className="inline-block text-[10px] bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5 mt-1">
-                    New item
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-bold text-[#1B3A6B]">Line Items</p>
+              {addToInventory && (
+                <p className="text-xs text-gray-400">Check to add to inventory</p>
+              )}
             </div>
-          ))}
-        </div>
-
-        {selected.length === 0 && (
-          <div className="bg-amber-50 text-amber-700 text-sm rounded-xl p-3">
-            Select at least one item to continue.
+            {receipt.items.map((item, idx) => (
+              <div key={idx} className="border border-gray-100 rounded-xl overflow-hidden">
+                {/* Item row */}
+                <div className="flex items-start gap-2 p-3">
+                  {addToInventory && (
+                    <button
+                      type="button"
+                      onClick={() => toggleInventory(idx)}
+                      className={`shrink-0 mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        item.forInventory
+                          ? "bg-[#1B3A6B] border-[#1B3A6B]"
+                          : "border-gray-300 bg-white"
+                      }`}>
+                      {item.forInventory && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+                    </button>
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <input
+                      value={item.description}
+                      onChange={e => updateItem(idx, "description", e.target.value)}
+                      placeholder="Item description"
+                      className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div>
+                        <p className="text-[10px] text-gray-400 mb-0.5">Qty</p>
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={item.quantity}
+                          onChange={e => updateItem(idx, "quantity", Number(e.target.value))}
+                          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 mb-0.5">Unit $</p>
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={item.unit_price}
+                          onChange={e => updateItem(idx, "unit_price", Number(e.target.value))}
+                          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 mb-0.5">Total</p>
+                        <p className="text-sm font-bold text-slate-700 px-2 py-1.5">{fmt(item.total)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Inventory match badge */}
+                {addToInventory && item.forInventory && (
+                  <div className={`px-3 py-1.5 border-t ${item.inventory_match_id ? "bg-green-50 border-green-100" : "bg-blue-50 border-blue-100"}`}>
+                    {item.inventory_match_id ? (
+                      <p className="text-[11px] text-green-700">
+                        ↑ Updates existing: <span className="font-semibold">{item.inventory_match_name}</span>
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-blue-600">+ Creates new inventory item</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
+        {/* Save options */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Save Options</p>
+
+          {/* Save as expense — always on */}
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 shrink-0 w-5 h-5 rounded border-2 bg-[#1B3A6B] border-[#1B3A6B] flex items-center justify-center">
+              <span className="text-white text-[10px] leading-none font-bold">✓</span>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Save as Expense</p>
+              <p className="text-xs text-gray-400 mt-0.5">Always saved — appears in Expenses &amp; Reports</p>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-3 space-y-3">
+            {/* Attach to job */}
+            <Checkbox
+              checked={attachToJob}
+              onChange={setAttachToJob}
+              label="Attach to Job"
+              sublabel="Links receipt to a job for cost tracking"
+            />
+            {attachToJob && (
+              <div className="ml-8">
+                {jobs.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">No active jobs found.</p>
+                ) : (
+                  <select
+                    value={selectedJobId}
+                    onChange={e => setSelectedJobId(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white">
+                    <option value="">Select a job…</option>
+                    {jobs.map(job => (
+                      <option key={job.id} value={job.id}>
+                        {job.job_title}{job.customer_name ? ` — ${job.customer_name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* Add to inventory */}
+            <Checkbox
+              checked={addToInventory}
+              onChange={v => {
+                setAddToInventory(v);
+              }}
+              label="Add selected items to Inventory"
+              sublabel="Check items above to include them"
+            />
+            {addToInventory && (
+              <div className="ml-8">
+                {inventoryCount === 0 ? (
+                  <p className="text-xs text-amber-600">No items selected above — check the items you want to add.</p>
+                ) : (
+                  <p className="text-xs text-[#1B3A6B] font-medium">{inventoryCount} item{inventoryCount !== 1 ? "s" : ""} will be added / updated</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl p-3">{error}</div>}
 
-        <div className="space-y-2">
-          <button
-            type="button"
-            disabled={saving || selected.length === 0}
-            onClick={handleInventoryConfirm}
-            className="w-full rounded-xl py-3 text-white font-semibold disabled:opacity-60"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            {saving ? "Updating…" : `Confirm — Add ${selected.length} Item${selected.length !== 1 ? "s" : ""}`}
-          </button>
-          <button type="button" onClick={() => setMode("review")} disabled={saving} className="w-full text-sm text-gray-400 py-2">
-            ← Back to Review
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={handleSave}
+          className="w-full rounded-xl py-3.5 text-white font-semibold text-base disabled:opacity-60"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          {saving ? "Saving…" : "Save Receipt"}
+        </button>
+        <button type="button" onClick={reset} disabled={saving} className="w-full text-sm text-gray-400 py-2">
+          Cancel
+        </button>
       </div>
     );
   }
@@ -525,7 +520,7 @@ export default function ReceiptsClient({
         <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
           <p className="text-3xl mb-3">🧾</p>
           <p className="font-semibold text-slate-700 mb-1">No receipts yet</p>
-          <p className="text-sm text-gray-400">Tap Scan Receipt to photograph a supply receipt and track your material costs.</p>
+          <p className="text-sm text-gray-400">Photograph a supply receipt to track material costs, attach to jobs, and update inventory.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -534,24 +529,29 @@ export default function ReceiptsClient({
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-slate-800 truncate">{exp.vendor || "Unknown Vendor"}</p>
-                  {exp.receipt_date && (
+                  {exp.receipt_date ? (
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(exp.receipt_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {new Date(exp.receipt_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(exp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
                   )}
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(exp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </p>
                 </div>
                 <div className="text-right shrink-0 ml-3">
                   <p className="text-base font-bold text-slate-800">{fmt(exp.total_amount)}</p>
                   {exp.job_id && (
-                    <span className="text-[10px] bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium mt-1 inline-block">Job Attached</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium mt-1 inline-block">
+                      Job Attached
+                    </span>
                   )}
                 </div>
               </div>
               {exp.line_items && exp.line_items.length > 0 && (
-                <p className="text-xs text-gray-400 mt-2">{exp.line_items.length} item{exp.line_items.length !== 1 ? "s" : ""}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {exp.line_items.length} item{exp.line_items.length !== 1 ? "s" : ""}
+                </p>
               )}
             </div>
           ))}
