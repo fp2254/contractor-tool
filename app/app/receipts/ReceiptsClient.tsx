@@ -268,18 +268,23 @@ export default function ReceiptsClient({
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <p className="text-sm font-bold text-[#1B3A6B]">Scan a Receipt</p>
           <p className="text-xs text-gray-500">Take a photo or upload an image of a supply or materials receipt. The AI will extract line items, totals, and vendor info.</p>
-          <div className="w-full border-2 border-dashed border-blue-200 rounded-2xl py-10 flex flex-col items-center gap-3 bg-blue-50">
+          <div className="w-full border-2 border-dashed border-blue-200 rounded-2xl py-10 flex flex-col items-center gap-4 bg-blue-50">
             <span className="text-5xl">🧾</span>
-            <div className="text-center">
-              <p className="text-sm font-bold text-[#1B3A6B]">Choose Receipt Image</p>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC, screenshots</p>
-            </div>
+            <p className="text-xs text-gray-400">JPG, PNG, HEIC, screenshots</p>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              style={{ backgroundColor: "#1B3A6B" }}
+              className="px-6 py-3 rounded-xl text-white text-sm font-semibold"
+            >
+              Upload Image
+            </button>
             <input
               ref={inputRef}
               type="file"
               accept="image/*"
               onChange={handleFile}
-              className="text-sm text-slate-600 w-60"
+              style={{ position: "fixed", top: "-200px", left: 0, width: "1px", height: "1px", opacity: 0 }}
             />
           </div>
           <button type="button" onClick={reset} className="w-full text-sm text-gray-400 py-2">Cancel</button>
