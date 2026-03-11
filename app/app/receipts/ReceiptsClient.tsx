@@ -268,20 +268,20 @@ export default function ReceiptsClient({
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <p className="text-sm font-bold text-[#1B3A6B]">Scan a Receipt</p>
           <p className="text-xs text-gray-500">Take a photo or upload an image of a supply or materials receipt. The AI will extract line items, totals, and vendor info.</p>
-          <label className="relative w-full border-2 border-dashed border-blue-200 rounded-2xl py-12 flex flex-col items-center gap-3 bg-blue-50 active:bg-blue-100 cursor-pointer select-none overflow-hidden">
+          <div className="w-full border-2 border-dashed border-blue-200 rounded-2xl py-10 flex flex-col items-center gap-3 bg-blue-50">
             <span className="text-5xl">🧾</span>
             <div className="text-center">
-              <p className="text-sm font-bold text-[#1B3A6B]">Take Photo or Upload Image</p>
+              <p className="text-sm font-bold text-[#1B3A6B]">Choose Receipt Image</p>
               <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC, screenshots</p>
             </div>
             <input
               ref={inputRef}
               type="file"
               accept="image/*"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               onChange={handleFile}
+              className="text-sm text-slate-600 w-60"
             />
-          </label>
+          </div>
           <button type="button" onClick={reset} className="w-full text-sm text-gray-400 py-2">Cancel</button>
         </div>
       </div>
