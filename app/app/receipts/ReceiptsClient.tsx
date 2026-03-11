@@ -254,7 +254,7 @@ export default function ReceiptsClient({
             ref={inputRef}
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={handleFile}
           />
           <button type="button" onClick={reset} className="w-full text-sm text-gray-400 py-2">Cancel</button>
