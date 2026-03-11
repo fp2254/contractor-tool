@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "1mb",
     },
   },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
