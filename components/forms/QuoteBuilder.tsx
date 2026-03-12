@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { WarrantySection } from "@/components/WarrantySection";
 
 type Item = { description: string; quantity: number; unit_price: number };
 
@@ -49,6 +50,7 @@ export function QuoteBuilder({
   });
   const [scopeItems, setScopeItems] = useState<string[]>([""]);
   const [estimatedTime, setEstimatedTime] = useState("");
+  const [warrantyText, setWarrantyText] = useState("");
   const [generatingScope, setGeneratingScope] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -119,9 +121,10 @@ export function QuoteBuilder({
     setSubmitting(true);
     try {
       const cleanScope = scopeItems.filter(s => s.trim());
+      const combinedNotes = [notes.trim(), warrantyText.trim()].filter(Boolean).join("\n\n");
       await onSubmit({
         customer_id: isNew ? "" : customerId,
-        notes,
+        notes: combinedNotes,
         items,
         scope_items: cleanScope.length ? cleanScope : undefined,
         estimated_time: estimatedTime.trim() || undefined,
@@ -308,6 +311,9 @@ export function QuoteBuilder({
         />
         <p className="text-xs text-gray-400 mt-1">Shown to the customer on their quote</p>
       </div>
+
+      {/* Terms & Warranty */}
+      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
 
       {/* Notes */}
       <div>

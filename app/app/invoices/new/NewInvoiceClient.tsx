@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WarrantySection } from "@/components/WarrantySection";
 
 type Item = { description: string; quantity: number; unit_price: number };
 
@@ -20,6 +21,7 @@ export default function NewInvoiceClient({ customers }: { customers: { id: strin
   const [newCustomer, setNewCustomer] = useState<NewCustomer>(EMPTY_NC);
   const [items, setItems] = useState<Item[]>([{ description: "", quantity: 1, unit_price: 0 }]);
   const [notes, setNotes] = useState("");
+  const [warrantyText, setWarrantyText] = useState("");
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 14);
@@ -56,7 +58,7 @@ export default function NewInvoiceClient({ customers }: { customers: { id: strin
         body: JSON.stringify({
           customer_id: isNew ? "" : customerId,
           items,
-          notes,
+          notes: [notes.trim(), warrantyText.trim()].filter(Boolean).join("\n\n"),
           due_date: dueDate,
           ...(isNew ? { new_customer: newCustomer } : {}),
         }),
@@ -179,6 +181,9 @@ export default function NewInvoiceClient({ customers }: { customers: { id: strin
           + Add Line Item
         </button>
       </div>
+
+      {/* Terms & Warranty */}
+      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
 
       {/* Notes */}
       <div>
