@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
 import { PermitAssistant } from "@/components/PermitAssistant";
-import { VoiceJobModal } from "@/components/VoiceJobModal";
 import OpsBoard from "@/components/OpsBoard";
 
 export default async function DashboardPage() {
@@ -106,7 +105,6 @@ export default async function DashboardPage() {
         </div>
         <PermitAssistant />
         <AiCaptureModal />
-        <VoiceJobModal />
       </div>
     </div>
   );

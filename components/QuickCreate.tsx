@@ -10,7 +10,6 @@ const ALL_ACTIONS = [
   { id: "new-invoice",   label: "New Invoice",        icon: "💵", href: "/app/money" },
   { id: "new-lead",      label: "New Lead",           icon: "📥", href: "/app/leads?new=1" },
   { id: "ai-capture",   label: "AI Job Capture",      icon: "🤖", href: "/?modal=ai-capture" },
-  { id: "voice-job",    label: "Voice Job",           icon: "🎙️", href: "/?modal=voice-job" },
   { id: "scan-receipt",  label: "Scan Receipt",       icon: "🧾", href: "/app/receipts" },
   { id: "scan-card",     label: "Scan Business Card", icon: "💳", href: "/app/trade-contacts?scan=1" },
   { id: "new-payment",   label: "Log Payment",        icon: "💰", href: "/app/money?tab=payments" },
