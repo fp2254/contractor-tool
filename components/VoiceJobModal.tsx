@@ -60,6 +60,16 @@ export function VoiceJobModal() {
     setHasApi(!!SR);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("modal=voice-job")) {
+      openModal();
+      const url = new URL(window.location.href);
+      url.searchParams.delete("modal");
+      window.history.replaceState({}, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function openModal() {
     setStep("idle");
     setTranscript("");

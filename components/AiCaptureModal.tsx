@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AiCaptureOutput } from "@/app/api/ai/capture/route";
 
@@ -76,6 +76,16 @@ export function AiCaptureModal() {
     setDraft(null);
     setStep("input");
   }
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("modal=ai-capture")) {
+      open();
+      const url = new URL(window.location.href);
+      url.searchParams.delete("modal");
+      window.history.replaceState({}, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function close() {
     setStep("closed");

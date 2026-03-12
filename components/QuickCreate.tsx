@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const ALL_ACTIONS = [
-  { id: "new-client",    label: "New Client",       icon: "👤", href: "/app/customers?new=1" },
-  { id: "new-quote",     label: "New Quote",         icon: "📋", href: "/app/quotes/new" },
-  { id: "new-job",       label: "New Job",           icon: "🔨", href: "/app/jobs/new" },
-  { id: "new-invoice",   label: "New Invoice",       icon: "💵", href: "/app/money" },
-  { id: "new-lead",      label: "New Lead",          icon: "📥", href: "/app/leads?new=1" },
-  { id: "scan-receipt",  label: "Scan Receipt",      icon: "🧾", href: "/app/receipts" },
-  { id: "scan-card",     label: "Scan Business Card",icon: "💳", href: "/app/trade-contacts?scan=1" },
-  { id: "new-payment",   label: "Log Payment",       icon: "💰", href: "/app/money?tab=payments" },
-  { id: "schedule",      label: "Schedule",          icon: "📅", href: "/app/schedule" },
-  { id: "inventory",     label: "Inventory",         icon: "📦", href: "/app/inventory" },
+  { id: "new-client",    label: "New Client",        icon: "👤", href: "/app/customers?new=1" },
+  { id: "new-quote",     label: "New Quote",          icon: "📋", href: "/app/quotes/new" },
+  { id: "new-job",       label: "New Job",            icon: "🔨", href: "/app/jobs/new" },
+  { id: "new-invoice",   label: "New Invoice",        icon: "💵", href: "/app/money" },
+  { id: "new-lead",      label: "New Lead",           icon: "📥", href: "/app/leads?new=1" },
+  { id: "ai-capture",   label: "AI Job Capture",      icon: "🤖", href: "/?modal=ai-capture" },
+  { id: "voice-job",    label: "Voice Job",           icon: "🎙️", href: "/?modal=voice-job" },
+  { id: "scan-receipt",  label: "Scan Receipt",       icon: "🧾", href: "/app/receipts" },
+  { id: "scan-card",     label: "Scan Business Card", icon: "💳", href: "/app/trade-contacts?scan=1" },
+  { id: "new-payment",   label: "Log Payment",        icon: "💰", href: "/app/money?tab=payments" },
+  { id: "schedule",      label: "Schedule",           icon: "📅", href: "/app/schedule" },
+  { id: "inventory",     label: "Inventory",          icon: "📦", href: "/app/inventory" },
 ];
 
 const DEFAULT_IDS = ["new-client", "new-quote", "new-job", "new-invoice"];
