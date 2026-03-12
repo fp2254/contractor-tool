@@ -14,6 +14,7 @@ const lineItemSchema = z.object({
   unit: z.string().default("each"),
   unit_price: z.number().nullable().default(null),
   needs_manual_pricing: z.boolean().default(false),
+  is_ai_estimate: z.boolean().default(false),
 });
 
 const outputSchema = z.object({
@@ -33,6 +34,7 @@ const outputSchema = z.object({
   }),
   line_items: z.array(lineItemSchema).default([]),
   notes: z.string().nullable().default(null),
+  warranty_flags: z.array(z.string()).default([]),
 });
 
 export type AiCaptureOutput = z.infer<typeof outputSchema>;
@@ -95,23 +97,27 @@ export async function POST(req: Request) {
       "qty": 1,
       "unit": "each | ft | hour | etc",
       "unit_price": 0,
-      "needs_manual_pricing": false
+      "needs_manual_pricing": false,
+      "is_ai_estimate": false
     }
   ],
-  "notes": "string or null"
+  "notes": "string or null",
+  "warranty_flags": ["payment", "labor-warranty", "parts-warranty", "codes", "permits", "scope", "access", "cancellation"]
 }`;
 
   const pricingRule = hasPresets
-    ? `When a line item matches a preset: use its id as preset_id, its price as unit_price, its unit as unit, and set needs_manual_pricing to false. When no preset matches: set preset_id to null, unit_price to null, needs_manual_pricing to true. Never invent a price.`
-    : `No service presets are configured. For every line item, set preset_id to null, unit_price to null, needs_manual_pricing to true.`;
+    ? `PRICING: When a line item matches a preset: use its id as preset_id, its price as unit_price, its unit as unit, set needs_manual_pricing to false, is_ai_estimate to false. When no preset matches: set preset_id to null, use your knowledge of typical US contractor/trade pricing to estimate a reasonable unit_price (e.g. $150/hr labor, common material costs), set needs_manual_pricing to true and is_ai_estimate to true so the contractor can verify.`
+    : `PRICING: No service presets configured. For every line item, set preset_id to null, use your knowledge of typical US contractor/trade pricing to estimate a reasonable unit_price, set needs_manual_pricing to true and is_ai_estimate to true. Never leave unit_price as null — always provide a reasonable estimate.`;
+
+  const warrantyRule = `WARRANTY FLAGS: Populate the warranty_flags array with any of these IDs that are relevant based on the job context or explicitly mentioned by the user: "payment" (payment/billing terms), "labor-warranty" (labor/workmanship warranty), "parts-warranty" (parts/materials warranty), "codes" (building code compliance), "permits" (permits required), "scope" (scope of work limits), "access" (site access), "cancellation" (cancellation policy). Include "payment" and "labor-warranty" by default for any quote or invoice. Only include "permits" if permits seem likely for the job type.`;
 
   const messages = buildMessages(
     {
       role: "You are an AI job intake assistant for TradeBase, a contractor CRM. Extract structured job information from a contractor's message and return it as JSON.",
       rules: [
         "Return valid JSON only — no markdown, no prose, no explanation.",
-        "Never invent pricing. Use only the supplied service presets as the source of prices.",
         pricingRule,
+        warrantyRule,
         "Convert relative dates (e.g. 'next Friday', 'tomorrow') to ISO date YYYY-MM-DD relative to today.",
         "Use empty string '' for missing customer fields, not null.",
         "recommended_status: 'lead' if vague, 'quote' if pricing needed, 'job' if agreed and schedulable, 'invoice' if work is done.",
@@ -121,7 +127,7 @@ export async function POST(req: Request) {
         today,
         service_presets: hasPresets ? JSON.stringify(presetsJson) : "none",
       },
-      task: "Extract job title, customer info, schedule, line items, and a recommended status from the input text.",
+      task: "Extract job title, customer info, schedule, line items, warranty flags, and a recommended status from the input text.",
       schema,
     },
     body.text.trim()
@@ -135,7 +141,7 @@ export async function POST(req: Request) {
       model: "gpt-4o-mini",
       messages,
       response_format: { type: "json_object" },
-      max_completion_tokens: 1200,
+      max_completion_tokens: 1400,
     });
     raw = completion.choices[0]?.message?.content ?? "{}";
   } catch (err) {
