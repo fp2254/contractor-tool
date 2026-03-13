@@ -1,0 +1,251 @@
+TRADEBASE TERMS OF SERVICE, PRIVACY POLICY & ACCEPTABLE USE AGREEMENT  
+Last Updated: [Insert Date]
+
+1. INTRODUCTION
+
+These Terms of Service ("Terms") govern your access to and use of the TradeBase platform, website, and applications (collectively, the "Service").
+
+TradeBase Contractors is a "doing business as" (DBA) of Liberty Grove Homestead Company, LLC ("Company," "we," "our," or "us").
+
+By accessing or using TradeBase, you agree to these Terms. If you do not agree, you may not use the Service.
+
+The Service is intended for business use by contractors, tradespeople, and service providers.
+
+You must be at least 18 years old to use the Service.
+
+---
+
+2. DESCRIPTION OF SERVICE
+
+TradeBase is a software platform designed to assist contractors with:
+
+• Lead tracking  
+• Customer management  
+• Quotes and invoicing  
+• Job scheduling  
+• Inventory tracking  
+• Expense and receipt management  
+• AI-generated assistance  
+• Trade contact management  
+• Data analysis and reporting  
+
+TradeBase may modify or discontinue features at any time without prior notice.
+
+---
+
+3. USER ACCOUNTS
+
+Users must provide accurate account information.
+
+You are responsible for:
+
+• maintaining the security of your account  
+• safeguarding login credentials  
+• activity conducted through your account  
+
+TradeBase is not liable for unauthorized access resulting from compromised credentials.
+
+We reserve the right to suspend or terminate accounts that violate these Terms.
+
+---
+
+4. ACCEPTABLE USE POLICY
+
+Users may not use the Service to:
+
+• violate any laws or regulations  
+• harass, threaten, or defraud others  
+• distribute spam or unsolicited communications  
+• upload malicious code or attempt to hack the system  
+• scrape or harvest other users’ data  
+• impersonate individuals or businesses  
+• conduct illegal services or transactions  
+
+TradeBase reserves the right to remove content and terminate accounts that violate these rules.
+
+---
+
+5. USER CONTENT
+
+Users may upload data including:
+
+• job details  
+• contact information  
+• invoices and quotes  
+• receipts and expenses  
+• photos and documents  
+
+You retain ownership of your content.
+
+However, by using the Service you grant TradeBase a non-exclusive license to store, process, and analyze your content solely for operating and improving the Service.
+
+Users are responsible for ensuring they have the legal right to upload any data they submit.
+
+---
+
+6. DATA COLLECTION AND PRIVACY
+
+TradeBase collects certain information to operate the Service, including:
+
+• account details  
+• contact and customer information  
+• uploaded business records  
+• usage analytics  
+• device and log data  
+
+This data is used to:
+
+• operate and improve the platform  
+• provide support  
+• generate analytics and reports  
+• improve AI systems and features  
+
+TradeBase may analyze aggregated and anonymized platform data to produce:
+
+• industry insights  
+• pricing benchmarks  
+• market trends  
+• research reports  
+
+Such aggregated data will not identify individual users or businesses.
+
+TradeBase may share data with trusted service providers for hosting, analytics, and platform operations.
+
+We do not sell personally identifiable customer data.
+
+---
+
+7. AI FEATURE DISCLAIMER
+
+TradeBase includes artificial intelligence features that may generate:
+
+• job descriptions  
+• scopes of work  
+• summaries  
+• suggestions or recommendations  
+
+AI outputs may contain inaccuracies.
+
+Users remain fully responsible for reviewing, verifying, and approving any AI-generated content before using it in their business.
+
+TradeBase is not responsible for decisions made based on AI-generated outputs.
+
+---
+
+8. THIRD-PARTY SERVICES
+
+TradeBase may integrate with third-party services such as:
+
+• payment processors  
+• email providers  
+• cloud hosting providers  
+• analytics services  
+
+TradeBase is not responsible for the policies, services, or actions of third-party providers.
+
+Users agree to comply with the terms of those third parties when using integrated services.
+
+---
+
+9. REFERRALS AND TRADE CONTACTS
+
+TradeBase may allow users to store and share trade contacts or refer work to other contractors.
+
+TradeBase does not guarantee:
+
+• licensing status  
+• work quality  
+• business practices  
+• service outcomes  
+
+All agreements and business relationships formed between users or contractors are solely between those parties.
+
+TradeBase is not responsible for disputes, payments, or work performed.
+
+---
+
+10. LIMITATION OF LIABILITY
+
+TradeBase is provided on an "AS IS" and "AS AVAILABLE" basis.
+
+To the maximum extent permitted by law, TradeBase and Liberty Grove Homestead Company, LLC shall not be liable for:
+
+• lost profits  
+• lost business opportunities  
+• missed jobs  
+• inaccurate data  
+• service interruptions  
+• system outages  
+• data loss  
+• contractor disputes  
+• third-party services  
+
+Under no circumstances shall the Company's total liability exceed the amount paid by the user for the Service in the previous 12 months.
+
+---
+
+11. NO WARRANTIES
+
+TradeBase makes no warranties regarding:
+
+• uninterrupted service  
+• error-free operation  
+• accuracy of information  
+• suitability for any specific business purpose  
+
+Users assume all risks associated with using the Service.
+
+---
+
+12. INDEMNIFICATION
+
+Users agree to indemnify and hold harmless Liberty Grove Homestead Company, LLC from any claims, damages, or legal actions resulting from:
+
+• misuse of the Service  
+• violation of these Terms  
+• disputes between contractors and customers  
+• illegal or fraudulent activity conducted through the platform
+
+---
+
+13. TERMINATION
+
+TradeBase may suspend or terminate accounts at any time for violations of these Terms.
+
+Users may discontinue use of the Service at any time.
+
+Termination does not remove obligations that occurred prior to termination.
+
+---
+
+14. GOVERNING LAW
+
+These Terms shall be governed by the laws of the State of Maine, United States.
+
+---
+
+15. ARBITRATION AGREEMENT
+
+All disputes arising from these Terms or the use of TradeBase shall be resolved through binding arbitration rather than court litigation.
+
+Users waive the right to participate in class-action lawsuits.
+
+Arbitration shall take place in the State of Maine unless otherwise agreed by both parties.
+
+---
+
+16. MODIFICATIONS TO TERMS
+
+TradeBase reserves the right to modify these Terms at any time.
+
+Continued use of the Service after changes constitutes acceptance of the revised Terms.
+
+---
+
+17. CONTACT INFORMATION
+
+Liberty Grove Homestead Company, LLC  
+DBA TradeBase Contractors  
+
+[Insert Business Address]  
+[Insert Contact Email]
