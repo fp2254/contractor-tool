@@ -23,7 +23,17 @@ async function signOut() {
   redirect("/auth/login");
 }
 
-export default function MorePage() {
+export default async function MorePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const adminEmails = (process.env.ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const isAdmin = adminEmails.includes(user?.email?.toLowerCase() ?? "");
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">More</h1>
@@ -39,6 +49,17 @@ export default function MorePage() {
             <span className="text-gray-300 text-lg">›</span>
           </Link>
         ))}
+
+        {isAdmin && (
+          <Link href="/app/admin/billing"
+            className="flex items-center gap-4 px-4 py-4">
+            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg bg-purple-50">
+              🔐
+            </div>
+            <span className="flex-1 font-medium text-purple-700">Billing Admin</span>
+            <span className="text-gray-300 text-lg">›</span>
+          </Link>
+        )}
 
         <form action={signOut}>
           <button type="submit" className="flex items-center gap-4 px-4 py-4 w-full text-left">
