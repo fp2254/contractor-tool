@@ -1,0 +1,168 @@
+Implement subscription validation logic with a 5-day grace period.
+
+GOAL
+TradeBase must track whether each user is currently paid up and automatically restrict access if they are overdue beyond the grace period.
+
+==================================================
+SUBSCRIPTION FIELDS
+==================================================
+
+Each user account must store:
+
+user_id
+plan_type
+payment_date
+next_due_date
+subscription_status
+payment_provider_id
+grace_period_end_date
+
+Possible subscription_status values:
+
+active
+grace_period
+expired
+canceled
+
+==================================================
+WHEN A PAYMENT IS RECEIVED
+==================================================
+
+When a payment is received from the Square webhook:
+
+Update:
+
+payment_date = current date
+next_due_date = payment_date + 30 days
+grace_period_end_date = next_due_date + 5 days
+subscription_status = active
+
+If yearly plan exists later:
+next_due_date = payment_date + 365 days
+grace_period_end_date = next_due_date + 5 days
+
+==================================================
+VALIDATION LOGIC ON LOGIN / APP LOAD
+==================================================
+
+Every time a user logs in or loads the dashboard:
+
+1. If current_date <= next_due_date
+   → subscription_status = active
+   → allow full access
+
+2. If current_date > next_due_date
+   AND current_date <= grace_period_end_date
+   → subscription_status = grace_period
+   → allow access, but show warning banner
+
+3. If current_date > grace_period_end_date
+   → subscription_status = expired
+   → block access to main app features
+   → redirect user to payment / renewal page
+
+==================================================
+GRACE PERIOD BEHAVIOR
+==================================================
+
+Grace period length:
+5 days after next_due_date
+
+During grace period:
+- user can still access the app
+- show warning on dashboard and key screens
+
+Warning text example:
+Your subscription payment is overdue.
+You have 5 days to renew before access is restricted.
+
+Optional:
+Show countdown:
+4 days left
+3 days left
+etc.
+
+==================================================
+EXPIRED BEHAVIOR
+==================================================
+
+If subscription_status = expired:
+
+- redirect user to renewal page
+- disable dashboard, clients, quotes, jobs, invoices, money, inventory, and trade contacts
+- allow access only to:
+  - billing page
+  - account settings
+  - support page
+  - logout
+
+Expired screen message:
+
+Your TradeBase subscription has expired.
+Renew your subscription to continue using your account.
+
+Buttons:
+Renew Now
+Contact Support
+Logout
+
+==================================================
+WEBHOOK REQUIREMENTS
+==================================================
+
+When Square sends successful payment webhook:
+- identify user by payment_provider_id or customer mapping
+- update payment_date
+- update next_due_date
+- update grace_period_end_date
+- set subscription_status = active
+
+If payment fails or subscription is canceled later:
+- do not immediately delete data
+- allow grace period logic to handle access restrictions
+
+==================================================
+DATABASE / LOGIC NOTES
+==================================================
+
+Use server-side validation only.
+Do not rely only on client-side checks.
+
+Every protected page should verify subscription state before rendering.
+
+Recommended helper function:
+getSubscriptionState(user_id)
+
+This function should return:
+active
+grace_period
+expired
+canceled
+
+based on current date and stored fields.
+
+==================================================
+ACCESS RULES SUMMARY
+==================================================
+
+Active
+→ full access
+
+Grace Period
+→ full access + renewal warning banner
+
+Expired
+→ block app and redirect to renewal page
+
+Canceled
+→ treat like expired once paid period and grace period end
+
+==================================================
+OPTIONAL FUTURE ADDITIONS
+==================================================
+
+- email reminder 3 days before due date
+- email reminder on due date
+- email reminder during grace period
+- in-app banner with one-click payment link
+- retry payment flow
