@@ -9,6 +9,7 @@ import {
   removePreset,
   type PresetData,
 } from "@/app/app/profile/actions";
+import { PriceSheetScanModal } from "@/components/PriceSheetScanModal";
 
 export type Preset = {
   id: string;
@@ -437,6 +438,7 @@ export function ServicePresetsManager({ initialPresets }: { initialPresets: Pres
   const router = useRouter();
   const [presets, setPresets] = useState<Preset[]>(initialPresets);
   const [showAdd, setShowAdd] = useState(false);
+  const [showScan, setShowScan] = useState(false);
   const [addForm, setAddForm] = useState<PresetForm>(blankForm());
   const [isPending, startTransition] = useTransition();
 
@@ -466,15 +468,30 @@ export function ServicePresetsManager({ initialPresets }: { initialPresets: Pres
             {active.length} active · {inactive.length} inactive
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd((v) => !v)}
-          className="text-sm font-semibold text-white px-3 py-1.5 rounded-xl"
-          style={{ backgroundColor: "#22C55E" }}
-        >
-          {showAdd ? "Cancel" : "+ Add Service"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScan(true)}
+            className="text-sm font-semibold text-white px-3 py-1.5 rounded-xl"
+            style={{ backgroundColor: "#1B3A6B" }}>
+            📷 Scan Sheet
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAdd((v) => !v)}
+            className="text-sm font-semibold text-white px-3 py-1.5 rounded-xl"
+            style={{ backgroundColor: "#22C55E" }}>
+            {showAdd ? "Cancel" : "+ Add"}
+          </button>
+        </div>
       </div>
+
+      {showScan && (
+        <PriceSheetScanModal
+          onClose={() => setShowScan(false)}
+          onImported={() => { setShowScan(false); refresh(); }}
+        />
+      )}
 
       {/* AI tip */}
       {presets.length === 0 && !showAdd && (

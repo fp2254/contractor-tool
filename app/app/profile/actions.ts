@@ -209,3 +209,37 @@ export async function deleteServicePreset(formData: FormData) {
   await admin.from("service_presets").delete().eq("id", id).eq("org_id", orgId!);
   revalidatePath("/app/profile");
 }
+
+export interface BulkPresetItem {
+  service_name: string;
+  description?: string;
+  price_type: "flat" | "hourly";
+  flat_rate: number | null;
+  hourly_rate: number | null;
+  unit: string;
+  category: string;
+}
+
+export async function bulkCreatePresets(items: BulkPresetItem[]): Promise<void> {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  const rows = items
+    .filter((i) => i.service_name.trim())
+    .map((i) => ({
+      org_id: orgId!,
+      service_name: i.service_name.trim(),
+      description: i.description?.trim() || null,
+      price_type: i.price_type,
+      flat_rate: i.flat_rate,
+      hourly_rate: i.hourly_rate,
+      unit: i.unit || "job",
+      default_qty: 1,
+      category: i.category?.trim() || null,
+      tags: [],
+      is_active: true,
+    }));
+  if (rows.length === 0) return;
+  await admin.from("service_presets").insert(rows);
+  revalidatePath("/app/profile");
+  revalidatePath("/app/quotes/new");
+}
