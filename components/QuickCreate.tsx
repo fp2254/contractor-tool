@@ -9,7 +9,7 @@ const ALL_ACTIONS = [
   { id: "new-job",       label: "New Job",            icon: "🔨", href: "/app/jobs/new" },
   { id: "new-invoice",   label: "New Invoice",        icon: "💵", href: "/app/money" },
   { id: "new-lead",      label: "New Lead",           icon: "📥", href: "/app/leads?new=1" },
-  { id: "ai-capture",   label: "AI Job Capture",      icon: "🤖", href: "/?modal=ai-capture" },
+  { id: "ai-capture",   label: "AI Job Capture",      icon: "🤖", href: "/app?modal=ai-capture" },
   { id: "scan-receipt",  label: "Scan Receipt",       icon: "🧾", href: "/app/receipts" },
   { id: "scan-card",     label: "Scan Business Card", icon: "💳", href: "/app/trade-contacts?scan=1" },
   { id: "new-payment",   label: "Log Payment",        icon: "💰", href: "/app/money?tab=payments" },
@@ -61,7 +61,7 @@ export function QuickCreate() {
     <>
       {open && (
         <div className="fixed inset-0 z-[55] flex flex-col justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={() => { setOpen(false); setEditing(false); }} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => { saveIds(selectedIds); setOpen(false); setEditing(false); }} />
           <div className="relative bg-white rounded-t-3xl shadow-xl pt-5 pb-28 px-4">
 
             {!editing ? (
@@ -139,7 +139,10 @@ export function QuickCreate() {
       )}
 
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => {
+          if (open) { saveIds(selectedIds); setEditing(false); }
+          setOpen(v => !v);
+        }}
         className="fixed bottom-[4.5rem] right-4 z-[55] h-14 w-14 rounded-full text-white shadow-lg flex items-center justify-center transition-transform active:scale-95"
         style={{ backgroundColor: "#1B3A6B" }}
         aria-label="Quick Create">
