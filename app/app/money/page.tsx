@@ -8,11 +8,12 @@ async function archiveInvoice(formData: FormData) {
   const orgId = await ensureUserOrg();
   const invoiceId = String(formData.get("invoice_id"));
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .from("invoices")
     .update({ status: "archived" } as Record<string, unknown>)
     .eq("id", invoiceId)
     .eq("org_id", orgId!);
+  if (error) console.error("[archiveInvoice] error:", error.message, error.details, error.hint);
   revalidatePath("/app/money");
 }
 
