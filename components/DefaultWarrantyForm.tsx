@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WARRANTY_CLAUSES } from "@/components/WarrantySection";
+import { WARRANTY_CLAUSES } from "@/lib/warrantyUtils";
 
 function buildText(clauseIds: Set<string>, custom: string): string {
   const clauseParts = WARRANTY_CLAUSES

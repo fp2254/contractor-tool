@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { WarrantySection, parseWarrantyClauses } from "@/components/WarrantySection";
+import { WarrantySection } from "@/components/WarrantySection";
+import { parseWarrantyClauses } from "@/lib/warrantyUtils";
 
 type Item = { description: string; quantity: number; unit_price: number };
 
