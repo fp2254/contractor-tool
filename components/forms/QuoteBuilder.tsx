@@ -1,9 +1,35 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { WarrantySection } from "@/components/WarrantySection";
 
 type Item = { description: string; quantity: number; unit_price: number };
+
+function WarrantyTextSection({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(!!value.trim());
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2 w-full text-left">
+        <span className={`transition-transform text-gray-400 text-xs ${open ? "rotate-90" : ""}`}>▶</span>
+        Terms &amp; Warranty
+        {value.trim() && (
+          <span className="ml-1 text-xs font-bold text-white rounded-full px-2 py-0.5" style={{ backgroundColor: "#1B3A6B" }}>✓</span>
+        )}
+      </button>
+      {open && (
+        <textarea
+          rows={8}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Enter warranty terms, liability disclaimers, or any conditions for this quote…"
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+        />
+      )}
+    </div>
+  );
+}
 
 export type NewCustomer = {
   first_name: string;
@@ -315,7 +341,7 @@ export function QuoteBuilder({
       </div>
 
       {/* Terms & Warranty */}
-      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
+      <WarrantyTextSection value={warrantyText} onChange={setWarrantyText} />
 
       {/* Notes */}
       <div>
