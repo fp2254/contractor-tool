@@ -1,0 +1,138 @@
+Fix the AI Quote Builder so it does 2 things correctly:
+
+1. MATCH EXISTING CLIENTS FROM MY CLIENT LIST
+2. USE THE PRICE I SAY, EVEN IF IT IS DIFFERENT FROM THE STANDARD PRESET PRICE
+
+==================================================
+1. CLIENT MATCHING LOGIC
+==================================================
+
+Problem:
+When I use AI Create Quote, it is not attaching the quote to an existing client if the name is spelled slightly differently.
+Example:
+Client in my list = "Mike Johnson"
+I say = "Michael Johnson"
+The system is failing to match and is creating a quote without the client attached.
+
+Required behavior:
+When AI creates a quote, it must first search my existing client list and try to match the customer name before creating anything.
+
+Use fuzzy matching / name similarity matching against existing clients.
+
+Examples:
+"Mike Johnson" should match "Michael Johnson"
+"Jon Smith" should match "John Smith"
+"Chris Thompson" should match "Christopher Thompson"
+
+Matching priority:
+1. Exact name match
+2. Fuzzy name match
+3. Phone match if provided
+4. Email match if provided
+
+If a likely client match is found:
+- attach the quote to that existing client
+- do NOT create a new blank client
+- do NOT leave the quote unattached
+
+If confidence is high:
+- auto-select the existing client
+
+If confidence is medium:
+- show a small confirmation UI:
+  "Did you mean this client?"
+  [ Existing Client Name ]
+  [ Use This Client ]
+  [ Create New Client ]
+
+If no good match is found:
+- allow creating a new client inline
+
+==================================================
+2. PRICE OVERRIDE LOGIC
+==================================================
+
+Problem:
+If I say a specific price in the AI quote request, the AI should use the price I said, not the standard preset price.
+
+Example:
+Preset for radon system = $1400
+If I say:
+"Create quote for Mike Johnson radon system for $1200"
+then the quote total / line item should be $1200, not $1400.
+
+Required behavior:
+If the user explicitly states a price in the AI request, that price overrides the preset default price.
+
+Examples:
+"Create a quote for Mike Johnson for $1200"
+"Radon job for Sarah for 1500"
+"Make this quote 950 dollars"
+
+In those cases:
+- use the requested price
+- do not default to preset price
+- do not ignore the spoken or typed amount
+
+Preset prices should only be used when NO explicit price was given by the user.
+
+==================================================
+3. AI PROMPT / PARSING RULES
+==================================================
+
+Update the AI quote creation prompt and parser:
+
+Rules:
+- First extract the customer name
+- First search existing clients list for a match
+- If explicit price is mentioned, use it as the quote price
+- Only fall back to service preset price if no explicit price is provided
+- Return structured JSON with:
+  client_match_id
+  matched_client_name
+  confidence_score
+  requested_price
+  preset_price
+  final_price
+  used_price_source ("explicit_user_price" or "preset_price")
+
+==================================================
+4. OUTPUT EXAMPLE
+==================================================
+
+If I say:
+"Create a quote for Michael Johnson for a radon mitigation system for $1200"
+
+and my client list contains:
+"Mike Johnson"
+
+Then output should effectively do this:
+
+- match to existing client Mike Johnson
+- attach quote to that client
+- set final price = 1200
+- mark used_price_source = explicit_user_price
+
+==================================================
+5. UI REQUIREMENT
+==================================================
+
+On the AI Quote Preview screen, show:
+
+Client:
+[Matched Client Name]
+
+Price Source:
+[Explicit user price: $1200]
+or
+[Preset price: $1400]
+
+This way I can confirm before creating the quote.
+
+==================================================
+6. IMPORTANT
+==================================================
+
+Do not create unattached quotes when a client likely exists.
+Do not ignore the explicit price I said.
+The price I request must win over the preset price.

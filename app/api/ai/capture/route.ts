@@ -17,6 +17,12 @@ const lineItemSchema = z.object({
   is_ai_estimate: z.boolean().default(false),
 });
 
+const customerMatchSchema = z.object({
+  customer_id: z.string().nullable().default(null),
+  matched_name: z.string().default(""),
+  confidence: z.enum(["high", "medium", "none"]).default("none"),
+});
+
 const outputSchema = z.object({
   job_title: z.string().default("New Job"),
   customer: z.object({
@@ -25,6 +31,8 @@ const outputSchema = z.object({
     email: z.string().default(""),
     address: z.string().default(""),
   }),
+  customer_match: customerMatchSchema.default({ customer_id: null, matched_name: "", confidence: "none" }),
+  explicit_price: z.number().nullable().default(null),
   recommended_status: z
     .enum(["lead", "quote", "job", "invoice"])
     .default("quote"),
@@ -49,14 +57,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "text is required" }, { status: 400 });
   }
 
-  const { data: presets } = await admin
-    .from("service_presets")
-    .select(
-      "id,service_name,description,price_type,flat_rate,hourly_rate,estimated_hours,unit,tags,category"
-    )
-    .eq("org_id", orgId!)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  const [{ data: presets }, { data: existingCustomers }] = await Promise.all([
+    admin
+      .from("service_presets")
+      .select("id,service_name,description,price_type,flat_rate,hourly_rate,estimated_hours,unit,tags,category")
+      .eq("org_id", orgId!)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    admin
+      .from("customers")
+      .select("id,first_name,last_name,company_name,phone,email")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false })
+      .limit(150),
+  ]);
 
   const hasPresets = presets && presets.length > 0;
 
@@ -75,6 +89,13 @@ export async function POST(req: Request) {
       }))
     : [];
 
+  const customersJson = (existingCustomers ?? []).map((c) => ({
+    id: c.id,
+    name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company_name || "",
+    phone: c.phone ?? "",
+    email: c.email ?? "",
+  }));
+
   const today = new Date().toISOString().slice(0, 10);
 
   const schema = `{
@@ -85,6 +106,12 @@ export async function POST(req: Request) {
     "email": "string or empty string",
     "address": "string or empty string"
   },
+  "customer_match": {
+    "customer_id": "uuid string from existing_customers list, or null if no match",
+    "matched_name": "the name as it appears in the existing_customers list, or empty string",
+    "confidence": "high | medium | none"
+  },
+  "explicit_price": null,
   "recommended_status": "lead | quote | job | invoice",
   "schedule": {
     "date": "YYYY-MM-DD or null",
@@ -105,9 +132,13 @@ export async function POST(req: Request) {
   "warranty_flags": ["payment", "labor-warranty", "parts-warranty", "codes", "permits", "scope", "access", "cancellation"]
 }`;
 
+  const clientMatchRule = customersJson.length > 0
+    ? `CLIENT MATCHING: Search the existing_customers list for the best match to the customer name mentioned. Apply fuzzy matching — nicknames are equivalent (Mike=Michael, Chris=Christopher, Jon=John, Bob=Robert, Bill=William, Jim=James, etc.). Match on full name similarity. Also match on phone or email if provided. Set customer_match.customer_id to the matching id from the list, customer_match.matched_name to their name, and customer_match.confidence to: "high" if it is clearly the same person (exact match or obvious nickname/abbreviation), "medium" if it is probably the same person (partial match), "none" if no reasonable match exists. If confidence is "none", set customer_id to null.`
+    : `CLIENT MATCHING: No existing clients found. Set customer_match to { customer_id: null, matched_name: "", confidence: "none" }.`;
+
   const pricingRule = hasPresets
-    ? `PRICING: When a line item matches a preset: use its id as preset_id, its price as unit_price, its unit as unit, set needs_manual_pricing to false, is_ai_estimate to false. When no preset matches: set preset_id to null, use your knowledge of typical US contractor/trade pricing to estimate a reasonable unit_price (e.g. $150/hr labor, common material costs), set needs_manual_pricing to true and is_ai_estimate to true so the contractor can verify.`
-    : `PRICING: No service presets configured. For every line item, set preset_id to null, use your knowledge of typical US contractor/trade pricing to estimate a reasonable unit_price, set needs_manual_pricing to true and is_ai_estimate to true. Never leave unit_price as null — always provide a reasonable estimate.`;
+    ? `PRICING: IMPORTANT — if the user explicitly states a price or dollar amount (e.g. "for $1200", "1500 dollars", "at $950"), that stated price MUST be used as the unit_price and you MUST set explicit_price to that number — do NOT use the preset price instead. Only use the preset price when NO explicit price is stated by the user. When a line item matches a preset and no explicit price was given: use its id as preset_id, its price as unit_price, its unit as unit, set needs_manual_pricing to false, is_ai_estimate to false. When no preset matches and no explicit price: set preset_id to null, estimate a reasonable unit_price, set needs_manual_pricing to true, is_ai_estimate to true.`
+    : `PRICING: IMPORTANT — if the user explicitly states a price or dollar amount (e.g. "for $1200", "1500 dollars"), that stated price MUST be used as unit_price and you MUST set explicit_price to that number. No service presets configured. For every line item with no explicit price, set preset_id to null, estimate a reasonable unit_price, set needs_manual_pricing to true, is_ai_estimate to true. Never leave unit_price as null.`;
 
   const warrantyRule = `WARRANTY FLAGS: Populate the warranty_flags array with any of these IDs that are relevant based on the job context or explicitly mentioned by the user: "payment" (payment/billing terms), "labor-warranty" (labor/workmanship warranty), "parts-warranty" (parts/materials warranty), "codes" (building code compliance), "permits" (permits required), "scope" (scope of work limits), "access" (site access), "cancellation" (cancellation policy). Include "payment" and "labor-warranty" by default for any quote or invoice. Only include "permits" if permits seem likely for the job type.`;
 
@@ -116,6 +147,7 @@ export async function POST(req: Request) {
       role: "You are an AI job intake assistant for TradeBase, a contractor CRM. Extract structured job information from a contractor's message and return it as JSON.",
       rules: [
         "Return valid JSON only — no markdown, no prose, no explanation.",
+        clientMatchRule,
         pricingRule,
         warrantyRule,
         "Convert relative dates (e.g. 'next Friday', 'tomorrow') to ISO date YYYY-MM-DD relative to today.",
@@ -126,8 +158,9 @@ export async function POST(req: Request) {
       context: {
         today,
         service_presets: hasPresets ? JSON.stringify(presetsJson) : "none",
+        existing_customers: customersJson.length > 0 ? JSON.stringify(customersJson) : "none",
       },
-      task: "Extract job title, customer info, schedule, line items, warranty flags, and a recommended status from the input text.",
+      task: "Extract job title, customer info, schedule, line items, warranty flags, a recommended status, client match, and explicit price from the input text.",
       schema,
     },
     body.text.trim()
@@ -141,7 +174,7 @@ export async function POST(req: Request) {
       model: "gpt-4o-mini",
       messages,
       response_format: { type: "json_object" },
-      max_completion_tokens: 1400,
+      max_completion_tokens: 1600,
     });
     raw = completion.choices[0]?.message?.content ?? "{}";
   } catch (err) {

@@ -16,6 +16,7 @@ const lineItemSchema = z.object({
 
 const bodySchema = z.object({
   type: z.enum(["quote", "job", "invoice"]),
+  existing_customer_id: z.string().nullable().optional(),
   customer: z.object({
     name: z.string(),
     phone: z.string(),
@@ -45,31 +46,44 @@ export async function POST(req: Request) {
 
   const body = bodySchema.parse(await req.json());
 
-  // Split name into first/last
-  const nameParts = body.customer.name.trim().split(/\s+/);
-  const firstName = nameParts[0] ?? "";
-  const lastName = nameParts.slice(1).join(" ");
+  // Use existing customer or create new one
+  let customerId: string;
 
-  // Create customer
-  const { data: customer, error: custErr } = await admin
-    .from("customers")
-    .insert({
-      org_id: orgId!,
-      first_name: firstName,
-      last_name: lastName,
-      phone: body.customer.phone || null,
-      email: body.customer.email || null,
-      address_line1: body.customer.address || null,
-      created_by_user: userId,
-    })
-    .select("id")
-    .single();
+  if (body.existing_customer_id) {
+    // Verify the customer belongs to this org
+    const { data: existing } = await admin
+      .from("customers")
+      .select("id")
+      .eq("id", body.existing_customer_id)
+      .eq("org_id", orgId!)
+      .single();
+    if (!existing) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+    customerId = existing.id;
+  } else {
+    const nameParts = body.customer.name.trim().split(/\s+/);
+    const firstName = nameParts[0] ?? "";
+    const lastName = nameParts.slice(1).join(" ");
 
-  if (custErr || !customer) {
-    return NextResponse.json(
-      { error: "Could not create customer" },
-      { status: 500 }
-    );
+    const { data: newCustomer, error: custErr } = await admin
+      .from("customers")
+      .insert({
+        org_id: orgId!,
+        first_name: firstName,
+        last_name: lastName,
+        phone: body.customer.phone || null,
+        email: body.customer.email || null,
+        address_line1: body.customer.address || null,
+        created_by_user: userId,
+      })
+      .select("id")
+      .single();
+
+    if (custErr || !newCustomer) {
+      return NextResponse.json({ error: "Could not create customer" }, { status: 500 });
+    }
+    customerId = newCustomer.id;
   }
 
   const total = body.quote.line_items.reduce(
