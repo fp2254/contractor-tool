@@ -202,6 +202,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       .eq("org_id", orgId!)
       .eq("customer_id", quote.customer_id ?? "")
       .gt("expires_at", now)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
