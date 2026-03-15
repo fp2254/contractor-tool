@@ -9,6 +9,7 @@ import {
 } from "./actions";
 import { ServicePresetsManager } from "@/components/ServicePresetsManager";
 import { BusinessIdentityForm, type BusinessIdentityData } from "@/components/BusinessIdentityForm";
+import { DefaultWarrantyForm } from "@/components/DefaultWarrantyForm";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -178,6 +179,11 @@ export default async function ProfilePage() {
           </div>
           <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Invoice Defaults</button>
         </form>
+      </Section>
+
+      {/* ── Default Warranty ── */}
+      <Section title="Default Warranty & Terms" emoji="📜">
+        <DefaultWarrantyForm initialText={(s as any).default_warranty_text ?? ""} />
       </Section>
 
       {/* ── Service Presets ── */}

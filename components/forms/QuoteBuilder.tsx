@@ -31,10 +31,12 @@ export type ServicePreset = {
 export function QuoteBuilder({
   customers,
   presets = [],
+  defaultWarrantyText = "",
   onSubmit,
 }: {
   customers: { id: string; name: string }[];
   presets?: ServicePreset[];
+  defaultWarrantyText?: string;
   onSubmit: (payload: QuotePayload) => Promise<void>;
 }) {
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "__new__");
@@ -50,7 +52,7 @@ export function QuoteBuilder({
   });
   const [scopeItems, setScopeItems] = useState<string[]>([""]);
   const [estimatedTime, setEstimatedTime] = useState("");
-  const [warrantyText, setWarrantyText] = useState("");
+  const [warrantyText, setWarrantyText] = useState(defaultWarrantyText);
   const [generatingScope, setGeneratingScope] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 

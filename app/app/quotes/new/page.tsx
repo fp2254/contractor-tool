@@ -6,7 +6,7 @@ export default async function NewQuotePage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: customers }, { data: presets }] = await Promise.all([
+  const [{ data: customers }, { data: presets }, { data: settings }] = await Promise.all([
     admin
       .from("customers")
       .select("id,first_name,last_name,company_name")
@@ -18,6 +18,11 @@ export default async function NewQuotePage() {
       .eq("org_id", orgId!)
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
+    admin
+      .from("org_settings")
+      .select("default_warranty_text")
+      .eq("org_id", orgId!)
+      .maybeSingle(),
   ]);
 
   const customerOptions = (customers ?? []).map((c) => ({
@@ -42,7 +47,11 @@ export default async function NewQuotePage() {
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">New Quote</h1>
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <NewQuoteClient customers={customerOptions} presets={presetOptions} />
+        <NewQuoteClient
+          customers={customerOptions}
+          presets={presetOptions}
+          defaultWarrantyText={(settings as any)?.default_warranty_text ?? ""}
+        />
       </div>
     </div>
   );

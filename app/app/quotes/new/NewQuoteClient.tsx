@@ -13,9 +13,11 @@ export type ServicePreset = {
 export default function NewQuoteClient({
   customers,
   presets,
+  defaultWarrantyText = "",
 }: {
   customers: { id: string; name: string }[];
   presets: ServicePreset[];
+  defaultWarrantyText?: string;
 }) {
   const router = useRouter();
 
@@ -23,6 +25,7 @@ export default function NewQuoteClient({
     <QuoteBuilder
       customers={customers}
       presets={presets}
+      defaultWarrantyText={defaultWarrantyText}
       onSubmit={async (payload: QuotePayload) => {
         const response = await fetch("/app/quotes/new/api", {
           method: "POST",
