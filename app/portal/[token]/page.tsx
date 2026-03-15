@@ -70,14 +70,12 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
     { data: invoices },
     { data: org },
     { data: orgSettings },
-    { count: jobCount },
   ] = await Promise.all([
     admin.from("customers").select("first_name,last_name,company_name,email").eq("id", pt.customer_id).single(),
-    admin.from("quotes").select("id,status,total_amount,notes,scope_items,estimated_time,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
+    admin.from("quotes").select("id,status,total_amount,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("invoices").select("id,status,total_amount,invoice_number,due_date,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
-    admin.from("orgs").select("name,phone,created_at").eq("id", pt.org_id).single(),
-    admin.from("org_settings").select("license_number,insurance_number,primary_phone").eq("org_id", pt.org_id).maybeSingle(),
-    admin.from("jobs").select("id", { count: "exact", head: true }).eq("org_id", pt.org_id),
+    admin.from("orgs").select("name,phone").eq("id", pt.org_id).single(),
+    admin.from("org_settings").select("primary_phone").eq("org_id", pt.org_id).maybeSingle(),
   ]);
 
   if (!customer) return notFound();
@@ -87,197 +85,147 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
   const orgPhone = (orgSettings as Record<string, unknown> | null)?.primary_phone as string | undefined
     ?? (org as Record<string, unknown> | null)?.phone as string | undefined;
 
-  const s = orgSettings as Record<string, unknown> | null;
-  const isLicensed = !!(s?.license_number || s?.insurance_number);
-  const orgCreatedAt = (org as Record<string, unknown> | null)?.created_at as string | undefined;
-  const servingSince = orgCreatedAt ? new Date(orgCreatedAt).getFullYear() : null;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div style={{ backgroundColor: "#1B3A6B" }} className="px-5 py-6">
-        <p className="text-white text-xl font-bold">{businessName}</p>
-        <p className="text-blue-200 text-sm mt-0.5">Customer Portal</p>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div style={{ backgroundColor: "#1B3A6B" }} className="px-5 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-white text-base font-bold leading-tight">{businessName}</p>
+          <p className="text-blue-200 text-xs mt-0.5">Hi {customer.first_name || customerName} — your documents</p>
+        </div>
+        {orgPhone && (
+          <a href={`tel:${orgPhone}`} className="flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-2 text-white text-xs font-semibold">
+            📞 Call us
+          </a>
+        )}
       </div>
 
-      <div className="max-w-lg mx-auto p-4 space-y-5">
-        {/* Welcome card */}
-        <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
-          <p className="text-lg font-bold text-slate-800">Hi {customer.first_name || customerName}</p>
-          <p className="text-sm text-gray-500 mt-1">Here are your documents from {businessName}.</p>
-          {orgPhone && (
-            <p className="text-xs text-gray-400 mt-2">
-              Questions?{" "}
-              <a href={`tel:${orgPhone}`} className="text-[#1B3A6B] font-medium">
-                Call {orgPhone}
-              </a>
-            </p>
-          )}
-        </div>
-
-        {/* Contractor Credibility */}
-        <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">About {businessName}</p>
-          <div className="flex flex-wrap gap-3">
-            {isLicensed && (
-              <div className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
-                <span className="text-green-600 text-base">✓</span>
-                <span className="text-xs font-semibold text-green-800">Licensed & Insured</span>
-              </div>
-            )}
-            {(jobCount ?? 0) > 0 && (
-              <div className="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2">
-                <span className="text-blue-600 text-base">🔧</span>
-                <span className="text-xs font-semibold text-blue-800">{(jobCount ?? 0).toLocaleString()} jobs completed</span>
-              </div>
-            )}
-            {servingSince && (
-              <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-                <span className="text-slate-500 text-base">📅</span>
-                <span className="text-xs font-semibold text-slate-700">Serving since {servingSince}</span>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-6">
 
         {/* Quotes */}
-        {quotes && quotes.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 pt-4 pb-2">
-              Estimates & Quotes
-            </p>
-            <div className="divide-y divide-gray-100">
-              {quotes.map((q) => {
-                const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
-                const canAct = q.status === "draft" || q.status === "sent";
-                const scopeRaw = (q as Record<string, unknown>).scope_items as string | null | undefined;
-                const scopeBullets = scopeRaw ? scopeRaw.split("\n").map(s => s.trim()).filter(Boolean) : [];
-                const estTime = (q as Record<string, unknown>).estimated_time as string | null | undefined;
+        {quotes && quotes.length > 0 && quotes.map((q) => {
+          const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
+          const canAct = q.status === "draft" || q.status === "sent";
+          const pdfUrl = `/api/portal/${token}/quote/${q.id}/pdf`;
+          const quoteNum = `Q-${q.id.slice(0, 8).toUpperCase()}`;
+          const dateStr = new Date(q.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-                return (
-                  <div key={q.id} className="px-5 py-4">
-                    {/* Quote header */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">Quote #{q.id.slice(0, 8).toUpperCase()}</p>
-                        <p className="text-xs text-gray-400">{new Date(q.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                        {q.notes && <p className="text-xs text-gray-500 mt-1">{q.notes}</p>}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xl font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</p>
-                        <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${st.color}`}>{st.label}</span>
-                      </div>
-                    </div>
+          return (
+            <div key={q.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              {/* Quote meta row */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-bold text-slate-800">{quoteNum}</p>
+                  <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${st.color}`}>{st.label}</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-base font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">{dateStr}</p>
+                </div>
+              </div>
 
-                    {/* Scope of Work */}
-                    {scopeBullets.length > 0 && (
-                      <div className="bg-slate-50 rounded-xl px-4 py-3 mb-3">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">What This Includes</p>
-                        <ul className="space-y-1">
-                          {scopeBullets.map((bullet, bi) => (
-                            <li key={bi} className="flex items-start gap-2 text-sm text-slate-700">
-                              <span className="text-green-500 mt-0.5 flex-shrink-0">✓</span>
-                              <span>{bullet}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+              {/* PDF embedded inline */}
+              <iframe
+                src={pdfUrl}
+                className="w-full border-0"
+                style={{ height: "75vh", minHeight: 480 }}
+                title={`Quote ${quoteNum}`}
+              />
 
-                    {/* Estimated Install Time */}
-                    {estTime && (
-                      <div className="flex items-center gap-3 bg-amber-50 rounded-xl px-4 py-2.5 mb-3">
-                        <span className="text-amber-600 text-base">⏱</span>
-                        <div>
-                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Estimated Install Time</p>
-                          <p className="text-sm font-bold text-slate-800">{estTime}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Accept / Decline actions */}
-                    {canAct && (
-                      <div className="space-y-2 mt-3">
-                        <SignatureCapture
-                          token={token}
-                          quoteId={q.id}
-                          quoteNum={`#${q.id.slice(0, 8).toUpperCase()}`}
-                          large
-                        />
-                        <div className="flex gap-2">
-                          <a
-                            href={`/api/portal/${token}/quote/${q.id}/pdf`}
-                            className="flex-1 text-center rounded-xl border border-gray-200 py-2.5 text-xs font-semibold text-slate-600 bg-gray-50"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Download PDF
-                          </a>
-                          <form action={declineQuote} className="flex-1">
-                            <input type="hidden" name="token" value={token} />
-                            <input type="hidden" name="quote_id" value={q.id} />
-                            <button
-                              type="submit"
-                              className="w-full rounded-xl py-2.5 text-xs font-semibold text-red-500 border border-red-200 bg-red-50">
-                              Decline
-                            </button>
-                          </form>
-                        </div>
-                        <p className="text-xs text-gray-400 text-center">
-                          Accepting this quote authorizes work to proceed. Your signature is recorded.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Already actioned — just show PDF */}
-                    {!canAct && (
+              {/* Actions */}
+              <div className="px-5 py-4 space-y-3 border-t border-gray-100">
+                {canAct ? (
+                  <>
+                    <SignatureCapture
+                      token={token}
+                      quoteId={q.id}
+                      quoteNum={`#${q.id.slice(0, 8).toUpperCase()}`}
+                      large
+                    />
+                    <div className="flex gap-2">
                       <a
-                        href={`/api/portal/${token}/quote/${q.id}/pdf`}
-                        className="mt-3 block text-center rounded-xl border border-gray-200 py-2 text-xs font-semibold text-slate-600 bg-gray-50"
+                        href={pdfUrl}
+                        download={`${quoteNum}.pdf`}
+                        className="flex-1 text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         Download PDF
                       </a>
-                    )}
-                  </div>
-                );
-              })}
+                      <form action={declineQuote} className="flex-1">
+                        <input type="hidden" name="token" value={token} />
+                        <input type="hidden" name="quote_id" value={q.id} />
+                        <button
+                          type="submit"
+                          className="w-full rounded-xl py-3 text-sm font-semibold text-red-500 border border-red-200 bg-red-50">
+                          Decline
+                        </button>
+                      </form>
+                    </div>
+                    <p className="text-xs text-gray-400 text-center">
+                      Accepting this quote authorizes work to proceed. Your signature is recorded.
+                    </p>
+                  </>
+                ) : (
+                  <a
+                    href={pdfUrl}
+                    download={`${quoteNum}.pdf`}
+                    className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Download PDF
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })}
 
         {/* Invoices */}
         {invoices && invoices.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 pt-4 pb-2">
-              Invoices
-            </p>
-            <div className="divide-y divide-gray-100">
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Invoices</p>
+            <div className="space-y-4">
               {invoices.map((inv) => {
                 const st = INV_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-600" };
                 const dueDate = inv.due_date
                   ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
                   : null;
+                const pdfUrl = `/api/portal/${token}/invoice/${inv.id}/pdf`;
+                const invNum = inv.invoice_number ?? `#${inv.id.slice(0, 8).toUpperCase()}`;
+
                 return (
-                  <div key={inv.id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">{inv.invoice_number ?? `#${inv.id.slice(0,8).toUpperCase()}`}</p>
-                        {dueDate && <p className="text-xs text-gray-400">Due {dueDate}</p>}
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-base font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</p>
+                  <div key={inv.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm font-bold text-slate-800">{invNum}</p>
                         <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${st.color}`}>{st.label}</span>
                       </div>
+                      <div className="text-right">
+                        <p className="text-base font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</p>
+                        {dueDate && <p className="text-xs text-gray-400">Due {dueDate}</p>}
+                      </div>
                     </div>
-                    <a
-                      href={`/api/portal/${token}/invoice/${inv.id}/pdf`}
-                      className="block text-center rounded-xl border border-gray-200 py-2 text-xs font-semibold text-slate-600 bg-gray-50"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Download PDF
-                    </a>
+
+                    <iframe
+                      src={pdfUrl}
+                      className="w-full border-0"
+                      style={{ height: "75vh", minHeight: 480 }}
+                      title={`Invoice ${invNum}`}
+                    />
+
+                    <div className="px-5 py-4 border-t border-gray-100">
+                      <a
+                        href={pdfUrl}
+                        download={`${invNum}.pdf`}
+                        className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Download PDF
+                      </a>
+                    </div>
                   </div>
                 );
               })}
