@@ -29,21 +29,20 @@ export function WarrantySection({
 }) {
   const biz = businessWarrantyText.trim();
 
-  // Parse standard clauses, then strip business warranty text from the custom remainder
+  // Parse standard clauses; always strip biz from the remainder so it doesn't appear twice
   const initParsed = (() => {
     const { ids, custom: rawCustom } = parseWarrantyParts(value);
-    const custom = biz && rawCustom.includes(biz)
-      ? rawCustom.replace(biz, "").trim()
+    const custom = biz
+      ? rawCustom.split(biz).join("").trim()
       : rawCustom;
     return { ids, custom };
   })();
 
   const [checked, setChecked] = useState<Set<string>>(() => new Set(initParsed.ids));
   const [custom, setCustom] = useState(initParsed.custom);
-  const [businessChecked, setBusinessChecked] = useState(() => !!biz && value.includes(biz));
-  const [open, setOpen] = useState(
-    initParsed.ids.length > 0 || !!initParsed.custom.trim() || (!!biz && value.includes(biz))
-  );
+  // Always start checked whenever a business warranty exists — no fragile string-includes
+  const [businessChecked, setBusinessChecked] = useState(!!biz);
+  const [open, setOpen] = useState(!!biz || initParsed.ids.length > 0 || !!initParsed.custom.trim());
 
   function toggleClause(id: string) {
     setChecked((prev) => {

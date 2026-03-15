@@ -295,6 +295,8 @@ export async function POST(req: Request) {
     ? { customer_id: matchedCustomerData.id, matched_name: matchedCustomerData.name, confidence: matchConfidence }
     : { customer_id: null, matched_name: "", confidence: "none" as const };
 
+  console.log("[capture] aiPhone:", aiPhone, "| match:", matchedCustomerData?.name ?? "none", "| conf:", matchConfidence);
+
   return NextResponse.json({
     ...parsed,
     customer_match: patchedCustomerMatch,

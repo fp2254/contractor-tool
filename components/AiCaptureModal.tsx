@@ -201,13 +201,13 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
       const d = toDraft(json as CaptureResponse);
       setDraft(d);
 
-      // Fetch warranty fresh right now — guaranteed before review screen renders
-      let freshWarranty = liveDefaultWarranty;
+      // Fetch warranty fresh — fall back to prop value if fetch fails or returns empty
+      let freshWarranty = liveDefaultWarranty || defaultWarrantyText;
       try {
         const wr = await fetch("/api/profile/warranty");
         if (wr.ok) {
           const wj = await wr.json() as { default_warranty_text?: string };
-          freshWarranty = wj.default_warranty_text ?? "";
+          freshWarranty = wj.default_warranty_text || liveDefaultWarranty || defaultWarrantyText;
           setLiveDefaultWarranty(freshWarranty);
         }
       } catch { /* keep whatever we had */ }
