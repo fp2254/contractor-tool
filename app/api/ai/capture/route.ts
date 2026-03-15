@@ -96,7 +96,8 @@ export async function POST(req: Request) {
   // (has address_line1), otherwise keep the first (most recent — already sorted by created_at DESC).
   // This prevents the AI from seeing 3 "Tabitha Boscher" rows and picking one with no address
   // when a better-filled record (e.g. "Tabitha Boucher" with the same number) also exists.
-  const seenPhones = new Map<string, typeof (existingCustomers ?? [])[number]>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const seenPhones = new Map<string, any>();
   for (const c of (existingCustomers ?? [])) {
     const phone = digitsOnly(c.phone ?? "");
     if (!phone) continue;
