@@ -17,6 +17,7 @@ const lineItemSchema = z.object({
 const bodySchema = z.object({
   type: z.enum(["quote", "job", "invoice"]),
   existing_customer_id: z.string().nullable().optional(),
+  warranty_text: z.string().nullable().optional(),
   customer: z.object({
     name: z.string(),
     phone: z.string(),
@@ -186,6 +187,8 @@ export async function POST(req: Request) {
       dueDate.getDate() + (org?.default_payment_terms_days ?? 14)
     );
 
+    const invoiceNotes = body.job.notes || body.quote.notes || null;
+
     const { data: invoice, error } = await admin
       .from("invoices")
       .insert({
@@ -195,8 +198,9 @@ export async function POST(req: Request) {
         total_amount: total,
         invoice_number: `INV-${Date.now()}`,
         due_date: dueDate.toISOString(),
+        notes: invoiceNotes,
         created_by_user: userId,
-      })
+      } as Record<string, unknown>)
       .select("id")
       .single();
 
@@ -218,6 +222,18 @@ export async function POST(req: Request) {
         ...(i.preset_id ? { preset_id: i.preset_id } : {}),
       }))
     );
+
+    // Store warranty as a special note so the invoice page's warranty section picks it up
+    const warrantyText = body.warranty_text;
+    if (warrantyText) {
+      await admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "invoice",
+        entity_id: invoice.id,
+        body: `__warranty__:${warrantyText}`,
+        created_by: userId,
+      });
+    }
 
     return NextResponse.json({ type: "invoice", id: invoice.id });
   }

@@ -52,9 +52,11 @@ function toDraft(ai: CaptureResponse): Draft {
     ? { ...match, confidence: ai.customer_match?.confidence ?? "none" }
     : null;
 
-  const useMatch = !!matchedCustomer && matchedCustomer.confidence === "high";
+  const hasMatch = !!matchedCustomer && matchedCustomer.confidence !== "none";
+  const useMatch = hasMatch;
 
-  const customer = useMatch && matchedCustomer
+  // Pre-fill from DB record for any confidence level — fields will be editable and banner gives user control
+  const customer = hasMatch && matchedCustomer
     ? { name: matchedCustomer.name, phone: matchedCustomer.phone, email: matchedCustomer.email, address: matchedCustomer.address }
     : { name: ai.customer.name, phone: ai.customer.phone, email: ai.customer.email, address: ai.customer.address };
 
@@ -225,7 +227,8 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
     setError("");
     setCreating(type);
 
-    const combinedNotes = [draft.notes.trim(), warrantyText.trim()].filter(Boolean).join("\n\n");
+    const notesOnly = draft.notes.trim();
+    const combinedNotes = [notesOnly, warrantyText.trim()].filter(Boolean).join("\n\n");
     const existingCustomerId = draft.useMatchedCustomer && draft.matchedCustomer ? draft.matchedCustomer.id : null;
 
     try {
@@ -235,6 +238,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
         body: JSON.stringify({
           type,
           existing_customer_id: existingCustomerId,
+          warranty_text: warrantyText.trim() || null,
           customer: draft.customer,
           job: {
             title: draft.job_title,
@@ -400,44 +404,39 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
 
               {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
-              {/* Customer match banner */}
-              {draft.matchedCustomer && draft.matchedCustomer.confidence !== "none" && (
-                <div className={`rounded-xl px-4 py-3 space-y-2 ${
-                  draft.useMatchedCustomer ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+              {/* Customer match banner — shown when we pre-filled from an existing record */}
+              {draft.matchedCustomer && draft.matchedCustomer.confidence !== "none" && draft.useMatchedCustomer && (
+                <div className={`rounded-xl px-4 py-3 ${
+                  draft.matchedCustomer.confidence === "high"
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-amber-50 border border-amber-200"
                 }`}>
-                  {draft.useMatchedCustomer ? (
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-green-800">
-                          ✓ Linked to existing client
-                        </p>
-                        <p className="text-xs text-green-700 mt-0.5">{draft.matchedCustomer.name}</p>
-                      </div>
-                      <button
-                        onClick={rejectMatch}
-                        className="text-xs text-green-600 underline whitespace-nowrap mt-0.5">
-                        Create new
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-xs font-semibold text-amber-800 mb-1.5">
-                        {draft.matchedCustomer.confidence === "high" ? "Existing client found:" : "Did you mean:"}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-xs font-semibold mb-0.5 ${
+                        draft.matchedCustomer.confidence === "high" ? "text-green-800" : "text-amber-800"
+                      }`}>
+                        {draft.matchedCustomer.confidence === "high"
+                          ? "✓ Filled from existing client record"
+                          : "⚠ Possible match — please verify"}
                       </p>
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-bold text-amber-900">{draft.matchedCustomer.name}</p>
-                          {draft.matchedCustomer.phone && <p className="text-xs text-amber-700">{draft.matchedCustomer.phone}</p>}
-                          {draft.matchedCustomer.address && <p className="text-xs text-amber-700">{draft.matchedCustomer.address}</p>}
-                        </div>
-                        <button
-                          onClick={acceptMatch}
-                          className="flex-shrink-0 bg-amber-600 text-white text-xs font-semibold rounded-lg px-3 py-2">
-                          Use This Client
-                        </button>
-                      </div>
+                      <p className={`text-sm font-bold ${
+                        draft.matchedCustomer.confidence === "high" ? "text-green-900" : "text-amber-900"
+                      }`}>{draft.matchedCustomer.name}</p>
+                      {draft.matchedCustomer.address && (
+                        <p className={`text-xs mt-0.5 ${
+                          draft.matchedCustomer.confidence === "high" ? "text-green-700" : "text-amber-700"
+                        }`}>{draft.matchedCustomer.address}</p>
+                      )}
                     </div>
-                  )}
+                    <button
+                      onClick={rejectMatch}
+                      className={`flex-shrink-0 text-xs underline whitespace-nowrap mt-0.5 ${
+                        draft.matchedCustomer.confidence === "high" ? "text-green-600" : "text-amber-700"
+                      }`}>
+                      Create new instead
+                    </button>
+                  </div>
                 </div>
               )}
 
