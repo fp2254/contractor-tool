@@ -89,10 +89,13 @@ export async function POST(req: Request) {
       }))
     : [];
 
+  // Normalize phones to digits-only so AI can match regardless of formatting ("207-432-3368" == "2074323368")
+  function digitsOnly(s: string) { return (s ?? "").replace(/\D/g, ""); }
+
   const customersJson = (existingCustomers ?? []).map((c) => ({
     id: c.id,
     name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company_name || "",
-    phone: c.phone ?? "",
+    phone: digitsOnly(c.phone ?? ""),
     email: c.email ?? "",
   }));
 
@@ -133,7 +136,7 @@ export async function POST(req: Request) {
 }`;
 
   const clientMatchRule = customersJson.length > 0
-    ? `CLIENT MATCHING: Search the existing_customers list for the best match to the customer name mentioned. Apply fuzzy matching — nicknames are equivalent (Mike=Michael, Chris=Christopher, Jon=John, Bob=Robert, Bill=William, Jim=James, etc.). Match on full name similarity. Also match on phone or email if provided. Set customer_match.customer_id to the matching id from the list, customer_match.matched_name to their name, and customer_match.confidence to: "high" if it is clearly the same person (exact match or obvious nickname/abbreviation), "medium" if it is probably the same person (partial match), "none" if no reasonable match exists. If confidence is "none", set customer_id to null.`
+    ? `CLIENT MATCHING: Search the existing_customers list for the best match to the customer name mentioned. Apply fuzzy matching — nicknames are equivalent (Mike=Michael, Chris=Christopher, Jon=John, Bob=Robert, Bill=William, Jim=James, etc.). Match on full name similarity. Phone numbers in the list are digits-only — compare them digits-only too (strip spaces, dashes, parentheses). If the extracted phone digits match a customer's phone digits exactly, that is a HIGH confidence match regardless of name similarity. Also match on email if provided. Set customer_match.customer_id to the matching id from the list, customer_match.matched_name to their name, and customer_match.confidence to: "high" if it is clearly the same person (exact phone/email match, or exact/obvious name match), "medium" if it is probably the same person (partial name match), "none" if no reasonable match exists. If confidence is "none", set customer_id to null.`
     : `CLIENT MATCHING: No existing clients found. Set customer_match to { customer_id: null, matched_name: "", confidence: "none" }.`;
 
   const pricingRule = hasPresets

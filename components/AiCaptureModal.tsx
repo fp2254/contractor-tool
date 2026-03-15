@@ -99,6 +99,10 @@ declare global {
 
 export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyText?: string }) {
   const router = useRouter();
+  // Extract the custom (non-standard-clause) portion of the saved business warranty so it
+  // can be shown as a dedicated "My Business Terms" checkbox in WarrantySection
+  const businessCustomText = parseWarrantyParts(defaultWarrantyText).custom;
+
   const [step, setStep] = useState<Step>("closed");
   const [text, setText] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -612,6 +616,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
                 <WarrantySection
                   value={warrantyText}
                   onChange={setWarrantyText}
+                  businessWarrantyText={businessCustomText}
                 />
               </div>
 
