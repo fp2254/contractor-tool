@@ -11,6 +11,7 @@ interface ShareCardProps {
   customerId: string;
   portalToken: string | null;
   orgName: string;
+  entityNumber?: string;
 }
 
 export function ShareCard({
@@ -22,6 +23,7 @@ export function ShareCard({
   customerId,
   portalToken: initialPortalToken,
   orgName,
+  entityNumber,
 }: ShareCardProps) {
   const [portalToken, setPortalToken] = useState<string | null>(initialPortalToken);
   const [textLoading, setTextLoading] = useState(false);
@@ -37,9 +39,10 @@ export function ShareCard({
 
   function buildSmsMessage(token: string | null) {
     const portalUrl = token ? buildPortalUrl(token) : null;
+    const ref = entityNumber ? ` ${entityNumber}` : "";
     return portalUrl
-      ? `Hi ${firstName}, your ${label.toLowerCase()} from ${orgName} is ready. View and approve it here: ${portalUrl}`
-      : `Hi ${firstName}, your ${label.toLowerCase()} from ${orgName} is ready. Give us a call to go over the details!`;
+      ? `Hi ${firstName}, your ${label.toLowerCase()}${ref} from ${orgName} is ready. View and approve it here: ${portalUrl}`
+      : `Hi ${firstName}, your ${label.toLowerCase()}${ref} from ${orgName} is ready. Give us a call to go over the details!`;
   }
 
   function buildEmailMessage(token: string | null) {
