@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       .from("quotes")
       .insert({
         org_id: orgId!,
-        customer_id: customer.id,
+        customer_id: customerId,
         status: "draft",
         total_amount: total,
         notes: body.job.notes || body.quote.notes || null,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       .from("jobs")
       .insert({
         org_id: orgId!,
-        customer_id: customer.id,
+        customer_id: customerId,
         job_title: body.job.title,
         status: "scheduled",
         address: body.customer.address || null,
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
       .from("invoices")
       .insert({
         org_id: orgId!,
-        customer_id: customer.id,
+        customer_id: customerId,
         status: "unpaid",
         total_amount: total,
         invoice_number: `INV-${Date.now()}`,

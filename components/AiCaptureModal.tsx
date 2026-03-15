@@ -4,9 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AiCaptureOutput } from "@/app/api/ai/capture/route";
 import { WarrantySection } from "@/components/WarrantySection";
+import { parseWarrantyParts, buildWarrantyText } from "@/lib/warrantyUtils";
 
 type Step = "closed" | "input" | "loading" | "review" | "creating";
 type RecStatus = "lead" | "quote" | "job" | "invoice";
+
+type MatchedCustomer = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  confidence: "high" | "medium" | "none";
+};
 
 type LineItem = {
   preset_id: string | null;
@@ -28,12 +38,29 @@ type Draft = {
   recommended_status: RecStatus;
   lineItems: LineItem[];
   warrantyFlags: string[];
+  matchedCustomer: MatchedCustomer | null;
+  useMatchedCustomer: boolean;
 };
 
-function toDraft(ai: AiCaptureOutput): Draft {
+type CaptureResponse = AiCaptureOutput & {
+  matched_customer_data: MatchedCustomer | null;
+};
+
+function toDraft(ai: CaptureResponse): Draft {
+  const match = ai.matched_customer_data ?? null;
+  const matchedCustomer: MatchedCustomer | null = match
+    ? { ...match, confidence: ai.customer_match?.confidence ?? "none" }
+    : null;
+
+  const useMatch = !!matchedCustomer && matchedCustomer.confidence === "high";
+
+  const customer = useMatch && matchedCustomer
+    ? { name: matchedCustomer.name, phone: matchedCustomer.phone, email: matchedCustomer.email, address: matchedCustomer.address }
+    : { name: ai.customer.name, phone: ai.customer.phone, email: ai.customer.email, address: ai.customer.address };
+
   return {
     job_title: ai.job_title,
-    customer: { name: ai.customer.name, phone: ai.customer.phone, email: ai.customer.email, address: ai.customer.address },
+    customer,
     scheduled_date: ai.schedule.date ?? "",
     time_window: ai.schedule.time_window ?? "",
     notes: ai.notes ?? "",
@@ -49,6 +76,8 @@ function toDraft(ai: AiCaptureOutput): Draft {
       selected: true,
     })),
     warrantyFlags: ai.warranty_flags ?? [],
+    matchedCustomer,
+    useMatchedCustomer: useMatch,
   };
 }
 
@@ -59,7 +88,6 @@ const STATUS_META: Record<RecStatus, { label: string; emoji: string; color: stri
   invoice: { label: "Invoice", emoji: "💰", color: "#F97316" },
 };
 
-// Web Speech API types
 declare global {
   interface Window {
     SpeechRecognition: new () => SpeechRecognition;
@@ -67,16 +95,15 @@ declare global {
   }
 }
 
-export function AiCaptureModal() {
+export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyText?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("closed");
   const [text, setText] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<string | null>(null);
-  const [warrantyText, setWarrantyText] = useState("");
+  const [warrantyText, setWarrantyText] = useState(defaultWarrantyText);
 
-  // Voice recognition
   const [listening, setListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -93,11 +120,8 @@ export function AiCaptureModal() {
     rec.continuous = false;
     rec.interimResults = true;
     rec.lang = "en-US";
-
     let finalTranscript = "";
-
     rec.onstart = () => setListening(true);
-
     rec.onresult = (e: SpeechRecognitionEvent) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -107,17 +131,8 @@ export function AiCaptureModal() {
       }
       setText((prev) => (prev.trim() ? prev.trimEnd() + " " + (finalTranscript || interim).trim() : (finalTranscript || interim).trim()));
     };
-
-    rec.onerror = () => {
-      setListening(false);
-      setError("Microphone error — check browser permissions and try again.");
-    };
-
-    rec.onend = () => {
-      setListening(false);
-      recognitionRef.current = null;
-    };
-
+    rec.onerror = () => { setListening(false); setError("Microphone error — check browser permissions and try again."); };
+    rec.onend = () => { setListening(false); recognitionRef.current = null; };
     recognitionRef.current = rec;
     rec.start();
   }
@@ -131,7 +146,7 @@ export function AiCaptureModal() {
     setText("");
     setError("");
     setDraft(null);
-    setWarrantyText("");
+    setWarrantyText(defaultWarrantyText);
     setStep("input");
   }
 
@@ -167,9 +182,14 @@ export function AiCaptureModal() {
         setStep("input");
         return;
       }
-      const d = toDraft(json as AiCaptureOutput);
+      const d = toDraft(json as CaptureResponse);
       setDraft(d);
-      setWarrantyText("");
+
+      // Merge AI-suggested warranty flags with the org's default warranty text
+      const { ids: defaultIds, custom: defaultCustom } = parseWarrantyParts(defaultWarrantyText);
+      const mergedIds = new Set([...defaultIds, ...(d.warrantyFlags ?? [])]);
+      setWarrantyText(buildWarrantyText(mergedIds, defaultCustom));
+
       setStep("review");
     } catch {
       setError("Network error — please try again");
@@ -177,13 +197,25 @@ export function AiCaptureModal() {
     }
   }
 
+  function acceptMatch() {
+    if (!draft?.matchedCustomer) return;
+    const m = draft.matchedCustomer;
+    setDraft((d) => d ? {
+      ...d,
+      useMatchedCustomer: true,
+      customer: { name: m.name, phone: m.phone, email: m.email, address: m.address },
+    } : d);
+  }
+
+  function rejectMatch() {
+    setDraft((d) => d ? { ...d, useMatchedCustomer: false } : d);
+  }
+
   async function createRecord(type: "quote" | "job" | "invoice") {
     if (!draft) return;
 
     const selectedItems = draft.lineItems.filter((i) => i.selected);
-    const missingPrice = selectedItems.filter(
-      (i) => i.unit_price === null || i.unit_price === 0
-    ).length;
+    const missingPrice = selectedItems.filter((i) => i.unit_price === null || i.unit_price === 0).length;
 
     if (missingPrice > 0) {
       setError(`${missingPrice} item${missingPrice > 1 ? "s need" : " needs"} a price before saving. Fill in the highlighted fields.`);
@@ -194,6 +226,7 @@ export function AiCaptureModal() {
     setCreating(type);
 
     const combinedNotes = [draft.notes.trim(), warrantyText.trim()].filter(Boolean).join("\n\n");
+    const existingCustomerId = draft.useMatchedCustomer && draft.matchedCustomer ? draft.matchedCustomer.id : null;
 
     try {
       const res = await fetch("/api/ai/create", {
@@ -201,6 +234,7 @@ export function AiCaptureModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type,
+          existing_customer_id: existingCustomerId,
           customer: draft.customer,
           job: {
             title: draft.job_title,
@@ -243,18 +277,14 @@ export function AiCaptureModal() {
   }
 
   function updateItem(i: number, field: keyof LineItem, value: string | number | boolean | null) {
-    setDraft((d) =>
-      d ? { ...d, lineItems: d.lineItems.map((item, idx) => idx === i ? { ...item, [field]: value } : item) } : d
-    );
+    setDraft((d) => d ? { ...d, lineItems: d.lineItems.map((item, idx) => idx === i ? { ...item, [field]: value } : item) } : d);
   }
 
   function addItem() {
-    setDraft((d) =>
-      d ? {
-        ...d,
-        lineItems: [...d.lineItems, { preset_id: null, description: "", qty: 1, unit: "each", unit_price: null, needs_manual_pricing: true, is_ai_estimate: false, selected: true }],
-      } : d
-    );
+    setDraft((d) => d ? {
+      ...d,
+      lineItems: [...d.lineItems, { preset_id: null, description: "", qty: 1, unit: "each", unit_price: null, needs_manual_pricing: true, is_ai_estimate: false, selected: true }],
+    } : d);
   }
 
   function removeItem(i: number) {
@@ -318,9 +348,7 @@ export function AiCaptureModal() {
                     onPointerLeave={stopListening}
                     disabled={step === "loading"}
                     className={`absolute right-3 bottom-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-                      listening
-                        ? "bg-red-500 text-white animate-pulse"
-                        : "bg-gray-100 text-gray-500 active:bg-blue-100 active:text-[#1B3A6B]"
+                      listening ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 text-gray-500 active:bg-blue-100 active:text-[#1B3A6B]"
                     }`}
                     title="Hold to speak">
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -372,10 +400,51 @@ export function AiCaptureModal() {
 
               {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
-              {/* Customer */}
+              {/* Customer match banner */}
+              {draft.matchedCustomer && draft.matchedCustomer.confidence !== "none" && (
+                <div className={`rounded-xl px-4 py-3 space-y-2 ${
+                  draft.useMatchedCustomer ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"
+                }`}>
+                  {draft.useMatchedCustomer ? (
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">
+                          ✓ Linked to existing client
+                        </p>
+                        <p className="text-xs text-green-700 mt-0.5">{draft.matchedCustomer.name}</p>
+                      </div>
+                      <button
+                        onClick={rejectMatch}
+                        className="text-xs text-green-600 underline whitespace-nowrap mt-0.5">
+                        Create new
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800 mb-1.5">
+                        {draft.matchedCustomer.confidence === "high" ? "Existing client found:" : "Did you mean:"}
+                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-amber-900">{draft.matchedCustomer.name}</p>
+                          {draft.matchedCustomer.phone && <p className="text-xs text-amber-700">{draft.matchedCustomer.phone}</p>}
+                          {draft.matchedCustomer.address && <p className="text-xs text-amber-700">{draft.matchedCustomer.address}</p>}
+                        </div>
+                        <button
+                          onClick={acceptMatch}
+                          className="flex-shrink-0 bg-amber-600 text-white text-xs font-semibold rounded-lg px-3 py-2">
+                          Use This Client
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Customer fields */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</p>
-                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className={`rounded-xl p-3 space-y-2 ${draft.useMatchedCustomer ? "bg-green-50" : "bg-gray-50"}`}>
                   <input
                     value={draft.customer.name}
                     onChange={(e) => setDraft((d) => d ? { ...d, customer: { ...d.customer, name: e.target.value } } : d)}
@@ -476,7 +545,6 @@ export function AiCaptureModal() {
                           <button onClick={() => removeItem(i)} className="text-red-400 text-lg leading-none px-1 flex-shrink-0">×</button>
                         </div>
 
-                        {/* Pricing row */}
                         <div className="grid grid-cols-3 gap-2 pl-6">
                           <div className="flex items-center gap-1">
                             <span className="text-xs text-gray-400">Qty</span>
@@ -511,7 +579,6 @@ export function AiCaptureModal() {
                           />
                         </div>
 
-                        {/* Badge */}
                         <div className="pl-6 flex items-center justify-between">
                           {item.preset_id ? (
                             <span className="text-xs text-blue-600 font-medium">✓ From your price sheet</span>
@@ -533,7 +600,6 @@ export function AiCaptureModal() {
                   </button>
                 </div>
 
-                {/* Total */}
                 <div className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
                   <span className="text-white text-sm font-semibold">Selected Total</span>
                   <span className="text-white text-lg font-bold">
@@ -542,12 +608,11 @@ export function AiCaptureModal() {
                 </div>
               </div>
 
-              {/* Warranty / Terms — AI pre-selects relevant clauses */}
+              {/* Warranty / Terms */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <WarrantySection
                   value={warrantyText}
                   onChange={setWarrantyText}
-                  initialChecked={draft.warrantyFlags}
                 />
               </div>
 

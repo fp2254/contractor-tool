@@ -11,12 +11,15 @@ export default async function DashboardPage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [leads, jobs, invoices, quotes] = await Promise.all([
+  const [leads, jobs, invoices, quotes, orgSettings] = await Promise.all([
     admin.from("leads").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "new"),
     admin.from("jobs").select("id,scheduled_date,status", { count: "exact" }).eq("org_id", orgId!),
     admin.from("invoices").select("id,status,total_amount").eq("org_id", orgId!),
     admin.from("quotes").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "sent"),
+    admin.from("org_settings").select("default_warranty_text").eq("org_id", orgId!).maybeSingle(),
   ]);
+
+  const defaultWarrantyText = (orgSettings.data as { default_warranty_text?: string } | null)?.default_warranty_text ?? "";
 
   const today = new Date().toISOString().slice(0, 10);
   const jobsTodayCount = jobs.data?.filter(j => j.scheduled_date === today).length ?? 0;
@@ -104,7 +107,7 @@ export default async function DashboardPage() {
           ))}
         </div>
         <PermitAssistant />
-        <AiCaptureModal />
+        <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
       </div>
     </div>
   );

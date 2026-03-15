@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       .order("sort_order", { ascending: true }),
     admin
       .from("customers")
-      .select("id,first_name,last_name,company_name,phone,email")
+      .select("id,first_name,last_name,company_name,phone,email,address_line1,address_line2,city,state,zip")
       .eq("org_id", orgId!)
       .order("created_at", { ascending: false })
       .limit(150),
@@ -195,5 +195,24 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json(parsed);
+  // Attach full matched customer data (address, phone, email) from our already-loaded list
+  let matchedCustomerData: { id: string; name: string; phone: string; email: string; address: string } | null = null;
+  const matchId = parsed.customer_match?.customer_id;
+  if (matchId && parsed.customer_match?.confidence !== "none") {
+    const found = (existingCustomers ?? []).find((c) => c.id === matchId);
+    if (found) {
+      const addressParts = [found.address_line1, found.address_line2, found.city, found.state, found.zip]
+        .filter(Boolean)
+        .join(", ");
+      matchedCustomerData = {
+        id: found.id,
+        name: [found.first_name, found.last_name].filter(Boolean).join(" ") || found.company_name || "",
+        phone: found.phone ?? "",
+        email: found.email ?? "",
+        address: addressParts,
+      };
+    }
+  }
+
+  return NextResponse.json({ ...parsed, matched_customer_data: matchedCustomerData });
 }
