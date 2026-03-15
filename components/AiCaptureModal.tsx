@@ -201,8 +201,19 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
       const d = toDraft(json as CaptureResponse);
       setDraft(d);
 
-      // Merge AI-suggested warranty flags with the org's default warranty text (always fresh)
-      const { ids: defaultIds, custom: defaultCustom } = parseWarrantyParts(liveDefaultWarranty);
+      // Fetch warranty fresh right now — guaranteed before review screen renders
+      let freshWarranty = liveDefaultWarranty;
+      try {
+        const wr = await fetch("/api/profile/warranty");
+        if (wr.ok) {
+          const wj = await wr.json() as { default_warranty_text?: string };
+          freshWarranty = wj.default_warranty_text ?? "";
+          setLiveDefaultWarranty(freshWarranty);
+        }
+      } catch { /* keep whatever we had */ }
+
+      // Merge AI-suggested warranty flags with the org's default warranty text
+      const { ids: defaultIds, custom: defaultCustom } = parseWarrantyParts(freshWarranty);
       const mergedIds = new Set([...defaultIds, ...(d.warrantyFlags ?? [])]);
       setWarrantyText(buildWarrantyText(mergedIds, defaultCustom));
 

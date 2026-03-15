@@ -219,24 +219,85 @@ export async function POST(req: Request) {
     );
   }
 
-  // Attach full matched customer data (address, phone, email) from our already-loaded list
+  // Server-side customer matching — deterministic, not dependent on AI behaviour.
+  // Priority: 1) exact phone match, 2) AI name match, 3) no match.
+  function buildMatchData(c: typeof deduped[0]) {
+    const addressParts = [c.address_line1, c.address_line2, c.city, c.state, c.zip]
+      .filter(Boolean)
+      .join(", ");
+    return {
+      id: c.id,
+      name: [c.first_name, c.last_name].filter(Boolean).join(" ") || (c as any).company_name || "",
+      phone: c.phone ?? "",
+      email: c.email ?? "",
+      address: addressParts,
+    };
+  }
+
   let matchedCustomerData: { id: string; name: string; phone: string; email: string; address: string } | null = null;
-  const matchId = parsed.customer_match?.customer_id;
-  if (matchId && parsed.customer_match?.confidence !== "none") {
-    const found = deduped.find((c) => c.id === matchId);
-    if (found) {
-      const addressParts = [found.address_line1, found.address_line2, found.city, found.state, found.zip]
-        .filter(Boolean)
-        .join(", ");
-      matchedCustomerData = {
-        id: found.id,
-        name: [found.first_name, found.last_name].filter(Boolean).join(" ") || found.company_name || "",
-        phone: found.phone ?? "",
-        email: found.email ?? "",
-        address: addressParts,
-      };
+  let matchConfidence: "high" | "medium" | "none" = "none";
+
+  // 1. Phone match (highest priority — exact and reliable)
+  const aiPhone = digitsOnly((parsed as any).customer?.phone ?? "");
+  if (aiPhone) {
+    const phoneMatch = deduped.find((c) => digitsOnly(c.phone ?? "") === aiPhone);
+    if (phoneMatch) {
+      matchedCustomerData = buildMatchData(phoneMatch);
+      matchConfidence = "high";
     }
   }
 
-  return NextResponse.json({ ...parsed, matched_customer_data: matchedCustomerData });
+  // 2. Fall back to AI's name-based match
+  if (!matchedCustomerData) {
+    const matchId = parsed.customer_match?.customer_id;
+    const aiConf = parsed.customer_match?.confidence;
+    if (matchId && aiConf && aiConf !== "none") {
+      const found = deduped.find((c) => c.id === matchId);
+      if (found) {
+        matchedCustomerData = buildMatchData(found);
+        matchConfidence = aiConf as "high" | "medium";
+      }
+    }
+  }
+
+  // 3. Server-side name match fallback (catches cases AI misses)
+  if (!matchedCustomerData) {
+    const aiName = ((parsed as any).customer?.name ?? "").trim().toLowerCase();
+    if (aiName.length >= 3) {
+      const firstName = aiName.split(/\s+/)[0] ?? "";
+      // Score each deduped customer by how much their name overlaps with the AI-extracted name
+      let bestScore = 0;
+      let bestCustomer = null as typeof deduped[0] | null;
+      for (const c of deduped) {
+        const dbName = [c.first_name, c.last_name].filter(Boolean).join(" ").toLowerCase();
+        if (!dbName) continue;
+        // Exact match → score 10
+        if (dbName === aiName) { bestCustomer = c; bestScore = 10; break; }
+        // First name match + last name starts with same chars
+        const dbFirst = (c.first_name ?? "").toLowerCase();
+        const dbLast = (c.last_name ?? "").toLowerCase();
+        const aiLast = aiName.split(/\s+/).slice(1).join(" ");
+        let score = 0;
+        if (dbFirst === firstName) score += 5;
+        else if (dbFirst.startsWith(firstName.slice(0, 3)) || firstName.startsWith(dbFirst.slice(0, 3))) score += 2;
+        if (aiLast && dbLast && (dbLast.startsWith(aiLast.slice(0, 3)) || aiLast.startsWith(dbLast.slice(0, 3)))) score += 3;
+        if (score > bestScore) { bestScore = score; bestCustomer = c; }
+      }
+      if (bestCustomer && bestScore >= 5) {
+        matchedCustomerData = buildMatchData(bestCustomer);
+        matchConfidence = bestScore >= 8 ? "high" : "medium";
+      }
+    }
+  }
+
+  // Patch the customer_match in the response so the modal reads the right confidence/id
+  const patchedCustomerMatch = matchedCustomerData
+    ? { customer_id: matchedCustomerData.id, matched_name: matchedCustomerData.name, confidence: matchConfidence }
+    : { customer_id: null, matched_name: "", confidence: "none" as const };
+
+  return NextResponse.json({
+    ...parsed,
+    customer_match: patchedCustomerMatch,
+    matched_customer_data: matchedCustomerData,
+  });
 }
