@@ -99,9 +99,6 @@ declare global {
 
 export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyText?: string }) {
   const router = useRouter();
-  // Extract the custom (non-standard-clause) portion of the saved business warranty so it
-  // can be shown as a dedicated "My Business Terms" checkbox in WarrantySection
-  const businessCustomText = parseWarrantyParts(defaultWarrantyText).custom;
 
   const [step, setStep] = useState<Step>("closed");
   const [text, setText] = useState("");
@@ -109,6 +106,10 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<string | null>(null);
   const [warrantyText, setWarrantyText] = useState(defaultWarrantyText);
+  // Always-fresh warranty text fetched from API when modal opens (not stale from page load)
+  const [liveDefaultWarranty, setLiveDefaultWarranty] = useState(defaultWarrantyText);
+  // The custom (non-standard-clause) portion of the saved business warranty — shown as its own checkbox
+  const businessCustomText = parseWarrantyParts(liveDefaultWarranty).custom;
 
   const [listening, setListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -152,8 +153,17 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
     setText("");
     setError("");
     setDraft(null);
-    setWarrantyText(defaultWarrantyText);
+    setWarrantyText(liveDefaultWarranty);
     setStep("input");
+    // Fetch the latest warranty in the background so it's ready by the time user submits
+    fetch("/api/profile/warranty")
+      .then((r) => r.json())
+      .then((j: { default_warranty_text?: string }) => {
+        const wt = j.default_warranty_text ?? "";
+        setLiveDefaultWarranty(wt);
+        setWarrantyText(wt);
+      })
+      .catch(() => {});
   }
 
   useEffect(() => {
@@ -191,8 +201,8 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
       const d = toDraft(json as CaptureResponse);
       setDraft(d);
 
-      // Merge AI-suggested warranty flags with the org's default warranty text
-      const { ids: defaultIds, custom: defaultCustom } = parseWarrantyParts(defaultWarrantyText);
+      // Merge AI-suggested warranty flags with the org's default warranty text (always fresh)
+      const { ids: defaultIds, custom: defaultCustom } = parseWarrantyParts(liveDefaultWarranty);
       const mergedIds = new Set([...defaultIds, ...(d.warrantyFlags ?? [])]);
       setWarrantyText(buildWarrantyText(mergedIds, defaultCustom));
 

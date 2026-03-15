@@ -92,7 +92,27 @@ export async function POST(req: Request) {
   // Normalize phones to digits-only so AI can match regardless of formatting ("207-432-3368" == "2074323368")
   function digitsOnly(s: string) { return (s ?? "").replace(/\D/g, ""); }
 
-  const customersJson = (existingCustomers ?? []).map((c) => ({
+  // Deduplicate by phone: when multiple records share a phone, keep the one with the most complete data
+  // (has address_line1), otherwise keep the first (most recent — already sorted by created_at DESC).
+  // This prevents the AI from seeing 3 "Tabitha Boscher" rows and picking one with no address
+  // when a better-filled record (e.g. "Tabitha Boucher" with the same number) also exists.
+  const seenPhones = new Map<string, typeof (existingCustomers ?? [])[number]>();
+  for (const c of (existingCustomers ?? [])) {
+    const phone = digitsOnly(c.phone ?? "");
+    if (!phone) continue;
+    const existing = seenPhones.get(phone);
+    if (!existing || (!existing.address_line1 && c.address_line1)) {
+      // prefer the record that has an address
+      seenPhones.set(phone, c);
+    }
+  }
+  // Also keep customers with no phone (not deduplicated)
+  const deduped = [
+    ...Array.from(seenPhones.values()),
+    ...(existingCustomers ?? []).filter((c) => !digitsOnly(c.phone ?? "")),
+  ];
+
+  const customersJson = deduped.map((c) => ({
     id: c.id,
     name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company_name || "",
     phone: digitsOnly(c.phone ?? ""),
@@ -202,7 +222,7 @@ export async function POST(req: Request) {
   let matchedCustomerData: { id: string; name: string; phone: string; email: string; address: string } | null = null;
   const matchId = parsed.customer_match?.customer_id;
   if (matchId && parsed.customer_match?.confidence !== "none") {
-    const found = (existingCustomers ?? []).find((c) => c.id === matchId);
+    const found = deduped.find((c) => c.id === matchId);
     if (found) {
       const addressParts = [found.address_line1, found.address_line2, found.city, found.state, found.zip]
         .filter(Boolean)
