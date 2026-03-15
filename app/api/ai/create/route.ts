@@ -37,6 +37,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  try {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
   const supabase = await createClient();
@@ -45,7 +46,9 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
 
-  const body = bodySchema.parse(await req.json());
+  const rawBody = await req.json();
+  console.log("[create] incoming type:", rawBody?.type, "existing_customer_id:", rawBody?.existing_customer_id, "line_items:", rawBody?.quote?.line_items?.length);
+  const body = bodySchema.parse(rawBody);
 
   // Use existing customer or create new one
   let customerId: string;
@@ -82,6 +85,7 @@ export async function POST(req: Request) {
       .single();
 
     if (custErr || !newCustomer) {
+      console.error("[create] customer insert error:", custErr?.message, custErr?.details);
       return NextResponse.json({ error: "Could not create customer" }, { status: 500 });
     }
     customerId = newCustomer.id;
@@ -184,8 +188,9 @@ export async function POST(req: Request) {
 
     const dueDate = new Date();
     dueDate.setDate(
-      dueDate.getDate() + (org?.default_payment_terms_days ?? 14)
+      dueDate.getDate() + (Number(org?.default_payment_terms_days) || 14)
     );
+    const dueDateStr = dueDate.toISOString().split("T")[0]; // plain date "YYYY-MM-DD"
 
     const invoiceNotes = body.job.notes || body.quote.notes || null;
 
@@ -197,14 +202,14 @@ export async function POST(req: Request) {
         status: "unpaid",
         total_amount: total,
         invoice_number: `INV-${Date.now()}`,
-        due_date: dueDate.toISOString(),
-        notes: invoiceNotes,
+        due_date: dueDateStr,
         created_by_user: userId,
       } as Record<string, unknown>)
       .select("id")
       .single();
 
     if (error || !invoice) {
+      console.error("[create] invoice insert error:", error?.message, error?.details, error?.hint);
       return NextResponse.json(
         { error: "Could not create invoice" },
         { status: 500 }
@@ -223,6 +228,17 @@ export async function POST(req: Request) {
       }))
     );
 
+    // Store job notes as a note on the invoice
+    if (invoiceNotes) {
+      await admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "invoice",
+        entity_id: invoice.id,
+        body: invoiceNotes,
+        created_by: userId,
+      });
+    }
+
     // Store warranty as a special note so the invoice page's warranty section picks it up
     const warrantyText = body.warranty_text;
     if (warrantyText) {
@@ -239,4 +255,8 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  } catch (e) {
+    console.error("[create] unhandled error:", e instanceof Error ? e.message : String(e));
+    return NextResponse.json({ error: "Server error — please try again" }, { status: 500 });
+  }
 }
