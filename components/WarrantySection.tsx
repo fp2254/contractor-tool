@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 
-export function parseWarrantyClauses(text: string): string[] {
-  return WARRANTY_CLAUSES.filter((c) => text.includes(c.text)).map((c) => c.id);
-}
-
 export const WARRANTY_CLAUSES = [
   { id: "payment",        label: "Payment due on completion",           text: "Payment is due upon completion of work unless otherwise agreed in writing." },
   { id: "labor-warranty", label: "1-year labor warranty",               text: "All labor is warranted for 1 year from the date of completion." },
@@ -16,6 +12,10 @@ export const WARRANTY_CLAUSES = [
   { id: "access",         label: "Site access required",                text: "Customer agrees to provide reasonable access to the work site at the scheduled time. A return trip fee may apply if access is unavailable." },
   { id: "cancellation",   label: "48-hr cancellation notice",           text: "Cancellations with less than 48 hours notice may be subject to a cancellation fee." },
 ] as const;
+
+export function parseWarrantyClauses(text: string): string[] {
+  return WARRANTY_CLAUSES.filter((c) => text.includes(c.text)).map((c) => c.id);
+}
 
 export type WarrantyClauseId = typeof WARRANTY_CLAUSES[number]["id"];
 
