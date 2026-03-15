@@ -2,13 +2,13 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import {
-  saveBusinessIdentity,
   saveQuoteDefaults,
   saveInvoiceDefaults,
   savePaymentSettings,
   saveAutomation,
 } from "./actions";
 import { ServicePresetsManager } from "@/components/ServicePresetsManager";
+import { BusinessIdentityForm, type BusinessIdentityData } from "@/components/BusinessIdentityForm";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -57,90 +57,25 @@ export default async function ProfilePage() {
 
       {/* ── Business Identity ── */}
       <Section title="Business Identity" emoji="🏢" open>
-        <form action={saveBusinessIdentity} className="space-y-3">
-          <div>
-            <label className={labelCls}>Business Name</label>
-            <input name="business_name" defaultValue={org?.name ?? ""} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>DBA Name</label>
-            <input name="dba_name" defaultValue={(s as any).dba_name ?? ""} placeholder="Doing business as…" className={inputCls} />
-          </div>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>Primary Phone</label>
-              <input name="primary_phone" type="tel" defaultValue={(s as any).primary_phone ?? ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Business Email</label>
-              <input name="business_email" type="email" defaultValue={(s as any).business_email ?? ""} className={inputCls} />
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Website</label>
-            <input name="website" defaultValue={(s as any).website ?? ""} placeholder="https://…" className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Address</label>
-            <input name="address" defaultValue={(s as any).address ?? ""} className={inputCls} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className={labelCls}>City</label>
-              <input name="city" defaultValue={(s as any).city ?? ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>State</label>
-              <input name="state" defaultValue={(s as any).state ?? ""} maxLength={2} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>ZIP</label>
-              <input name="zip" defaultValue={(s as any).zip ?? ""} className={inputCls} />
-            </div>
-          </div>
-
-          <p className="text-xs font-bold text-gray-400 uppercase pt-2">Licenses & Certs</p>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>License #</label>
-              <input name="license_number" defaultValue={(s as any).license_number ?? ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Insurance #</label>
-              <input name="insurance_number" defaultValue={(s as any).insurance_number ?? ""} className={inputCls} />
-            </div>
-          </div>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>EPA Cert #</label>
-              <input name="epa_cert_number" defaultValue={(s as any).epa_cert_number ?? ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Service Area</label>
-              <input name="service_area" defaultValue={(s as any).service_area ?? ""} placeholder="e.g. Central Maine" className={inputCls} />
-            </div>
-          </div>
-
-          <p className="text-xs font-bold text-gray-400 uppercase pt-2">Signature Block</p>
-          <div className={gridCls}>
-            <div>
-              <label className={labelCls}>Owner Name</label>
-              <input name="owner_name" defaultValue={(s as any).owner_name ?? ""} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Title</label>
-              <input name="owner_title" defaultValue={(s as any).owner_title ?? ""} placeholder="Owner, President…" className={inputCls} />
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Footer Text</label>
-            <textarea name="signature_footer" rows={2}
-              defaultValue={(s as any).signature_footer ?? ""}
-              placeholder="Thank you for choosing our company."
-              className={inputCls} />
-          </div>
-          <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Business Info</button>
-        </form>
+        <BusinessIdentityForm initial={{
+          business_name: org?.name ?? "",
+          dba_name: (s as any).dba_name ?? "",
+          primary_phone: (s as any).primary_phone ?? "",
+          business_email: (s as any).business_email ?? "",
+          website: (s as any).website ?? "",
+          address: (s as any).address ?? "",
+          city: (s as any).city ?? "",
+          state: (s as any).state ?? "",
+          zip: (s as any).zip ?? "",
+          license_number: (s as any).license_number ?? "",
+          insurance_number: (s as any).insurance_number ?? "",
+          epa_cert_number: (s as any).epa_cert_number ?? "",
+          service_area: (s as any).service_area ?? "",
+          owner_name: (s as any).owner_name ?? "",
+          owner_title: (s as any).owner_title ?? "",
+          signature_footer: (s as any).signature_footer ?? "",
+          logo_url: (s as any).logo_url ?? "",
+        } satisfies BusinessIdentityData} />
       </Section>
 
       {/* ── Quote Defaults ── */}
