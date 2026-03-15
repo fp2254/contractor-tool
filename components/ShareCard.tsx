@@ -35,7 +35,14 @@ export function ShareCard({
     return `${typeof window !== "undefined" ? window.location.origin : ""}/portal/${token}`;
   }
 
-  function buildMessage(token: string | null) {
+  function buildSmsMessage(token: string | null) {
+    const portalUrl = token ? buildPortalUrl(token) : null;
+    return portalUrl
+      ? `Hi ${firstName}, your ${label.toLowerCase()} from ${orgName} is ready. View and approve it here: ${portalUrl}`
+      : `Hi ${firstName}, your ${label.toLowerCase()} from ${orgName} is ready. Give us a call to go over the details!`;
+  }
+
+  function buildEmailMessage(token: string | null) {
     const portalUrl = token ? buildPortalUrl(token) : null;
     return portalUrl
       ? `Hi ${firstName}, your ${label.toLowerCase()} for ${amountStr} from ${orgName} is ready. View and approve it here: ${portalUrl}`
@@ -66,7 +73,7 @@ export function ShareCard({
     setTextLoading(true);
     try {
       const token = await ensureToken();
-      const msg = buildMessage(token);
+      const msg = buildSmsMessage(token);
       const smsUri = customerPhone
         ? `sms:${customerPhone}?body=${encodeURIComponent(msg)}`
         : `sms:?body=${encodeURIComponent(msg)}`;
@@ -77,7 +84,7 @@ export function ShareCard({
   }
 
   const emailSubject = encodeURIComponent(`Your ${label} from ${orgName}`);
-  const emailBody = encodeURIComponent(buildMessage(portalToken));
+  const emailBody = encodeURIComponent(buildEmailMessage(portalToken));
   const emailHref = customerEmail
     ? `mailto:${customerEmail}?subject=${emailSubject}&body=${emailBody}`
     : `mailto:?subject=${emailSubject}&body=${emailBody}`;

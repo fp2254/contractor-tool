@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+export function parseWarrantyClauses(text: string): string[] {
+  return WARRANTY_CLAUSES.filter((c) => text.includes(c.text)).map((c) => c.id);
+}
+
 export const WARRANTY_CLAUSES = [
   { id: "payment",        label: "Payment due on completion",           text: "Payment is due upon completion of work unless otherwise agreed in writing." },
   { id: "labor-warranty", label: "1-year labor warranty",               text: "All labor is warranted for 1 year from the date of completion." },

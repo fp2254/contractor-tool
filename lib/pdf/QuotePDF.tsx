@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, View, Text } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image } from "@react-pdf/renderer";
 import { base } from "./styles";
 
 type QuoteItem = {
@@ -45,6 +45,7 @@ type Props = {
     default_tax_rate?: number | null;
     tax_applied_auto?: boolean | null;
     quote_expiration_days?: number | null;
+    logo_url?: string | null;
   } | null;
 };
 
@@ -84,6 +85,12 @@ export function QuotePDF({ quote, items, customer, org, settings }: Props) {
         {/* Header */}
         <View style={base.header}>
           <View>
+            {s.logo_url ? (
+              <Image
+                src={s.logo_url}
+                style={{ width: 90, height: 45, objectFit: "contain", marginBottom: 6 }}
+              />
+            ) : null}
             <Text style={base.bizName}>{org.name}</Text>
             {bizLines.map((line, i) => <Text key={i} style={base.bizDetail}>{line}</Text>)}
           </View>

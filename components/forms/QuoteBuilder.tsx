@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { WarrantySection } from "@/components/WarrantySection";
+import { WarrantySection, parseWarrantyClauses } from "@/components/WarrantySection";
 
 type Item = { description: string; quantity: number; unit_price: number };
 
@@ -315,7 +315,11 @@ export function QuoteBuilder({
       </div>
 
       {/* Terms & Warranty */}
-      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
+      <WarrantySection
+        value={warrantyText}
+        onChange={setWarrantyText}
+        initialChecked={parseWarrantyClauses(defaultWarrantyText)}
+      />
 
       {/* Notes */}
       <div>
