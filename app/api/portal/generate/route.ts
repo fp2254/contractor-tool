@@ -70,6 +70,7 @@ export async function POST(req: Request) {
       .eq("org_id", orgId!)
       .eq("customer_id", customer.id)
       .gt("expires_at", now)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

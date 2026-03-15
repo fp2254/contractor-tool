@@ -53,7 +53,6 @@ export function ShareCard({
   }
 
   async function ensureToken(): Promise<string | null> {
-    if (portalToken) return portalToken;
     try {
       const res = await fetch("/api/portal/generate-token", {
         method: "POST",
@@ -86,11 +85,15 @@ export function ShareCard({
     }
   }
 
-  const emailSubject = encodeURIComponent(`Your ${label} from ${orgName}`);
-  const emailBody = encodeURIComponent(buildEmailMessage(portalToken));
-  const emailHref = customerEmail
-    ? `mailto:${customerEmail}?subject=${emailSubject}&body=${emailBody}`
-    : `mailto:?subject=${emailSubject}&body=${emailBody}`;
+  async function handleEmail() {
+    const token = await ensureToken();
+    const subject = encodeURIComponent(`Your ${label} from ${orgName}`);
+    const body = encodeURIComponent(buildEmailMessage(token));
+    const href = customerEmail
+      ? `mailto:${customerEmail}?subject=${subject}&body=${body}`
+      : `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = href;
+  }
 
   const handleCopy = async () => {
     try {
@@ -127,14 +130,14 @@ export function ShareCard({
           <span className="text-xs font-semibold">Text</span>
         </button>
 
-        <a
-          href={emailHref}
+        <button
+          onClick={handleEmail}
           className="flex flex-col items-center gap-1.5 bg-blue-50 rounded-xl py-4 text-blue-700 active:bg-blue-100">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
           <span className="text-xs font-semibold">Email</span>
-        </a>
+        </button>
 
         <button
           onClick={handleCopy}

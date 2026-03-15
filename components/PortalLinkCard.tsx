@@ -101,13 +101,9 @@ export function PortalLinkCard({
     setLoading("copy");
     setError("");
     try {
-      let url = portalUrl;
-      if (!url) {
-        const got = await getToken();
-        if (!got) return;
-        url = got.url;
-      }
-      await navigator.clipboard.writeText(url);
+      const got = await getToken();
+      if (!got) return;
+      await navigator.clipboard.writeText(got.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
       setResult({ method: "copy", to: "" });
