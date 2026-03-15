@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { WarrantySection } from "@/components/WarrantySection";
-import { parseWarrantyClauses } from "@/lib/warrantyUtils";
 
 type Item = { description: string; quantity: number; unit_price: number };
 
@@ -316,11 +315,7 @@ export function QuoteBuilder({
       </div>
 
       {/* Terms & Warranty */}
-      <WarrantySection
-        value={warrantyText}
-        onChange={setWarrantyText}
-        initialChecked={parseWarrantyClauses(defaultWarrantyText)}
-      />
+      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
 
       {/* Notes */}
       <div>

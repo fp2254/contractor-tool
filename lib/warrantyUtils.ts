@@ -12,3 +12,21 @@ export const WARRANTY_CLAUSES = [
 export function parseWarrantyClauses(text: string): string[] {
   return WARRANTY_CLAUSES.filter((c) => text.includes(c.text)).map((c) => c.id);
 }
+
+export function parseWarrantyParts(text: string): { ids: string[]; custom: string } {
+  const ids: string[] = [];
+  let remaining = text;
+  for (const clause of WARRANTY_CLAUSES) {
+    if (text.includes(clause.text)) {
+      ids.push(clause.id);
+      remaining = remaining.replace(clause.text, "").trim();
+    }
+  }
+  return { ids, custom: remaining };
+}
+
+export function buildWarrantyText(clauseIds: Set<string>, customText: string): string {
+  const clauseParts = WARRANTY_CLAUSES.filter((c) => clauseIds.has(c.id)).map((c) => c.text);
+  const trimmed = customText.trim();
+  return [...clauseParts, ...(trimmed ? [trimmed] : [])].join("\n");
+}
