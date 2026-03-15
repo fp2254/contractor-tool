@@ -104,7 +104,14 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
         <div className="bg-white rounded-2xl px-5 py-4 shadow-sm">
           <p className="text-lg font-bold text-slate-800">Hi {customer.first_name || customerName}</p>
           <p className="text-sm text-gray-500 mt-1">Here are your documents from {businessName}.</p>
-          {orgPhone && <p className="text-xs text-gray-400 mt-2">Questions? Call {orgPhone}</p>}
+          {orgPhone && (
+            <p className="text-xs text-gray-400 mt-2">
+              Questions?{" "}
+              <a href={`tel:${orgPhone}`} className="text-[#1B3A6B] font-medium">
+                Call {orgPhone}
+              </a>
+            </p>
+          )}
         </div>
 
         {/* Contractor Credibility */}

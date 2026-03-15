@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
     icon: "/icon-192.png",
   },
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+    url: false,
+  },
 };
 
 export const viewport: Viewport = {
