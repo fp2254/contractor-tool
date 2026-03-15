@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WARRANTY_CLAUSES, parseWarrantyParts } from "@/lib/warrantyUtils";
 
 export type WarrantyClauseId = typeof WARRANTY_CLAUSES[number]["id"];
@@ -40,9 +40,16 @@ export function WarrantySection({
 
   const [checked, setChecked] = useState<Set<string>>(() => new Set(initParsed.ids));
   const [custom, setCustom] = useState(initParsed.custom);
-  // Always start checked whenever a business warranty exists — no fragile string-includes
   const [businessChecked, setBusinessChecked] = useState(!!biz);
   const [open, setOpen] = useState(!!biz || initParsed.ids.length > 0 || !!initParsed.custom.trim());
+
+  // Sync businessChecked if the biz prop arrives after initial mount
+  useEffect(() => {
+    if (biz) {
+      setBusinessChecked(true);
+      setOpen(true);
+    }
+  }, [biz]);
 
   function toggleClause(id: string) {
     setChecked((prev) => {
