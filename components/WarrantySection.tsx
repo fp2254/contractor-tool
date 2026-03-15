@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { WARRANTY_CLAUSES } from "@/lib/warrantyUtils";
 
-export { WARRANTY_CLAUSES, parseWarrantyClauses } from "@/lib/warrantyUtils";
-
 export type WarrantyClauseId = typeof WARRANTY_CLAUSES[number]["id"];
 
 function buildText(ids: Set<string>): string {
