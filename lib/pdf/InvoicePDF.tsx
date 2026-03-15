@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, View, Text } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image } from "@react-pdf/renderer";
 import { base, NAVY } from "./styles";
 
 type InvoiceItem = {
@@ -47,7 +47,9 @@ type Props = {
     payment_instructions?: string | null;
     default_tax_rate?: number | null;
     tax_applied_auto?: boolean | null;
+    logo_url?: string | null;
   } | null;
+  warrantyText?: string | null;
 };
 
 function fmt(n: number) {
@@ -57,7 +59,7 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function InvoicePDF({ invoice, items, customer, org, settings }: Props) {
+export function InvoicePDF({ invoice, items, customer, org, settings, warrantyText }: Props) {
   const s = settings ?? {};
   const taxRate = s.tax_applied_auto ? (s.default_tax_rate ?? 0) : 0;
   const subtotal = items.reduce((sum, i) => sum + Number(i.total_price), 0);
@@ -86,6 +88,12 @@ export function InvoicePDF({ invoice, items, customer, org, settings }: Props) {
         {/* Header */}
         <View style={base.header}>
           <View>
+            {s.logo_url ? (
+              <Image
+                src={s.logo_url}
+                style={{ width: 90, height: 45, objectFit: "contain", marginBottom: 6 }}
+              />
+            ) : null}
             <Text style={base.bizName}>{org.name}</Text>
             {bizLines.map((line, i) => <Text key={i} style={base.bizDetail}>{line}</Text>)}
           </View>
@@ -171,6 +179,14 @@ export function InvoicePDF({ invoice, items, customer, org, settings }: Props) {
             </View>
           </View>
         )}
+
+        {/* Warranty / Terms */}
+        {warrantyText ? (
+          <View style={[base.notesBox, { marginTop: 12, borderLeft: `3px solid ${NAVY}` }]}>
+            <Text style={base.notesLabel}>Terms &amp; Warranty</Text>
+            <Text style={base.notesText}>{warrantyText}</Text>
+          </View>
+        ) : null}
 
         {/* Footer notes */}
         {s.invoice_footer_template && (

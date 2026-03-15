@@ -23,11 +23,12 @@ export async function GET(
     return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 });
   }
 
-  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: allNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", invoiceId).eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", invoiceId).eq("org_id", pt.org_id),
     admin.from("orgs").select("*").eq("id", pt.org_id).single(),
     admin.from("org_settings").select("*").eq("org_id", pt.org_id).maybeSingle(),
+    admin.from("notes").select("body").eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", pt.org_id),
   ]);
 
   if (!invoice || !org) {
@@ -39,6 +40,9 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const warrantyNote = (allNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
+  const warrantyText = warrantyNote ? warrantyNote.body.replace("__warranty__:", "") : null;
+
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
       invoice,
@@ -46,6 +50,7 @@ export async function GET(
       customer,
       org,
       settings: settings as any,
+      warrantyText,
     })
   );
 

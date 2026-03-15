@@ -12,11 +12,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: allNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+    admin.from("notes").select("body").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!),
   ]);
 
   if (!invoice || !org) {
@@ -28,6 +29,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
+  const warrantyNote = (allNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
+  const warrantyText = warrantyNote ? warrantyNote.body.replace("__warranty__:", "") : null;
+
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
       invoice,
@@ -35,6 +39,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       customer,
       org,
       settings: settings as any,
+      warrantyText,
     })
   );
 
