@@ -1,0 +1,139 @@
+TRADEBASE — DATABASE STRUCTURE FOR SCALING
+
+Goal:
+Make the database structure scalable for thousands of contractors and future multi-user company accounts.
+
+Core architecture:
+TradeBase must use an organization-based multi-tenant structure.
+
+Do NOT build the business data model around user_id alone.
+Use org_id as the primary tenant key on all business records.
+
+==================================================
+CORE TABLES
+==================================================
+
+orgs
+- id
+- name
+- created_at
+
+org_members
+- id
+- org_id
+- user_id
+- role
+- created_at
+
+org_settings
+- org_id
+- company_name
+- logo_url
+- phone
+- email
+- quote_terms
+- invoice_terms
+- tax_rate
+- pricing_defaults_json
+- ai_settings_json
+- workspace_settings_json
+
+subscriptions
+- id
+- org_id
+- plan_type
+- payment_date
+- next_due_date
+- grace_period_end_date
+- subscription_status
+- payment_provider
+- payment_provider_id
+- created_at
+
+==================================================
+BUSINESS TABLES
+==================================================
+
+Every major business table must include org_id.
+
+Required tables:
+clients
+leads
+quotes
+quote_items
+jobs
+invoices
+invoice_items
+expenses
+receipts
+inventory_items
+trade_contacts
+notes
+photos
+activity_log
+
+==================================================
+RLS RULE
+==================================================
+
+Use Row Level Security based on org membership.
+
+Users should only be able to access rows where:
+org_id belongs to an organization they are a member of.
+
+==================================================
+STORAGE STRUCTURE
+==================================================
+
+Use shared private buckets with folder structure:
+
+bucket / org_id / entity / file
+
+Examples:
+receipts/{org_id}/{receipt_id}.jpg
+job-photos/{org_id}/{job_id}/{photo_id}.jpg
+business-cards/{org_id}/{contact_id}.jpg
+
+Do not create one bucket per user.
+
+==================================================
+INDEXING
+==================================================
+
+Add indexes on:
+org_id
+client_id
+job_id
+quote_id
+invoice_id
+status
+created_at
+scheduled_date
+
+==================================================
+ACTIVITY LOG
+==================================================
+
+Add activity_log table:
+
+- id
+- org_id
+- user_id
+- entity_type
+- entity_id
+- action
+- metadata_json
+- created_at
+
+This will power timelines, recent activity, and auditing.
+
+==================================================
+IMPORTANT
+==================================================
+
+TradeBase must be scalable for:
+- thousands of contractors
+- future multi-user companies
+- org-level billing
+- org-level settings
+- clean tenant isolation
