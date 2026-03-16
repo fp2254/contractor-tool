@@ -246,6 +246,19 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </span>
       </div>
 
+      {quote.status === "sent" && (
+        <AiFollowUpButton
+          recordType="quote"
+          recordId={quote.id}
+          clientName={customerName}
+          recordTitle={`Quote #${quote.id.slice(0, 8).toUpperCase()}`}
+          daysSinceSent={Math.max(0, Math.floor((Date.now() - new Date((quote as Record<string,unknown>).sent_at as string ?? quote.created_at).getTime()) / (24 * 60 * 60 * 1000)))}
+          amount={Number(quote.total_amount)}
+          customerPhone={customer?.phone ?? null}
+          customerEmail={customer?.email ?? null}
+        />
+      )}
+
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <div className="flex justify-between items-center mb-3">
           <p className="text-2xl font-bold text-slate-800">${Number(quote.total_amount).toLocaleString()}</p>
@@ -309,20 +322,6 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       {quote.status !== "declined" && (
         <div className="space-y-3">
-          {quote.status === "sent" && (
-            <div className="flex justify-end">
-              <AiFollowUpButton
-                recordType="quote"
-                recordId={quote.id}
-                clientName={customerName}
-                recordTitle={`Quote #${quote.id.slice(0, 8).toUpperCase()}`}
-                daysSinceSent={quote.sent_at ? Math.max(0, Math.floor((Date.now() - new Date(quote.sent_at).getTime()) / (24 * 60 * 60 * 1000))) : 0}
-                amount={Number(quote.total_amount)}
-                customerPhone={customer?.phone ?? null}
-                customerEmail={customer?.email ?? null}
-              />
-            </div>
-          )}
           {!quote.invoice_id ? (
             <form action={convertToInvoice}>
               <input type="hidden" name="quote_id" value={quote.id} />

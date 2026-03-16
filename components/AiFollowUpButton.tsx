@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FollowUpResult } from "@/app/api/ai/followup/route";
 
 type Props = {
@@ -29,6 +29,15 @@ export function AiFollowUpButton({
   const [result, setResult] = useState<FollowUpResult | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<"sms" | "email" | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   async function generate() {
     setLoading(true);
@@ -90,7 +99,7 @@ export function AiFollowUpButton({
     <>
       <button
         onClick={openSheet}
-        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 active:bg-purple-100">
+        className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-xl bg-purple-600 text-white active:bg-purple-700 shadow-sm w-full justify-center">
         ✨ AI Follow-Up
       </button>
 
@@ -98,16 +107,18 @@ export function AiFollowUpButton({
         <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={close} />
           <div className="relative bg-white rounded-t-3xl shadow-xl max-h-[88vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-lg">✨</span>
                 <h2 className="text-base font-bold text-slate-800">AI Follow-Up</h2>
                 {clientName && <span className="text-sm text-gray-400">for {clientName}</span>}
               </div>
-              <button onClick={close} className="text-gray-400 text-xl leading-none">✕</button>
+              <button onClick={close} className="text-gray-400 text-xl leading-none px-1">✕</button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+            <div
+              className="overflow-y-auto flex-1 px-5 py-4 space-y-4"
+              style={{ overscrollBehavior: "contain" }}>
               {loading && (
                 <div className="flex flex-col items-center justify-center py-12 gap-4">
                   <div className="w-10 h-10 border-4 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
@@ -124,7 +135,6 @@ export function AiFollowUpButton({
 
               {result && !loading && (
                 <div className="space-y-4">
-                  {/* SMS draft */}
                   <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">SMS Draft</p>
@@ -149,7 +159,6 @@ export function AiFollowUpButton({
                     </div>
                   </div>
 
-                  {/* Email draft */}
                   <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email Draft</p>
                     <div>
@@ -178,7 +187,7 @@ export function AiFollowUpButton({
 
                   <button
                     onClick={generate}
-                    className="w-full rounded-xl py-2.5 text-sm font-semibold border border-gray-200 text-slate-600">
+                    className="w-full rounded-xl py-2.5 text-sm font-semibold border border-gray-200 text-slate-600 mb-2">
                     ↻ Regenerate
                   </button>
                 </div>
