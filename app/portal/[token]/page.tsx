@@ -262,7 +262,15 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
           </div>
         )}
 
-        <p className="text-center text-xs text-gray-300 pb-6">Powered by TradeBase</p>
+        <div className="text-center pb-8 pt-2">
+          <p className="text-xs text-gray-300">
+            Powered by{" "}
+            <a href="https://trade-base.biz" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500 underline underline-offset-2">
+              TradeBase
+            </a>
+          </p>
+          <p className="text-xs text-gray-300 mt-0.5">The operating system for contractors</p>
+        </div>
       </div>
     </div>
   );

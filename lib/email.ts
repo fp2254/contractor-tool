@@ -75,7 +75,7 @@ export function quoteEmailHtml(opts: {
       <p style="margin:8px 0 0;font-size:15px;color:#64748b">Thanks,<br><strong>${opts.businessName}</strong></p>
     </div>
     <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
-      <p style="margin:0;font-size:12px;color:#94a3b8">Sent via TradeBase</p>
+      <p style="margin:0;font-size:12px;color:#94a3b8">Sent using <a href="https://trade-base.biz" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
     </div>
   </div>
 </body></html>`;
@@ -103,7 +103,7 @@ export function portalEmailHtml(opts: {
       <p style="margin:0;font-size:13px;color:#94a3b8">This link is valid for 30 days. If you have questions, contact us${opts.phone ? ` at ${opts.phone}` : ""}.</p>
     </div>
     <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
-      <p style="margin:0;font-size:12px;color:#94a3b8">Powered by TradeBase</p>
+      <p style="margin:0;font-size:12px;color:#94a3b8">Documents delivered with <a href="https://trade-base.biz" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
     </div>
   </div>
 </body></html>`;
@@ -157,7 +157,7 @@ export function invoiceEmailHtml(opts: {
       <p style="margin:24px 0 0;font-size:15px;color:#64748b">Thank you,<br><strong>${opts.businessName}</strong></p>
     </div>
     <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
-      <p style="margin:0;font-size:12px;color:#94a3b8">Sent via TradeBase</p>
+      <p style="margin:0;font-size:12px;color:#94a3b8">Invoice powered by <a href="https://trade-base.biz" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
     </div>
   </div>
 </body></html>`;

@@ -1,0 +1,91 @@
+TRADEBASE — EMBEDDED DISTRIBUTION / POWERED BY TRADEBASE
+
+Goal:
+Use customer-facing documents and portal pages as a passive growth channel for TradeBase.
+
+Add a subtle "Powered by TradeBase" brand footer to all customer-facing surfaces.
+
+==================================================
+SURFACES TO UPDATE
+==================================================
+
+1. Customer Portal page
+Route:
+/portal/[token]
+
+Add a footer section at the bottom of the portal page.
+
+Footer text:
+Powered by TradeBase
+The operating system for contractors
+
+Make "TradeBase" clickable and link it to:
+https://trade-base.biz
+
+Keep it subtle and professional.
+Do not make it spammy or oversized.
+
+==================================================
+2. Quote Email
+==================================================
+
+At the bottom of all customer quote emails, add a small footer:
+
+Sent using TradeBase
+Built for contractors
+
+Make "TradeBase" link to:
+https://trade-base.biz
+
+==================================================
+3. Invoice Email
+==================================================
+
+At the bottom of all customer invoice emails, add a small footer:
+
+Invoice powered by TradeBase
+Built for contractors
+
+Make "TradeBase" link to:
+https://trade-base.biz
+
+==================================================
+4. Portal Link Emails
+==================================================
+
+At the bottom of portal invitation emails, add a small footer:
+
+Documents delivered with TradeBase
+Built for contractors
+
+Link "TradeBase" to:
+https://trade-base.biz
+
+==================================================
+5. PDFs (OPTIONAL, SMALL FOOTER ONLY)
+==================================================
+
+If possible, add a very small footer to PDFs:
+
+Generated with TradeBase
+
+This should be subtle and not overpower the contractor’s branding.
+
+If PDF branding becomes too intrusive, skip PDF footer for now and keep branding on portal and emails only.
+
+==================================================
+DESIGN RULES
+==================================================
+
+- Keep the branding subtle
+- Use small footer text
+- Keep the contractor’s brand primary
+- Do not distract from the quote or invoice
+- Make it feel professional, not like an ad
+
+==================================================
+PURPOSE
+==================================================
+
+Every quote, invoice, and portal page becomes a passive referral channel for TradeBase.
+This creates embedded distribution as contractors send customer-facing documents.

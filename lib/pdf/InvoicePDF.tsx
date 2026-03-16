@@ -200,6 +200,9 @@ export function InvoicePDF({ invoice, items, customer, org, settings, warrantyTe
           <Text style={base.footerText}>{s.signature_footer ?? "Thank you for your business."}</Text>
           <Text style={base.footerText}>{invoiceNum}</Text>
         </View>
+        <View style={{ marginTop: 6, alignItems: "center" }}>
+          <Text style={{ fontSize: 7, color: "#CBD5E1" }}>Generated with TradeBase · trade-base.biz</Text>
+        </View>
       </Page>
     </Document>
   );
