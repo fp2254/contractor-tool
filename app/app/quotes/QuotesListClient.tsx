@@ -22,11 +22,14 @@ export type QuoteRow = {
 export default function QuotesListClient({
   initialQuotes,
   customerMap,
+  openedIds = [],
 }: {
   initialQuotes: QuoteRow[];
   customerMap: Record<string, string>;
+  openedIds?: string[];
 }) {
   const [quotes, setQuotes] = useState(initialQuotes.filter(q => q.status !== "archived"));
+  const openedSet = new Set(openedIds);
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
 
   async function handleArchive(id: string) {
@@ -78,6 +81,12 @@ export default function QuotesListClient({
                 <p className="text-xs text-gray-400">
                   Quote #{q.id.slice(0, 8)} · {new Date(q.created_at).toLocaleDateString()}
                 </p>
+                {openedSet.has(q.id) && (
+                  <p className="text-xs text-emerald-600 font-medium mt-0.5">👁 Opened</p>
+                )}
+                {!openedSet.has(q.id) && q.status === "sent" && (
+                  <p className="text-xs text-gray-400 mt-0.5">Not opened yet</p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[q.status] ?? "bg-gray-100"}`}>

@@ -140,7 +140,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   if (!quote) return notFound();
 
-  const [{ data: org }, { data: warrantyNotes }] = await Promise.all([
+  const [{ data: org }, { data: warrantyNotes }, { data: openedNotes }] = await Promise.all([
     admin.from("orgs").select("name").eq("id", orgId!).single(),
     (admin as any).from("notes")
       .select("body")
@@ -149,7 +149,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       .eq("entity_id", id)
       .like("body", "__warranty__%")
       .limit(1),
+    admin.from("notes")
+      .select("created_at")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("entity_id", id)
+      .eq("body", "__opened__")
+      .order("created_at", { ascending: true })
+      .limit(1),
   ]);
+  const openedNote = (openedNotes as { created_at: string }[] | null)?.[0] ?? null;
   const orgName = org?.name ?? "Your Company";
   const warrantyNote = (warrantyNotes as any[])?.[0] ?? null;
   const warrantyText = warrantyNote
@@ -224,6 +233,13 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         <div className="flex-1">
           <h1 className="text-xl font-bold text-slate-800">Quote #{id.slice(0,8)}</h1>
           <p className="text-sm text-gray-500">{customerName}</p>
+          {openedNote ? (
+            <p className="text-xs text-emerald-600 font-medium mt-0.5">
+              👁 Opened {new Date(openedNote.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </p>
+          ) : quote.status === "sent" ? (
+            <p className="text-xs text-gray-400 mt-0.5">Not opened yet</p>
+          ) : null}
         </div>
         <span className={`text-xs font-semibold rounded-full px-3 py-1 ${statusColor}`}>
           {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}

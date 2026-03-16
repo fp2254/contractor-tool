@@ -65,7 +65,7 @@ export default async function MoneyPage({ searchParams }: PageProps) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: invoices }, { data: customers }, { data: archivedNotes }] = await Promise.all([
+  const [{ data: invoices }, { data: customers }, { data: archivedNotes }, { data: openedNotes }] = await Promise.all([
     admin
       .from("invoices")
       .select("id,status,total_amount,due_date,invoice_number,customer_id")
@@ -81,9 +81,16 @@ export default async function MoneyPage({ searchParams }: PageProps) {
       .eq("org_id", orgId!)
       .eq("entity_type", "invoice")
       .eq("body", "__archived__"),
+    admin
+      .from("notes")
+      .select("entity_id")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "invoice")
+      .eq("body", "__opened__"),
   ]);
 
   const archivedIds = new Set((archivedNotes ?? []).map((n) => n.entity_id as string));
+  const openedIds = new Set((openedNotes ?? []).map((n) => n.entity_id as string));
 
   const customerMap = Object.fromEntries(
     (customers ?? []).map((c) => [
@@ -150,6 +157,7 @@ export default async function MoneyPage({ searchParams }: PageProps) {
                 inv={inv}
                 customerName={customerMap[inv.customer_id ?? ""] ?? "Unknown"}
                 isArchived={archivedIds.has(inv.id)}
+                isOpened={openedIds.has(inv.id)}
                 archiveAction={archiveInvoice}
                 unarchiveAction={unarchiveInvoice}
               />
@@ -169,12 +177,14 @@ function InvoiceCard({
   inv,
   customerName,
   isArchived,
+  isOpened,
   archiveAction,
   unarchiveAction,
 }: {
   inv: { id: string; status: string | null; total_amount: number | null; due_date: string | null; invoice_number: string | null };
   customerName: string;
   isArchived: boolean;
+  isOpened: boolean;
   archiveAction: (fd: FormData) => Promise<void>;
   unarchiveAction: (fd: FormData) => Promise<void>;
 }) {
@@ -188,6 +198,9 @@ function InvoiceCard({
             <p className="font-bold text-slate-800 truncate">{customerName}</p>
             {inv.invoice_number && (
               <p className="text-xs text-gray-500">Invoice #{inv.invoice_number}</p>
+            )}
+            {isOpened && (
+              <p className="text-xs text-emerald-600 font-medium mt-0.5">👁 Opened</p>
             )}
           </div>
           {due && !isArchived && (

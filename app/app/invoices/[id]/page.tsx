@@ -102,19 +102,21 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: photos }, { data: aiAttachmentsRaw }, { data: org }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: photos }, { data: aiAttachmentsRaw }, { data: org }, { data: openedNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
     admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
     aiAttachmentsPromise,
     admin.from("orgs").select("name").eq("id", orgId!).single(),
+    admin.from("notes").select("created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).eq("body", "__opened__").order("created_at", { ascending: true }).limit(1),
   ]);
   const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
-  const notes = (allNotes ?? []).filter((n: any) => !n.body.startsWith("__warranty__"));
+  const notes = (allNotes ?? []).filter((n: any) => !n.body.startsWith("__warranty__") && !n.body.startsWith("__"));
   const warrantyNote = (allNotes ?? []).find((n: any) => n.body.startsWith("__warranty__")) ?? null;
   const warrantyText = warrantyNote ? String(warrantyNote.body).replace("__warranty__:", "") : null;
+  const openedNote = (openedNotes as { created_at: string }[] | null)?.[0] ?? null;
   const orgName = org?.name ?? "Your Company";
 
   if (!invoice) return notFound();
@@ -142,6 +144,13 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         <div className="flex-1">
           <h1 className="text-xl font-bold text-slate-800">Invoice {invoice.invoice_number ?? `#${id.slice(0,8)}`}</h1>
           <p className="text-sm text-gray-500">{customerName}</p>
+          {openedNote ? (
+            <p className="text-xs text-emerald-600 font-medium mt-0.5">
+              👁 Opened {new Date(openedNote.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </p>
+          ) : invoice.status === "unpaid" || invoice.status === "overdue" ? (
+            <p className="text-xs text-gray-400 mt-0.5">Not opened yet</p>
+          ) : null}
         </div>
         <span className={`text-xs font-semibold rounded-full px-3 py-1 ${statusColor}`}>
           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}

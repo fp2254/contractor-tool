@@ -78,6 +78,29 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
     admin.from("org_settings").select("primary_phone").eq("org_id", pt.org_id).maybeSingle(),
   ]);
 
+  // Track first open: insert __opened__ notes for any quote/invoice not yet tracked
+  const allDocIds = [
+    ...(quotes ?? []).map(q => ({ type: "quote" as const, id: q.id })),
+    ...(invoices ?? []).map(inv => ({ type: "invoice" as const, id: inv.id })),
+  ];
+  if (allDocIds.length > 0) {
+    const { data: existingOpens } = await admin
+      .from("notes")
+      .select("entity_type,entity_id")
+      .eq("org_id", pt.org_id)
+      .eq("body", "__opened__")
+      .in("entity_id", allDocIds.map(d => d.id));
+    const openedSet = new Set(
+      (existingOpens ?? []).map((n: Record<string, unknown>) => `${n.entity_type}:${n.entity_id}`)
+    );
+    const newOpens = allDocIds
+      .filter(d => !openedSet.has(`${d.type}:${d.id}`))
+      .map(d => ({ org_id: pt.org_id, entity_type: d.type, entity_id: d.id, body: "__opened__" }));
+    if (newOpens.length > 0) {
+      await admin.from("notes").insert(newOpens as Record<string, unknown>[]);
+    }
+  }
+
   if (!customer) return notFound();
 
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.company_name || "Customer";

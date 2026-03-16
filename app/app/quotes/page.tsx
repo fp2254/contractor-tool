@@ -8,7 +8,7 @@ export default async function QuotesPage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: quotes }, { data: customers }] = await Promise.all([
+  const [{ data: quotes }, { data: customers }, { data: openedNotes }] = await Promise.all([
     admin
       .from("quotes")
       .select("id,status,total_amount,created_at,customer_id")
@@ -18,7 +18,15 @@ export default async function QuotesPage() {
       .from("customers")
       .select("id,first_name,last_name,company_name")
       .eq("org_id", orgId!),
+    admin
+      .from("notes")
+      .select("entity_id")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("body", "__opened__"),
   ]);
+
+  const openedIds = new Set((openedNotes ?? []).map(n => n.entity_id as string));
 
   const customerMap = Object.fromEntries(
     (customers ?? []).map(c => [
@@ -44,6 +52,7 @@ export default async function QuotesPage() {
         <QuotesListClient
           initialQuotes={quotes ?? []}
           customerMap={customerMap}
+          openedIds={Array.from(openedIds)}
         />
       </Suspense>
     </div>
