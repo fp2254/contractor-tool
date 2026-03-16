@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     admin.from("leads").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "new"),
     admin.from("jobs").select("id,scheduled_date,status", { count: "exact" }).eq("org_id", orgId!),
     admin.from("invoices").select("id,status,total_amount").eq("org_id", orgId!),
-    admin.from("quotes").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "sent"),
+    admin.from("quotes").select("id").eq("org_id", orgId!).eq("status", "sent"),
     admin.from("org_settings").select("default_warranty_text").eq("org_id", orgId!).maybeSingle(),
   ]);
 
@@ -26,15 +26,20 @@ export default async function DashboardPage() {
   const newLeadsCount = leads.count ?? 0;
   const unpaidTotal = invoices.data?.filter(i => i.status === "unpaid" || i.status === "overdue")
     .reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0) ?? 0;
-  const estimatesCount = quotes.count ?? 0;
 
   const overdueInvoices = invoices.data?.filter(i => i.status === "overdue") ?? [];
+
+  const sentQuotes = quotes.data ?? [];
+  const estimatesCount = sentQuotes.length;
+  const sentQuotesHref = sentQuotes.length === 1
+    ? `/app/quotes/${sentQuotes[0].id}`
+    : "/app/quotes";
 
   const statCards = [
     { label: "New Leads", value: newLeadsCount, color: "#F97316", href: "/app/leads" },
     { label: "Jobs Today", value: jobsTodayCount, color: "#22C55E", href: "/app/jobs" },
     { label: "Unpaid", value: `$${unpaidTotal.toLocaleString()}`, color: "#EF4444", href: "/app/money" },
-    { label: "Estimates", value: estimatesCount, color: "#3B82F6", href: "/app/quotes" },
+    { label: "Estimates", value: estimatesCount, color: "#3B82F6", href: sentQuotesHref },
   ];
 
   return (
@@ -62,7 +67,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {estimatesCount > 0 && (
-              <Link href="/app/quotes" className="flex items-center gap-3 px-4 py-3">
+              <Link href={sentQuotesHref} className="flex items-center gap-3 px-4 py-3">
                 <span className="text-yellow-500 text-lg">⚠️</span>
                 <span className="text-sm text-slate-700 flex-1">
                   {estimatesCount} quote{estimatesCount > 1 ? "s" : ""} awaiting response
