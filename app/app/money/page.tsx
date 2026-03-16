@@ -39,6 +39,17 @@ async function unarchiveInvoice(formData: FormData) {
   revalidatePath("/app/money");
 }
 
+async function deleteInvoice(formData: FormData) {
+  "use server";
+  const orgId = await ensureUserOrg();
+  const invoiceId = String(formData.get("invoice_id"));
+  const admin = createAdminClient();
+  await admin.from("notes").delete().eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", orgId!);
+  await admin.from("invoice_items").delete().eq("invoice_id", invoiceId);
+  await admin.from("invoices").delete().eq("id", invoiceId).eq("org_id", orgId!);
+  revalidatePath("/app/money");
+}
+
 const TABS = [
   { label: "Overdue", key: "overdue" },
   { label: "Open", key: "open" },
@@ -160,6 +171,7 @@ export default async function MoneyPage({ searchParams }: PageProps) {
                 isOpened={openedIds.has(inv.id)}
                 archiveAction={archiveInvoice}
                 unarchiveAction={unarchiveInvoice}
+                deleteAction={deleteInvoice}
               />
             ))}
           </div>
@@ -180,6 +192,7 @@ function InvoiceCard({
   isOpened,
   archiveAction,
   unarchiveAction,
+  deleteAction,
 }: {
   inv: { id: string; status: string | null; total_amount: number | null; due_date: string | null; invoice_number: string | null };
   customerName: string;
@@ -187,6 +200,7 @@ function InvoiceCard({
   isOpened: boolean;
   archiveAction: (fd: FormData) => Promise<void>;
   unarchiveAction: (fd: FormData) => Promise<void>;
+  deleteAction: (fd: FormData) => Promise<void>;
 }) {
   const due = dueLabel(inv.due_date);
 
@@ -224,21 +238,34 @@ function InvoiceCard({
         </div>
       </Link>
 
-      <div className="border-t border-gray-100 px-4 py-2 flex justify-end">
+      <div className="border-t border-gray-100 px-4 py-2 flex items-center justify-between gap-2">
         {isArchived ? (
-          <form action={unarchiveAction}>
-            <input type="hidden" name="invoice_id" value={inv.id} />
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 text-xs text-[#1B3A6B] font-medium py-1 px-2 rounded-lg active:bg-blue-50">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              Unarchive
-            </button>
-          </form>
+          <>
+            <form action={unarchiveAction}>
+              <input type="hidden" name="invoice_id" value={inv.id} />
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 text-xs text-[#1B3A6B] font-medium py-1 px-2 rounded-lg active:bg-blue-50">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Unarchive
+              </button>
+            </form>
+            <form action={deleteAction} onSubmit={(e) => { if (!confirm("Permanently delete this invoice? This cannot be undone.")) e.preventDefault(); }}>
+              <input type="hidden" name="invoice_id" value={inv.id} />
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 text-xs text-red-500 font-medium py-1 px-2 rounded-lg active:bg-red-50">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            </form>
+          </>
         ) : (
-          <form action={archiveAction}>
+          <form action={archiveAction} className="ml-auto">
             <input type="hidden" name="invoice_id" value={inv.id} />
             <button
               type="submit"
