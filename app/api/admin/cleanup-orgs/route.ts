@@ -32,8 +32,10 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = admin as any;
 
-  const { data: members, error: membersErr } = await admin
+  const { data: members, error: membersErr } = await db
     .from("org_members")
     .select("org_id, created_at")
     .eq("user_id", user.id)
@@ -48,14 +50,14 @@ export async function POST() {
   }
 
   const realOrgId = members[0].org_id;
-  const duplicateOrgIds = members.slice(1).map((m) => m.org_id);
+  const duplicateOrgIds = members.slice(1).map((m: { org_id: string }) => m.org_id);
 
   const results: Record<string, number> = {};
 
   for (const table of TABLES_WITH_ORG) {
     try {
-      const { count } = await admin
-        .from(table as any)
+      const { count } = await db
+        .from(table)
         .update({ org_id: realOrgId })
         .in("org_id", duplicateOrgIds)
         .select("id", { count: "exact", head: true });
@@ -67,8 +69,8 @@ export async function POST() {
 
   for (const table of OPTIONAL_TABLES) {
     try {
-      const { count } = await admin
-        .from(table as any)
+      const { count } = await db
+        .from(table)
         .update({ org_id: realOrgId })
         .in("org_id", duplicateOrgIds)
         .select("id", { count: "exact", head: true });
@@ -78,7 +80,7 @@ export async function POST() {
     }
   }
 
-  await admin
+  await db
     .from("org_members")
     .delete()
     .in("org_id", duplicateOrgIds)
@@ -86,7 +88,7 @@ export async function POST() {
 
   for (const orgId of duplicateOrgIds) {
     try {
-      await admin.from("orgs").delete().eq("id", orgId);
+      await db.from("orgs").delete().eq("id", orgId);
     } catch {
       // ignore FK constraint issues
     }
