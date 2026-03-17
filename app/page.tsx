@@ -9,11 +9,6 @@ export default function LandingPage() {
       <Link href="/auth/login">
         <Button className="w-full">Log In</Button>
       </Link>
-      <Link href="/auth/sign-up">
-        <Button className="w-full" variant="secondary">
-          Sign Up
-        </Button>
-      </Link>
     </main>
   );
 }
