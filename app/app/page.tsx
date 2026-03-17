@@ -43,60 +43,56 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 mb-3">Dashboard</h2>
-        <div className="grid grid-cols-4 gap-2">
+    <div className="p-3 space-y-2">
+      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-800 mb-2">Dashboard</h2>
+        <div className="grid grid-cols-4 gap-1.5">
           {statCards.map((card) => (
             <Link key={card.label} href={card.href}
               className="rounded-xl p-2 flex flex-col items-center text-white text-center"
               style={{ backgroundColor: card.color }}>
               <span className="text-[10px] font-semibold leading-tight">{card.label}</span>
-              <span className="text-2xl font-bold mt-1">{card.value}</span>
+              <span className="text-xl font-bold mt-0.5">{card.value}</span>
             </Link>
           ))}
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 pt-4 pb-2">
-          <h2 className="text-base font-bold text-slate-800">Needs Attention</h2>
+        <div className="px-3 pt-2.5 pb-1.5">
+          <h2 className="text-sm font-bold text-slate-800">Needs Attention</h2>
         </div>
         {overdueInvoices.length === 0 && estimatesCount === 0 ? (
-          <div className="px-4 py-6 text-center text-sm text-gray-400">Nothing urgent.</div>
+          <div className="px-3 pb-2.5 text-xs text-gray-400">Nothing urgent.</div>
         ) : (
           <div className="divide-y divide-gray-100">
             {estimatesCount > 0 && (
-              <Link href={sentQuotesHref} className="flex items-center gap-3 px-4 py-3">
-                <span className="text-yellow-500 text-lg">⚠️</span>
-                <span className="text-sm text-slate-700 flex-1">
+              <Link href={sentQuotesHref} className="flex items-center gap-2 px-3 py-2">
+                <span className="text-yellow-500 text-sm">⚠️</span>
+                <span className="text-xs text-slate-700 flex-1">
                   {estimatesCount} quote{estimatesCount > 1 ? "s" : ""} awaiting response
                 </span>
-                <span className="text-gray-400">›</span>
+                <span className="text-gray-400 text-xs">›</span>
               </Link>
             )}
             {overdueInvoices.map((inv) => (
-              <Link key={inv.id} href="/app/money" className="flex items-center gap-3 px-4 py-3">
-                <span className="text-red-500 text-lg">🔴</span>
-                <span className="text-sm text-slate-700 flex-1">
+              <Link key={inv.id} href="/app/money" className="flex items-center gap-2 px-3 py-2">
+                <span className="text-red-500 text-sm">🔴</span>
+                <span className="text-xs text-slate-700 flex-1">
                   Overdue Invoice – ${Number(inv.total_amount).toLocaleString()}
                 </span>
-                <span className="text-gray-400">›</span>
+                <span className="text-gray-400 text-xs">›</span>
               </Link>
             ))}
-            {overdueInvoices.length === 0 && estimatesCount === 0 && (
-              <div className="px-4 py-3 text-center text-sm text-gray-400">Nothing urgent.</div>
-            )}
           </div>
         )}
-        {estimatesCount === 0 && overdueInvoices.length === 0 && null}
       </div>
 
       <OpsBoard />
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <h2 className="text-base font-bold text-slate-800 mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-800 mb-2">Quick Actions</h2>
+        <div className="grid grid-cols-2 gap-2 mb-2">
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
@@ -104,15 +100,17 @@ export default async function DashboardPage() {
             { label: "Schedule Job", href: "/app/jobs", icon: "📅" },
           ].map((action) => (
             <Link key={action.label} href={action.href}
-              className="flex items-center gap-3 rounded-xl px-4 py-4 text-white font-semibold text-sm"
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-white font-semibold text-xs"
               style={{ backgroundColor: "#1B3A6B" }}>
-              <span className="text-xl">{action.icon}</span>
+              <span className="text-base">{action.icon}</span>
               {action.label}
             </Link>
           ))}
         </div>
-        <PermitAssistant />
-        <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+        <div className="space-y-1.5">
+          <PermitAssistant />
+          <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+        </div>
       </div>
     </div>
   );

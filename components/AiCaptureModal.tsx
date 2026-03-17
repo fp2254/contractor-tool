@@ -328,7 +328,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
     return (
       <button
         onClick={open}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-4 font-semibold text-sm text-white"
+        className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 font-semibold text-sm text-white"
         style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}>
         <span className="text-lg">✨</span> AI Job Capture
       </button>

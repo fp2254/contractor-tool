@@ -106,7 +106,7 @@ export function PermitAssistant({ defaultDescription = "", defaultAddress = "", 
     <>
       <button
         onClick={openModal}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm border-2 transition-colors"
+        className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 font-semibold text-sm border-2 transition-colors"
         style={{ borderColor: "#1B3A6B", color: "#1B3A6B", backgroundColor: "white" }}>
         <span>📋</span> Permit Assistant
       </button>

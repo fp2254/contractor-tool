@@ -10,14 +10,14 @@ function ProgressBar({ categories }: { categories: OpsCategory[] }) {
   const pct = total === 0 ? 0 : Math.round((cleared / total) * 100);
 
   return (
-    <div className="mt-3 space-y-1.5">
+    <div className="mt-2 space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-gray-500">Daily Progress</span>
         <span className="text-xs font-semibold text-[#1B3A6B]">
           {cleared} of {total} clear
         </span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{
@@ -82,9 +82,9 @@ export default function OpsBoard() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+      <div className="px-4 pt-3 pb-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-800 tracking-tight">
+          <h2 className="text-sm font-bold text-slate-800 tracking-tight">
             TODAY'S OPS
           </h2>
           {allClear ? (
@@ -98,21 +98,15 @@ export default function OpsBoard() {
           )}
         </div>
 
-        {summary && (
-          <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">{summary}</p>
-        )}
-
         <ProgressBar categories={categories} />
       </div>
 
       {allClear ? (
-        <div className="px-4 py-6 text-center space-y-1">
-          <p className="text-2xl">✅</p>
-          <p className="text-sm font-semibold text-slate-700">
-            Operations board clear.
-          </p>
-          <p className="text-xs text-gray-400">
-            {cleared} of {categories.length} categories in good shape today.
+        <div className="px-4 py-2.5 flex items-center gap-2.5">
+          <span className="text-base shrink-0">✅</span>
+          <p className="text-xs text-slate-600">
+            <span className="font-semibold">Board clear.</span>{" "}
+            {cleared}/{categories.length} categories in good shape.
           </p>
         </div>
       ) : (
