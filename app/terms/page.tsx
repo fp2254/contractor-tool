@@ -7,7 +7,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-5 py-10">
         <div className="mb-8">
-          <Link href="/auth/login" className="text-[#1B3A6B] text-sm font-semibold">← Back to Login</Link>
+          <Link href="/" className="text-[#1B3A6B] text-sm font-semibold">← Back to Home</Link>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">

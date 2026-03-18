@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Allow: /features
+Allow: /pricing
+Allow: /waitlist
+Allow: /login
+Allow: /privacy
+Allow: /terms
+
+Disallow: /app/
+Disallow: /auth/
+Disallow: /api/
+Disallow: /portal/
+Disallow: /admin/
+
+Sitemap: https://trade-base.biz/sitemap.xml

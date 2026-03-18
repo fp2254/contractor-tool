@@ -1,0 +1,316 @@
+TRADEBASE MARKETING SITE — BUILD IT THE RIGHT WAY
+
+Goal:
+Turn the public-facing site into a clean, high-converting SaaS marketing site for contractors.
+This site should sell the value of TradeBase clearly and push visitors to:
+1. Join the waitlist
+2. Start early access
+3. Log in to the app
+
+IMPORTANT:
+The marketing site is public.
+The app itself stays at /app for now.
+Do NOT change the app functionality.
+Focus only on the marketing side.
+
+==================================================
+1. SITE STRUCTURE
+==================================================
+
+Public marketing pages should include:
+
+/
+Main homepage
+
+/features
+Detailed feature breakdown
+
+/pricing
+Pricing page
+
+/waitlist
+Early access / waitlist signup
+
+/login
+Simple page with button redirecting to /app
+
+/privacy
+Privacy policy
+
+/terms
+Terms of service
+
+==================================================
+2. HOMEPAGE STRUCTURE
+==================================================
+
+Build the homepage in this order:
+
+--------------------------------------------------
+SECTION 1 — HERO
+--------------------------------------------------
+
+Headline:
+Stop doing paperwork at night.
+
+Subheadline:
+TradeBase helps contractors run quotes, jobs, invoices, receipts, inventory, and customer communication from one mobile-first app.
+
+Primary CTA:
+Join Early Access
+
+Secondary CTA:
+Watch Demo
+
+Small trust text:
+Built for contractors. Designed for the field.
+
+--------------------------------------------------
+SECTION 2 — PROBLEM
+--------------------------------------------------
+
+Headline:
+Most contractors are still running their business the hard way.
+
+Bullet points:
+- Quotes written after hours
+- Invoices scattered everywhere
+- Receipts lost in the truck
+- Customer info split across apps
+- Jobs tracked through texts and notes
+
+Closing line:
+TradeBase puts it all in one place.
+
+--------------------------------------------------
+SECTION 3 — WHAT TRADEBASE DOES
+--------------------------------------------------
+
+Headline:
+Run your business from your phone.
+
+Feature cards:
+- Leads
+- Customers
+- Quotes
+- Jobs
+- Invoices
+- Receipts
+- Inventory
+- Trade Contacts
+- AI Tools
+
+Each card should have a short 1–2 sentence explanation.
+
+--------------------------------------------------
+SECTION 4 — AI SECTION
+--------------------------------------------------
+
+Headline:
+Built with AI from the ground up.
+
+Highlight these features:
+- AI Job Capture
+- Scope of Work Generator
+- Receipt Scanner
+- Business Card Scanner
+- Permit Assistant
+- Client Intel
+- Follow-up Drafter
+- Daily Ops Summary
+
+Keep the language practical, not hypey.
+
+Example wording:
+Describe a job in plain English and TradeBase fills in the details.
+
+--------------------------------------------------
+SECTION 5 — MOBILE FIRST
+--------------------------------------------------
+
+Headline:
+Built for the jobsite, not the office.
+
+Text:
+TradeBase is designed for a phone first. Fast taps, simple screens, and everything you need while standing in a driveway, basement, truck, or jobsite.
+
+Include phone mockup screenshots if available.
+
+--------------------------------------------------
+SECTION 6 — CUSTOMER PORTAL
+--------------------------------------------------
+
+Headline:
+Send quotes and invoices like a pro.
+
+Text:
+Customers can open a branded portal, review documents, sign quotes, download PDFs, and approve work without needing an account.
+
+--------------------------------------------------
+SECTION 7 — FOUNDER PRICING
+--------------------------------------------------
+
+Headline:
+Founding Contractor Pricing
+
+Text:
+The first 200 contractors will lock in founder pricing when TradeBase launches.
+
+Pricing cards:
+Founder Plan
+$15/month locked in for life
+
+Standard Plan
+$25/month after launch
+
+Optional small note:
+No bloated tiers. No complicated setup. Just the tools contractors actually need.
+
+--------------------------------------------------
+SECTION 8 — FINAL CTA
+--------------------------------------------------
+
+Headline:
+Be one of the first contractors on TradeBase.
+
+Button:
+Join the Waitlist
+
+Secondary line:
+Get early access, founder pricing, and launch updates.
+
+==================================================
+3. WAITLIST PAGE
+==================================================
+
+The /waitlist page should be simple and conversion-focused.
+
+Headline:
+Join the TradeBase Waitlist
+
+Subheadline:
+Be one of the first contractors to get access when TradeBase launches.
+
+Form fields:
+- First Name
+- Last Name
+- Email
+- Phone (optional)
+- Trade / Business Type
+- Company Name (optional)
+- State
+- Biggest business pain point (optional)
+
+Button:
+Join the Waitlist
+
+Success message:
+You're on the list. We'll let you know when early access opens.
+
+Support source tracking from query params:
+Example:
+/waitlist?source=facebook_messenger
+
+==================================================
+4. PRICING PAGE
+==================================================
+
+Build a simple pricing page with only two options:
+
+Founder Plan
+- $15/month
+- locked in for life
+- first 200 contractors only
+
+Standard Plan
+- $25/month
+- regular pricing after launch
+
+Feature list for both:
+- Leads
+- Customers
+- Quotes
+- Jobs
+- Invoices
+- Receipts
+- Inventory
+- Trade Contacts
+- Customer Portal
+- AI tools
+
+Optional note:
+AI usage may be subject to fair use limits later if needed.
+
+==================================================
+5. FEATURES PAGE
+==================================================
+
+Create a proper /features page with grouped sections:
+
+Leads & Sales
+Customers
+Quotes
+Jobs
+Invoices
+Receipts & Expenses
+Inventory
+Trade Contacts
+Customer Portal
+AI Features
+Reports & Export
+
+Use clean sections and contractor-friendly language.
+
+==================================================
+6. LOGIN PAGE
+==================================================
+
+For now, /login can be very simple.
+
+Headline:
+Log in to TradeBase
+
+Button:
+Go to App
+
+Redirect button to:
+/app
+
+==================================================
+7. DESIGN RULES
+==================================================
+
+Use the current TradeBase visual style:
+- navy blue primary
+- white cards
+- clean mobile-first spacing
+- contractor-focused tone
+- serious and practical, not goofy
+
+Do not make it look like a tech startup landing page full of buzzwords.
+It should feel like software built by someone who actually works in the trades.
+
+==================================================
+8. SEO BASICS
+==================================================
+
+Add basic SEO metadata to public pages.
+
+Homepage title:
+TradeBase – Contractor Business Software Built for the Jobsite
+
+Homepage meta description:
+TradeBase helps contractors manage quotes, jobs, invoices, receipts, inventory, and customer communication from one mobile-first app.
+
+Do NOT index app pages.
+Only index the public marketing pages.
+
+==================================================
+9. IMPORTANT
+==================================================
+
+Do not break the existing app.
+Do not move app routes yet.
+Do not change database structure for this task.
+
+This task is only to improve the public marketing experience and make TradeBase look like a real product people want to join.
