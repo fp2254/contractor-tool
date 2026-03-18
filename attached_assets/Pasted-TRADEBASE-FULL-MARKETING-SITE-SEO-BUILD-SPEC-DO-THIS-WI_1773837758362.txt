@@ -1,0 +1,509 @@
+TRADEBASE — FULL MARKETING SITE + SEO BUILD SPEC
+DO THIS WITHOUT BREAKING THE APP
+
+GOAL
+Build the public-facing marketing website for TradeBase and add SEO landing pages, while keeping the actual application stable and untouched under /app.
+
+IMPORTANT RULE
+The app currently lives at:
+/app
+
+DO NOT break or move the existing application.
+
+Everything public/marketing/SEO must live OUTSIDE of /app.
+Everything software/authenticated stays INSIDE /app.
+
+==================================================
+1. CURRENT APP MUST STAY INTACT
+==================================================
+
+The following application routes must remain unchanged and working:
+
+/app
+/app/dashboard
+/app/leads
+/app/customers
+/app/quotes
+/app/jobs
+/app/invoices
+/app/schedule
+/app/receipts
+/app/inventory
+/app/trade-contacts
+/app/search
+/app/profile
+/app/settings
+/app/reports
+/app/export
+/app/referral
+
+Do not move these routes.
+Do not change app auth logic.
+Do not change app database structure for this task.
+Do not mix marketing pages into /app.
+
+==================================================
+2. PUBLIC MARKETING SITE STRUCTURE
+==================================================
+
+Create or improve these public pages:
+
+/
+Main homepage
+
+/features
+Full feature breakdown
+
+/pricing
+Public pricing page
+
+/waitlist
+Waitlist / early access signup page
+
+/login
+Simple page with button redirecting into /app
+
+/privacy
+Privacy policy page
+
+/terms
+Terms and conditions page
+
+==================================================
+3. SEO LANDING PAGES
+==================================================
+
+Create these public SEO pages outside /app:
+
+/contractor-software
+/plumbing-business-software
+/electrician-business-software
+/hvac-business-software
+/roofing-business-software
+/invoice-software-for-contractors
+/quote-software-for-contractors
+/job-management-app
+/contractor-crm
+/contractor-estimate-software
+
+IMPORTANT:
+Each page must be unique and tailored slightly to its keyword.
+Do not just duplicate the same content across all pages.
+
+Each SEO page should include:
+1. Strong H1 targeting the keyword
+2. Explanation of the contractor problem
+3. How TradeBase solves it
+4. Relevant feature callouts
+5. CTA to join the waitlist or start early access
+
+==================================================
+4. HOMEPAGE CONTENT STRUCTURE
+==================================================
+
+Build the homepage in this order:
+
+--------------------------------------------------
+SECTION 1 — HERO
+--------------------------------------------------
+
+Headline:
+Stop doing paperwork at night.
+
+Subheadline:
+TradeBase helps contractors run quotes, jobs, invoices, receipts, inventory, and customer communication from one mobile-first app.
+
+Primary CTA:
+Join Early Access
+
+Secondary CTA:
+Watch Demo
+
+Small trust line:
+Built for contractors. Designed for the field.
+
+--------------------------------------------------
+SECTION 2 — THE PROBLEM
+--------------------------------------------------
+
+Headline:
+Most contractors are still running their business the hard way.
+
+Bullet points:
+- Writing quotes after hours
+- Chasing invoices and payments
+- Losing receipts in the truck
+- Customer info scattered everywhere
+- Jobs tracked through texts and notes
+
+Closing line:
+TradeBase puts it all in one place.
+
+--------------------------------------------------
+SECTION 3 — WHAT TRADEBASE DOES
+--------------------------------------------------
+
+Headline:
+Run your business from your phone.
+
+Feature cards:
+- Leads
+- Customers
+- Quotes
+- Jobs
+- Invoices
+- Receipts
+- Inventory
+- Trade Contacts
+- Customer Portal
+- AI Tools
+
+Each card should have a short practical explanation.
+
+--------------------------------------------------
+SECTION 4 — AI SECTION
+--------------------------------------------------
+
+Headline:
+Built with AI from the ground up.
+
+Highlight:
+- AI Job Capture
+- Voice-to-job
+- Scope of Work Generator
+- Receipt Scanner
+- Business Card Scanner
+- Permit Assistant
+- Client Intel
+- Note Summary
+- Follow-up Drafter
+- Daily Ops Summary
+
+Tone:
+Practical, useful, no hype.
+
+Example wording:
+Describe a job in plain English and TradeBase fills in the details.
+
+--------------------------------------------------
+SECTION 5 — MOBILE-FIRST
+--------------------------------------------------
+
+Headline:
+Built for the jobsite, not the office.
+
+Text:
+TradeBase is designed around a phone screen so contractors can handle work from a driveway, basement, truck, or jobsite.
+
+Use phone/app screenshots if available.
+
+--------------------------------------------------
+SECTION 6 — CUSTOMER PORTAL
+--------------------------------------------------
+
+Headline:
+Send quotes and invoices like a pro.
+
+Text:
+Customers can open a branded portal, review documents, sign quotes, download PDFs, and approve work without needing an account.
+
+--------------------------------------------------
+SECTION 7 — FOUNDER PRICING
+--------------------------------------------------
+
+Headline:
+Founding Contractor Pricing
+
+Founder Plan:
+$15/month locked in for life
+First 200 contractors only
+
+Standard Plan:
+$25/month after launch
+
+Small note:
+No bloated tiers. No complicated setup. Just the tools contractors actually need.
+
+--------------------------------------------------
+SECTION 8 — FINAL CTA
+--------------------------------------------------
+
+Headline:
+Be one of the first contractors on TradeBase.
+
+Button:
+Join the Waitlist
+
+Secondary text:
+Get early access, founder pricing, and launch updates.
+
+==================================================
+5. FEATURES PAGE
+==================================================
+
+Create a strong /features page with grouped sections:
+
+Leads & Sales
+Customers
+Quotes
+Jobs
+Invoices
+Receipts & Expenses
+Inventory
+Trade Contacts
+Customer Portal
+AI Features
+Reports & Export
+Offline / PWA
+
+Use contractor-friendly language.
+Keep it practical.
+No buzzword fluff.
+
+==================================================
+6. PRICING PAGE
+==================================================
+
+Create /pricing with only two public plans:
+
+Founder Plan
+- $15/month
+- locked in for life
+- first 200 contractors only
+
+Standard Plan
+- $25/month
+- regular pricing after launch
+
+Both should show the same included features:
+- Leads
+- Customers
+- Quotes
+- Jobs
+- Invoices
+- Receipts
+- Inventory
+- Trade Contacts
+- Customer Portal
+- AI features
+
+Optional note:
+AI usage may be subject to fair use limits later if needed.
+
+==================================================
+7. WAITLIST PAGE
+==================================================
+
+Create /waitlist as a high-conversion public page.
+
+Headline:
+Join the TradeBase Waitlist
+
+Subheadline:
+Be one of the first contractors to get access when TradeBase launches.
+
+Form fields:
+- First Name
+- Last Name
+- Email
+- Phone (optional)
+- Trade / Business Type
+- Company Name (optional)
+- State
+- Biggest business pain point (optional textarea)
+
+CTA button:
+Join the Waitlist
+
+Success message:
+You're on the list. We'll let you know when early access opens.
+
+==================================================
+8. WAITLIST DATABASE + TRACKING
+==================================================
+
+Use the existing Supabase project.
+Do NOT create a second Supabase project.
+
+Create a waitlist table:
+
+id
+first_name
+last_name
+email
+phone
+trade_type
+company_name
+state
+pain_point
+source
+created_at
+
+Support source tracking via query params.
+
+Example:
+/waitlist?source=facebook_messenger
+
+If source param exists:
+save it in source column
+
+If not:
+default source = website
+
+Security:
+- public can submit waitlist form
+- public cannot read waitlist entries
+- admin can view/export entries
+
+==================================================
+9. ADMIN WAITLIST PAGE
+==================================================
+
+Create:
+/admin/waitlist
+
+Show columns:
+- Name
+- Email
+- Phone
+- Trade
+- State
+- Source
+- Created At
+
+Add:
+- CSV export
+- optional status fields later
+
+Future-ready optional fields:
+status
+invited_at
+activated_at
+
+==================================================
+10. EMAIL CONFIRMATION
+==================================================
+
+Use Resend to send confirmation email after waitlist signup.
+
+Subject:
+You're on the TradeBase waitlist
+
+Body:
+Thanks for joining the TradeBase waitlist.
+We'll let you know when early access opens.
+
+TradeBase is being built for contractors who want a simpler way to handle quotes, jobs, invoices, receipts, inventory, and more.
+
+==================================================
+11. LOGIN PAGE
+==================================================
+
+Create /login with:
+
+Headline:
+Log in to TradeBase
+
+Button:
+Go to App
+
+Redirect button to:
+/app
+
+==================================================
+12. EMBEDDED DISTRIBUTION FOOTERS
+==================================================
+
+Add subtle TradeBase branding to customer-facing surfaces.
+
+Customer Portal footer:
+Powered by TradeBase
+The operating system for contractors
+
+Link:
+https://tradebase.contractors
+
+Quote email footer:
+Sent using TradeBase
+Built for contractors
+
+Invoice email footer:
+Invoice powered by TradeBase
+Built for contractors
+
+Portal email footer:
+Documents delivered with TradeBase
+Built for contractors
+
+Keep branding subtle and professional.
+Do not overpower the contractor’s branding.
+
+==================================================
+13. SEO RULES
+==================================================
+
+Only public pages should be indexable.
+
+App pages under /app should NOT be indexed.
+
+Add proper metadata to public pages.
+
+Homepage title:
+TradeBase – Contractor Business Software Built for the Jobsite
+
+Homepage meta description:
+TradeBase helps contractors manage quotes, jobs, invoices, receipts, inventory, and customer communication from one mobile-first app.
+
+Each SEO page needs:
+- unique title
+- unique meta description
+- keyword in H1
+- clean URL slug
+
+Add sitemap.xml and robots.txt.
+
+Robots rules:
+- allow indexing of public marketing pages
+- disallow indexing of /app routes
+
+==================================================
+14. DESIGN RULES
+==================================================
+
+Use the current TradeBase visual style:
+- navy primary
+- white cards
+- mobile-first layout
+- serious contractor tone
+- simple, strong, practical UI
+
+Do not make it look like a generic tech startup page.
+It should feel like software built by a contractor for contractors.
+
+==================================================
+15. SAFETY RULES
+==================================================
+
+Do NOT:
+- break /app routes
+- move the app out of /app
+- change auth flow inside the app
+- change core database structure for the app in this task
+- mix public marketing content into authenticated app screens
+
+All new marketing and SEO pages must live OUTSIDE /app.
+
+==================================================
+16. FINAL GOAL
+==================================================
+
+The site should feel like a real SaaS:
+
+Public:
+- explains the product
+- ranks in Google
+- captures waitlist users
+- supports Facebook / Messenger traffic
+
+Private:
+- existing TradeBase app continues to run normally under /app

@@ -6,6 +6,16 @@ Allow: /waitlist
 Allow: /login
 Allow: /privacy
 Allow: /terms
+Allow: /contractor-software
+Allow: /plumbing-business-software
+Allow: /electrician-business-software
+Allow: /hvac-business-software
+Allow: /roofing-business-software
+Allow: /invoice-software-for-contractors
+Allow: /quote-software-for-contractors
+Allow: /job-management-app
+Allow: /contractor-crm
+Allow: /contractor-estimate-software
 
 Disallow: /app/
 Disallow: /auth/
