@@ -15,7 +15,13 @@ type NewCustomer = {
 
 const EMPTY_NC: NewCustomer = { first_name: "", last_name: "", phone: "", email: "" };
 
-export default function NewInvoiceClient({ customers }: { customers: { id: string; name: string }[] }) {
+export default function NewInvoiceClient({
+  customers,
+  defaultWarrantyText = "",
+}: {
+  customers: { id: string; name: string }[];
+  defaultWarrantyText?: string;
+}) {
   const router = useRouter();
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "__new__");
   const [newCustomer, setNewCustomer] = useState<NewCustomer>(EMPTY_NC);
@@ -183,7 +189,7 @@ export default function NewInvoiceClient({ customers }: { customers: { id: strin
       </div>
 
       {/* Terms & Warranty */}
-      <WarrantySection value={warrantyText} onChange={setWarrantyText} />
+      <WarrantySection value={warrantyText} onChange={setWarrantyText} businessWarrantyText={defaultWarrantyText} />
 
       {/* Notes */}
       <div>
