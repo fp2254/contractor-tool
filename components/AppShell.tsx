@@ -63,7 +63,7 @@ const navItems = [
   { label: "Clients", href: "/app/customers",   Icon: LeadsIcon,  exact: false },
   { label: "Quotes",  href: "/app/quotes",      Icon: QuotesIcon, exact: false },
   { label: "Jobs",    href: "/app/jobs",         Icon: JobsIcon,   exact: false },
-  { label: "Money",   href: "/app/money",        Icon: MoneyIcon,  exact: false },
+  { label: "Invoices", href: "/app/invoices",     Icon: MoneyIcon,  exact: false },
   { label: "More",    href: "/app/more",         Icon: MoreIcon,   exact: false },
 ];
 

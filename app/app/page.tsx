@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   const statCards = [
     { label: "New Leads", value: newLeadsCount, color: "#F97316", href: "/app/leads" },
     { label: "Jobs Today", value: jobsTodayCount, color: "#22C55E", href: "/app/jobs" },
-    { label: "Unpaid", value: `$${unpaidTotal.toLocaleString()}`, color: "#EF4444", href: "/app/money" },
+    { label: "Unpaid", value: `$${unpaidTotal.toLocaleString()}`, color: "#EF4444", href: "/app/invoices" },
     { label: "Estimates", value: estimatesCount, color: "#3B82F6", href: sentQuotesHref },
   ];
 
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
               </Link>
             )}
             {overdueInvoices.map((inv) => (
-              <Link key={inv.id} href="/app/money" className="flex items-center gap-2 px-3 py-2">
+              <Link key={inv.id} href="/app/invoices" className="flex items-center gap-2 px-3 py-2">
                 <span className="text-red-500 text-sm">🔴</span>
                 <span className="text-xs text-slate-700 flex-1">
                   Overdue Invoice – ${Number(inv.total_amount).toLocaleString()}
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
-            { label: "Collect Payment", href: "/app/money", icon: "💰" },
+            { label: "Collect Payment", href: "/app/invoices", icon: "💰" },
             { label: "Schedule Job", href: "/app/jobs", icon: "📅" },
           ].map((action) => (
             <Link key={action.label} href={action.href}

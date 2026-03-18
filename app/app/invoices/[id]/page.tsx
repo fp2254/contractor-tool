@@ -136,7 +136,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <Link href="/app/money" className="text-gray-400">
+        <Link href="/app/invoices" className="text-gray-400">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
           </svg>
