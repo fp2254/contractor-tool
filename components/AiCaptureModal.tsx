@@ -114,6 +114,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
   const [listening, setListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const baseTextRef = useRef("");
 
   useEffect(() => {
     const SR = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -123,22 +124,29 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
   function startListening() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
+    baseTextRef.current = text;
     const rec = new SR();
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
-    let finalTranscript = "";
+    let accumulated = "";
     rec.onstart = () => setListening(true);
     rec.onresult = (e: SpeechRecognitionEvent) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalTranscript += t + " ";
+        if (e.results[i].isFinal) accumulated += t + " ";
         else interim = t;
       }
-      setText((prev) => (prev.trim() ? prev.trimEnd() + " " + (finalTranscript || interim).trim() : (finalTranscript || interim).trim()));
+      const prefix = baseTextRef.current.trim() ? baseTextRef.current.trimEnd() + " " : "";
+      setText(prefix + (accumulated + interim).trim());
     };
-    rec.onerror = () => { setListening(false); setError("Microphone error — check browser permissions and try again."); };
+    rec.onerror = (e) => {
+      setListening(false);
+      if ((e as { error?: string }).error !== "aborted") {
+        setError("Microphone error — check browser permissions and try again.");
+      }
+    };
     rec.onend = () => { setListening(false); recognitionRef.current = null; };
     recognitionRef.current = rec;
     rec.start();
