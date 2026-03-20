@@ -1,0 +1,283 @@
+Build an interactive DEMO MODE for TradeBase using our existing Next.js 16 + Supabase multi-tenant architecture.
+
+IMPORTANT:
+- Do NOT redesign the app.
+- Do NOT change existing branding or navigation.
+- Reuse the current /app experience.
+- This should be a real in-app demo using seeded sample data, not a mocked frontend.
+- Keep everything mobile-first.
+
+GOAL:
+Add a public “Try Demo” flow so visitors can enter a safe demo account and walk through the app with realistic sample contractor data.
+
+==================================================
+1. HIGH-LEVEL DEMO MODE REQUIREMENTS
+==================================================
+
+Implement demo mode with:
+- a dedicated demo organization
+- a dedicated demo user
+- seeded realistic sample data tied to that demo org
+- a public route that signs the visitor into the demo account
+- visible “Demo Mode” UI indicators
+- protection against dangerous or real-world actions
+
+Use the existing org-based data model. All demo records must belong to a demo org_id.
+
+==================================================
+2. DATABASE CHANGES
+==================================================
+
+Add support for demo orgs.
+
+Required:
+- Add `is_demo boolean not null default false` to the `orgs` table
+
+If needed, create a migration for this.
+
+==================================================
+3. DEMO ACCOUNT / DEMO ORG
+==================================================
+
+Create or support a dedicated demo account:
+
+Demo org:
+- name: TradeBase Demo Co
+- is_demo: true
+
+Demo user:
+- email: demo@trade-base.biz
+
+If the demo user/org already exists, reuse them.
+If not, create them.
+
+Make sure the demo user belongs to the demo org through the existing org membership structure.
+
+==================================================
+4. PUBLIC DEMO ENTRY FLOW
+==================================================
+
+Create a public route:
+- `/demo`
+
+Behavior:
+- When a visitor opens `/demo`, automatically sign them into the demo user account using our existing Supabase SSR auth flow
+- Then redirect them into `/app`
+
+If automatic sign-in requires a server action or route handler, implement it cleanly and securely.
+
+Also add a CTA button to the marketing site:
+- text: “Try Demo”
+- route: `/demo`
+
+Add this button in obvious places like:
+- homepage hero
+- pricing page
+- waitlist page if appropriate
+
+==================================================
+5. SEEDED DEMO DATA
+==================================================
+
+Create a seed script for demo data.
+
+File:
+- `scripts/seed-demo.ts`
+
+Behavior:
+- find or create the demo org
+- wipe existing demo records for that org in a safe foreign-key-aware order
+- insert fresh realistic sample data
+
+Seed realistic contractor/trade business data, preferably aligned with radon / water mitigation / small trades.
+
+Create enough data so the dashboard and all core modules feel alive immediately.
+
+Seed at minimum:
+
+CUSTOMERS
+- John Carter — Radon fan replacement
+- Sarah Whitman — Radon-in-water aeration install
+- Pine Ridge Realty — Pre-sale radon mitigation
+- Green Meadow Apartments — Crawlspace moisture issue
+
+LEADS
+Use mixed pipeline stages:
+- New
+- Contacted
+- Quoted
+- Scheduled
+- Won
+- Lost
+
+QUOTES
+Include at least 4 with realistic totals and statuses:
+- Radon mitigation install — Draft
+- Radon-in-water aeration install — Sent
+- Crawlspace vapor barrier — Accepted
+- Fan replacement — Declined or Expired
+
+Include quote line items.
+
+JOBS
+Include at least 4:
+- Scheduled
+- In Progress
+- Waiting on Parts
+- Complete
+
+INVOICES
+Include at least 4:
+- Paid
+- Unpaid
+- Overdue
+
+Include invoice line items and one or two payments.
+
+TRADE CONTACTS
+Examples:
+- Mike’s Plumbing
+- Eastern Electrical
+- County Building Inspector
+- ABC Supply
+
+INVENTORY ITEMS
+Examples:
+- RP145 fan
+- PVC fittings
+- Manometer
+- Couplings
+- Alarm monitor
+- Vapor barrier roll
+
+NOTES / PHOTOS / AI RUNS
+Seed a few sample notes and AI summaries if the schema supports it so detail pages don’t feel empty.
+
+Make all seeded dates realistic:
+- some past
+- some today
+- some upcoming
+
+After seeding, the dashboard should show believable metrics like:
+- new leads
+- jobs today
+- unpaid total
+- estimates sent
+
+==================================================
+6. DEMO MODE UI
+==================================================
+
+When the current org is a demo org, show a clear but clean demo indicator.
+
+Add a reusable component for this, visible inside /app:
+- “Demo Mode”
+- subtext: “You’re exploring TradeBase with sample data. Some actions are limited and changes may reset.”
+
+Place it in a non-intrusive way near the top of the dashboard and other major screens if practical.
+
+Also add a small badge/chip where helpful:
+- “Demo”
+
+==================================================
+7. DEMO-SAFE RESTRICTIONS
+==================================================
+
+When `org.is_demo === true`, block or disable dangerous / real-world actions.
+
+Required restrictions:
+- disable real outbound email sending
+- disable customer portal email sending
+- disable billing/subscription actions if any exist
+- disable destructive account/org deletion
+- disable anything that could affect production billing or real customers
+
+For disabled actions:
+- do NOT throw ugly raw errors
+- show clean UI messaging like:
+  - “Email sending is disabled in demo mode.”
+  - “Portal links are disabled in demo mode.”
+  - “This setting can’t be changed in demo mode.”
+
+If quote/invoice PDF download is safe, keep it enabled if possible.
+
+If record creation/editing is safe, allow it unless it causes major issues.
+The goal is for demo users to explore the app meaningfully.
+
+==================================================
+8. CENTRALIZED DEMO CHECK
+==================================================
+
+Create a reusable helper to determine demo state.
+
+Example:
+- `lib/demo.ts`
+
+Include helpers like:
+- `isDemoOrg(org)`
+- `assertNotDemo(org, actionName?)` if useful
+
+Use this centrally anywhere demo restrictions are needed.
+
+==================================================
+9. DASHBOARD WALKTHROUGH / GUIDED EXPERIENCE
+==================================================
+
+On the dashboard, add a simple “Start here” / walkthrough card for demo users only.
+
+Include a short checklist like:
+- Review a lead
+- Open a quote
+- Convert a quote to a job
+- View the calendar
+- Mark an invoice paid
+- Try AI Job Capture
+
+This should help demo users know what to click first without creating a huge onboarding system.
+
+Keep it visually consistent with the current UI.
+
+==================================================
+10. FILES / IMPLEMENTATION STRUCTURE
+==================================================
+
+Please implement cleanly and use the existing project structure where appropriate.
+
+Likely files to create/update:
+- migration adding `orgs.is_demo`
+- `scripts/seed-demo.ts`
+- `/app/demo/page.tsx` OR appropriate route handler / server action flow
+- marketing site CTA buttons
+- `lib/demo.ts`
+- demo banner / badge component
+- any guards around email / portal / dangerous settings actions
+
+==================================================
+11. IMPORTANT IMPLEMENTATION NOTES
+==================================================
+
+- Do not break existing auth
+- Do not break existing org scoping
+- Do not remove current features
+- Do not build a fake frontend-only demo
+- Reuse real app pages and real seeded data
+- Keep code TypeScript-safe
+- Keep styling consistent with existing Tailwind design
+- Keep everything responsive for phone use
+
+==================================================
+12. DELIVERABLES I WANT FROM YOU
+==================================================
+
+After implementation, give me:
+
+1. A summary of what you changed
+2. Any migrations added
+3. Any new environment variables needed
+4. Exact steps to run the demo seed script
+5. Any caveats or parts that need manual setup
+6. If automatic demo login is not fully possible with current auth constraints, implement the closest clean working version and explain exactly what remains
+
+Also:
+- make sure the demo flow is production-friendly
+- make sure seeded demo data can be reset easily by rerunning the script
