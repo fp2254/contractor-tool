@@ -84,6 +84,14 @@ export default function PricingPage() {
           </div>
         </div>
 
+        <div className="text-center mb-8">
+          <Link href="/demo"
+            className="inline-flex items-center gap-2 rounded-xl px-7 py-3 bg-amber-400 font-bold text-amber-900 text-sm hover:bg-amber-300 transition-colors shadow-sm">
+            🔭 Try Demo — No signup needed
+          </Link>
+          <p className="text-xs text-gray-400 mt-2">Explore TradeBase with real sample contractor data</p>
+        </div>
+
         {/* FAQ */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-5">
           <h2 className="text-lg font-bold text-slate-800">Common Questions</h2>

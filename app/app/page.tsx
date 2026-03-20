@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { getOrgIsDemo } from "@/lib/demo";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import OpsBoard from "@/components/OpsBoard";
@@ -10,6 +11,8 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+
+  const isDemo = await getOrgIsDemo(orgId!);
 
   const [leads, jobs, invoices, quotes, orgSettings] = await Promise.all([
     admin.from("leads").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "new"),
@@ -112,6 +115,43 @@ export default async function DashboardPage() {
           <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
         </div>
       </div>
+
+      {isDemo && (
+        <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm border border-amber-100">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base">🗺️</span>
+            <h2 className="text-sm font-bold text-slate-800">Start Here</h2>
+            <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 uppercase tracking-wide">Demo</span>
+          </div>
+          <p className="text-xs text-gray-400 mb-2">Tap through these to see what TradeBase can do:</p>
+          <div className="space-y-1.5">
+            {[
+              { label: "Review a lead", href: "/app/leads", icon: "📥" },
+              { label: "Open a quote", href: "/app/quotes", icon: "📋" },
+              { label: "Check the jobs board", href: "/app/jobs", icon: "🔨" },
+              { label: "View the calendar", href: "/app/jobs?view=calendar", icon: "📅" },
+              { label: "Mark an invoice paid", href: "/app/invoices", icon: "💵" },
+              { label: "Try AI Job Capture", href: null, icon: "🤖" },
+            ].map((step) =>
+              step.href ? (
+                <Link key={step.label} href={step.href}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50 active:bg-blue-50">
+                  <span className="text-sm">{step.icon}</span>
+                  <span className="text-xs font-medium text-slate-700">{step.label}</span>
+                  <span className="ml-auto text-gray-300 text-xs">›</span>
+                </Link>
+              ) : (
+                <div key={step.label} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50">
+                  <span className="text-sm">{step.icon}</span>
+                  <span className="text-xs font-medium text-slate-700">
+                    {step.label} <span className="text-gray-400">(tap above ↑)</span>
+                  </span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

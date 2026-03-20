@@ -13,6 +13,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
+  const { checkDemoBlock } = await import("@/lib/demo");
+  const demoBlock = await checkDemoBlock(orgId!, "Email sending");
+  if (demoBlock) return demoBlock;
+
   const [{ data: invoice }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),

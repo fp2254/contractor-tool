@@ -62,6 +62,10 @@ export default function HomePage() {
               className="w-full sm:w-auto rounded-xl px-8 py-3.5 bg-white font-bold text-[#1B3A6B] text-base shadow-lg hover:bg-blue-50 transition-colors">
               Join Early Access
             </Link>
+            <Link href="/demo"
+              className="w-full sm:w-auto rounded-xl px-8 py-3.5 bg-amber-400 font-bold text-amber-900 text-base hover:bg-amber-300 transition-colors">
+              Try Demo
+            </Link>
             <Link href="/features"
               className="w-full sm:w-auto rounded-xl px-8 py-3.5 border border-blue-400 text-white font-semibold text-base hover:bg-blue-800 transition-colors">
               See All Features

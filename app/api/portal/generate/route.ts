@@ -10,6 +10,10 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
   const body = await req.json() as { customer_id: string; quote_id?: string; reissue?: boolean };
 
+  const { checkDemoBlock } = await import("@/lib/demo");
+  const demoBlock = await checkDemoBlock(orgId!, "Portal email sending");
+  if (demoBlock) return demoBlock;
+
   if (!body.customer_id) {
     return NextResponse.json({ error: "customer_id required" }, { status: 400 });
   }

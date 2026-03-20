@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { GracePeriodBanner } from "@/components/GracePeriodBanner";
+import { DemoBanner } from "@/components/DemoBanner";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import { getSubscriptionState } from "@/lib/subscription";
 
@@ -23,18 +25,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!orgId) redirect("/auth/login");
 
-  const sub = await getSubscriptionState(orgId);
+  const admin = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orgRow } = await (admin as any)
+    .from("orgs")
+    .select("is_demo")
+    .eq("id", orgId)
+    .single();
+  const isDemo = orgRow?.is_demo === true;
 
-  if (sub.state === "expired" || sub.state === "canceled") {
-    redirect("/expired");
+  let graceDaysLeft: number | undefined;
+
+  if (!isDemo) {
+    const sub = await getSubscriptionState(orgId);
+    if (sub.state === "expired" || sub.state === "canceled") {
+      redirect("/expired");
+    }
+    if (sub.state === "grace_period" && sub.daysLeftInGrace !== undefined) {
+      graceDaysLeft = sub.daysLeftInGrace;
+    }
   }
 
   return (
     <>
       <OfflineBanner />
-      {sub.state === "grace_period" && sub.daysLeftInGrace !== undefined && (
-        <GracePeriodBanner daysLeft={sub.daysLeftInGrace} />
-      )}
+      {isDemo && <DemoBanner />}
+      {graceDaysLeft !== undefined && <GracePeriodBanner daysLeft={graceDaysLeft} />}
       <AppShell>{children}</AppShell>
     </>
   );
