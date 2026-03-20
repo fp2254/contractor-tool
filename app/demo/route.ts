@@ -6,8 +6,20 @@ export const dynamic = "force-dynamic";
 const DEMO_EMAIL = "demo@trade-base.biz";
 const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "TradeBaseDemo2024!";
 
+function getOrigin(req: Request): string {
+  const fwdHost =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const fwdProto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (fwdHost) {
+    const host = fwdHost.split(",")[0].trim();
+    const proto = fwdProto.split(",")[0].trim();
+    return `${proto}://${host}`;
+  }
+  return new URL(req.url).origin;
+}
+
 export async function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = getOrigin(request);
 
   const response = NextResponse.redirect(`${origin}/app`);
 

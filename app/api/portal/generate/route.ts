@@ -5,6 +5,16 @@ import { getResendClient, portalEmailHtml } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
+function getOrigin(req: Request): string {
+  const fwdHost =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const fwdProto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (fwdHost) {
+    return `${fwdProto.split(",")[0].trim()}://${fwdHost.split(",")[0].trim()}`;
+  }
+  return new URL(req.url).origin;
+}
+
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
@@ -116,9 +126,7 @@ export async function POST(req: Request) {
     token = newToken.token;
   }
 
-  const host = req.headers.get("host") ?? "localhost:5000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const portalUrl = `${protocol}://${host}/portal/${token}`;
+  const portalUrl = `${getOrigin(req)}/portal/${token}`;
   const customerFirstName = customer.first_name || customer.company_name || "there";
 
   const { client, fromEmail } = await getResendClient();

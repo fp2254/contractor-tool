@@ -4,6 +4,16 @@ import { ensureUserOrg } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+function getOrigin(req: Request): string {
+  const fwdHost =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const fwdProto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (fwdHost) {
+    return `${fwdProto.split(",")[0].trim()}://${fwdHost.split(",")[0].trim()}`;
+  }
+  return new URL(req.url).origin;
+}
+
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,9 +70,8 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (existing?.token) {
-      const host = req.headers.get("host") ?? "localhost:5000";
-      const protocol = host.includes("localhost") ? "http" : "https";
-      const portalUrl = `${protocol}://${host}/portal/${existing.token}`;
+      const origin = getOrigin(req);
+      const portalUrl = `${origin}/portal/${existing.token}`;
       return NextResponse.json({ token: existing.token, portalUrl });
     }
   }
@@ -81,9 +90,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Could not create portal token" }, { status: 500 });
   }
 
-  const host = req.headers.get("host") ?? "localhost:5000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const portalUrl = `${protocol}://${host}/portal/${newToken.token}`;
+  const origin = getOrigin(req);
+  const portalUrl = `${origin}/portal/${newToken.token}`;
 
   return NextResponse.json({ token: newToken.token, portalUrl });
 }
