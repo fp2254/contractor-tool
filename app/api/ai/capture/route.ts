@@ -74,8 +74,18 @@ export async function POST(req: Request) {
 
   const hasPresets = presets && presets.length > 0;
 
-  const presetsJson = hasPresets
-    ? presets.map((p) => ({
+  // Only include presets with a real price — $0 presets cause confusion (AI matches them
+  // then the review screen shows "1 needs pricing" for a supposedly matched item).
+  const pricedPresets = (presets ?? []).filter((p) => {
+    const price =
+      p.price_type === "flat"
+        ? (p.flat_rate ?? 0)
+        : (p.hourly_rate ?? 0) * (p.estimated_hours ?? 1);
+    return price > 0;
+  });
+
+  const presetsJson = pricedPresets.length > 0
+    ? pricedPresets.map((p) => ({
         id: p.id,
         name: p.service_name,
         description: p.description ?? "",
@@ -160,7 +170,7 @@ export async function POST(req: Request) {
     ? `CLIENT MATCHING: Search the existing_customers list for the best match to the customer name mentioned. Apply fuzzy matching — nicknames are equivalent (Mike=Michael, Chris=Christopher, Jon=John, Bob=Robert, Bill=William, Jim=James, etc.). Match on full name similarity. Phone numbers in the list are digits-only — compare them digits-only too (strip spaces, dashes, parentheses). If the extracted phone digits match a customer's phone digits exactly, that is a HIGH confidence match regardless of name similarity. Also match on email if provided. Set customer_match.customer_id to the matching id from the list, customer_match.matched_name to their name, and customer_match.confidence to: "high" if it is clearly the same person (exact phone/email match, or exact/obvious name match), "medium" if it is probably the same person (partial name match), "none" if no reasonable match exists. If confidence is "none", set customer_id to null.`
     : `CLIENT MATCHING: No existing clients found. Set customer_match to { customer_id: null, matched_name: "", confidence: "none" }.`;
 
-  const pricingRule = hasPresets
+  const pricingRule = pricedPresets.length > 0
     ? `PRICING: IMPORTANT — if the user explicitly states a price or dollar amount (e.g. "for $1200", "1500 dollars", "at $950"), that stated price MUST be used as the unit_price and you MUST set explicit_price to that number — do NOT use the preset price instead. Only use the preset price when NO explicit price is stated by the user. When a line item matches a preset and no explicit price was given: use its id as preset_id, its price as unit_price, its unit as unit, set needs_manual_pricing to false, is_ai_estimate to false. When no preset matches and no explicit price: set preset_id to null, estimate a reasonable unit_price, set needs_manual_pricing to true, is_ai_estimate to true.`
     : `PRICING: IMPORTANT — if the user explicitly states a price or dollar amount (e.g. "for $1200", "1500 dollars"), that stated price MUST be used as unit_price and you MUST set explicit_price to that number. No service presets configured. For every line item with no explicit price, set preset_id to null, estimate a reasonable unit_price, set needs_manual_pricing to true, is_ai_estimate to true. Never leave unit_price as null.`;
 
@@ -177,11 +187,13 @@ export async function POST(req: Request) {
         "Convert relative dates (e.g. 'next Friday', 'tomorrow') to ISO date YYYY-MM-DD relative to today.",
         "Use empty string '' for missing customer fields, not null.",
         "recommended_status: 'lead' if vague, 'quote' if pricing needed, 'job' if agreed and schedulable, 'invoice' if work is done.",
+        "LINE ITEMS: Create a SEPARATE line item for EACH distinct service, product, or add-on the contractor mentions. Never merge multiple mentioned items into one. Example: if they say 'standard radon system, second tap, 2 units of time and material' that is THREE line items — one for the main system, one for the additional tap/system, one for T&M.",
+        "LINE ITEM MATCHING: Match the FIRST/MAIN mentioned service to the closest preset FIRST. Then match each additional item mentioned. Do not skip or omit the primary service.",
         "Use the supplied presets array to match line items. Match by name, description, tags, and category.",
       ],
       context: {
         today,
-        service_presets: hasPresets ? JSON.stringify(presetsJson) : "none",
+        service_presets: pricedPresets.length > 0 ? JSON.stringify(presetsJson) : "none",
         existing_customers: customersJson.length > 0 ? JSON.stringify(customersJson) : "none",
       },
       task: "Extract job title, customer info, schedule, line items, warranty flags, a recommended status, client match, and explicit price from the input text.",
