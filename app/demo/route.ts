@@ -3,14 +3,11 @@ import { createServerClient } from "@supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
+const DEMO_EMAIL = "demo@trade-base.biz";
+const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "TradeBaseDemo2024!";
+
 export async function GET(request: Request) {
   const origin = new URL(request.url).origin;
-
-  const password = process.env.DEMO_USER_PASSWORD;
-  if (!password) {
-    console.error("[demo] DEMO_USER_PASSWORD env var is not set");
-    return NextResponse.redirect(`${origin}/auth/login?demo=not_configured`);
-  }
 
   const response = NextResponse.redirect(`${origin}/app`);
 
@@ -32,8 +29,8 @@ export async function GET(request: Request) {
   );
 
   const { error } = await supabase.auth.signInWithPassword({
-    email: "demo@trade-base.biz",
-    password,
+    email: DEMO_EMAIL,
+    password: DEMO_PASSWORD,
   });
 
   if (error) {

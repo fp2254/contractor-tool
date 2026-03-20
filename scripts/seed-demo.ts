@@ -4,7 +4,6 @@
  *
  * Pre-requisites:
  * 1. Run supabase/migration_demo.sql in Supabase Studio (adds is_demo column)
- * 2. Set DEMO_USER_PASSWORD in Replit Secrets
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -12,14 +11,10 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const DEMO_EMAIL = "demo@trade-base.biz";
-const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD;
+const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "TradeBaseDemo2024!";
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error("❌  Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  process.exit(1);
-}
-if (!DEMO_PASSWORD) {
-  console.error("❌  Missing DEMO_USER_PASSWORD — set it in Replit Secrets");
   process.exit(1);
 }
 
