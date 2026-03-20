@@ -41,39 +41,13 @@ async function main() {
   console.log("🌱  TradeBase Demo Seed\n");
 
   // ────────────────────────────────────────────────
-  // 1. Demo Org
+  // 1. Demo User (must exist before org)
   // ────────────────────────────────────────────────
-  console.log("1/10  Finding or creating demo org…");
-  let orgId: string;
-
-  const { data: existingOrg } = await db
-    .from("orgs")
-    .select("id")
-    .eq("is_demo", true)
-    .maybeSingle();
-
-  if (existingOrg) {
-    orgId = existingOrg.id;
-    console.log(`      ↳ Reusing org ${orgId}`);
-  } else {
-    const { data: newOrg, error: orgErr } = await db
-      .from("orgs")
-      .insert({ name: "TradeBase Demo Co", is_demo: true })
-      .select("id")
-      .single();
-    if (orgErr) { console.error("❌  Org create failed — did you run migration_demo.sql?", orgErr); process.exit(1); }
-    orgId = newOrg.id;
-    console.log(`      ↳ Created org ${orgId}`);
-  }
-
-  // ────────────────────────────────────────────────
-  // 2. Demo User
-  // ────────────────────────────────────────────────
-  console.log("2/10  Finding or creating demo user…");
+  console.log("1/10  Finding or creating demo user…");
   let userId: string;
 
   const { data: { users } } = await admin.auth.admin.listUsers();
-  const existingUser = (users ?? []).find((u) => u.email === DEMO_EMAIL);
+  const existingUser = (users ?? []).find((u: { email?: string }) => u.email === DEMO_EMAIL);
 
   if (existingUser) {
     userId = existingUser.id;
@@ -88,6 +62,33 @@ async function main() {
     if (userErr || !newUser.user) { console.error("❌  User create failed:", userErr); process.exit(1); }
     userId = newUser.user.id;
     console.log(`      ↳ Created user ${userId}`);
+  }
+
+  // ────────────────────────────────────────────────
+  // 2. Demo Org
+  // ────────────────────────────────────────────────
+  console.log("2/10  Finding or creating demo org…");
+  let orgId: string;
+
+  const { data: existingOrg } = await db
+    .from("orgs")
+    .select("id")
+    .eq("is_demo", true)
+    .maybeSingle();
+
+  if (existingOrg) {
+    orgId = existingOrg.id;
+    await db.from("orgs").update({ owner_user_id: userId }).eq("id", orgId);
+    console.log(`      ↳ Reusing org ${orgId}`);
+  } else {
+    const { data: newOrg, error: orgErr } = await db
+      .from("orgs")
+      .insert({ name: "TradeBase Demo Co", is_demo: true, owner_user_id: userId })
+      .select("id")
+      .single();
+    if (orgErr) { console.error("❌  Org create failed:", orgErr); process.exit(1); }
+    orgId = newOrg.id;
+    console.log(`      ↳ Created org ${orgId}`);
   }
 
   // ────────────────────────────────────────────────
@@ -312,32 +313,34 @@ async function main() {
   // ────────────────────────────────────────────────
   // 10. Jobs
   // ────────────────────────────────────────────────
-  const { data: jobs } = await db.from("jobs").insert([
+  const { data: jobs, error: jobsErr } = await db.from("jobs").insert([
     {
-      org_id: orgId, customer_id: johnId, quote_id: johnQuote!.id, created_by_user: userId,
-      title: "Radon Mitigation System Install", status: "scheduled",
+      org_id: orgId, customer_id: johnId, created_by_user: userId,
+      job_title: "Radon Mitigation System Install", status: "scheduled",
       scheduled_date: D(1),
       notes: "Full system install. Customer will be home all day.",
     },
     {
-      org_id: orgId, customer_id: sarahId, quote_id: sarahQuote!.id, created_by_user: userId,
-      title: "Radon-in-Water Aeration Install", status: "in_progress",
+      org_id: orgId, customer_id: sarahId, created_by_user: userId,
+      job_title: "Radon-in-Water Aeration Install", status: "in_progress",
       scheduled_date: D(0),
       notes: "Started today. System partially installed, finishing connections tomorrow.",
     },
     {
-      org_id: orgId, customer_id: greenId, quote_id: greenQuote!.id, created_by_user: userId,
-      title: "Crawlspace Vapor Barrier", status: "waiting_on_parts",
+      org_id: orgId, customer_id: greenId, created_by_user: userId,
+      job_title: "Crawlspace Vapor Barrier", status: "scheduled",
       scheduled_date: D(4),
-      notes: "Waiting on 20-mil vapor barrier rolls from ABC Supply.",
+      notes: "Waiting on 20-mil vapor barrier rolls from ABC Supply. Rescheduled.",
     },
     {
       org_id: orgId, customer_id: pineId, created_by_user: userId,
-      title: "Radon Fan Replacement", status: "complete",
+      job_title: "Radon Fan Replacement", status: "completed",
       scheduled_date: D(-5),
       notes: "Replaced original RP145 that burned out. New fan installed and tested.",
     },
   ]).select("id,customer_id");
+
+  if (jobsErr) { console.error("❌  Jobs insert failed:", jobsErr); process.exit(1); }
 
   const jobByCustomer = (cId: string) => jobs!.find((j: { customer_id: string }) => j.customer_id === cId);
   const pineJob = jobByCustomer(pineId);
@@ -347,32 +350,30 @@ async function main() {
   // 11. Invoices + Items + Payments
   // ────────────────────────────────────────────────
   console.log("8/10  Seeding invoices and payments…");
-  const { data: invoices } = await db.from("invoices").insert([
+  const { data: invoices, error: invErr } = await db.from("invoices").insert([
     {
-      org_id: orgId, customer_id: greenId, job_id: greenJob!.id, created_by_user: userId,
+      org_id: orgId, customer_id: greenId, created_by_user: userId,
       status: "paid", total_amount: 1200,
       due_date: TS(-10),
-      notes: "Vapor barrier complete. Paid in full.",
     },
     {
       org_id: orgId, customer_id: johnId, created_by_user: userId,
       status: "paid", total_amount: 175,
       due_date: TS(-20),
-      notes: "Annual radon test — pre-install.",
     },
     {
-      org_id: orgId, customer_id: johnId, quote_id: johnQuote!.id, created_by_user: userId,
+      org_id: orgId, customer_id: johnId, created_by_user: userId,
       status: "unpaid", total_amount: 1600,
       due_date: TS(14),
-      notes: "Full system install — due on completion.",
     },
     {
-      org_id: orgId, customer_id: sarahId, quote_id: sarahQuote!.id, created_by_user: userId,
+      org_id: orgId, customer_id: sarahId, created_by_user: userId,
       status: "overdue", total_amount: 2800,
       due_date: TS(-5),
-      notes: "Aeration system — deposit received, balance overdue.",
     },
   ]).select("id,customer_id,status");
+
+  if (invErr) { console.error("❌  Invoices insert failed:", invErr); process.exit(1); }
 
   const invByStatus = (status: string, cId?: string) =>
     invoices!.find((i: { status: string; customer_id: string }) =>
