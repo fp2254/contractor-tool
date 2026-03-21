@@ -64,4 +64,4 @@ Disallow: /demo
 Disallow: /offline
 Disallow: /expired
 
-Sitemap: https://tradebase.replit.app/sitemap.xml
+Sitemap: https://tradebase.contractors/sitemap.xml

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const base = "https://tradebase.replit.app";
+const base = "https://tradebase.contractors";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const marketing = [
