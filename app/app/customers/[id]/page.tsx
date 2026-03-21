@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
+import { CustomerEditCard } from "./CustomerEditCard";
 
 async function addNote(formData: FormData) {
   "use server";
@@ -126,22 +127,19 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Contact info */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm space-y-1.5">
-        {customer.phone && (
-          <a href={`tel:${customer.phone}`} className="flex items-center gap-2 text-sm text-slate-700">
-            📞 {customer.phone}
-          </a>
-        )}
-        {customer.email && (
-          <a href={`mailto:${customer.email}`} className="flex items-center gap-2 text-sm text-slate-700">
-            ✉️ {customer.email}
-          </a>
-        )}
-        {address && (
-          <p className="text-sm text-gray-500">📍 {address}</p>
-        )}
-      </div>
+      {/* Contact info — inline editable */}
+      <CustomerEditCard customer={{
+        id: customer.id,
+        first_name: customer.first_name,
+        last_name: customer.last_name ?? null,
+        company_name: customer.company_name ?? null,
+        phone: customer.phone ?? null,
+        email: customer.email ?? null,
+        address_line1: customer.address_line1 ?? null,
+        city: customer.city ?? null,
+        state: customer.state ?? null,
+        zip: (customer as Record<string, unknown>).zip as string | null ?? null,
+      }} />
 
       {/* Quick action buttons */}
       <div className="grid grid-cols-3 gap-2">

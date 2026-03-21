@@ -9,16 +9,39 @@ export async function PATCH(
   const { id } = await params;
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
-  const body = await req.json() as { archived?: boolean };
+  const body = await req.json() as {
+    archived?: boolean;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+    phone?: string;
+    email?: string;
+    address_line1?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    notes?: string;
+  };
 
-  const { error } = await admin
+  const allowed = [
+    "archived", "first_name", "last_name", "company_name",
+    "phone", "email", "address_line1", "city", "state", "zip", "notes",
+  ];
+  const patch: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in body) patch[key] = (body as Record<string, unknown>)[key];
+  }
+
+  const { data, error } = await admin
     .from("customers")
-    .update({ archived: body.archived ?? true } as Record<string, unknown>)
+    .update(patch)
     .eq("id", id)
-    .eq("org_id", orgId!);
+    .eq("org_id", orgId!)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(data);
 }
 
 export async function DELETE(
