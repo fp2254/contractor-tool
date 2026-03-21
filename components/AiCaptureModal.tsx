@@ -306,7 +306,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
         job: `/app/jobs/${json.id}`,
         invoice: `/app/invoices/${json.id}`,
       };
-      router.push(paths[json.type ?? type]);
+      window.location.href = paths[json.type ?? type];
     } catch {
       setError("Network error — please try again");
       setCreating(null);
