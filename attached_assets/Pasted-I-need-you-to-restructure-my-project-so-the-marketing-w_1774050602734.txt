@@ -1,0 +1,221 @@
+I need you to restructure my project so the marketing website and the app are cleanly separated for SEO, speed, and stability.
+
+PROJECT GOAL:
+TradeBase needs two clearly separated parts:
+
+1. Marketing / SEO site
+2. The actual app
+
+I do NOT want the SEO pages bloating or interfering with the app.
+
+ARCHITECTURE:
+Set it up like this:
+
+- Main marketing + SEO site:
+  /
+- App:
+  /app
+
+If possible, structure the code so these are logically separated:
+- marketing pages/components
+- app pages/components
+- shared UI only where necessary
+
+IMPORTANT:
+The app must stay fast, clean, and protected.
+The SEO pages must be indexable by Google.
+The app pages must NOT be indexed by Google.
+
+REQUIREMENTS:
+
+1. APP ISOLATION
+- Keep all app routes under /app
+- Require authentication for protected app pages under /app
+- Add noindex metadata to all /app pages
+- Prevent search engines from indexing /app routes
+- Make sure login, dashboard, customer records, invoices, quotes, and internal tools are all kept under /app or otherwise blocked from indexing
+
+2. SEO / MARKETING PAGES
+- Create static or lightweight pages outside /app for SEO
+- These pages should be fast-loading and mobile-first
+- They should not depend on heavy app logic
+- They should be easy to scale to 50–100 pages later
+
+3. ROBOTS + SITEMAP
+- Create or update robots.txt
+- Block /app from crawling
+- Allow the SEO pages to be crawled
+- Create sitemap.xml that includes ONLY public marketing/SEO pages
+- Do NOT include /app pages in the sitemap
+
+4. PAGE TEMPLATE FOR SEO PAGES
+Build a reusable SEO landing page template with:
+
+- H1 headline targeting the keyword
+- Short intro paragraph in plain contractor-focused language
+- 3–6 step explanation or solution
+- “Common mistakes” section
+- “Why TradeBase helps” section
+- CTA section with strong button
+- Internal links to related SEO pages
+- Proper title tag
+- Proper meta description
+- Canonical tag support
+- Open Graph tags if possible
+
+5. DESIGN / UX
+- Mobile-first
+- Fast
+- Simple
+- Clean
+- Contractor-focused
+- No corporate fluff
+- Keep visuals lightweight
+- Reuse styles/components where possible
+- Do not let marketing pages add unnecessary JavaScript to the app bundle
+
+6. PERFORMANCE
+- Make sure marketing pages do not slow down app performance
+- Split bundles if necessary
+- Use static rendering or the lightest rendering method possible for SEO pages
+- Avoid loading app-only scripts on public SEO pages
+- Avoid loading SEO page content inside the app area
+
+7. INTERNAL LINKING
+Set up smart internal linking between SEO pages.
+Each page should link to a few related pages.
+Also include CTA links into:
+- homepage
+- pricing
+- demo
+- signup / trial if available
+
+8. CORE PUBLIC PAGES TO BUILD OR IMPROVE
+Create / improve these pages:
+
+- /
+- /pricing
+- /demo
+- /features
+- /for-handyman
+- /for-plumbers
+- /for-electricians
+- /for-hvac
+- /for-general-contractors
+- /contact
+
+Then create the first 20 SEO pages.
+
+9. FIRST 20 SEO PAGES TO CREATE
+Please create these public SEO pages with clean URLs:
+
+- /contractor-invoice-app
+- /create-invoice-on-phone
+- /free-contractor-invoice-template
+- /how-to-send-an-estimate-from-phone
+- /contractor-estimating-app
+- /best-app-for-small-contractor-business
+- /job-tracking-for-contractors
+- /contractor-quote-app
+- /invoice-app-for-handyman
+- /invoice-app-for-plumbers
+- /invoice-app-for-electricians
+- /invoice-app-for-hvac
+- /how-contractors-send-invoices-fast
+- /how-to-organize-contractor-jobs
+- /how-to-track-customers-as-a-contractor
+- /small-contractor-business-software
+- /field-invoice-app
+- /phone-app-for-contractors
+- /contractor-crm-simple
+- /estimate-template-for-contractors
+
+10. CONTENT STYLE
+Use clear, direct language.
+Write like a real contractor would understand it.
+Avoid hypey SaaS buzzwords.
+The tone should be practical, straightforward, and useful.
+
+Use messaging like:
+- run your business from your phone
+- send quotes fast
+- create invoices on site
+- track customers and jobs simply
+- built for small contractors and owner-operators
+
+11. SEO RULES
+For every SEO page:
+- unique title tag under 60 characters
+- unique meta description under 155 characters
+- one clear H1
+- use keyword naturally
+- include related terms naturally
+- no keyword stuffing
+- include internal links
+- include strong CTA
+- structured heading hierarchy (H1, H2, H3)
+- make pages indexable unless specifically blocked
+
+12. CONVERSIONS
+Every public page should have clear CTAs such as:
+- Try TradeBase Free
+- See Demo
+- Start Free Trial
+- Run Your Business From Your Phone
+
+Include CTA sections near:
+- top of page
+- middle of page
+- bottom of page
+
+13. APP SAFETY
+Do NOT break existing app functionality.
+Do NOT mess up authentication.
+Do NOT move app logic into public SEO pages.
+Do NOT allow Google to index user dashboard or private content.
+Do NOT create routing conflicts between app routes and public pages.
+
+14. CODE ORGANIZATION
+Please organize the project cleanly. Example structure:
+
+- /app pages or routes
+- /marketing pages or routes
+- /components/app
+- /components/marketing
+- /lib/seo
+- /lib/app
+- shared styles only where appropriate
+
+If a better structure fits the framework, do that, but keep the app and marketing concerns clearly separated.
+
+15. ANALYTICS / TRACKING
+If analytics already exist, keep them working.
+If possible, track:
+- page views for SEO pages
+- CTA clicks
+- signup clicks
+But do not add bloated tracking that slows down the site.
+
+16. DELIVERABLES I WANT FROM YOU
+Please complete the following:
+
+A. Restructure routes so marketing pages and app are separated
+B. Add robots.txt and sitemap.xml properly
+C. Add noindex protection to app routes
+D. Build the reusable SEO page template
+E. Create the first 20 SEO pages listed above
+F. Make sure app performance is not negatively affected
+G. Show me the final route structure
+H. Show me which files were created/changed
+I. Tell me any manual steps I need to take after deployment, such as Google Search Console submission
+
+17. IMPORTANT FINAL NOTE
+Do not overcomplicate this.
+Keep it clean, scalable, and production-friendly.
+My priority is:
+1. App stability
+2. Fast load times
+3. SEO growth
+4. Clear contractor-focused conversions
+
+Start implementing this now.

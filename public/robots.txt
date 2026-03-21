@@ -1,11 +1,22 @@
 User-agent: *
+
+# Marketing / Public pages — allow crawling
 Allow: /
 Allow: /features
 Allow: /pricing
+Allow: /contact
 Allow: /waitlist
-Allow: /login
 Allow: /privacy
 Allow: /terms
+
+# Trade-specific pages
+Allow: /for-handyman
+Allow: /for-plumbers
+Allow: /for-electricians
+Allow: /for-hvac
+Allow: /for-general-contractors
+
+# Original SEO pages
 Allow: /contractor-software
 Allow: /plumbing-business-software
 Allow: /electrician-business-software
@@ -17,10 +28,40 @@ Allow: /job-management-app
 Allow: /contractor-crm
 Allow: /contractor-estimate-software
 
+# Invoice SEO pages
+Allow: /contractor-invoice-app
+Allow: /create-invoice-on-phone
+Allow: /free-contractor-invoice-template
+Allow: /invoice-app-for-handyman
+Allow: /invoice-app-for-plumbers
+Allow: /invoice-app-for-electricians
+Allow: /invoice-app-for-hvac
+Allow: /field-invoice-app
+Allow: /how-contractors-send-invoices-fast
+
+# Quote & estimate SEO pages
+Allow: /contractor-quote-app
+Allow: /contractor-estimating-app
+Allow: /how-to-send-an-estimate-from-phone
+Allow: /estimate-template-for-contractors
+
+# Business operations SEO pages
+Allow: /job-tracking-for-contractors
+Allow: /how-to-organize-contractor-jobs
+Allow: /how-to-track-customers-as-a-contractor
+Allow: /small-contractor-business-software
+Allow: /best-app-for-small-contractor-business
+Allow: /phone-app-for-contractors
+Allow: /contractor-crm-simple
+
+# Blocked — app, auth, API, admin, portal
 Disallow: /app/
 Disallow: /auth/
 Disallow: /api/
 Disallow: /portal/
 Disallow: /admin/
+Disallow: /demo
+Disallow: /offline
+Disallow: /expired
 
-Sitemap: https://trade-base.biz/sitemap.xml
+Sitemap: https://tradebase.replit.app/sitemap.xml
