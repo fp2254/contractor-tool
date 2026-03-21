@@ -57,12 +57,20 @@ export async function POST(req: Request) {
     // Verify the customer belongs to this org
     const { data: existing } = await admin
       .from("customers")
-      .select("id")
+      .select("id, phone, email, address_line1")
       .eq("id", body.existing_customer_id)
       .eq("org_id", orgId!)
       .single();
     if (!existing) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+    // Patch any fields the AI captured that the existing record is missing
+    const patch: Record<string, string> = {};
+    if (body.customer.phone && !existing.phone) patch.phone = body.customer.phone;
+    if (body.customer.email && !existing.email) patch.email = body.customer.email;
+    if (body.customer.address && !existing.address_line1) patch.address_line1 = body.customer.address;
+    if (Object.keys(patch).length > 0) {
+      await admin.from("customers").update(patch).eq("id", existing.id).eq("org_id", orgId!);
     }
     customerId = existing.id;
   } else {

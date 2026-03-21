@@ -76,8 +76,9 @@ export function ShareCard({
     try {
       const token = await ensureToken();
       const msg = buildSmsMessage(token);
-      const smsUri = customerPhone
-        ? `sms:${customerPhone}?body=${encodeURIComponent(msg)}`
+      const cleanPhone = customerPhone ? customerPhone.replace(/[^\d+]/g, "") : null;
+      const smsUri = cleanPhone
+        ? `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`
         : `sms:?body=${encodeURIComponent(msg)}`;
       window.location.href = smsUri;
     } finally {
