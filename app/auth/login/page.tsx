@@ -1,12 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, null);
-  const [agreed, setAgreed] = useState(false);
-
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#1B3A6B" }}>
       <div className="flex flex-col items-center justify-center flex-1 px-6 pt-16 pb-8">
@@ -47,54 +45,26 @@ export default function LoginPage() {
               <span className="text-sm text-slate-600">Remember me</span>
             </label>
 
-            <label className="flex items-start gap-2.5 cursor-pointer select-none py-1">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 accent-[#1B3A6B] cursor-pointer mt-0.5 flex-shrink-0"
-              />
-              <span className="text-sm text-slate-600 leading-snug">
-                I agree to the{" "}
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold underline"
-                  style={{ color: "#1B3A6B" }}
-                  onClick={(e) => e.stopPropagation()}>
-                  Terms of Service
-                </a>
-                {" "}and{" "}
-                <a
-                  href="/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold underline"
-                  style={{ color: "#1B3A6B" }}
-                  onClick={(e) => e.stopPropagation()}>
-                  Privacy Policy
-                </a>
-              </span>
-            </label>
-
             {state?.error && (
               <p className="text-sm text-red-600">{state.error}</p>
             )}
 
             <button
               type="submit"
-              disabled={pending || !agreed}
+              disabled={pending}
               className="w-full rounded-xl py-3 font-semibold text-white text-sm mt-1 disabled:opacity-50 transition-opacity"
               style={{ backgroundColor: "#1B3A6B" }}>
               {pending ? "Logging in…" : "Log In"}
             </button>
 
-            {!agreed && (
-              <p className="text-xs text-center text-gray-400">
-                Please accept the terms above to continue
-              </p>
-            )}
+            <p className="text-xs text-center text-gray-400">
+              By logging in you agree to our{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer"
+                className="underline" style={{ color: "#1B3A6B" }}>Terms</a>
+              {" "}and{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer"
+                className="underline" style={{ color: "#1B3A6B" }}>Privacy Policy</a>
+            </p>
           </form>
         </div>
       </div>
