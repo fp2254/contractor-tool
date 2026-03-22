@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isPlatformAdmin } from "@/lib/admin";
 import { redirect } from "next/navigation";
 
 const menuItems = [
@@ -26,13 +27,7 @@ async function signOut() {
 export default async function MorePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  const adminEmails = (process.env.ADMIN_EMAIL ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  const isAdmin = adminEmails.includes(user?.email?.toLowerCase() ?? "");
+  const isAdmin = isPlatformAdmin(user?.email);
 
   return (
     <div className="p-4">
@@ -51,12 +46,15 @@ export default async function MorePage() {
         ))}
 
         {isAdmin && (
-          <Link href="/app/admin/billing"
+          <Link href="/app/admin"
             className="flex items-center gap-4 px-4 py-4">
-            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg bg-purple-50">
-              🔐
+            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg bg-amber-50">
+              🛡️
             </div>
-            <span className="flex-1 font-medium text-purple-700">Billing Admin</span>
+            <div className="flex-1">
+              <span className="font-medium text-amber-700">Platform Admin</span>
+              <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5 font-bold uppercase">Internal</span>
+            </div>
             <span className="text-gray-300 text-lg">›</span>
           </Link>
         )}

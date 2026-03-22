@@ -1,0 +1,351 @@
+Expand the TradeBase platform admin area into a real internal control panel for me.
+
+Important:
+- This is platform admin for me only, not contractor/org admin.
+- It must be protected server-side.
+- Keep it operational and organized, not flashy.
+- I want to be able to manage memberships/subscriptions manually from admin, including canceling, extending access, comping time, and viewing account status.
+
+Use our existing Next.js 16 + Supabase setup and build this cleanly.
+
+==================================================
+1. PLATFORM ADMIN ACCESS
+==================================================
+
+Keep the platform admin route at:
+- /app/admin
+
+Protect it server-side using the existing platform admin allowlist approach.
+
+Use:
+- PLATFORM_ADMIN_EMAILS=email1@example.com,email2@example.com
+
+Do not rely on client-side checks alone.
+
+Create or keep:
+- lib/admin.ts
+
+Helpers:
+- isPlatformAdmin(email)
+- requirePlatformAdmin()
+
+Protect:
+- admin pages
+- admin server actions
+- admin API routes
+
+==================================================
+2. ADMIN INFORMATION ARCHITECTURE
+==================================================
+
+Organize the admin area into clear sections/tabs.
+
+Main admin sections:
+1. Overview
+2. Memberships
+3. Orgs
+4. Users
+5. Waitlist
+6. Demo
+7. System
+
+Use a clean internal dashboard layout with cards/tables/search.
+
+==================================================
+3. MEMBERSHIPS SECTION (HIGH PRIORITY)
+==================================================
+
+I need a dedicated Memberships admin section where I can manage contractor access manually.
+
+Build a membership management system that supports:
+
+For each org/account, show:
+- org name
+- primary user name/email if available
+- current plan
+- status
+- trial status
+- renewal/end date
+- created date
+- last active date if available
+- notes/internal admin notes
+
+Membership status values should support:
+- trialing
+- active
+- past_due
+- canceled
+- expired
+- comped
+- paused
+
+Plan values should support at least:
+- founder
+- standard
+- comp
+- none
+
+I want admin controls to:
+- cancel membership
+- reactivate membership
+- pause membership
+- mark past due
+- mark active manually
+- extend membership by X days
+- grant free trial extension by X days
+- comp an account for X days
+- comp indefinitely if needed
+- change plan
+- add internal notes
+- view membership history / audit trail
+
+Important:
+These actions should update the org/account access state in the app so the user’s subscription/access status is actually reflected by the product.
+
+==================================================
+4. MEMBERSHIP DATA MODEL
+==================================================
+
+If we do not already have a proper subscription/membership model, add one.
+
+Recommended structure:
+
+A. org_memberships
+Fields:
+- id
+- org_id
+- plan
+- status
+- billing_provider nullable
+- billing_provider_customer_id nullable
+- billing_provider_subscription_id nullable
+- started_at
+- current_period_start
+- current_period_end
+- canceled_at nullable
+- paused_at nullable
+- comped_until nullable
+- trial_ends_at nullable
+- admin_notes nullable
+- created_at
+- updated_at
+
+B. membership_events
+Fields:
+- id
+- org_membership_id
+- org_id
+- event_type
+- old_plan nullable
+- new_plan nullable
+- old_status nullable
+- new_status nullable
+- days_added nullable
+- note nullable
+- actor_user_id nullable
+- actor_email nullable
+- created_at
+
+Use membership_events as the audit trail for manual admin actions.
+
+If our existing schema already has overlapping tables, adapt rather than duplicate unnecessarily.
+
+==================================================
+5. ADMIN MEMBERSHIP ACTIONS UI
+==================================================
+
+In the Memberships section, add:
+
+A. Search / filter
+- search by org name
+- search by user email
+- filter by status
+- filter by plan
+
+B. Membership table
+Columns:
+- Org
+- Primary user
+- Plan
+- Status
+- Period end
+- Trial end
+- Last active
+- Actions
+
+C. Row actions or detail drawer
+Actions:
+- View details
+- Change plan
+- Change status
+- Extend X days
+- Grant comp time
+- Cancel
+- Reactivate
+- Add note
+
+D. Membership detail panel/page
+Show:
+- full membership details
+- audit/event history
+- org info
+- linked users if available
+- quick action buttons
+
+==================================================
+6. ACCESS ENFORCEMENT IN APP
+==================================================
+
+Create a centralized membership access helper.
+
+Example:
+- lib/membership.ts
+
+It should determine whether an org currently has access based on membership status and dates.
+
+For example:
+- active = allowed
+- trialing = allowed until trial_ends_at
+- comped = allowed while comped_until is null or in future
+- paused / canceled / expired / past_due = configurable based on business rules
+
+Use this helper consistently so we can gate premium app access cleanly later.
+
+Do not hardcode membership checks all over the app.
+
+==================================================
+7. ORGS SECTION
+==================================================
+
+Build an Orgs admin section showing:
+- org name
+- created date
+- demo or not
+- membership summary
+- user count
+- record counts if practical (customers, quotes, invoices, etc.)
+
+Include:
+- org search
+- org detail view
+- link to membership detail
+- link to users in org
+- demo org badge if applicable
+
+==================================================
+8. USERS SECTION
+==================================================
+
+Build a Users admin section showing:
+- user email
+- full name if available
+- org(s)
+- created date
+- last sign-in / last active if available
+- platform admin yes/no
+
+Include:
+- search by email
+- link to org
+- link to membership
+- basic user detail panel
+
+==================================================
+9. WAITLIST SECTION
+==================================================
+
+Bring the waitlist admin into this platform admin area.
+
+Add:
+- searchable table
+- export CSV
+- detail drawer/panel
+- source tracking if already captured
+
+==================================================
+10. DEMO SECTION
+==================================================
+
+Add a Demo admin section where I can:
+- view demo org/user
+- reseed demo data
+- reset demo data
+- see whether demo mode is working
+
+If reseeding is not safe directly from the UI yet, show a placeholder with instructions and structure it for later.
+
+==================================================
+11. SYSTEM SECTION
+==================================================
+
+Add a basic System section for internal operations, such as:
+- recent admin activity
+- recent membership events
+- feature flag placeholder
+- future email log placeholder
+- future AI usage placeholder
+
+Keep this practical and minimal.
+
+==================================================
+12. ADMIN ACTION SAFETY
+==================================================
+
+For all membership-changing admin actions:
+- require confirmation modal
+- show success/error toast
+- record membership_event audit log entry
+- show actor email and timestamp in event history
+
+Optional but preferred:
+For especially sensitive actions like cancel/reactivate/comp indefinitely, support an extra confirmation step.
+
+==================================================
+13. ADMIN NAVIGATION
+==================================================
+
+Only show the Admin nav link to platform admins.
+
+Inside admin, add clear sub-navigation:
+- Overview
+- Memberships
+- Orgs
+- Users
+- Waitlist
+- Demo
+- System
+
+==================================================
+14. STYLING
+==================================================
+
+Keep styling consistent with TradeBase:
+- mobile-friendly
+- white cards
+- clean tables
+- simple chips/badges for statuses
+- no overdesigned dashboard nonsense
+
+Membership status badges should be visually distinct:
+- active
+- trialing
+- canceled
+- past_due
+- expired
+- comped
+- paused
+
+==================================================
+15. DELIVERABLES
+==================================================
+
+After implementation, tell me:
+
+1. What files you created/updated
+2. What tables/migrations you added
+3. How membership access is determined
+4. How cancel/reactivate/extend/comp actions work
+5. How membership audit history is stored
+6. What env vars I need
+7. What parts are placeholders vs fully working
+8. Any future upgrade path for real billing-provider sync later
