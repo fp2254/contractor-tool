@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
+const replitDomain = process.env.REPLIT_DEV_DOMAIN
+  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+  : null;
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    "https://*.worf.replit.dev",
+    "https://*.replit.dev",
+    ...(replitDomain ? [replitDomain] : []),
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
