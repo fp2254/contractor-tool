@@ -1,28 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const email = emailRef.current?.value ?? "";
+    const password = passwordRef.current?.value ?? "";
+    if (!email || !password) return;
     setPending(true);
     setError("");
     try {
       const res = await fetch("/auth/login/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, rememberMe }),
+        body: JSON.stringify({ email, password }),
       });
       const json = await res.json() as { error?: string };
       if (!res.ok) {
-        setError(json.error ?? "Login failed. Check your email and password.");
+        setError(json.error ?? "Incorrect email or password.");
         return;
       }
       window.location.href = "/app";
@@ -48,29 +50,29 @@ export default function LoginPage() {
 
           <form className="space-y-3" onSubmit={handleSubmit}>
             <input
+              ref={emailRef}
               type="email"
+              name="email"
               placeholder="Email"
               autoComplete="email"
               required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
             <input
+              ref={passwordRef}
               type="password"
+              name="password"
               placeholder="Password"
               autoComplete="current-password"
               required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
 
             <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
               <input
                 type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
+                name="remember_me"
+                defaultChecked
                 className="w-4 h-4 rounded border-gray-300 accent-[#1B3A6B] cursor-pointer"
               />
               <span className="text-sm text-slate-600">Remember me</span>

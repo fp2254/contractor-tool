@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 
 const TRADES = [
@@ -14,36 +14,52 @@ type Step = 1 | 2 | 3 | "done";
 
 export default function SignUpPage() {
   const [step, setStep] = useState<Step>(1);
-
-  // Step 1 fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
-
-  // Step 2 fields
-  const [bizName, setBizName] = useState("");
-  const [trade, setTrade] = useState("");
-  const [phone, setPhone] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
+
+  // Step 1 refs (uncontrolled)
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Step 2 refs (uncontrolled)
+  const bizNameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const tradeRef = useRef<HTMLSelectElement>(null);
+
+  // Summary values (set when advancing steps)
+  const [summary, setSummary] = useState({
+    firstName: "", lastName: "", email: "",
+    bizName: "", trade: "", phone: "",
+  });
 
   function handleStep1(e: React.FormEvent) {
     e.preventDefault();
     if (!agreed) return;
+    setSummary(s => ({
+      ...s,
+      firstName: firstNameRef.current?.value ?? "",
+      lastName: lastNameRef.current?.value ?? "",
+      email: emailRef.current?.value ?? "",
+    }));
     setStep(2);
   }
 
   function handleStep2(e: React.FormEvent) {
     e.preventDefault();
+    setSummary(s => ({
+      ...s,
+      bizName: bizNameRef.current?.value ?? "",
+      trade: tradeRef.current?.value ?? "",
+      phone: phoneRef.current?.value ?? "",
+    }));
     setStep(3);
   }
 
   async function handleStep3(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    // Simulate a brief loading state — no real account creation
     await new Promise(r => setTimeout(r, 1200));
     setSubmitting(false);
     setStep("done");
@@ -59,9 +75,9 @@ export default function SignUpPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 mb-2">You&apos;re all set, {firstName}!</h1>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">You&apos;re all set, {summary.firstName}!</h1>
           <p className="text-sm text-gray-500 mb-6">
-            Check your inbox at <span className="font-semibold text-slate-700">{email}</span> to confirm your account and get started.
+            Check your inbox at <span className="font-semibold text-slate-700">{summary.email}</span> to confirm your account and get started.
           </p>
           <Link href="/auth/login"
             className="block w-full rounded-xl py-3 text-white font-semibold text-sm text-center"
@@ -77,7 +93,6 @@ export default function SignUpPage() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#1B3A6B" }}>
       <div className="flex flex-col items-center justify-center flex-1 px-6 py-12">
 
-        {/* Logo */}
         <div className="flex items-center gap-2 mb-8">
           <svg viewBox="0 0 24 24" className="h-9 w-9" fill="none">
             <path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
@@ -85,7 +100,6 @@ export default function SignUpPage() {
           <span className="text-2xl font-bold text-white">TradeBase</span>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full max-w-sm mb-4">
           <div className="flex items-center gap-2 mb-1">
             {[1, 2, 3].map(n => (
@@ -100,28 +114,23 @@ export default function SignUpPage() {
 
         <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl">
 
-          {/* ── Step 1: Account ── */}
           {step === 1 && (
             <>
               <h1 className="text-xl font-bold text-slate-800 mb-1">Create your account</h1>
               <p className="text-sm text-gray-400 mb-5">Free to start. No credit card required.</p>
               <form className="space-y-3" onSubmit={handleStep1}>
                 <div className="grid grid-cols-2 gap-2">
-                  <input required placeholder="First name *" value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    className="rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                  <input placeholder="Last name" value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    className="rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                  <input ref={firstNameRef} required name="first_name" placeholder="First name *"
+                    className="rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                  <input ref={lastNameRef} name="last_name" placeholder="Last name"
+                    className="rounded-xl border border-gray-200 px-3 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                 </div>
-                <input required type="email" placeholder="Email address *" value={email}
+                <input ref={emailRef} required type="email" name="email" placeholder="Email address *"
                   autoComplete="email"
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                <input required type="password" placeholder="Password (min 8 chars) *" value={password}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                <input ref={passwordRef} required type="password" name="password" placeholder="Password (min 8 chars) *"
                   autoComplete="new-password" minLength={8}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
 
                 <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
@@ -152,24 +161,20 @@ export default function SignUpPage() {
             </>
           )}
 
-          {/* ── Step 2: Business Info ── */}
           {step === 2 && (
             <>
               <h1 className="text-xl font-bold text-slate-800 mb-1">Your business</h1>
               <p className="text-sm text-gray-400 mb-5">Help us set up your account for your trade.</p>
               <form className="space-y-3" onSubmit={handleStep2}>
-                <input required placeholder="Business name *" value={bizName}
-                  onChange={e => setBizName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                <select required value={trade} onChange={e => setTrade(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white">
+                <input ref={bizNameRef} required name="biz_name" placeholder="Business name *"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                <select ref={tradeRef} required name="trade"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white">
                   <option value="">Select your trade *</option>
                   {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <input type="tel" placeholder="Phone number (optional)" value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-
+                <input ref={phoneRef} type="tel" name="phone" placeholder="Phone number (optional)"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                 <button type="submit"
                   className="w-full rounded-xl py-3 font-semibold text-white text-sm mt-1"
                   style={{ backgroundColor: "#1B3A6B" }}>
@@ -181,27 +186,24 @@ export default function SignUpPage() {
             </>
           )}
 
-          {/* ── Step 3: Review & Confirm ── */}
           {step === 3 && (
             <>
               <h1 className="text-xl font-bold text-slate-800 mb-1">Looks good?</h1>
-              <p className="text-sm text-gray-400 mb-5">Review your details and create your account.</p>
-
+              <p className="text-sm text-gray-400 mb-5">Review your details before creating your account.</p>
               <div className="space-y-2 mb-5">
                 {[
-                  { label: "Name", value: `${firstName} ${lastName}`.trim() },
-                  { label: "Email", value: email },
-                  { label: "Business", value: bizName },
-                  { label: "Trade", value: trade },
-                  ...(phone ? [{ label: "Phone", value: phone }] : []),
+                  { label: "Name", value: `${summary.firstName} ${summary.lastName}`.trim() },
+                  { label: "Email", value: summary.email },
+                  { label: "Business", value: summary.bizName },
+                  { label: "Trade", value: summary.trade },
+                  ...(summary.phone ? [{ label: "Phone", value: summary.phone }] : []),
                 ].map(row => (
                   <div key={row.label} className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-0">
                     <span className="text-gray-400">{row.label}</span>
-                    <span className="font-medium text-slate-800 text-right max-w-[60%]">{row.value}</span>
+                    <span className="font-medium text-slate-800 text-right max-w-[60%] break-all">{row.value}</span>
                   </div>
                 ))}
               </div>
-
               <form onSubmit={handleStep3} className="space-y-3">
                 <button type="submit" disabled={submitting}
                   className="w-full rounded-xl py-3 font-semibold text-white text-sm disabled:opacity-60"
