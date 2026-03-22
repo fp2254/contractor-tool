@@ -1,10 +1,38 @@
 "use client";
 
-import { useActionState } from "react";
-import { loginAction } from "./actions";
+import { useState } from "react";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(loginAction, null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    setError("");
+    try {
+      const res = await fetch("/auth/login/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, rememberMe }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Login failed. Check your email and password.");
+        return;
+      }
+      window.location.href = "/app";
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#1B3A6B" }}>
       <div className="flex flex-col items-center justify-center flex-1 px-6 pt-16 pb-8">
@@ -17,36 +45,39 @@ export default function LoginPage() {
 
         <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl">
           <h1 className="text-xl font-bold text-slate-800 mb-5">Log In</h1>
-          <form className="space-y-3" action={formAction}>
+
+          <form className="space-y-3" onSubmit={handleSubmit}>
             <input
-              name="email"
               type="email"
               placeholder="Email"
               autoComplete="email"
               required
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
             <input
-              name="password"
               type="password"
               placeholder="Password"
               autoComplete="current-password"
               required
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
 
             <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
               <input
                 type="checkbox"
-                name="remember_me"
-                defaultChecked
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300 accent-[#1B3A6B] cursor-pointer"
               />
               <span className="text-sm text-slate-600">Remember me</span>
             </label>
 
-            {state?.error && (
-              <p className="text-sm text-red-600">{state.error}</p>
+            {error && (
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             )}
 
             <button
@@ -59,9 +90,9 @@ export default function LoginPage() {
 
             <p className="text-sm text-center text-gray-500 pt-1">
               New here?{" "}
-              <a href="/auth/sign-up" className="font-semibold underline" style={{ color: "#1B3A6B" }}>
+              <Link href="/auth/sign-up" className="font-semibold underline" style={{ color: "#1B3A6B" }}>
                 Create an account
-              </a>
+              </Link>
             </p>
 
             <p className="text-xs text-center text-gray-400">
