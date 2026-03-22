@@ -57,6 +57,13 @@ export default function LoginPage() {
               {pending ? "Logging in…" : "Log In"}
             </button>
 
+            <p className="text-sm text-center text-gray-500 pt-1">
+              New here?{" "}
+              <a href="/auth/sign-up" className="font-semibold underline" style={{ color: "#1B3A6B" }}>
+                Create an account
+              </a>
+            </p>
+
             <p className="text-xs text-center text-gray-400">
               By logging in you agree to our{" "}
               <a href="/terms" target="_blank" rel="noopener noreferrer"
