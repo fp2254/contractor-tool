@@ -10,6 +10,7 @@ import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
 import { AiFollowUpButton } from "@/components/AiFollowUpButton";
 import { QuoteNotesEditor } from "./QuoteNotesEditor";
+import { QuoteEditor } from "./QuoteEditor";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -260,29 +261,19 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         />
       )}
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <div className="flex justify-between items-center mb-3">
-          <p className="text-2xl font-bold text-slate-800">${Number(quote.total_amount).toLocaleString()}</p>
-          {customer?.phone && (
-            <a href={`tel:${customer.phone}`} className="text-gray-400">📞</a>
-          )}
-        </div>
-        {customer && (
-          <p className="text-sm text-gray-500 mb-3">
-            {[customer.address_line1, customer.city, customer.state].filter(Boolean).join(", ")}
-          </p>
-        )}
-        {items && items.length > 0 && (
-          <div className="space-y-2 border-t pt-3">
-            {items.map(item => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-slate-700">{item.description} × {item.quantity}</span>
-                <span className="font-medium">${Number(item.total_price).toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <QuoteEditor
+        quoteId={quote.id}
+        initialTotal={Number(quote.total_amount)}
+        initialItems={(items ?? []).map(i => ({
+          id: i.id,
+          description: i.description,
+          quantity: Number(i.quantity),
+          unit_price: Number(i.unit_price),
+          total_price: Number(i.total_price),
+        }))}
+        customerAddress={customer ? [customer.address_line1, customer.city, customer.state].filter(Boolean).join(", ") : undefined}
+        customerPhone={customer?.phone ?? undefined}
+      />
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
