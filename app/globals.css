@@ -5,3 +5,8 @@
 body {
   @apply bg-gray-100 text-slate-900;
 }
+
+/* Prevent iOS from auto-zooming on input focus (requires font-size >= 16px) */
+input, textarea, select {
+  font-size: 16px !important;
+}
