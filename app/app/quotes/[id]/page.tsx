@@ -9,6 +9,7 @@ import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection
 import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
 import { AiFollowUpButton } from "@/components/AiFollowUpButton";
+import { QuoteNotesEditor } from "./QuoteNotesEditor";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -281,7 +282,6 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             ))}
           </div>
         )}
-        {quote.notes && <p className="text-sm text-gray-500 mt-3 border-t pt-3">{quote.notes}</p>}
       </div>
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -305,6 +305,8 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         orgName={orgName}
         activeToken={activeToken?.token ?? null}
       />
+
+      <QuoteNotesEditor quoteId={quote.id} initialNotes={quote.notes ?? null} />
 
       <ShareCard
         type="quote"

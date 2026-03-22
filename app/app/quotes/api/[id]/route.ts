@@ -9,11 +9,19 @@ export async function PATCH(
   const { id } = await params;
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
-  const body = await req.json() as { status?: string };
+  const body = await req.json() as { status?: string; notes?: string };
+
+  const patch: Record<string, unknown> = {};
+  if (body.status !== undefined) patch.status = body.status;
+  if (body.notes !== undefined) patch.notes = body.notes;
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
 
   const { error } = await admin
     .from("quotes")
-    .update({ status: body.status ?? "archived" } as Record<string, unknown>)
+    .update(patch)
     .eq("id", id)
     .eq("org_id", orgId!);
 
