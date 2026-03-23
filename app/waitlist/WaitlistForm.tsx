@@ -20,6 +20,7 @@ const STATES = [
 export default function WaitlistForm() {
   const searchParams = useSearchParams();
   const source = searchParams.get("source") ?? "";
+  const ref = searchParams.get("ref") ?? "";
 
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", phone: "",
@@ -41,7 +42,7 @@ export default function WaitlistForm() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source }),
+        body: JSON.stringify({ ...form, source, referred_by: ref || undefined }),
       });
       const json = await res.json() as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Something went wrong.");

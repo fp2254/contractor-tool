@@ -117,9 +117,15 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
                     <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">{e.trade_type ?? "—"}</td>
                     <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">{e.state ?? "—"}</td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-medium">
-                        {e.source ?? "website"}
-                      </span>
+                      {e.source?.startsWith("ref:") ? (
+                        <span className="text-xs bg-green-50 text-green-700 rounded-full px-2 py-0.5 font-medium">
+                          Referred · {e.source.replace("ref:", "")}
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-medium">
+                          {e.source ?? "website"}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(e.created_at)}</td>
                   </tr>
@@ -129,7 +135,7 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Company</span><p className="text-slate-700">{e.company_name || "—"}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">State</span><p className="text-slate-700">{e.state || "—"}</p></div>
-                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Source</span><p className="text-slate-700">{e.source || "website"}</p></div>
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Source</span><p className="text-slate-700">{e.source?.startsWith("ref:") ? `Referred by code: ${e.source.replace("ref:", "")}` : (e.source || "website")}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Trade</span><p className="text-slate-700">{e.trade_type || "—"}</p></div>
                         </div>
                         {e.pain_point && (

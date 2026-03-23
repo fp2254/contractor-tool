@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       state?: string;
       pain_point?: string;
       source?: string;
+      referred_by?: string;
     };
 
     if (!body.first_name?.trim() || !body.last_name?.trim() || !body.email?.trim()) {
@@ -56,7 +57,8 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    const source = body.source?.trim() || "website";
+    const referredBy = body.referred_by?.trim().toUpperCase() || null;
+    const source = referredBy ? `ref:${referredBy}` : (body.source?.trim() || "website");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (admin as any)

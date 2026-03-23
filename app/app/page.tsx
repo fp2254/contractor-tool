@@ -6,6 +6,7 @@ import { getOrgIsDemo } from "@/lib/demo";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import OpsBoard from "@/components/OpsBoard";
+import SetupChecklist from "@/components/SetupChecklist";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -47,6 +48,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-3 space-y-2">
+      {!isDemo && <SetupChecklist orgId={orgId!} />}
+
       <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 mb-2">Dashboard</h2>
         <div className="grid grid-cols-4 gap-1.5">

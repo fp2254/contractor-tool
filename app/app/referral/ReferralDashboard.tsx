@@ -68,9 +68,14 @@ export default function ReferralDashboard() {
 
   const referralLink = data ? `${appUrl}/auth/sign-up?ref=${data.code}` : "";
 
+  function markReferralShared() {
+    try { localStorage.setItem("tb_referral_shared", "true"); } catch {}
+  }
+
   async function handleCopy() {
     if (!referralLink) return;
     await navigator.clipboard.writeText(referralLink).catch(() => {});
+    markReferralShared();
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }
@@ -83,6 +88,7 @@ export default function ReferralDashboard() {
         text: `I've been using TradeBase to run my trade business — quotes, jobs, invoices all in one place. Sign up with my link and let's both earn:`,
         url: referralLink,
       }).catch(() => {});
+      markReferralShared();
     } else {
       handleCopy();
     }
