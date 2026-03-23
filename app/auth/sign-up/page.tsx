@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -13,7 +13,7 @@ const TRADES = [
 
 type Step = 1 | 2 | 3 | "done";
 
-export default function SignUpPage() {
+function SignUpInner() {
   const searchParams = useSearchParams();
   const [refCode, setRefCode] = useState("");
 
@@ -263,5 +263,13 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpInner />
+    </Suspense>
   );
 }
