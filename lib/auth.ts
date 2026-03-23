@@ -133,12 +133,17 @@ export async function ensureUserOrg() {
     return realOrgId;
   }
 
+  const meta = (userResp.user.user_metadata ?? {}) as Record<string, string>;
+  const orgName =
+    meta.biz_name?.trim() ||
+    (userResp.user.email
+      ? `${userResp.user.email.split("@")[0]}'s Company`
+      : "My Company");
+
   const { data: org, error: orgError } = await admin
     .from("orgs")
     .insert({
-      name: userResp.user.email
-        ? `${userResp.user.email.split("@")[0]}'s Company`
-        : "My Company",
+      name: orgName,
       owner_user_id: userId,
     })
     .select("id")

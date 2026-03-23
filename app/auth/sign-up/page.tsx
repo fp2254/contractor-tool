@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const TRADES = [
@@ -13,9 +14,13 @@ const TRADES = [
 type Step = 1 | 2 | 3 | "done";
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const [refCode, setRefCode] = useState("");
+
   const [step, setStep] = useState<Step>(1);
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   // Step 1 refs (uncontrolled)
   const firstNameRef = useRef<HTMLInputElement>(null);
@@ -30,9 +35,14 @@ export default function SignUpPage() {
 
   // Summary values (set when advancing steps)
   const [summary, setSummary] = useState({
-    firstName: "", lastName: "", email: "",
+    firstName: "", lastName: "", email: "", password: "",
     bizName: "", trade: "", phone: "",
   });
+
+  useEffect(() => {
+    const ref = searchParams.get("ref") ?? "";
+    if (ref) setRefCode(ref.toUpperCase());
+  }, [searchParams]);
 
   function handleStep1(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +52,7 @@ export default function SignUpPage() {
       firstName: firstNameRef.current?.value ?? "",
       lastName: lastNameRef.current?.value ?? "",
       email: emailRef.current?.value ?? "",
+      password: passwordRef.current?.value ?? "",
     }));
     setStep(2);
   }
@@ -60,9 +71,30 @@ export default function SignUpPage() {
   async function handleStep3(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSubmitting(false);
-    setStep("done");
+    setError("");
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: summary.email,
+          password: summary.password,
+          first_name: summary.firstName,
+          last_name: summary.lastName,
+          biz_name: summary.bizName,
+          trade: summary.trade,
+          phone: summary.phone,
+          ref_code: refCode || undefined,
+        }),
+      });
+      const json = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
+      setStep("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (step === "done") {
@@ -75,9 +107,11 @@ export default function SignUpPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 mb-2">You&apos;re all set, {summary.firstName}!</h1>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">Almost there, {summary.firstName}!</h1>
           <p className="text-sm text-gray-500 mb-6">
-            Check your inbox at <span className="font-semibold text-slate-700">{summary.email}</span> to confirm your account and get started.
+            Check your inbox at{" "}
+            <span className="font-semibold text-slate-700">{summary.email}</span> and click the
+            confirmation link to activate your account.
           </p>
           <Link href="/auth/login"
             className="block w-full rounded-xl py-3 text-white font-semibold text-sm text-center"
@@ -197,6 +231,7 @@ export default function SignUpPage() {
                   { label: "Business", value: summary.bizName },
                   { label: "Trade", value: summary.trade },
                   ...(summary.phone ? [{ label: "Phone", value: summary.phone }] : []),
+                  ...(refCode ? [{ label: "Referred by", value: refCode }] : []),
                 ].map(row => (
                   <div key={row.label} className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-0">
                     <span className="text-gray-400">{row.label}</span>
@@ -204,12 +239,22 @@ export default function SignUpPage() {
                   </div>
                 ))}
               </div>
+
+              {error && (
+                <p className="text-sm text-red-600 mb-3">{error}</p>
+              )}
+
               <form onSubmit={handleStep3} className="space-y-3">
-                <button type="submit" disabled={submitting}
-                  className="w-full rounded-xl py-3 font-semibold text-white text-sm disabled:opacity-60"
+                <button
+                  type="submit"
+                  disabled
+                  className="w-full rounded-xl py-3 font-semibold text-white text-sm opacity-40 cursor-not-allowed"
                   style={{ backgroundColor: "#1B3A6B" }}>
                   {submitting ? "Creating your account…" : "Create Account"}
                 </button>
+                <p className="text-xs text-center text-gray-400">
+                  Early access only — you&apos;ll receive an invite when your spot opens.
+                </p>
                 <button type="button" onClick={() => setStep(2)}
                   className="w-full text-sm text-gray-400 py-1">← Back</button>
               </form>
