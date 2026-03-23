@@ -60,20 +60,33 @@ export async function POST(req: Request) {
     const referredBy = body.referred_by?.trim().toUpperCase() || null;
     const source = referredBy ? `ref:${referredBy}` : (body.source?.trim() || "website");
 
+    const insertData: Record<string, string | null> = {
+      first_name: body.first_name.trim(),
+      last_name: body.last_name.trim(),
+      email: body.email.trim().toLowerCase(),
+      phone: body.phone?.trim() ?? null,
+      trade_type: body.trade?.trim() ?? null,
+      state: body.state?.trim() ?? null,
+      pain_point: body.pain_point?.trim() ?? null,
+      source,
+    };
+
+    if (body.company?.trim()) {
+      insertData.company_name = body.company.trim();
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (admin as any)
+    let { error } = await (admin as any)
       .from("waitlist")
-      .insert({
-        first_name: body.first_name.trim(),
-        last_name: body.last_name.trim(),
-        email: body.email.trim().toLowerCase(),
-        phone: body.phone?.trim() ?? null,
-        trade_type: body.trade?.trim() ?? null,
-        company_name: body.company?.trim() ?? null,
-        state: body.state?.trim() ?? null,
-        pain_point: body.pain_point?.trim() ?? null,
-        source,
-      });
+      .insert(insertData);
+
+    // If company_name column doesn't exist yet, retry without it
+    if (error?.code === "PGRST204" && "company_name" in insertData) {
+      const { company_name: _dropped, ...withoutCompany } = insertData;
+      void _dropped;
+      const retry = await (admin as any).from("waitlist").insert(withoutCompany);
+      error = retry.error;
+    }
 
     if (error) {
       if (error.code === "23505") {
