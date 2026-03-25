@@ -235,6 +235,25 @@ function ContactCard({
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    const text = buildShareText(contact);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   async function handleArchive() {
     const res = await fetch(`/app/trade-contacts/api/${contact.id}`, {
@@ -255,9 +274,13 @@ function ContactCard({
   async function handleShare() {
     const text = buildShareText(contact);
     if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title: contact.name, text }); setShared(true); setTimeout(() => setShared(false), 2000); } catch { /* cancelled */ }
+      try {
+        await navigator.share({ title: contact.name, text });
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch { /* cancelled */ }
     } else {
-      window.open(`sms:?body=${encodeURIComponent(text)}`, "_blank");
+      await handleCopy();
     }
   }
 
@@ -343,11 +366,18 @@ function ContactCard({
                   ✏️ Edit
                 </button>
                 {!isArchived && (
-                  <button onClick={handleShare}
-                    className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2"
-                    style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
-                    {shared ? "✓ Shared!" : "📤 Share"}
-                  </button>
+                  <>
+                    <button onClick={handleCopy}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2 transition-colors"
+                      style={{ backgroundColor: copied ? "#22C55E" : "#F0F4FF", color: copied ? "white" : "#1B3A6B" }}>
+                      {copied ? "✓ Copied!" : "📋 Copy"}
+                    </button>
+                    <button onClick={handleShare}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2"
+                      style={{ backgroundColor: shared ? "#22C55E" : "#F0F4FF", color: shared ? "white" : "#1B3A6B" }}>
+                      {shared ? "✓ Shared!" : "📤 Share"}
+                    </button>
+                  </>
                 )}
               </div>
               <p className="text-[11px] text-gray-300 text-center pt-1">← Swipe left for archive / delete</p>
