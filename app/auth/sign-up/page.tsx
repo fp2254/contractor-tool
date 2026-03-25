@@ -246,13 +246,13 @@ function SignUpInner() {
               <form onSubmit={handleStep3} className="space-y-3">
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-xl py-3 font-semibold text-white text-sm disabled:opacity-60"
+                  disabled
+                  className="w-full rounded-xl py-3 font-semibold text-white text-sm opacity-40 cursor-not-allowed"
                   style={{ backgroundColor: "#1B3A6B" }}>
-                  {submitting ? "Submitting…" : "Request Access"}
+                  {submitting ? "Creating your account…" : "Create Account"}
                 </button>
                 <p className="text-xs text-center text-gray-400">
-                  We review every application and send invites in batches.
+                  Early access only — you&apos;ll receive an invite when your spot opens.
                 </p>
                 <button type="button" onClick={() => setStep(2)}
                   className="w-full text-sm text-gray-400 py-1">← Back</button>

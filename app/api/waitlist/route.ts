@@ -80,11 +80,14 @@ export async function POST(req: Request) {
       .from("waitlist")
       .insert(insertData);
 
-    // If company_name column doesn't exist yet, retry without it
-    if (error?.code === "PGRST204" && "company_name" in insertData) {
-      const { company_name: _dropped, ...withoutCompany } = insertData;
-      void _dropped;
-      const retry = await (admin as any).from("waitlist").insert(withoutCompany);
+    // If any optional column doesn't exist in the schema, fall back to core fields only
+    if (error?.code === "PGRST204") {
+      const retry = await (admin as any).from("waitlist").insert({
+        first_name: insertData.first_name,
+        last_name: insertData.last_name,
+        email: insertData.email,
+        source,
+      });
       error = retry.error;
     }
 
