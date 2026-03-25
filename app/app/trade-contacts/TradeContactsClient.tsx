@@ -203,6 +203,22 @@ function NewContactForm({
   );
 }
 
+function iosCopy(text: string) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.setAttribute("readonly", "");
+  el.setAttribute("contenteditable", "true");
+  // opacity:0.001 — NOT 0, iOS won't focus invisible elements
+  el.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;" +
+    "outline:none;box-shadow:none;background:transparent;opacity:0.001;font-size:16px;";
+  document.body.appendChild(el);
+  el.focus();
+  el.setSelectionRange(0, el.value.length);
+  try { document.execCommand("copy"); } catch {}
+  document.body.removeChild(el);
+}
+
 function buildShareText(contact: TradeContact): string {
   const lines: string[] = [`Contact: ${contact.name}`];
   if (contact.trade) lines.push(contact.company ? `${contact.trade} · ${contact.company}` : contact.trade);
@@ -242,21 +258,16 @@ function ContactCard({
   function handleCopy() {
     const text = buildShareText(contact);
 
-    // Synchronous execCommand — most reliable on iOS PWA
-    const el = document.createElement("textarea");
-    el.value = text;
-    el.setAttribute("readonly", "");
-    el.style.cssText =
-      "position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0;";
-    document.body.appendChild(el);
-    el.focus();
-    el.setSelectionRange(0, text.length);
-    try { document.execCommand("copy"); } catch {}
-    document.body.removeChild(el);
-
-    // Also try modern API as a belt-and-suspenders supplement
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(text).catch(() => {});
+    // Modern clipboard API (works when document is focused, secure context)
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.clipboard &&
+      typeof window !== "undefined" &&
+      window.isSecureContext
+    ) {
+      navigator.clipboard.writeText(text).catch(() => iosCopy(text));
+    } else {
+      iosCopy(text);
     }
 
     setCopied(true);
@@ -283,11 +294,7 @@ function ContactCard({
     const text = buildShareText(contact);
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({
-          title: contact.name,
-          text,
-          url: "https://tradebase.contractors",
-        });
+        await navigator.share({ title: contact.name, text });
         setShared(true);
         setTimeout(() => setShared(false), 2000);
       } catch { /* cancelled */ }
