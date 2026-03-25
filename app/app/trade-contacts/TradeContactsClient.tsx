@@ -211,7 +211,7 @@ function buildShareText(contact: TradeContact): string {
   if (contact.email) lines.push(`✉️ ${contact.email}`);
   if (contact.notes) lines.push(`Notes: ${contact.notes}`);
   lines.push("");
-  lines.push("Powered by TradeBase · tradebase.contractors");
+  lines.push("Sent via TradeBase — https://tradebase.contractors");
   return lines.join("\n");
 }
 
@@ -239,20 +239,26 @@ function ContactCard({
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  async function handleCopy() {
+  function handleCopy() {
     const text = buildShareText(contact);
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const el = document.createElement("textarea");
-      el.value = text;
-      el.style.position = "fixed";
-      el.style.opacity = "0";
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
+
+    // Synchronous execCommand — most reliable on iOS PWA
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.setAttribute("readonly", "");
+    el.style.cssText =
+      "position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0;";
+    document.body.appendChild(el);
+    el.focus();
+    el.setSelectionRange(0, text.length);
+    try { document.execCommand("copy"); } catch {}
+    document.body.removeChild(el);
+
+    // Also try modern API as a belt-and-suspenders supplement
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(() => {});
     }
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }
@@ -277,12 +283,16 @@ function ContactCard({
     const text = buildShareText(contact);
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title: contact.name, text });
+        await navigator.share({
+          title: contact.name,
+          text,
+          url: "https://tradebase.contractors",
+        });
         setShared(true);
         setTimeout(() => setShared(false), 2000);
       } catch { /* cancelled */ }
     } else {
-      await handleCopy();
+      handleCopy();
     }
   }
 
