@@ -43,11 +43,110 @@ function downloadCsv(entries: WaitlistEntry[]) {
   URL.revokeObjectURL(url);
 }
 
-export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntry[] }) {
+function SourceBadge({ source }: { source: string | null }) {
+  if (source === "signup-invited") {
+    return (
+      <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-medium">
+        ✓ Invited
+      </span>
+    );
+  }
+  if (source === "signup") {
+    return (
+      <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 font-medium">
+        Sign-up · Pending
+      </span>
+    );
+  }
+  if (source?.startsWith("signup|ref:")) {
+    return (
+      <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 font-medium">
+        Sign-up · Ref {source.replace("signup|ref:", "")}
+      </span>
+    );
+  }
+  if (source?.startsWith("ref:")) {
+    return (
+      <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-medium">
+        Referred · {source.replace("ref:", "")}
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 font-medium">
+      {source ?? "website"}
+    </span>
+  );
+}
+
+function InviteButton({ entry, onInvited }: { entry: WaitlistEntry; onInvited: (id: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function handleInvite() {
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await fetch("/app/admin/waitlist/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: entry.id,
+          email: entry.email,
+          first_name: entry.first_name,
+          last_name: entry.last_name,
+          biz_name: entry.company_name ?? "",
+          trade: entry.trade_type ?? "",
+          phone: entry.phone ?? "",
+        }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed");
+      onInvited(entry.id);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        onClick={(e) => { e.stopPropagation(); handleInvite(); }}
+        disabled={loading}
+        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white bg-[#1B3A6B] disabled:opacity-50 active:opacity-80">
+        {loading ? "Sending…" : "Send Invite"}
+      </button>
+      {err && <p className="text-xs text-red-500">{err}</p>}
+    </div>
+  );
+}
+
+export default function WaitlistAdminClient({ entries: initial }: { entries: WaitlistEntry[] }) {
+  const [entries, setEntries] = useState(initial);
   const [q, setQ] = useState("");
+  const [tab, setTab] = useState<"all" | "signup" | "waitlist">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = entries.filter((e) => {
+  function handleInvited(id: string) {
+    setEntries(prev =>
+      prev.map(e => e.id === id ? { ...e, source: "signup-invited" } : e)
+    );
+  }
+
+  const isSignup = (e: WaitlistEntry) =>
+    e.source === "signup" ||
+    e.source === "signup-invited" ||
+    (e.source?.startsWith("signup|") ?? false);
+
+  const tabFiltered = tab === "signup"
+    ? entries.filter(isSignup)
+    : tab === "waitlist"
+    ? entries.filter(e => !isSignup(e))
+    : entries;
+
+  const filtered = tabFiltered.filter((e) => {
     if (!q.trim()) return true;
     const s = q.toLowerCase();
     return (
@@ -60,8 +159,27 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
     );
   });
 
+  const pendingSignups = entries.filter(e => e.source === "signup" || e.source?.startsWith("signup|ref:"));
+
   return (
     <div className="space-y-4">
+      {/* Tab bar */}
+      <div className="flex gap-2">
+        {(["all", "signup", "waitlist"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+              tab === t
+                ? "text-white"
+                : "bg-white text-slate-600 border border-gray-200"
+            }`}
+            style={tab === t ? { backgroundColor: "#1B3A6B" } : {}}>
+            {t === "signup" ? `Sign-ups${pendingSignups.length ? ` (${pendingSignups.length} pending)` : ""}` : t === "all" ? `All (${entries.length})` : "Waitlist"}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center gap-3">
         <input
           className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
@@ -79,7 +197,7 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
 
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl p-10 text-center text-gray-400 shadow-sm">
-          {q ? `No results for "${q}"` : "No waitlist entries yet."}
+          {q ? `No results for "${q}"` : tab === "signup" ? "No sign-up applications yet." : "No waitlist entries yet."}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -90,9 +208,9 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
                 <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
                 <th className="px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Phone</th>
                 <th className="px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Trade</th>
-                <th className="px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">State</th>
-                <th className="px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Source</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Signed Up</th>
+                <th className="px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Status</th>
+                <th className="px-4 py-3 font-semibold text-slate-600">Date</th>
+                <th className="px-4 py-3 font-semibold text-slate-600"></th>
               </tr>
             </thead>
             <tbody>
@@ -115,19 +233,18 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
                       {e.phone ? <a href={`tel:${e.phone}`} onClick={(ev) => ev.stopPropagation()}>{e.phone}</a> : "—"}
                     </td>
                     <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">{e.trade_type ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">{e.state ?? "—"}</td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      {e.source?.startsWith("ref:") ? (
-                        <span className="text-xs bg-green-50 text-green-700 rounded-full px-2 py-0.5 font-medium">
-                          Referred · {e.source.replace("ref:", "")}
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 font-medium">
-                          {e.source ?? "website"}
-                        </span>
-                      )}
+                      <SourceBadge source={e.source} />
                     </td>
                     <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(e.created_at)}</td>
+                    <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
+                      {(e.source === "signup" || e.source?.startsWith("signup|ref:")) && (
+                        <InviteButton entry={e} onInvited={handleInvited} />
+                      )}
+                      {e.source === "signup-invited" && (
+                        <span className="text-xs text-green-600 font-semibold">✓ Invited</span>
+                      )}
+                    </td>
                   </tr>
                   {expandedId === e.id && (
                     <tr key={`${e.id}-expand`} className="bg-blue-50">
@@ -135,8 +252,8 @@ export default function WaitlistAdminClient({ entries }: { entries: WaitlistEntr
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Company</span><p className="text-slate-700">{e.company_name || "—"}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">State</span><p className="text-slate-700">{e.state || "—"}</p></div>
-                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Source</span><p className="text-slate-700">{e.source?.startsWith("ref:") ? `Referred by code: ${e.source.replace("ref:", "")}` : (e.source || "website")}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Trade</span><p className="text-slate-700">{e.trade_type || "—"}</p></div>
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Status</span><p className="text-slate-700"><SourceBadge source={e.source} /></p></div>
                         </div>
                         {e.pain_point && (
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Pain Point</span><p className="text-slate-600 mt-0.5 italic">&ldquo;{e.pain_point}&rdquo;</p></div>

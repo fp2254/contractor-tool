@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
@@ -15,64 +14,44 @@ export async function POST(req: Request) {
       ref_code?: string;
     };
 
-    const { email, password, first_name, last_name, biz_name, trade, phone, ref_code } = body;
+    const { email, first_name, last_name, biz_name, trade, phone, ref_code } = body;
 
-    if (!email?.trim() || !password || !first_name?.trim() || !biz_name?.trim()) {
+    if (!email?.trim() || !first_name?.trim() || !biz_name?.trim()) {
       return NextResponse.json({ error: "Required fields missing." }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const admin = createAdminClient();
 
-    const { data, error } = await supabase.auth.signUp({
+    // Check for duplicate email
+    const { data: existing } = await (admin as any)
+      .from("waitlist")
+      .select("id")
+      .eq("email", email.trim().toLowerCase())
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const source = ref_code?.trim()
+      ? `signup|ref:${ref_code.trim().toUpperCase()}`
+      : "signup";
+
+    const { error } = await (admin as any).from("waitlist").insert({
+      first_name: first_name.trim(),
+      last_name: last_name?.trim() ?? "",
       email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: {
-          first_name: first_name.trim(),
-          last_name: last_name?.trim() ?? "",
-          biz_name: biz_name.trim(),
-          trade: trade?.trim() ?? "",
-          phone: phone?.trim() ?? "",
-        },
-      },
+      phone: phone?.trim() ?? null,
+      trade_type: trade?.trim() ?? null,
+      company_name: biz_name.trim(),
+      source,
     });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    if (!data.user) {
-      return NextResponse.json({ error: "Failed to create account." }, { status: 500 });
-    }
-
-    if (ref_code?.trim()) {
-      try {
-        const admin = createAdminClient();
-        const { data: codeRow } = await (admin as any)
-          .from("referral_codes")
-          .select("user_id")
-          .eq("code", ref_code.trim().toUpperCase())
-          .maybeSingle();
-
-        if (codeRow?.user_id && codeRow.user_id !== data.user.id) {
-          await (admin as any).from("referrals").insert({
-            referrer_user_id: codeRow.user_id,
-            referred_user_id: data.user.id,
-            referred_email: email.trim().toLowerCase(),
-            status: "pending",
-          });
-        }
-      } catch {
-        // Referral recording is non-fatal
-      }
-    }
-
-    const needsConfirmation = !data.session;
-    return NextResponse.json({ ok: true, needsConfirmation });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Signup route error:", err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });

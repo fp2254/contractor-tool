@@ -107,16 +107,15 @@ function SignUpInner() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 mb-2">Almost there, {summary.firstName}!</h1>
+          <h1 className="text-xl font-bold text-slate-800 mb-2">You&apos;re on the list, {summary.firstName}!</h1>
           <p className="text-sm text-gray-500 mb-6">
-            Check your inbox at{" "}
-            <span className="font-semibold text-slate-700">{summary.email}</span> and click the
-            confirmation link to activate your account.
+            We&apos;ll review your application and send an invite to{" "}
+            <span className="font-semibold text-slate-700">{summary.email}</span> when your spot is ready.
           </p>
-          <Link href="/auth/login"
+          <Link href="/"
             className="block w-full rounded-xl py-3 text-white font-semibold text-sm text-center"
             style={{ backgroundColor: "#1B3A6B" }}>
-            Go to Log In
+            Back to Home
           </Link>
         </div>
       </div>
@@ -247,13 +246,13 @@ function SignUpInner() {
               <form onSubmit={handleStep3} className="space-y-3">
                 <button
                   type="submit"
-                  disabled
-                  className="w-full rounded-xl py-3 font-semibold text-white text-sm opacity-40 cursor-not-allowed"
+                  disabled={submitting}
+                  className="w-full rounded-xl py-3 font-semibold text-white text-sm disabled:opacity-60"
                   style={{ backgroundColor: "#1B3A6B" }}>
-                  {submitting ? "Creating your account…" : "Create Account"}
+                  {submitting ? "Submitting…" : "Request Access"}
                 </button>
                 <p className="text-xs text-center text-gray-400">
-                  Early access only — you&apos;ll receive an invite when your spot opens.
+                  We review every application and send invites in batches.
                 </p>
                 <button type="button" onClick={() => setStep(2)}
                   className="w-full text-sm text-gray-400 py-1">← Back</button>
