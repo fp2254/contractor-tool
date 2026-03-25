@@ -43,25 +43,15 @@ function downloadCsv(entries: WaitlistEntry[]) {
   URL.revokeObjectURL(url);
 }
 
+function isInvited(source: string | null) {
+  return source?.endsWith("-invited") || source === "invited";
+}
+
 function SourceBadge({ source }: { source: string | null }) {
-  if (source === "signup-invited") {
+  if (isInvited(source)) {
     return (
       <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-medium">
         ✓ Invited
-      </span>
-    );
-  }
-  if (source === "signup") {
-    return (
-      <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 font-medium">
-        Sign-up · Pending
-      </span>
-    );
-  }
-  if (source?.startsWith("signup|ref:")) {
-    return (
-      <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5 font-medium">
-        Sign-up · Ref {source.replace("signup|ref:", "")}
       </span>
     );
   }
@@ -126,24 +116,19 @@ function InviteButton({ entry, onInvited }: { entry: WaitlistEntry; onInvited: (
 export default function WaitlistAdminClient({ entries: initial }: { entries: WaitlistEntry[] }) {
   const [entries, setEntries] = useState(initial);
   const [q, setQ] = useState("");
-  const [tab, setTab] = useState<"all" | "signup" | "waitlist">("all");
+  const [tab, setTab] = useState<"all" | "pending" | "invited">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   function handleInvited(id: string) {
     setEntries(prev =>
-      prev.map(e => e.id === id ? { ...e, source: "signup-invited" } : e)
+      prev.map(e => e.id === id ? { ...e, source: "invited" } : e)
     );
   }
 
-  const isSignup = (e: WaitlistEntry) =>
-    e.source === "signup" ||
-    e.source === "signup-invited" ||
-    (e.source?.startsWith("signup|") ?? false);
-
-  const tabFiltered = tab === "signup"
-    ? entries.filter(isSignup)
-    : tab === "waitlist"
-    ? entries.filter(e => !isSignup(e))
+  const tabFiltered = tab === "pending"
+    ? entries.filter(e => !isInvited(e.source))
+    : tab === "invited"
+    ? entries.filter(e => isInvited(e.source))
     : entries;
 
   const filtered = tabFiltered.filter((e) => {
@@ -159,23 +144,28 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
     );
   });
 
-  const pendingSignups = entries.filter(e => e.source === "signup" || e.source?.startsWith("signup|ref:"));
+  const pendingCount = entries.filter(e => !isInvited(e.source)).length;
+  const invitedCount = entries.filter(e => isInvited(e.source)).length;
 
   return (
     <div className="space-y-4">
       {/* Tab bar */}
       <div className="flex gap-2">
-        {(["all", "signup", "waitlist"] as const).map(t => (
+        {([
+          { key: "all", label: `All (${entries.length})` },
+          { key: "pending", label: `Pending${pendingCount ? ` (${pendingCount})` : ""}` },
+          { key: "invited", label: `Invited${invitedCount ? ` (${invitedCount})` : ""}` },
+        ] as const).map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-              tab === t
+            key={key}
+            onClick={() => setTab(key)}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+              tab === key
                 ? "text-white"
                 : "bg-white text-slate-600 border border-gray-200"
             }`}
-            style={tab === t ? { backgroundColor: "#1B3A6B" } : {}}>
-            {t === "signup" ? `Sign-ups${pendingSignups.length ? ` (${pendingSignups.length} pending)` : ""}` : t === "all" ? `All (${entries.length})` : "Waitlist"}
+            style={tab === key ? { backgroundColor: "#1B3A6B" } : {}}>
+            {label}
           </button>
         ))}
       </div>
@@ -197,7 +187,7 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
 
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl p-10 text-center text-gray-400 shadow-sm">
-          {q ? `No results for "${q}"` : tab === "signup" ? "No sign-up applications yet." : "No waitlist entries yet."}
+          {q ? `No results for "${q}"` : tab === "invited" ? "No one invited yet." : tab === "pending" ? "No pending entries." : "No waitlist entries yet."}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -238,11 +228,10 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
                     </td>
                     <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(e.created_at)}</td>
                     <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
-                      {(e.source === "signup" || e.source?.startsWith("signup|ref:")) && (
-                        <InviteButton entry={e} onInvited={handleInvited} />
-                      )}
-                      {e.source === "signup-invited" && (
+                      {isInvited(e.source) ? (
                         <span className="text-xs text-green-600 font-semibold">✓ Invited</span>
+                      ) : (
+                        <InviteButton entry={e} onInvited={handleInvited} />
                       )}
                     </td>
                   </tr>

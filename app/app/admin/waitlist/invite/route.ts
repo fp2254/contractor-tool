@@ -32,10 +32,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Mark as invited in the source field
+  // Mark as invited in the source field (works for any entry type)
   await (admin as any)
     .from("waitlist")
-    .update({ source: "signup-invited" })
+    .update({ source: "invited" })
     .eq("id", id);
 
   return NextResponse.json({ ok: true });
