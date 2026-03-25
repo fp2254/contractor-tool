@@ -210,6 +210,8 @@ function buildShareText(contact: TradeContact): string {
   if (contact.phone) lines.push(`📞 ${contact.phone}`);
   if (contact.email) lines.push(`✉️ ${contact.email}`);
   if (contact.notes) lines.push(`Notes: ${contact.notes}`);
+  lines.push("");
+  lines.push("Powered by TradeBase · tradebase.contractors");
   return lines.join("\n");
 }
 
