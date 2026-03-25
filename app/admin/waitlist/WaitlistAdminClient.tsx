@@ -196,11 +196,9 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
               <tr className="border-b border-gray-100 text-left">
                 <th className="px-4 py-3 font-semibold text-slate-600">Name</th>
                 <th className="px-4 py-3 font-semibold text-slate-600">Email</th>
-                <th className="px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Phone</th>
                 <th className="px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Trade</th>
-                <th className="px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Status</th>
-                <th className="px-4 py-3 font-semibold text-slate-600">Date</th>
-                <th className="px-4 py-3 font-semibold text-slate-600"></th>
+                <th className="px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Date</th>
+                <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -210,43 +208,46 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
                     key={e.id}
                     onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
                     className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                    <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
                       {e.first_name} {e.last_name}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-slate-600 text-xs">
                       <a href={`mailto:${e.email}`} onClick={(ev) => ev.stopPropagation()}
-                        className="text-[#1B3A6B] hover:underline">
+                        className="text-[#1B3A6B] hover:underline break-all">
                         {e.email}
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 hidden md:table-cell">
-                      {e.phone ? <a href={`tel:${e.phone}`} onClick={(ev) => ev.stopPropagation()}>{e.phone}</a> : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">{e.trade_type ?? "—"}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <SourceBadge source={e.source} />
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(e.created_at)}</td>
-                    <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
+                    <td className="px-4 py-3 text-slate-500 hidden sm:table-cell text-sm">{e.trade_type ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap hidden md:table-cell">{formatDate(e.created_at)}</td>
+                    <td className="px-4 py-3">
                       {isInvited(e.source) ? (
-                        <span className="text-xs text-green-600 font-semibold">✓ Invited</span>
+                        <span className="text-xs text-green-600 font-semibold whitespace-nowrap">✓ Invited</span>
                       ) : (
-                        <InviteButton entry={e} onInvited={handleInvited} />
+                        <span className="text-xs text-amber-600 font-medium whitespace-nowrap">Pending ▾</span>
                       )}
                     </td>
                   </tr>
                   {expandedId === e.id && (
                     <tr key={`${e.id}-expand`} className="bg-blue-50">
-                      <td colSpan={7} className="px-4 py-3 text-sm">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+                      <td colSpan={5} className="px-4 py-4 text-sm">
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Email</span><p className="text-slate-700 text-xs break-all">{e.email}</p></div>
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Phone</span><p className="text-slate-700">{e.phone || "—"}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Company</span><p className="text-slate-700">{e.company_name || "—"}</p></div>
-                          <div><span className="text-xs font-semibold text-gray-400 uppercase">State</span><p className="text-slate-700">{e.state || "—"}</p></div>
                           <div><span className="text-xs font-semibold text-gray-400 uppercase">Trade</span><p className="text-slate-700">{e.trade_type || "—"}</p></div>
-                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Status</span><p className="text-slate-700"><SourceBadge source={e.source} /></p></div>
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">State</span><p className="text-slate-700">{e.state || "—"}</p></div>
+                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Joined</span><p className="text-slate-700">{formatDate(e.created_at)}</p></div>
                         </div>
                         {e.pain_point && (
-                          <div><span className="text-xs font-semibold text-gray-400 uppercase">Pain Point</span><p className="text-slate-600 mt-0.5 italic">&ldquo;{e.pain_point}&rdquo;</p></div>
+                          <div className="mb-4"><span className="text-xs font-semibold text-gray-400 uppercase">Pain Point</span><p className="text-slate-600 mt-0.5 italic">&ldquo;{e.pain_point}&rdquo;</p></div>
                         )}
+                        <div onClick={(ev) => ev.stopPropagation()}>
+                          {isInvited(e.source) ? (
+                            <span className="inline-flex items-center gap-1.5 text-sm text-green-700 font-semibold bg-green-50 rounded-xl px-4 py-2.5">✓ Invite sent</span>
+                          ) : (
+                            <InviteButton entry={e} onInvited={handleInvited} />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}
