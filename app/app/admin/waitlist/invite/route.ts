@@ -19,6 +19,7 @@ export async function POST(req: Request) {
   const { id, email, first_name, last_name, biz_name, trade, phone } = body;
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: "https://tradebase.contractors/auth/confirm",
     data: {
       first_name,
       last_name,
