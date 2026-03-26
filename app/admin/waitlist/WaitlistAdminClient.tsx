@@ -69,13 +69,15 @@ function SourceBadge({ source }: { source: string | null }) {
   );
 }
 
-function InviteButton({ entry, onInvited }: { entry: WaitlistEntry; onInvited: (id: string) => void }) {
+function InviteButton({ entry, onInvited, resend = false }: { entry: WaitlistEntry; onInvited: (id: string) => void; resend?: boolean }) {
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
 
   async function handleInvite() {
     setLoading(true);
     setErr("");
+    setSent(false);
     try {
       const res = await fetch("/app/admin/waitlist/invite", {
         method: "POST",
@@ -93,6 +95,7 @@ function InviteButton({ entry, onInvited }: { entry: WaitlistEntry; onInvited: (
       const json = await res.json() as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Failed");
       onInvited(entry.id);
+      setSent(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -105,10 +108,10 @@ function InviteButton({ entry, onInvited }: { entry: WaitlistEntry; onInvited: (
       <button
         onClick={(e) => { e.stopPropagation(); handleInvite(); }}
         disabled={loading}
-        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white bg-[#1B3A6B] disabled:opacity-50 active:opacity-80">
-        {loading ? "Sending…" : "Send Invite"}
+        className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 active:opacity-80 ${resend ? "bg-gray-500" : "bg-[#1B3A6B]"}`}>
+        {loading ? "Sending…" : sent ? "✓ Sent!" : resend ? "Resend Invite" : "Send Invite"}
       </button>
-      {err && <p className="text-xs text-red-500">{err}</p>}
+      {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
     </div>
   );
 }
@@ -242,11 +245,7 @@ export default function WaitlistAdminClient({ entries: initial }: { entries: Wai
                           <div className="mb-4"><span className="text-xs font-semibold text-gray-400 uppercase">Pain Point</span><p className="text-slate-600 mt-0.5 italic">&ldquo;{e.pain_point}&rdquo;</p></div>
                         )}
                         <div onClick={(ev) => ev.stopPropagation()}>
-                          {isInvited(e.source) ? (
-                            <span className="inline-flex items-center gap-1.5 text-sm text-green-700 font-semibold bg-green-50 rounded-xl px-4 py-2.5">✓ Invite sent</span>
-                          ) : (
-                            <InviteButton entry={e} onInvited={handleInvited} />
-                          )}
+                          <InviteButton entry={e} onInvited={handleInvited} resend={isInvited(e.source)} />
                         </div>
                       </td>
                     </tr>
