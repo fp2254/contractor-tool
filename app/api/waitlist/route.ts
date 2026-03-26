@@ -57,6 +57,19 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
+
+    // Enforce 200-person cap
+    const { count } = await (admin as any)
+      .from("waitlist")
+      .select("id", { count: "exact", head: true });
+
+    if ((count ?? 0) >= 200) {
+      return NextResponse.json(
+        { error: "The waitlist is full. Follow us for updates on the next opening." },
+        { status: 409 }
+      );
+    }
+
     const referredBy = body.referred_by?.trim().toUpperCase() || null;
     const source = referredBy ? `ref:${referredBy}` : (body.source?.trim() || "website");
 

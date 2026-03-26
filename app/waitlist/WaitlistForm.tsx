@@ -17,7 +17,7 @@ const STATES = [
   "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
 ];
 
-export default function WaitlistForm() {
+export default function WaitlistForm({ isFull = false }: { isFull?: boolean }) {
   const searchParams = useSearchParams();
   const source = searchParams.get("source") ?? "";
   const ref = searchParams.get("ref") ?? "";
@@ -52,6 +52,18 @@ export default function WaitlistForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (isFull) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+        <div className="text-4xl mb-3">🔒</div>
+        <h2 className="text-lg font-bold text-red-800 mb-2">Waitlist is full</h2>
+        <p className="text-sm text-red-700">
+          All 200 founder spots have been claimed. Follow us on social media for updates on the next opening.
+        </p>
+      </div>
+    );
   }
 
   if (done) {
