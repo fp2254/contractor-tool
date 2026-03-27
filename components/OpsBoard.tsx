@@ -14,7 +14,7 @@ function ProgressBar({ categories }: { categories: OpsCategory[] }) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-gray-500">Daily Progress</span>
         <span className="text-xs font-semibold text-[#1B3A6B]">
-          {cleared} of {total} clear
+          {cleared === total && total > 0 ? "All clear" : `${cleared} of ${total} clear`}
         </span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -105,8 +105,8 @@ export default function OpsBoard() {
         <div className="px-4 py-2.5 flex items-center gap-2.5">
           <span className="text-base shrink-0">✅</span>
           <p className="text-xs text-slate-600">
-            <span className="font-semibold">Board clear.</span>{" "}
-            {cleared}/{categories.length} categories in good shape.
+            <span className="font-semibold">Everything&apos;s on track.</span>{" "}
+            All {categories.length} categories in good shape.
           </p>
         </div>
       ) : (

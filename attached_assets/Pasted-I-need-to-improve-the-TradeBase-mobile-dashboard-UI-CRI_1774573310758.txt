@@ -1,0 +1,86 @@
+I need to improve the TradeBase mobile dashboard UI.
+
+CRITICAL:
+- Do NOT break anything.
+- Do NOT remove or change any existing functionality.
+- Do NOT change routing, logic, or data fetching.
+- Do NOT rename existing functions, props, or API calls.
+- Only update UI/UX, styling, layout, and wording.
+- Everything must continue working exactly as it does now.
+
+Context:
+- Stat cards (New Leads, Jobs Today, Unpaid, Estimates) are already clickable.
+- The floating + button already opens customizable quick actions.
+- This is NOT a feature build — this is a UI clarity and polish pass.
+- Keep mobile-first design (iPhone primary).
+- Keep current color scheme and structure.
+
+Goals:
+- Make actions feel obvious
+- Make the screen feel more alive
+- Reduce “generic SaaS dashboard” feel
+- Improve clarity without adding complexity
+
+Make the following changes:
+
+1. Make stat cards feel clickable
+- Add subtle elevation/shadow improvements
+- Add a small visual cue like a chevron (>) or “View”
+- Add a tap/active state
+- Keep them clean and not cluttered
+
+2. Improve empty states (VERY IMPORTANT)
+- Replace dead “0” feeling with helpful text
+
+Examples:
+- New Leads: “No leads yet”
+- Jobs Today: “No jobs scheduled”
+- Unpaid: “No unpaid invoices”
+- Estimates: “No active estimates”
+
+- Needs Attention:
+  Replace “Nothing urgent” with:
+  “You’re all caught up”
+
+3. Improve “Needs Attention” section
+- Make it feel intentional, not empty
+- Add a positive/clean visual state when nothing is wrong
+
+4. Fix “Today’s Ops” wording
+- Replace robotic/system text
+
+Examples:
+- “7 of 7 clear” → “All clear”
+- “Board clear” → “Everything’s on track”
+
+- Keep progress bar but make language human
+
+5. Make “AI Job Capture” stand out more
+- Increase visual priority slightly
+- Add subtext:
+  “Describe the job. We’ll build it fast.”
+- Keep it clean and premium (NOT flashy)
+
+6. Clarify Quick Actions vs floating +
+- Do NOT remove either
+- Make Quick Actions feel like “pinned actions”
+- Floating + should feel like global add
+- Add subtle distinction in styling or labeling
+
+7. Improve spacing and hierarchy
+- Clean up padding between sections
+- Make most important actions stand out first
+- Keep everything thumb-friendly
+
+8. Mobile safety
+- Do NOT reduce button sizes
+- Do NOT break layout on small screens
+- Test for overflow/scroll issues
+
+OUTPUT:
+- Show updated dashboard component code
+- Briefly explain what you changed
+- Confirm nothing functional was altered
+
+Again:
+Do NOT break anything. This is UI polish only.

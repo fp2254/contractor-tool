@@ -40,54 +40,99 @@ export default async function DashboardPage() {
     : "/app/quotes";
 
   const statCards = [
-    { label: "New Leads", value: newLeadsCount, color: "#F97316", href: "/app/leads" },
-    { label: "Jobs Today", value: jobsTodayCount, color: "#22C55E", href: "/app/jobs" },
-    { label: "Unpaid", value: `$${unpaidTotal.toLocaleString()}`, color: "#EF4444", href: "/app/invoices" },
-    { label: "Estimates", value: estimatesCount, color: "#3B82F6", href: sentQuotesHref },
+    {
+      label: "New Leads",
+      value: newLeadsCount,
+      display: newLeadsCount > 0 ? String(newLeadsCount) : null,
+      emptyText: "No leads yet",
+      color: "#F97316",
+      href: "/app/leads",
+    },
+    {
+      label: "Jobs Today",
+      value: jobsTodayCount,
+      display: jobsTodayCount > 0 ? String(jobsTodayCount) : null,
+      emptyText: "None today",
+      color: "#22C55E",
+      href: "/app/jobs",
+    },
+    {
+      label: "Unpaid",
+      value: unpaidTotal,
+      display: unpaidTotal > 0 ? `$${unpaidTotal.toLocaleString()}` : null,
+      emptyText: "All clear",
+      color: "#EF4444",
+      href: "/app/invoices",
+    },
+    {
+      label: "Estimates",
+      value: estimatesCount,
+      display: estimatesCount > 0 ? String(estimatesCount) : null,
+      emptyText: "None sent",
+      color: "#3B82F6",
+      href: sentQuotesHref,
+    },
   ];
+
+  const allCaughtUp = overdueInvoices.length === 0 && estimatesCount === 0;
 
   return (
     <div className="p-3 space-y-2">
       {!isDemo && <SetupChecklist orgId={orgId!} />}
 
+      {/* Stat Cards */}
       <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 mb-2">Dashboard</h2>
         <div className="grid grid-cols-4 gap-1.5">
           {statCards.map((card) => (
-            <Link key={card.label} href={card.href}
-              className="rounded-xl p-2 flex flex-col items-center text-white text-center"
+            <Link
+              key={card.label}
+              href={card.href}
+              className="rounded-xl p-2 flex flex-col items-center text-white text-center shadow active:opacity-70 transition-opacity"
               style={{ backgroundColor: card.color }}>
-              <span className="text-[10px] font-semibold leading-tight">{card.label}</span>
-              <span className="text-xl font-bold mt-0.5">{card.value}</span>
+              <span className="text-[10px] font-semibold leading-tight opacity-90">{card.label}</span>
+              {card.display ? (
+                <span className="text-xl font-bold mt-0.5 leading-none">{card.display}</span>
+              ) : (
+                <span className="text-[9px] font-semibold mt-1 opacity-80 leading-snug text-center">{card.emptyText}</span>
+              )}
+              <span className="text-[8px] opacity-50 mt-0.5">›</span>
             </Link>
           ))}
         </div>
       </div>
 
+      {/* Needs Attention */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-3 pt-2.5 pb-1.5">
           <h2 className="text-sm font-bold text-slate-800">Needs Attention</h2>
         </div>
-        {overdueInvoices.length === 0 && estimatesCount === 0 ? (
-          <div className="px-3 pb-2.5 text-xs text-gray-400">Nothing urgent.</div>
+        {allCaughtUp ? (
+          <div className="px-3 pb-3 flex items-center gap-2.5">
+            <span className="text-base shrink-0">✅</span>
+            <div>
+              <p className="text-xs font-semibold text-slate-700">You&apos;re all caught up</p>
+              <p className="text-[11px] text-gray-400">Nothing needs your attention right now.</p>
+            </div>
+          </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {estimatesCount > 0 && (
-              <Link href={sentQuotesHref} className="flex items-center gap-2 px-3 py-2">
-                <span className="text-yellow-500 text-sm">⚠️</span>
+              <Link href={sentQuotesHref} className="flex items-center gap-2 px-3 py-2 active:bg-gray-50">
+                <span className="text-sm shrink-0">⚠️</span>
                 <span className="text-xs text-slate-700 flex-1">
                   {estimatesCount} quote{estimatesCount > 1 ? "s" : ""} awaiting response
                 </span>
-                <span className="text-gray-400 text-xs">›</span>
+                <span className="text-gray-400 text-xs shrink-0">›</span>
               </Link>
             )}
             {overdueInvoices.map((inv) => (
-              <Link key={inv.id} href="/app/invoices" className="flex items-center gap-2 px-3 py-2">
-                <span className="text-red-500 text-sm">🔴</span>
+              <Link key={inv.id} href="/app/invoices" className="flex items-center gap-2 px-3 py-2 active:bg-gray-50">
+                <span className="text-sm shrink-0">🔴</span>
                 <span className="text-xs text-slate-700 flex-1">
                   Overdue Invoice – ${Number(inv.total_amount).toLocaleString()}
                 </span>
-                <span className="text-gray-400 text-xs">›</span>
+                <span className="text-gray-400 text-xs shrink-0">›</span>
               </Link>
             ))}
           </div>
@@ -96,17 +141,23 @@ export default async function DashboardPage() {
 
       <OpsBoard />
 
+      {/* Pinned Actions */}
       <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 mb-2">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-bold text-slate-800">Quick Actions</h2>
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Pinned</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
             { label: "Collect Payment", href: "/app/invoices", icon: "💰" },
             { label: "Schedule Job", href: "/app/jobs", icon: "📅" },
           ].map((action) => (
-            <Link key={action.label} href={action.href}
-              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-white font-semibold text-xs"
+            <Link
+              key={action.label}
+              href={action.href}
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-white font-semibold text-xs active:opacity-75 transition-opacity"
               style={{ backgroundColor: "#1B3A6B" }}>
               <span className="text-base">{action.icon}</span>
               {action.label}
