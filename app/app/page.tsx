@@ -91,7 +91,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-3 space-y-3 pb-28">
+    <div className="p-3 space-y-4 pb-28">
       {!isDemo && <SetupChecklist orgId={orgId!} />}
 
       {/* 1. Status overview */}
@@ -119,25 +119,25 @@ export default async function DashboardPage() {
       {/* 2. Next Step */}
       {nextStep && (
         <div className="bg-white rounded-2xl px-4 py-4 shadow-sm border-l-4 border-[#1B3A6B]">
-          <p className="text-[10px] font-bold text-[#1B3A6B] uppercase tracking-wide mb-1">Next Step</p>
-          <p className="text-sm text-slate-600 mb-3 leading-snug">{nextStep.context}</p>
+          <p className="text-[10px] font-bold text-[#1B3A6B] uppercase tracking-wide mb-1.5">Next Step</p>
+          <p className="text-sm text-slate-500 mb-3 leading-snug">{nextStep.context}</p>
           <Link
             href={nextStep.href}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-white font-bold text-xs active:opacity-75 transition-opacity"
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-white font-bold text-sm active:opacity-75 transition-opacity shadow-sm"
             style={{ backgroundColor: "#1B3A6B" }}>
-            {nextStep.cta} ›
+            {nextStep.cta}
+            <span className="text-base leading-none">›</span>
           </Link>
         </div>
       )}
 
       {/* 3. AI Job Capture */}
-      <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm">
+      <div className="bg-white rounded-2xl px-4 pt-5 pb-5 shadow-sm">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-lg leading-none">✨</span>
           <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
-          <span className="ml-auto text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 uppercase tracking-wide">AI</span>
         </div>
-        <p className="text-xs text-gray-400 mb-3">Describe the job. We&apos;ll build it fast.</p>
+        <p className="text-xs text-slate-500 mb-3.5">Describe the job. We&apos;ll build it fast.</p>
         <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
       </div>
 

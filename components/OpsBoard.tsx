@@ -104,9 +104,8 @@ export default function OpsBoard() {
       {allClear ? (
         <div className="px-4 py-2.5 flex items-center gap-2.5">
           <span className="text-base shrink-0">✅</span>
-          <p className="text-xs text-slate-600">
-            <span className="font-semibold">Everything&apos;s on track.</span>{" "}
-            All {categories.length} categories in good shape.
+          <p className="text-sm font-semibold text-slate-700">
+            Everything&apos;s on track today
           </p>
         </div>
       ) : (
