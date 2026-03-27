@@ -76,79 +76,78 @@ export default async function DashboardPage() {
 
   const allCaughtUp = overdueInvoices.length === 0 && estimatesCount === 0;
 
-  // Next Action — priority-ordered nudge
-  let nextAction: { label: string; cta: string; href: string } | null = null;
+  // Next Step — priority-ordered, most urgent first
+  let nextStep: { context: string; cta: string; href: string } | null = null;
   if (unpaidTotal > 0) {
-    nextAction = { label: "You have unpaid invoices.", cta: "Collect payment", href: "/app/invoices" };
+    nextStep = { context: "You have unpaid invoices.", cta: "Collect Payment", href: "/app/invoices" };
   } else if (estimatesCount > 0) {
-    nextAction = { label: "Quotes are waiting for a response.", cta: "Review estimates", href: sentQuotesHref };
+    nextStep = { context: "Quotes are waiting for a response.", cta: "Review Estimates", href: sentQuotesHref };
   } else if (newLeadsCount > 0) {
-    nextAction = { label: "New leads need a quote.", cta: "Create a quote", href: "/app/quotes/new" };
+    nextStep = { context: "New leads are waiting on a quote.", cta: "Create a Quote", href: "/app/quotes/new" };
   } else if (jobsTodayCount > 0) {
-    nextAction = { label: "You have jobs on the schedule.", cta: "View today's jobs", href: "/app/jobs" };
+    nextStep = { context: "You have jobs on the schedule today.", cta: "View Today's Jobs", href: "/app/jobs" };
   } else {
-    nextAction = { label: "No active work yet.", cta: "Add your first lead", href: "/app/leads" };
+    nextStep = { context: "No active work yet — let's get started.", cta: "Add Your First Lead", href: "/app/leads" };
   }
 
   return (
-    <div className="p-3 space-y-2 pb-28">
+    <div className="p-3 space-y-3 pb-28">
       {!isDemo && <SetupChecklist orgId={orgId!} />}
 
-      {/* 1. Stat Cards */}
-      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 mb-2">Dashboard</h2>
+      {/* 1. Status overview */}
+      <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Today at a Glance</p>
         <div className="grid grid-cols-4 gap-1.5">
           {statCards.map((card) => (
             <Link
               key={card.label}
               href={card.href}
-              className="rounded-xl p-2 flex flex-col items-center text-white text-center shadow active:opacity-70 transition-opacity"
+              className="rounded-xl p-2.5 flex flex-col items-center text-white text-center shadow-sm active:opacity-70 transition-opacity"
               style={{ backgroundColor: card.color }}>
               <span className="text-[10px] font-semibold leading-tight opacity-90">{card.label}</span>
               {card.display ? (
-                <span className="text-xl font-bold mt-0.5 leading-none">{card.display}</span>
+                <span className="text-[22px] font-bold mt-0.5 leading-none">{card.display}</span>
               ) : (
                 <span className="text-[9px] font-semibold mt-1 opacity-80 leading-snug">{card.emptyText}</span>
               )}
-              <span className="text-[8px] opacity-55 mt-0.5 leading-none">{card.microcopy}</span>
+              <span className="text-[8px] opacity-60 mt-1 leading-none">{card.microcopy}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* 2. Next Action */}
-      {nextAction && (
-        <Link
-          href={nextAction.href}
-          className="flex items-center gap-3 bg-[#1B3A6B] text-white rounded-2xl px-4 py-3 shadow-sm active:opacity-80 transition-opacity">
-          <span className="text-xl shrink-0">👉</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] opacity-75 leading-tight">Next step</p>
-            <p className="text-sm font-bold leading-snug">{nextAction.cta}</p>
-            <p className="text-[11px] opacity-65 leading-tight mt-0.5">{nextAction.label}</p>
-          </div>
-          <span className="text-white opacity-50 text-lg shrink-0">›</span>
-        </Link>
+      {/* 2. Next Step */}
+      {nextStep && (
+        <div className="bg-white rounded-2xl px-4 py-4 shadow-sm border-l-4 border-[#1B3A6B]">
+          <p className="text-[10px] font-bold text-[#1B3A6B] uppercase tracking-wide mb-1">Next Step</p>
+          <p className="text-sm text-slate-600 mb-3 leading-snug">{nextStep.context}</p>
+          <Link
+            href={nextStep.href}
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-white font-bold text-xs active:opacity-75 transition-opacity"
+            style={{ backgroundColor: "#1B3A6B" }}>
+            {nextStep.cta} ›
+          </Link>
+        </div>
       )}
 
       {/* 3. AI Job Capture */}
-      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-base">✨</span>
+      <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-lg leading-none">✨</span>
           <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
-          <span className="ml-auto text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 uppercase tracking-wide">AI</span>
+          <span className="ml-auto text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2 py-0.5 uppercase tracking-wide">AI</span>
         </div>
-        <p className="text-xs text-gray-400 mb-2.5">Describe the job. We&apos;ll build it fast.</p>
+        <p className="text-xs text-gray-400 mb-3">Describe the job. We&apos;ll build it fast.</p>
         <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
       </div>
 
       {/* 4. Needs Attention */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-3 pt-2.5 pb-1.5">
+        <div className="px-4 pt-3 pb-1.5">
           <h2 className="text-sm font-bold text-slate-800">Needs Attention</h2>
         </div>
         {allCaughtUp ? (
-          <div className="px-3 pb-3 flex items-center gap-2.5">
+          <div className="px-4 pb-3.5 flex items-center gap-3">
             <span className="text-base shrink-0">✅</span>
             <div>
               <p className="text-xs font-semibold text-slate-700">You&apos;re all caught up</p>
@@ -158,7 +157,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {estimatesCount > 0 && (
-              <Link href={sentQuotesHref} className="flex items-center gap-2 px-3 py-2 active:bg-gray-50">
+              <Link href={sentQuotesHref} className="flex items-center gap-2.5 px-4 py-2.5 active:bg-gray-50">
                 <span className="text-sm shrink-0">⚠️</span>
                 <span className="text-xs text-slate-700 flex-1">
                   {estimatesCount} quote{estimatesCount > 1 ? "s" : ""} awaiting response
@@ -167,7 +166,7 @@ export default async function DashboardPage() {
               </Link>
             )}
             {overdueInvoices.map((inv) => (
-              <Link key={inv.id} href="/app/invoices" className="flex items-center gap-2 px-3 py-2 active:bg-gray-50">
+              <Link key={inv.id} href="/app/invoices" className="flex items-center gap-2.5 px-4 py-2.5 active:bg-gray-50">
                 <span className="text-sm shrink-0">🔴</span>
                 <span className="text-xs text-slate-700 flex-1">
                   Overdue Invoice – ${Number(inv.total_amount).toLocaleString()}
@@ -182,13 +181,13 @@ export default async function DashboardPage() {
       {/* 5. Today's Ops */}
       <OpsBoard />
 
-      {/* 6. Quick Actions (Pinned) */}
-      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
+      {/* 6. Quick Actions */}
+      <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2.5">
           <h2 className="text-sm font-bold text-slate-800">Quick Actions</h2>
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Pinned</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="grid grid-cols-2 gap-2 mb-2.5">
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
@@ -209,7 +208,7 @@ export default async function DashboardPage() {
       </div>
 
       {isDemo && (
-        <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm border border-amber-100">
+        <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm border border-amber-100">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-base">🗺️</span>
             <h2 className="text-sm font-bold text-slate-800">Start Here</h2>

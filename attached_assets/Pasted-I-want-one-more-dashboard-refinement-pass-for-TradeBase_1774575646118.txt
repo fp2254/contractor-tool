@@ -1,0 +1,106 @@
+I want one more dashboard refinement pass for TradeBase.
+
+CRITICAL:
+- Do NOT break anything.
+- Do NOT change routing, logic, queries, data fetching, or existing functionality.
+- Do NOT rename existing functions, props, components, or API calls unless absolutely necessary.
+- This is a UI/UX polish and hierarchy improvement pass only.
+- Everything must continue working exactly as it does now.
+
+Context:
+- The dashboard has already been improved once.
+- We are now trying to make it feel premium, contractor-focused, and worth paying for.
+- The app should feel like it helps a contractor make money and stay on top of work, not like a generic SaaS admin panel.
+
+MAIN GOAL:
+Make the dashboard feel more like a daily operating system / command center and less like a static overview page.
+
+Please make these changes:
+
+1. Add a lightweight “Next Step” card
+- Add a compact card near the top of the dashboard, directly under the stat cards
+- This card should tell the user the most logical next action based on basic dashboard state
+- Keep the logic simple and safe
+
+Examples:
+- If no leads exist: “Next step: Add your first lead”
+- If leads exist but no quotes: “Next step: Create a quote”
+- If quotes exist but no jobs: “Next step: Schedule a job”
+- If unpaid invoices exist: “Next step: Collect payment”
+
+- Include a small action button if possible, like:
+  - “Add Lead”
+  - “New Quote”
+  - “Schedule Job”
+  - “View Invoices”
+
+- Keep this card visually clean, not noisy
+
+2. Make AI Job Capture feel like a premium feature
+- Move AI Job Capture higher in the layout if it is still too low
+- Add supporting text under the title:
+  “Describe the job. We’ll build it fast.”
+- Increase spacing and visual emphasis so it feels like a key differentiator
+- Keep it polished and professional, not flashy or gimmicky
+
+3. Improve language throughout the dashboard
+- Replace any robotic/system-style language with more natural contractor-friendly wording
+- Avoid phrases that sound like fitness tracking or software diagnostics
+
+Examples:
+- “7 of 7 clear” should become “All clear”
+- “Board clear. 7/7 categories in good shape.” should become something like:
+  “Everything’s on track today.”
+- Review the rest of the dashboard for any wording that still feels generic or robotic
+
+4. Make stat cards more obviously actionable
+- Keep them clickable as they already are
+- Add tiny sublabels such as:
+  - “View leads”
+  - “View jobs”
+  - “View invoices”
+  - “View estimates”
+- Keep these subtle and visually clean
+- Improve tap feedback if needed so they feel interactive
+
+5. Improve hierarchy and flow
+- The top of the dashboard should answer:
+  1. What’s my current status?
+  2. What should I do next?
+  3. What is the fastest way to take action?
+
+Suggested order:
+- Stat cards
+- Next Step card
+- AI Job Capture
+- Needs Attention
+- Today’s Ops
+- Quick Actions
+
+- Adjust spacing/padding so this order feels intentional
+
+6. Clean up the floating + button positioning
+- Make sure it does not awkwardly overlap the AI Job Capture section
+- Keep it easy to tap
+- Make the placement feel intentional and polished on mobile
+
+7. Add slightly more premium polish
+- Review card shadows, corner radius, spacing, alignment, and typography weight
+- Keep the design simple and contractor-friendly
+- Do NOT overdesign it
+- The goal is clean, confident, useful, and premium
+
+8. Mobile safety
+- Test for small-screen layout issues
+- Do NOT reduce tap target sizes
+- Make sure Safari/iPhone layout still looks good
+- Avoid overflow, clipping, or weird stacking
+
+OUTPUT:
+- Update the dashboard code directly
+- Show me the revised component/code
+- Briefly explain what changed
+- Confirm no functionality was altered
+
+FINAL REMINDER:
+Do NOT break anything. This is not a rebuild. This is a polish and hierarchy pass only.
