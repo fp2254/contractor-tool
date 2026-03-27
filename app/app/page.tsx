@@ -87,7 +87,7 @@ export default async function DashboardPage() {
   } else if (jobsTodayCount > 0) {
     nextStep = { context: "You have jobs on the schedule today.", cta: "View Today's Jobs", href: "/app/jobs" };
   } else {
-    nextStep = { context: "No active work yet — let's get started.", cta: "Add Your First Lead", href: "/app/leads" };
+    nextStep = { context: "Nothing in progress yet — start your first job.", cta: "Add Your First Lead", href: "/app/leads" };
   }
 
   return (
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
 
       {/* 1. Status overview */}
       <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Today at a Glance</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5">Your Day</p>
         <div className="grid grid-cols-4 gap-1.5">
           {statCards.map((card) => (
             <Link
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
           <span className="text-lg leading-none">✨</span>
           <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
         </div>
-        <p className="text-xs text-slate-500 mb-3.5">Describe the job. We&apos;ll build it fast.</p>
+        <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
         <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
       </div>
 

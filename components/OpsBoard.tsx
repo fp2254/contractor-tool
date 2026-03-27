@@ -14,7 +14,7 @@ function ProgressBar({ categories }: { categories: OpsCategory[] }) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-gray-500">Daily Progress</span>
         <span className="text-xs font-semibold text-[#1B3A6B]">
-          {cleared === total && total > 0 ? "All clear" : `${cleared} of ${total} clear`}
+          {cleared === total ? "All clear" : `${cleared} of ${total} cleared`}
         </span>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
