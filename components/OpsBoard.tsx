@@ -84,8 +84,8 @@ export default function OpsBoard() {
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div className="px-4 pt-3 pb-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800 tracking-tight">
-            TODAY'S OPS
+          <h2 className="text-sm font-bold text-slate-800">
+            Today&apos;s Ops
           </h2>
           {allClear ? (
             <span className="text-xs font-semibold text-green-600 bg-green-50 rounded-full px-2 py-0.5">

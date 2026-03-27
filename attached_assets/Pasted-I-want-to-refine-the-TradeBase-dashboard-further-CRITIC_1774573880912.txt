@@ -1,0 +1,86 @@
+I want to refine the TradeBase dashboard further.
+
+CRITICAL:
+- Do NOT break anything.
+- Do NOT change any functionality, routing, or logic.
+- Do NOT rename existing functions, props, or API calls.
+- This is strictly UI/UX improvements and layout adjustments.
+- Everything must continue working exactly as it does now.
+
+Context:
+- The UI has already been improved (empty states, better wording, pinned actions).
+- We are now focusing on hierarchy, clarity, and making the app feel more action-driven.
+- This is a contractor-focused app, not generic SaaS.
+
+GOAL:
+Make the dashboard feel like a “daily command center” that clearly tells the user what to do next.
+
+Make the following improvements:
+
+1. Elevate AI Job Capture (HIGH PRIORITY)
+- Move the “AI Job Capture” section ABOVE “Quick Actions”
+- It should sit directly under the Dashboard or Needs Attention section
+- Increase its visual importance slightly (spacing, size, or emphasis)
+- Add subtext under the title:
+  “Describe the job. We’ll build it fast.”
+- This should feel like a primary feature, not a secondary button
+
+2. Add “Next Action” guidance (VERY IMPORTANT)
+- Add a small section or line under Dashboard or Needs Attention
+- This should guide the user on what to do next
+
+Examples (based on state):
+- If no leads: “Next step: Add your first lead”
+- If leads exist but no quotes: “Next step: Create a quote”
+- If quotes exist: “Next step: Schedule a job”
+- If unpaid invoices exist: “Next step: Collect payment”
+
+- Keep it simple and lightweight (no complex logic required yet, basic conditions are fine)
+
+3. Improve Dashboard card clarity
+- Keep existing design, but reinforce that cards are actionable
+- Add subtle microcopy under each stat:
+  - “View leads”
+  - “View jobs”
+  - “View invoices”
+  - “View estimates”
+- Keep it small and clean, not cluttered
+
+4. Fix TODAY’S OPS language (IMPORTANT)
+- Replace robotic/system wording with human, contractor-friendly language
+
+Change:
+- “7 of 7 clear” → “All clear”
+- “Board clear. 7/7 categories in good shape.” → something like:
+  “Everything’s on track today”
+
+- Keep progress bar, but simplify wording
+
+5. Fix floating + button overlap
+- Ensure the floating action button does NOT overlap the AI Job Capture section awkwardly
+- Adjust spacing or positioning so both feel intentional and clean
+- Maintain thumb accessibility
+
+6. Slight hierarchy improvements
+- Ensure visual priority order is:
+  1. Dashboard / Status
+  2. Next Action (new)
+  3. AI Job Capture
+  4. Needs Attention
+  5. Today’s Ops
+  6. Quick Actions
+
+- Adjust spacing to reflect this hierarchy
+
+7. Keep everything mobile-first
+- Do NOT reduce tap sizes
+- Maintain clean spacing
+- Ensure no overflow or layout issues on small screens
+
+OUTPUT:
+- Show updated dashboard component code
+- Briefly explain changes
+- Confirm that no functionality was altered
+
+FINAL REMINDER:
+Do NOT break anything. This is a UI and hierarchy upgrade only.

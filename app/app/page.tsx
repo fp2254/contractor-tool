@@ -42,33 +42,33 @@ export default async function DashboardPage() {
   const statCards = [
     {
       label: "New Leads",
-      value: newLeadsCount,
       display: newLeadsCount > 0 ? String(newLeadsCount) : null,
       emptyText: "No leads yet",
+      microcopy: "View leads",
       color: "#F97316",
       href: "/app/leads",
     },
     {
       label: "Jobs Today",
-      value: jobsTodayCount,
       display: jobsTodayCount > 0 ? String(jobsTodayCount) : null,
       emptyText: "None today",
+      microcopy: "View jobs",
       color: "#22C55E",
       href: "/app/jobs",
     },
     {
       label: "Unpaid",
-      value: unpaidTotal,
       display: unpaidTotal > 0 ? `$${unpaidTotal.toLocaleString()}` : null,
       emptyText: "All clear",
+      microcopy: "View invoices",
       color: "#EF4444",
       href: "/app/invoices",
     },
     {
       label: "Estimates",
-      value: estimatesCount,
       display: estimatesCount > 0 ? String(estimatesCount) : null,
       emptyText: "None sent",
+      microcopy: "View estimates",
       color: "#3B82F6",
       href: sentQuotesHref,
     },
@@ -76,11 +76,25 @@ export default async function DashboardPage() {
 
   const allCaughtUp = overdueInvoices.length === 0 && estimatesCount === 0;
 
+  // Next Action — priority-ordered nudge
+  let nextAction: { label: string; cta: string; href: string } | null = null;
+  if (unpaidTotal > 0) {
+    nextAction = { label: "You have unpaid invoices.", cta: "Collect payment", href: "/app/invoices" };
+  } else if (estimatesCount > 0) {
+    nextAction = { label: "Quotes are waiting for a response.", cta: "Review estimates", href: sentQuotesHref };
+  } else if (newLeadsCount > 0) {
+    nextAction = { label: "New leads need a quote.", cta: "Create a quote", href: "/app/quotes/new" };
+  } else if (jobsTodayCount > 0) {
+    nextAction = { label: "You have jobs on the schedule.", cta: "View today's jobs", href: "/app/jobs" };
+  } else {
+    nextAction = { label: "No active work yet.", cta: "Add your first lead", href: "/app/leads" };
+  }
+
   return (
-    <div className="p-3 space-y-2">
+    <div className="p-3 space-y-2 pb-28">
       {!isDemo && <SetupChecklist orgId={orgId!} />}
 
-      {/* Stat Cards */}
+      {/* 1. Stat Cards */}
       <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 mb-2">Dashboard</h2>
         <div className="grid grid-cols-4 gap-1.5">
@@ -94,15 +108,41 @@ export default async function DashboardPage() {
               {card.display ? (
                 <span className="text-xl font-bold mt-0.5 leading-none">{card.display}</span>
               ) : (
-                <span className="text-[9px] font-semibold mt-1 opacity-80 leading-snug text-center">{card.emptyText}</span>
+                <span className="text-[9px] font-semibold mt-1 opacity-80 leading-snug">{card.emptyText}</span>
               )}
-              <span className="text-[8px] opacity-50 mt-0.5">›</span>
+              <span className="text-[8px] opacity-55 mt-0.5 leading-none">{card.microcopy}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Needs Attention */}
+      {/* 2. Next Action */}
+      {nextAction && (
+        <Link
+          href={nextAction.href}
+          className="flex items-center gap-3 bg-[#1B3A6B] text-white rounded-2xl px-4 py-3 shadow-sm active:opacity-80 transition-opacity">
+          <span className="text-xl shrink-0">👉</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] opacity-75 leading-tight">Next step</p>
+            <p className="text-sm font-bold leading-snug">{nextAction.cta}</p>
+            <p className="text-[11px] opacity-65 leading-tight mt-0.5">{nextAction.label}</p>
+          </div>
+          <span className="text-white opacity-50 text-lg shrink-0">›</span>
+        </Link>
+      )}
+
+      {/* 3. AI Job Capture */}
+      <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-base">✨</span>
+          <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
+          <span className="ml-auto text-[10px] font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 uppercase tracking-wide">AI</span>
+        </div>
+        <p className="text-xs text-gray-400 mb-2.5">Describe the job. We&apos;ll build it fast.</p>
+        <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+      </div>
+
+      {/* 4. Needs Attention */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-3 pt-2.5 pb-1.5">
           <h2 className="text-sm font-bold text-slate-800">Needs Attention</h2>
@@ -139,15 +179,16 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      {/* 5. Today's Ops */}
       <OpsBoard />
 
-      {/* Pinned Actions */}
+      {/* 6. Quick Actions (Pinned) */}
       <div className="bg-white rounded-2xl px-3 pt-3 pb-3 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-bold text-slate-800">Quick Actions</h2>
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Pinned</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-2 gap-2 mb-2">
           {[
             { label: "New Quote", href: "/app/quotes/new", icon: "📋" },
             { label: "Add Lead", href: "/app/leads", icon: "👤" },
@@ -164,10 +205,7 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
-        <div className="space-y-1.5">
-          <PermitAssistant />
-          <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
-        </div>
+        <PermitAssistant />
       </div>
 
       {isDemo && (
