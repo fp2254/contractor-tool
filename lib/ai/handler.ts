@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getOpenAIClient } from "@/lib/openai";
 import { buildMessages, type AiPromptConfig } from "@/lib/ai/prompt";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkAiLimit } from "@/lib/ai/limits";
 
 export class AiServiceError extends Error {
   constructor(
@@ -30,6 +31,8 @@ export interface AiRequestConfig<T> {
 export interface AiResponse<T> {
   result: T;
   aiRunId: string | null;
+  /** Present when the org is approaching their daily AI request limit */
+  usageWarning?: string;
 }
 
 export async function callOpenAI(
@@ -103,6 +106,15 @@ export async function handleAIRequest<T>(
 ): Promise<AiResponse<T>> {
   const { maxTokens = 1000, log = true } = cfg.options ?? {};
 
+  // ── Limit check (runs before the OpenAI call so we never waste tokens) ───
+  const limitStatus = await checkAiLimit(cfg.orgId);
+  if (!limitStatus.allowed) {
+    throw new AiServiceError(
+      limitStatus.error ?? "Daily AI limit reached. Contact support to increase your limit.",
+      429
+    );
+  }
+
   const messages = buildMessages(cfg.promptConfig, cfg.input);
 
   const raw = await callOpenAI(messages, maxTokens);
@@ -121,5 +133,5 @@ export async function handleAIRequest<T>(
     );
   }
 
-  return { result, aiRunId };
+  return { result, aiRunId, usageWarning: limitStatus.warning };
 }

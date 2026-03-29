@@ -43,7 +43,12 @@ app/
     portal/[token]/revoke                   Revoke portal token
     photos/upload, photos/[id]              Photo CRUD
     quotes/new/api        Create quote (supports inline new customer)
-    ai/capture, ai/voice, ai/permit, ai/create  AI features
+    ai/capture, ai/permit, ai/create            AI features
+    ai/job-brain, ai/scope, ai/followup         AI features
+    ai/note-summary, ai/ops-summary             AI features
+    ai/client-intel, ai/card-scan               AI features
+    ai/receipt-scan, ai/price-sheet-scan        AI features
+    ai/usage                                    AI usage status (used/limit/warning)
     ai/run/save, ai/attach, ai/attach/[id]      AI answer attachment CRUD
     entities/search                             Entity search for attach modal
     inventory/api, inventory/api/[id]           Inventory CRUD
@@ -150,9 +155,17 @@ supabase/
 - Setup page at `/app/setup` shows migration SQL and live status checks
 
 ### AI Features
-- **AI Job Capture**: natural language → structured job fields
+- **AI Job Capture**: natural language → structured job fields (with customer matching, preset lookup)
 - **Voice Job Creation**: Web Speech API → AI extraction → create quote/job/invoice
 - **Permit Assistant**: permit requirement lookup by job type + location
+- **11 AI routes**: capture, permit, job-brain, scope, followup, note-summary, ops-summary, client-intel, card-scan, receipt-scan, price-sheet-scan
+- All routes log to `ai_runs` table (feature, org_id, user_id, input, output)
+- **AI Usage Limits** (`lib/ai/limits.ts`): 50 requests/day default, hard block at limit (429), soft warn at 80%
+  - All 10 routes using `handleAIRequest` enforce limits automatically
+  - Capture route has inline limit check before OpenAI call
+  - `GET /api/ai/usage` returns current day/month usage for UI display
+  - Per-org overrides via `org_ai_limits` table (billing hook) — see `scripts/ai-limits-setup.sql`
+  - AI Capture Modal shows amber warning banner when approaching limit
 
 ## Not Yet Built
 - Online payments (Stripe/Square)

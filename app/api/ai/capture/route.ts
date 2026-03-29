@@ -4,6 +4,7 @@ import { getOpenAIClient } from "@/lib/openai";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildMessages } from "@/lib/ai/prompt";
+import { checkAiLimit } from "@/lib/ai/limits";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,15 @@ export type AiLineItem = z.infer<typeof lineItemSchema>;
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+
+  // ── AI usage limit check ─────────────────────────────────────────────────
+  const limitStatus = await checkAiLimit(orgId!);
+  if (!limitStatus.allowed) {
+    return NextResponse.json(
+      { error: limitStatus.error ?? "Daily AI limit reached. Contact support to increase your limit." },
+      { status: 429 }
+    );
+  }
 
   const body = (await req.json()) as { text: string };
   if (!body.text?.trim()) {
@@ -313,5 +323,6 @@ export async function POST(req: Request) {
     ...parsed,
     customer_match: patchedCustomerMatch,
     matched_customer_data: matchedCustomerData,
+    ai_limit_warning: limitStatus.warning ?? null,
   });
 }

@@ -105,6 +105,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<string | null>(null);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [warrantyText, setWarrantyText] = useState(defaultWarrantyText);
   // Always-fresh warranty text fetched from API when modal opens (not stale from page load)
   const [liveDefaultWarranty, setLiveDefaultWarranty] = useState(defaultWarrantyText);
@@ -208,6 +209,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
       }
       const d = toDraft(json as CaptureResponse);
       setDraft(d);
+      setLimitWarning((json as CaptureResponse & { ai_limit_warning?: string | null }).ai_limit_warning ?? null);
 
       // Fetch warranty fresh — fall back to prop value if fetch fails or returns empty
       let freshWarranty = liveDefaultWarranty || defaultWarrantyText;
@@ -439,6 +441,13 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
               })()}
 
               {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+
+              {limitWarning && (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 flex items-start gap-2">
+                  <span className="text-amber-500 text-sm mt-0.5">⚠</span>
+                  <p className="text-xs text-amber-800">{limitWarning}</p>
+                </div>
+              )}
 
               {/* Customer match banner — shown when we pre-filled from an existing record */}
               {draft.matchedCustomer && draft.matchedCustomer.confidence !== "none" && draft.useMatchedCustomer && (
