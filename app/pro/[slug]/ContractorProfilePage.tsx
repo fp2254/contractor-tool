@@ -52,7 +52,7 @@ export function ContractorProfilePage({ profile }: Props) {
       <HeroSection profile={profile} condensedFont={bc} onQuoteClick={() => setModalOpen(true)} />
       <StatsBar stats={profile.stats} condensedFont={bc} />
       <TrustStrip items={profile.trustItems} />
-      <FeaturedReview review={profile.featuredReview} />
+      {profile.featuredReview && <FeaturedReview review={profile.featuredReview} />}
       <ServicesSection services={profile.services} condensedFont={bc} />
       <ProjectsSection photos={profile.photos} condensedFont={bc} />
       <ReviewsSection reviews={profile.reviews} condensedFont={bc} />

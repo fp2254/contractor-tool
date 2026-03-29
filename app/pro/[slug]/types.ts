@@ -34,7 +34,7 @@ export type ContractorProfile = {
     yearsExperience: number;
   };
   trustItems: Array<{ icon: string; text: string }>;
-  featuredReview: {
+  featuredReview?: {
     text: string;
     reviewer: string;
     jobType: string;

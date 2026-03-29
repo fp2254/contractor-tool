@@ -15,13 +15,16 @@ export default async function DashboardPage() {
 
   const isDemo = await getOrgIsDemo(orgId!);
 
-  const [leads, jobs, invoices, quotes, orgSettings] = await Promise.all([
+  const [leads, jobs, invoices, quotes, orgSettings, pubProfileResult] = await Promise.all([
     admin.from("leads").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "new"),
     admin.from("jobs").select("id,scheduled_date,status", { count: "exact" }).eq("org_id", orgId!),
     admin.from("invoices").select("id,status,total_amount").eq("org_id", orgId!),
     admin.from("quotes").select("id").eq("org_id", orgId!).eq("status", "sent"),
     admin.from("org_settings").select("default_warranty_text").eq("org_id", orgId!).maybeSingle(),
+    (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle().catch(() => ({ data: null })),
   ]);
+
+  const pubProfile = (pubProfileResult as any)?.data ?? null;
 
   const defaultWarrantyText = (orgSettings.data as { default_warranty_text?: string } | null)?.default_warranty_text ?? "";
 
@@ -115,6 +118,25 @@ export default async function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* 1b. Profile live banner */}
+      {pubProfile?.is_published && pubProfile?.slug && (
+        <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3">
+          <span className="inline-block w-2 h-2 rounded-full bg-green-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-green-700 leading-tight">Your profile is live</p>
+            <p className="text-[11px] text-gray-400 truncate">tradebase.contractors/pro/{pubProfile.slug}</p>
+          </div>
+          <a
+            href={`https://tradebase.contractors/pro/${pubProfile.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-[11px] font-bold text-[#1B3A6B] bg-blue-50 rounded-lg px-3 py-1.5"
+          >
+            View ↗
+          </a>
+        </div>
+      )}
 
       {/* 2. Next Step */}
       {nextStep && (

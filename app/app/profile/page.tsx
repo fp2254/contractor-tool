@@ -10,6 +10,7 @@ import {
 import { ServicePresetsManager } from "@/components/ServicePresetsManager";
 import { BusinessIdentityForm, type BusinessIdentityData } from "@/components/BusinessIdentityForm";
 import { DefaultWarrantyForm } from "@/components/DefaultWarrantyForm";
+import { PublicProfileCard } from "./PublicProfileCard";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -35,10 +36,11 @@ export default async function ProfilePage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: org }, { data: settings }, { data: presets }] = await Promise.all([
+  const [{ data: org }, { data: settings }, { data: presets }, { data: pubProfile }] = await Promise.all([
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
     admin.from("service_presets").select("*").eq("org_id", orgId!).order("created_at", { ascending: true }),
+    (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle().then((r: any) => r),
   ]);
 
   const s = settings ?? {};
@@ -54,6 +56,20 @@ export default async function ProfilePage() {
           </svg>
         </Link>
         <h1 className="text-xl font-bold text-slate-800">Business Profile</h1>
+      </div>
+
+      {/* ── Public Profile ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+          <span className="text-xl">🌐</span>
+          <span className="flex-1 font-semibold text-slate-800">Public Profile</span>
+          {pubProfile?.is_published && (
+            <span className="text-[11px] font-bold bg-green-100 text-green-700 rounded-full px-2.5 py-0.5">Live</span>
+          )}
+        </div>
+        <div className="px-4 pb-4 pt-4">
+          <PublicProfileCard initialProfile={pubProfile ?? null} />
+        </div>
       </div>
 
       {/* ── Business Identity ── */}

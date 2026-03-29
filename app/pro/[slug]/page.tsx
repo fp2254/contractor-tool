@@ -1,16 +1,99 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProfile } from "./mockData";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ContractorProfilePage } from "./ContractorProfilePage";
+import type { ContractorProfile } from "./types";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits[0] === "1") {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return raw;
+}
+
+function parseAboutBullets(bullets: string[]): { icon: string; text: string }[] {
+  return bullets.filter(Boolean).map((b) => {
+    const match = b.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+    if (match) {
+      return { icon: match[0].trim(), text: b.slice(match[0].length).trim() };
+    }
+    return { icon: "✓", text: b };
+  });
+}
+
+async function loadProfile(slug: string): Promise<ContractorProfile | null> {
+  const admin = createAdminClient();
+  try {
+    const { data: pub } = await (admin as any)
+      .from("public_profiles")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_published", true)
+      .maybeSingle();
+
+    if (!pub) return null;
+
+    const [{ data: org }, { count: jobsCompleted }] = await Promise.all([
+      admin.from("orgs").select("name").eq("id", pub.org_id).single(),
+      (admin as any)
+        .from("jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", pub.org_id)
+        .eq("status", "completed"),
+    ]);
+
+    const phone = pub.phone ?? "";
+    const about = parseAboutBullets(pub.about_bullets ?? []);
+
+    const profile: ContractorProfile = {
+      slug: pub.slug,
+      isPublished: true,
+      name: org?.name ?? "Contractor",
+      trade: pub.trade ?? "",
+      tagline: pub.tagline ?? "",
+      location: pub.service_area ?? "",
+      phone: phone.replace(/\D/g, "") ? `tel:${phone.replace(/\D/g, "")}` : "",
+      phoneFormatted: formatPhone(phone),
+      rating: 0,
+      reviewCount: 0,
+      urgencyLine: pub.urgency_line ?? "",
+      stats: {
+        jobsCompleted: jobsCompleted ?? 0,
+        revenue: pub.revenue_display ?? "",
+        yearsExperience: pub.years_experience ?? 0,
+      },
+      trustItems: [
+        { icon: "⚡", text: "Same-Day Response" },
+        { icon: "💬", text: "Transparent Pricing" },
+        { icon: "🛡️", text: "Licensed & Insured" },
+        { icon: "📍", text: "Local Contractor" },
+      ],
+      services: pub.services ?? [],
+      photos: [],
+      reviews: [],
+      about,
+      licenseNumber: pub.license_text ?? undefined,
+      serviceArea: pub.service_area ?? "",
+    };
+
+    return profile;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const profile = getProfile(slug);
-  if (!profile || !profile.isPublished) {
+  const profile = await loadProfile(slug);
+  if (!profile) {
     return { title: "Contractor Not Found | TradeBase" };
   }
   return {
@@ -26,9 +109,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  const profile = getProfile(slug);
+  const profile = await loadProfile(slug);
 
-  if (!profile || !profile.isPublished) {
+  if (!profile) {
     return (
       <div
         style={{
