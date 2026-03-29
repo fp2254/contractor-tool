@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mike Sullivan Roofing — Portland, OR</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0f1f3d; --navy-mid: #1a2f52; --blue: #1e4a8c;
+    --gold: #f5a623; --gold-light: #fbbf47;
+    --off-white: #f4f5f7; --gray: #8a9ab5; --light-gray: #e8ecf2;
+    --green: #22c55e; --text: #1a2035;
+  }
+  body { font-family: 'Barlow', sans-serif; background: var(--off-white); color: var(--text); padding-bottom: 76px; }
+
+/* HERO */
+.hero { background: var(–navy); position: relative; overflow: hidden; }
+.hero::before { content:’’; position:absolute; inset:0; background: radial-gradient(ellipse at 80% 50%, rgba(30,74,140,0.6) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(245,166,35,0.15) 0%, transparent 50%); }
+.hero-texture { position:absolute; inset:0; background-image: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px); }
+
+.topbar { position:relative; z-index:10; display:flex; justify-content:space-between; align-items:center; padding:14px 24px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.tb-logo { display:flex; align-items:center; gap:8px; text-decoration:none; }
+.tb-logo-icon { width:26px; height:26px; background:var(–gold); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; }
+.tb-logo-text { font-family:‘Barlow Condensed’,sans-serif; font-weight:700; font-size:17px; color:white; letter-spacing:0.5px; }
+.topbar-verified { display:flex; align-items:center; gap:5px; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:var(–green); font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; }
+
+.hero-content { position:relative; z-index:10; padding:28px 24px 36px; }
+.contractor-name { font-family:‘Barlow Condensed’,sans-serif; font-weight:900; font-size:44px; color:white; line-height:1; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.contractor-trade { font-family:‘Barlow Condensed’,sans-serif; font-weight:600; font-size:20px; color:var(–gold); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+.contractor-tagline { font-size:15px; color:rgba(255,255,255,0.8); margin-bottom:18px; line-height:1.4; }
+.hero-meta { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:24px; }
+.meta-item { display:flex; align-items:center; gap:5px; color:rgba(255,255,255,0.7); font-size:13px; }
+.stars { display:flex; gap:2px; }
+.star { color:var(–gold); font-size:13px; }
+.rating-text { color:white; font-weight:600; font-size:13px; margin-left:3px; }
+.rating-count { color:rgba(255,255,255,0.5); font-size:12px; }
+
+.hero-cta-group { display:flex; flex-direction:column; gap:10px; }
+
+.cta-btn { display:block; width:100%; background:var(–gold); color:var(–navy); font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:19px; letter-spacing:1px; text-transform:uppercase; padding:17px; border:none; border-radius:10px; cursor:pointer; text-align:center; }
+
+/* urgency line under main CTA */
+.cta-urgency { text-align:center; font-size:12px; color:rgba(255,255,255,0.5); margin-top:-4px; letter-spacing:0.2px; }
+
+/* call button — full tap-to-call, number prominent */
+.call-btn {
+display:flex; align-items:center; justify-content:center; gap:8px;
+width:100%; background:transparent; color:white;
+font-family:‘Barlow Condensed’,sans-serif; font-weight:700;
+font-size:17px; letter-spacing:0.5px; text-transform:uppercase;
+padding:15px; border:2px solid rgba(255,255,255,0.35); border-radius:10px;
+cursor:pointer; text-decoration:none; line-height:1;
+}
+.call-btn-number { font-size:19px; font-weight:800; color:white; letter-spacing:0.5px; }
+
+/* trust + microcopy */
+.cta-trust-line { text-align:center; font-size:12px; color:rgba(255,255,255,0.45); margin-top:10px; letter-spacing:0.1px; }
+.cta-microcopy { display:flex; justify-content:center; gap:12px; margin-top:6px; flex-wrap:wrap; }
+.micro-item { display:flex; align-items:center; gap:4px; color:rgba(255,255,255,0.4); font-size:11px; }
+.micro-check { color:var(–green); }
+
+/* STATS */
+.stats-bar { background:var(–navy-mid); display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid rgba(255,255,255,0.08); }
+.stat-item { padding:14px 10px; text-align:center; border-right:1px solid rgba(255,255,255,0.08); }
+.stat-item:last-child { border-right:none; }
+.stat-number { font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:20px; color:var(–gold); line-height:1; }
+.stat-label { font-size:11px; color:rgba(255,255,255,0.5); margin-top:3px; line-height:1.3; }
+
+/* TRUST STRIP */
+.trust-strip { background:white; border-bottom:1px solid var(–light-gray); padding:16px 20px; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:8px; }
+.trust-item { display:flex; align-items:center; gap:8px; }
+.trust-icon { width:32px; height:32px; background:var(–off-white); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.trust-text { font-size:12px; font-weight:600; color:var(–navy); line-height:1.3; }
+
+/* FEATURED REVIEW */
+.featured-review { background:white; padding:20px 24px; margin-bottom:8px; border-left:4px solid var(–gold); }
+.featured-review-quote { font-size:28px; color:var(–gold); line-height:1; margin-bottom:6px; font-family:Georgia,serif; }
+.featured-review-text { font-size:15px; color:#2d3748; line-height:1.55; font-style:italic; margin-bottom:10px; }
+.featured-review-footer { display:flex; align-items:center; justify-content:space-between; }
+.featured-reviewer { font-size:13px; font-weight:700; color:var(–navy); line-height:1.2; }
+.featured-reviewer-job { font-size:11px; color:var(–gray); margin-top:2px; }
+.verified-badge-pill { font-size:10px; color:var(–green); font-weight:700; background:rgba(34,197,94,0.1); padding:3px 8px; border-radius:10px; white-space:nowrap; }
+
+/* SECTIONS */
+.section { padding:22px 24px; border-bottom:1px solid var(–light-gray); background:white; margin-bottom:8px; }
+.section-title { font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:19px; text-transform:uppercase; letter-spacing:1px; color:var(–navy); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.section-title::after { content:’’; flex:1; height:2px; background:var(–light-gray); }
+
+/* SERVICES */
+.services-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.service-tag { background:var(–off-white); border:1px solid var(–light-gray); color:var(–navy); font-size:13px; font-weight:600; padding:6px 14px; border-radius:20px; }
+
+/* PROJECTS */
+.projects-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.project-card { border-radius:10px; overflow:hidden; background:var(–off-white); border:1px solid var(–light-gray); }
+.project-card.featured { grid-column:1/-1; }
+.project-photo-wrap { width:100%; aspect-ratio:16/10; position:relative; overflow:hidden; background:#d0d8e4; }
+.project-card.featured .project-photo-wrap { aspect-ratio:16/9; }
+.project-photo-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+.verified-job-label { position:absolute; top:8px; right:8px; background:var(–green); color:white; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:0.3px; }
+.project-info { padding:10px 12px; }
+.project-title { font-weight:700; font-size:13px; color:var(–navy); margin-bottom:3px; }
+.project-meta { font-size:11px; color:var(–gray); display:flex; justify-content:space-between; }
+.project-cost { font-weight:700; color:var(–navy); }
+
+/* Photos coming soon — no fake imagery, no implication of inexperience */
+.photos-coming-soon { background:var(–off-white); border:2px dashed var(–light-gray); border-radius:12px; padding:28px 24px; text-align:center; }
+.photos-coming-soon-title { font-family:‘Barlow Condensed’,sans-serif; font-weight:700; font-size:15px; color:var(–gray); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.photos-coming-soon-sub { font-size:12px; color:var(–gray); }
+
+/* REVIEWS — tighter spacing */
+.review-card { background:var(–off-white); border-radius:10px; padding:13px 14px; margin-bottom:8px; border-left:3px solid var(–gold); }
+.review-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+.reviewer-name { font-weight:700; font-size:13px; color:var(–navy); line-height:1.2; }
+.review-stars { display:flex; gap:1px; margin-top:2px; }
+.review-star { color:var(–gold); font-size:11px; }
+.review-job { font-size:11px; color:var(–gray); margin-top:3px; margin-bottom:6px; }
+.review-text { font-size:13px; color:#4a5568; line-height:1.45; }
+
+/* ABOUT */
+.about-bullets { list-style:none; display:flex; flex-direction:column; gap:10px; }
+.about-bullets li { display:flex; align-items:center; gap:10px; font-size:14px; color:#2d3748; font-weight:500; }
+.about-bullet-icon { width:30px; height:30px; background:var(–off-white); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.license-row { display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px 12px; background:var(–off-white); border-radius:8px; font-size:13px; color:var(–navy); font-weight:500; }
+
+/* SLIM BOTTOM CLOSER */
+.bottom-closer { background:var(–navy-mid); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.bottom-closer-text { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.4; }
+.bottom-closer-text strong { color:white; display:block; font-size:14px; }
+
+/* POWERED / FOOTER */
+.powered-bar { background:var(–off-white); border-top:1px solid var(–light-gray); padding:12px 24px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(–gray); }
+.powered-link { font-weight:700; color:var(–navy); text-decoration:none; font-family:‘Barlow Condensed’,sans-serif; font-size:14px; }
+.footer { background:var(–navy-mid); padding:14px 24px; text-align:center; }
+.footer-text { font-size:12px; color:rgba(255,255,255,0.35); }
+.footer-link { color:var(–gold); text-decoration:none; font-weight:600; }
+
+/* STICKY BAR */
+.sticky-bar { position:fixed; bottom:0; left:0; right:0; z-index:50; background:var(–navy); border-top:1px solid rgba(255,255,255,0.12); padding:12px 16px; display:flex; gap:10px; box-shadow:0 -4px 20px rgba(0,0,0,0.3); }
+.sticky-call { flex:1; background:transparent; color:white; font-family:‘Barlow Condensed’,sans-serif; font-weight:700; font-size:15px; letter-spacing:0.5px; text-transform:uppercase; padding:13px 8px; border:2px solid rgba(255,255,255,0.3); border-radius:10px; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:4px; line-height:1; }
+.sticky-quote { flex:2; background:var(–gold); color:var(–navy); font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:17px; letter-spacing:0.5px; text-transform:uppercase; padding:14px 10px; border:none; border-radius:10px; cursor:pointer; }
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:flex-end; justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal { background:white; width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:24px 24px 32px; position:relative; animation:slideUp 0.3s ease; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width:40px; height:4px; background:var(–light-gray); border-radius:2px; margin:0 auto 20px; }
+.modal-title { font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:26px; color:var(–navy); text-transform:uppercase; margin-bottom:4px; }
+.modal-sub { font-size:13px; color:var(–gray); margin-bottom:18px; }
+.form-group { margin-bottom:13px; }
+.form-label { display:block; font-size:11px; font-weight:700; color:var(–navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+.form-input, .form-textarea { width:100%; border:1.5px solid var(–light-gray); border-radius:8px; padding:13px 14px; font-size:16px; font-family:‘Barlow’,sans-serif; color:var(–text); outline:none; -webkit-appearance:none; }
+.form-input:focus, .form-textarea:focus { border-color:var(–blue); }
+.form-textarea { height:88px; resize:none; }
+.modal-submit { width:100%; background:var(–gold); color:var(–navy); font-family:‘Barlow Condensed’,sans-serif; font-weight:800; font-size:19px; text-transform:uppercase; letter-spacing:1px; padding:17px; border:none; border-radius:10px; cursor:pointer; margin-top:6px; }
+.modal-microcopy { text-align:center; font-size:11px; color:var(–gray); margin-top:9px; }
+.modal-close { position:absolute; top:18px; right:18px; background:var(–off-white); border:none; width:30px; height:30px; border-radius:50%; font-size:15px; color:var(–gray); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+</style>
+
+</head>
+<body>
+
+<!-- HERO -->
+
+<div class="hero">
+  <div class="hero-texture"></div>
+  <div class="topbar">
+    <a href="https://tradebase.contractors" class="tb-logo">
+      <div class="tb-logo-icon">🏠</div>
+      <span class="tb-logo-text">TradeBase</span>
+    </a>
+    <div class="topbar-verified">✓ Verified Contractor</div>
+  </div>
+  <div class="hero-content">
+    <div class="contractor-name">Mike Sullivan</div>
+    <div class="contractor-trade">Roofing & Exteriors</div>
+    <div class="contractor-tagline">Fast, reliable roofing in Portland — free quotes same day</div>
+    <div class="hero-meta">
+      <div class="meta-item">📍 <span>Portland, OR</span></div>
+      <div class="meta-item">
+        <div class="stars"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div>
+        <span class="rating-text">4.9</span><span class="rating-count">&nbsp;(23 reviews)</span>
+      </div>
+    </div>
+
+```
+<div class="hero-cta-group">
+  <button class="cta-btn" onclick="openModal()">Get My Free Quote</button>
+  <div class="cta-urgency">Booking 2–3 days out — limited availability this week</div>
+  <a href="tel:+15035550192" class="call-btn">
+    <span>📞</span>
+    <span>Call Now:&nbsp;<span class="call-btn-number">(503) 555-0192</span></span>
+  </a>
+</div>
+
+<div class="cta-trust-line">Free estimates &nbsp;•&nbsp; No obligation &nbsp;•&nbsp; Fast response</div>
+<div class="cta-microcopy">
+  <span class="micro-item"><span class="micro-check">✓</span>&nbsp;No account needed</span>
+  <span class="micro-item"><span class="micro-check">✓</span>&nbsp;Responds within hours</span>
+  <span class="micro-item"><span class="micro-check">✓</span>&nbsp;Takes 30 seconds</span>
+</div>
+```
+
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-number">47</div><div class="stat-label">Jobs<br>Completed</div></div>
+    <div class="stat-item"><div class="stat-number">$380K</div><div class="stat-label">In Completed<br>Work</div></div>
+    <div class="stat-item"><div class="stat-number">8 yrs</div><div class="stat-label">Experience</div></div>
+  </div>
+</div>
+
+<!-- TRUST STRIP -->
+
+<div class="trust-strip">
+  <div class="trust-item"><div class="trust-icon">⚡</div><div class="trust-text">Same-day response</div></div>
+  <div class="trust-item"><div class="trust-icon">💰</div><div class="trust-text">Transparent pricing</div></div>
+  <div class="trust-item"><div class="trust-icon">🛡️</div><div class="trust-text">Licensed & insured</div></div>
+  <div class="trust-item"><div class="trust-icon">📍</div><div class="trust-text">Local contractor</div></div>
+</div>
+
+<!-- FEATURED REVIEW -->
+
+<div class="featured-review">
+  <div class="featured-review-quote">"</div>
+  <div class="featured-review-text">Mike and his crew were incredible. Showed up on time every day, cleaned up after themselves, and the roof looks amazing. Got 3 quotes and his was fair. Would absolutely hire again.</div>
+  <div class="featured-review-footer">
+    <div>
+      <div class="featured-reviewer">Sarah M.</div>
+      <div class="featured-reviewer-job">Full Roof Replacement · Lake Oswego</div>
+    </div>
+    <span class="verified-badge-pill">✓ Verified Job</span>
+  </div>
+</div>
+
+<!-- SERVICES -->
+
+<div class="section">
+  <div class="section-title">Services</div>
+  <div class="services-grid">
+    <span class="service-tag">Roof Replacement</span>
+    <span class="service-tag">Roof Repair</span>
+    <span class="service-tag">Gutters</span>
+    <span class="service-tag">Siding</span>
+    <span class="service-tag">Skylights</span>
+    <span class="service-tag">Storm Damage</span>
+    <span class="service-tag">Insurance Claims</span>
+  </div>
+</div>
+
+<!--
+  PROJECTS SECTION — DEVELOPER NOTE
+  ─────────────────────────────────────────────────────────
+  Render conditionally based on Supabase Storage:
+
+  IF jobs with photos exist → render .projects-grid with real <img> tags
+  IF no photos → render .photos-coming-soon only
+
+  Real photo template:
+  <div class="project-card featured">
+    <div class="project-photo-wrap">
+      <img src="[SUPABASE_STORAGE_URL]" alt="[Job description]">
+      <span class="verified-job-label">✓ Verified Job</span>
+    </div>
+    <div class="project-info">
+      <div class="project-title">Job Title Here</div>
+      <div class="project-meta"><span>City · X weeks ago</span><span class="project-cost">$XX,XXX</span></div>
+    </div>
+  </div>
+  ─────────────────────────────────────────────────────────
+-->
+
+<div class="section">
+  <div class="section-title">Completed Projects</div>
+  <div class="photos-coming-soon">
+    <div class="photos-coming-soon-title">Recent jobs being added</div>
+    <div class="photos-coming-soon-sub">Project photos being uploaded — check back soon</div>
+  </div>
+</div>
+
+<!-- REVIEWS -->
+
+<div class="section">
+  <div class="section-title">Reviews</div>
+
+  <div class="review-card">
+    <div class="review-header">
+      <div>
+        <div class="reviewer-name">Sarah M.</div>
+        <div class="review-stars"><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span></div>
+        <div class="review-job">Full Roof Replacement · Lake Oswego</div>
+      </div>
+      <span class="verified-badge-pill">✓ Verified Job</span>
+    </div>
+    <div class="review-text">Mike and his crew were incredible. Showed up on time every day, cleaned up after themselves, and the roof looks amazing. Got 3 quotes and his was fair. Would absolutely hire again.</div>
+  </div>
+
+  <div class="review-card">
+    <div class="review-header">
+      <div>
+        <div class="reviewer-name">Tom R.</div>
+        <div class="review-stars"><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span><span class="review-star">★</span></div>
+        <div class="review-job">Gutter Installation · Beaverton</div>
+      </div>
+      <span class="verified-badge-pill">✓ Verified Job</span>
+    </div>
+    <div class="review-text">Fast, professional, honest. Sent me a quote the same day I called. No surprises on the invoice. This is how contracting should work.</div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+
+<div class="section">
+  <div class="section-title">About</div>
+  <ul class="about-bullets">
+    <li><div class="about-bullet-icon">🔨</div>8 years experience in residential roofing</li>
+    <li><div class="about-bullet-icon">👤</div>Owner-operated — I'm on every job</li>
+    <li><div class="about-bullet-icon">🛡️</div>Licensed & insured · OR License #CCB-187432</li>
+    <li><div class="about-bullet-icon">📍</div>Serving Portland metro & surrounding areas</li>
+  </ul>
+  <div class="license-row" style="margin-top:14px;">✓ TradeBase Verified Contractor</div>
+</div>
+
+<!-- SLIM BOTTOM CLOSER -->
+
+<div class="bottom-closer">
+  <div class="bottom-closer-text">
+    <strong>Ready to get started?</strong>
+    Use the bar below to call or request a free quote.
+  </div>
+</div>
+
+<!-- POWERED BY -->
+
+<div class="powered-bar">
+  <span>Powered by</span>
+  <a href="https://tradebase.contractors" class="powered-link">TradeBase</a>
+  <span>· Built for contractors</span>
+</div>
+
+<!-- FOOTER -->
+
+<div class="footer">
+  <div class="footer-text">Are you a contractor? <a href="https://tradebase.contractors/waitlist" class="footer-link">Get more jobs with TradeBase →</a></div>
+</div>
+
+<!-- STICKY BAR -->
+
+<div class="sticky-bar">
+  <a href="tel:+15035550192" class="sticky-call">📞 Call Now</a>
+  <button class="sticky-quote" onclick="openModal()">Get My Free Quote</button>
+</div>
+
+<!-- MODAL -->
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Get a Free Quote</div>
+    <div class="modal-sub">Mike Sullivan will get back to you within a few hours</div>
+    <div class="form-group">
+      <label class="form-label">Your Name</label>
+      <input type="text" class="form-input" placeholder="John Smith">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input type="tel" class="form-input" placeholder="(555) 000-0000">
+    </div>
+    <div class="form-group">
+      <label class="form-label">What do you need done?</label>
+      <textarea class="form-textarea" placeholder="Describe your project..."></textarea>
+    </div>
+    <button class="modal-submit">Send My Request</button>
+    <div class="modal-microcopy">Free estimates · No obligation · Your info goes directly to Mike</div>
+  </div>
+</div>
+
+<script>
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  function closeModalOnOverlay(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+</script>
+
+</body>
+</html>

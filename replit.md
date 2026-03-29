@@ -167,6 +167,18 @@ supabase/
   - Per-org overrides via `org_ai_limits` table (billing hook) — see `scripts/ai-limits-setup.sql`
   - AI Capture Modal shows amber warning banner when approaching limit
 
+### Public Contractor Profile (`/pro/[slug]`)
+- Fully isolated public page — no auth, no CRM routes touched
+- `app/pro/[slug]/` — self-contained with its own components, types, and mock data
+- Components: HeroSection, StatsBar, TrustStrip, FeaturedReview, ServicesSection, ProjectsSection, ReviewsSection, AboutSection, BottomCloser, StickyBar, QuoteModal
+- Design: Barlow/Barlow Condensed fonts (Google Fonts via next/font), navy/gold brand palette
+- Mobile-first, sticky CTA bar fixed at bottom
+- QuoteModal: name/phone/description form → console.log (ready to wire to leads API)
+- Photos: conditional render — real photos grid OR "coming soon" dashed state
+- 404 state: clean centered card for unknown/unpublished slugs
+- Mock data in `mockData.ts` — one profile: `mike-sullivan-roofing`
+- **Next step**: wire slug to Supabase org `profile_slug` column; save QuoteModal submissions as leads
+
 ## Not Yet Built
 - Online payments (Stripe/Square)
 - Recurring jobs
