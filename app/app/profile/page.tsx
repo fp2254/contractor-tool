@@ -40,7 +40,7 @@ export default async function ProfilePage() {
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
     admin.from("service_presets").select("*").eq("org_id", orgId!).order("created_at", { ascending: true }),
-    (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle().then((r: any) => r),
+    (async () => { try { return await (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle(); } catch { return { data: null }; } })(),
   ]);
 
   const s = settings ?? {};

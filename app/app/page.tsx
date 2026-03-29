@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     admin.from("invoices").select("id,status,total_amount").eq("org_id", orgId!),
     admin.from("quotes").select("id").eq("org_id", orgId!).eq("status", "sent"),
     admin.from("org_settings").select("default_warranty_text").eq("org_id", orgId!).maybeSingle(),
-    (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle().catch(() => ({ data: null })),
+    (async () => { try { return await (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle(); } catch { return { data: null }; } })(),
   ]);
 
   const pubProfile = (pubProfileResult as any)?.data ?? null;
