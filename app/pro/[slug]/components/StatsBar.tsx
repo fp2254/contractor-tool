@@ -12,17 +12,25 @@ type Props = {
 
 export function StatsBar({ stats, condensedFont }: Props) {
   const items = [
-    { value: String(stats.jobsCompleted), label: "Jobs\nCompleted" },
-    { value: stats.revenue, label: "In Completed\nWork" },
-    { value: `${stats.yearsExperience} yrs`, label: "Experience" },
-  ];
+    stats.jobsCompleted > 0
+      ? { value: String(stats.jobsCompleted), label: "Jobs\nCompleted" }
+      : null,
+    stats.revenue && stats.revenue.trim() !== "" && stats.revenue !== "0"
+      ? { value: stats.revenue, label: "In Completed\nWork" }
+      : null,
+    stats.yearsExperience > 0
+      ? { value: `${stats.yearsExperience} yrs`, label: "Experience" }
+      : null,
+  ].filter((x): x is { value: string; label: string } => x !== null);
+
+  if (items.length === 0) return null;
 
   return (
     <div
       style={{
         backgroundColor: C.navyMid,
         display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
+        gridTemplateColumns: `repeat(${items.length}, 1fr)`,
         borderTop: "1px solid rgba(255,255,255,0.08)",
       }}
     >

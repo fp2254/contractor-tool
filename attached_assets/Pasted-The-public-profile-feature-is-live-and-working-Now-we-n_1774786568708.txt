@@ -1,0 +1,71 @@
+The public profile feature is live and working. Now we need to make it production-safe and conversion-strong without redesigning it.
+
+Do NOT change the overall layout or visual style. Keep the page looking the same. Only apply the following targeted improvements.
+
+1. Hide empty trust-killing data
+- If jobs completed is 0 or null, do not show it
+- If completed work amount is 0, null, or empty, do not show it
+- If years experience is 0 or null, do not show it
+- If all three are empty/zero, hide the stats bar entirely
+- Never show zero-value credibility stats to homeowners
+
+2. Handle empty reviews cleanly
+- If there are no reviews, do NOT render an empty Reviews section
+- Do NOT show “0 reviews” in a trust-damaging way
+- If review count is zero, either:
+  - hide the reviews section entirely, or
+  - show a stronger fallback state like:
+    “Now booking new customers — ask for a fast quote today”
+- Keep this clean and trust-positive
+
+3. Strengthen empty completed-projects state
+- Keep the existing fallback state for missing project photos
+- Improve the copy so it feels active, not empty
+Use:
+  Title: “Recent jobs being added”
+  Subtitle: “Project photos being uploaded — check back soon”
+- Do NOT imply lack of experience
+
+4. Make hero metadata smarter
+- If average rating or review count is missing/zero, do not display fake or awkward rating output
+- Do not show “0 (0 reviews)”
+- Only show rating UI if real rating/review data exists
+- If no rating data exists, collapse that area cleanly without leaving weird gaps
+
+5. Improve hero trust copy defaults
+- Add better default/fallback tagline logic when a contractor has not entered a strong tagline
+- Prefer something like:
+  “Licensed & insured • Fast quotes • Serving [service area]”
+- Make this safe and reusable as a fallback, while preserving custom taglines when entered
+
+6. Surface the live profile inside the app
+Inside Business Profile / Public Profile:
+- show live/unpublished status
+- show full public URL
+- add buttons for:
+  - View Page
+  - Copy Link
+  - Edit Public Profile
+  - Publish / Unpublish
+
+7. Surface this elsewhere in lightweight ways
+- Add a dashboard/home card when profile is live:
+  “Your public page is live”
+  with buttons:
+  - View
+  - Copy Link
+- Keep this lightweight and do not clutter the app
+
+8. Prepare profile link sharing
+We will use this page as a contractor-facing sales/lead tool.
+Add a simple reusable way to retrieve/copy the public profile URL from the app.
+Do not overbuild anything yet.
+
+9. Keep everything isolated
+- Do NOT change unrelated app logic
+- Do NOT redesign the public page
+- Do NOT touch CRM, auth, or dashboard flows except for the lightweight surfacing described above
+- Keep this safe and modular
+
+Goal:
+Make the live public profile feature trustworthy when data is missing, remove trust-killing empty states, and make it easy for contractors to access and share their live page from inside the app.

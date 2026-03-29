@@ -26,6 +26,47 @@ type Props = {
 };
 
 export function ReviewsSection({ reviews, condensedFont }: Props) {
+  if (reviews.length === 0) {
+    return (
+      <div
+        style={{
+          padding: "22px 24px",
+          borderBottom: `1px solid ${C.lightGray}`,
+          background: "white",
+          marginBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            background: "#f0f7ff",
+            border: "1px solid #dbeafe",
+            borderRadius: 12,
+            padding: "22px 18px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 22, marginBottom: 8 }}>📅</div>
+          <div
+            className={condensedFont}
+            style={{
+              fontWeight: 700,
+              fontSize: 16,
+              color: C.navy,
+              marginBottom: 5,
+              textTransform: "uppercase",
+              letterSpacing: "0.3px",
+            }}
+          >
+            Now booking new customers
+          </div>
+          <div style={{ fontSize: 13, color: C.gray, lineHeight: 1.45 }}>
+            Ask for a fast quote today — no account needed
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{

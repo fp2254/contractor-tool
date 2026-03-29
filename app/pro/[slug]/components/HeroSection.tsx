@@ -167,19 +167,25 @@ export function HeroSection({ profile, condensedFont, onQuoteClick }: Props) {
         </div>
 
         <div style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", marginBottom: 18, lineHeight: 1.4 }}>
-          {profile.tagline}
+          {profile.tagline && profile.tagline.trim()
+            ? profile.tagline
+            : `Licensed & insured · Fast quotes · Serving ${profile.location || "your area"}`}
         </div>
 
         {/* Meta row */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.7)", fontSize: 13 }}>
-            📍 <span>{profile.location}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <Stars count={5} />
-            <span style={{ color: "white", fontWeight: 600, fontSize: 13, marginLeft: 3 }}>{profile.rating}</span>
-            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>({profile.reviewCount} reviews)</span>
-          </div>
+          {profile.location && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.7)", fontSize: 13 }}>
+              📍 <span>{profile.location}</span>
+            </div>
+          )}
+          {profile.rating > 0 && profile.reviewCount > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <Stars count={5} />
+              <span style={{ color: "white", fontWeight: 600, fontSize: 13, marginLeft: 3 }}>{profile.rating}</span>
+              <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>({profile.reviewCount} reviews)</span>
+            </div>
+          )}
         </div>
 
         {/* CTA group */}
