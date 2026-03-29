@@ -46,4 +46,5 @@ export type ContractorProfile = {
   about: Array<{ icon: string; text: string }>;
   licenseNumber?: string;
   serviceArea: string;
+  photoUrl?: string;
 };

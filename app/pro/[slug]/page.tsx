@@ -82,6 +82,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       about,
       licenseNumber: pub.license_text ?? undefined,
       serviceArea: pub.service_area ?? "",
+      photoUrl: pub.photo_url || undefined,
     };
 
     return profile;

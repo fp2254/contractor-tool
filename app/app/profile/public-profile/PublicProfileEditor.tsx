@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
@@ -20,6 +20,7 @@ type Profile = {
   services: string[];
   about_bullets: string[];
   license_text: string;
+  photo_url: string;
 };
 
 const EMPTY: Profile = {
@@ -35,6 +36,7 @@ const EMPTY: Profile = {
   services: [],
   about_bullets: ["", "", "", ""],
   license_text: "",
+  photo_url: "",
 };
 
 const BASE_URL = "https://tradebase.contractors/pro";
@@ -54,9 +56,11 @@ export function PublicProfileEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState("");
   const [copied, setCopied] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/profile/public-profile")
@@ -143,6 +147,28 @@ export function PublicProfileEditor() {
     });
   }
 
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    set("photo_url", localPreview);
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload/profile-photo", { method: "POST", body: fd });
+      const json = await res.json() as { url?: string; error?: string };
+      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      set("photo_url", json.url!);
+    } catch (err: any) {
+      set("photo_url", profile.photo_url);
+      alert(err.message ?? "Photo upload failed");
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  }
+
   const publicUrl = profile.slug ? `${BASE_URL}/${profile.slug}` : null;
   const bullets = profile.about_bullets?.length ? profile.about_bullets : ["", "", "", ""];
 
@@ -216,6 +242,53 @@ export function PublicProfileEditor() {
             Save your profile first to generate a public URL.
           </p>
         )}
+      </div>
+
+      {/* ── Photo / Logo ── */}
+      <div className={sectionCls}>
+        <SectionHead emoji="📷" title="Photo or Logo" />
+        <div className="px-4 pb-4 pt-3">
+          <p className="text-xs text-gray-400 mb-3">
+            Upload a photo of yourself or your business logo. It appears as a circular avatar on your public page.
+          </p>
+          <div className="flex items-center gap-4">
+            <div
+              className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100 flex-shrink-0"
+            >
+              {profile.photo_url ? (
+                <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl text-gray-300">👤</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="w-full rounded-xl py-2.5 text-sm font-semibold border border-gray-200 text-slate-700 bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                {uploadingPhoto ? "Uploading…" : profile.photo_url ? "Change Photo / Logo" : "Upload Photo or Logo"}
+              </button>
+              {profile.photo_url && !uploadingPhoto && (
+                <button
+                  type="button"
+                  onClick={() => set("photo_url", "")}
+                  className="w-full rounded-xl py-2 text-xs font-semibold text-red-500 border border-red-100 bg-red-50"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── Profile Identity ── */}

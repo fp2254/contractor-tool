@@ -106,33 +106,64 @@ export function HeroSection({ profile, condensedFont, onQuoteClick }: Props) {
 
       {/* Hero content */}
       <div style={{ position: "relative", zIndex: 10, padding: "28px 24px 36px" }}>
-        <div
-          className={condensedFont}
-          style={{
-            fontWeight: 900,
-            fontSize: 44,
-            color: "white",
-            lineHeight: 1,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            marginBottom: 4,
-          }}
-        >
-          {profile.name}
-        </div>
 
-        <div
-          className={condensedFont}
-          style={{
-            fontWeight: 600,
-            fontSize: 20,
-            color: C.gold,
-            textTransform: "uppercase",
-            letterSpacing: 2,
-            marginBottom: 10,
-          }}
-        >
-          {profile.trade}
+        {/* Avatar photo or initial */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              overflow: "hidden",
+              border: "3px solid rgba(245,166,35,0.6)",
+              flexShrink: 0,
+              backgroundColor: "rgba(255,255,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {profile.photoUrl ? (
+              <img
+                src={profile.photoUrl}
+                alt={profile.name}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <span style={{ fontSize: 28, fontWeight: 800, color: "rgba(255,255,255,0.6)" }}>
+                {profile.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              className={condensedFont}
+              style={{
+                fontWeight: 900,
+                fontSize: 36,
+                color: "white",
+                lineHeight: 1,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                marginBottom: 4,
+              }}
+            >
+              {profile.name}
+            </div>
+            <div
+              className={condensedFont}
+              style={{
+                fontWeight: 600,
+                fontSize: 17,
+                color: C.gold,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
+              {profile.trade}
+            </div>
+          </div>
         </div>
 
         <div style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", marginBottom: 18, lineHeight: 1.4 }}>
