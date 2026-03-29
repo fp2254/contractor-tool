@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "TradeBase – Contractor Business Software Built for the Jobsite",
@@ -40,7 +42,10 @@ const AI_FEATURES = [
   { name: "Daily Ops Summary", desc: "Open the app each morning and see exactly what needs attention today — jobs, quotes, overdue invoices." },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/app");
   return (
     <div className="min-h-screen bg-gray-50">
       <MarketingNav />
