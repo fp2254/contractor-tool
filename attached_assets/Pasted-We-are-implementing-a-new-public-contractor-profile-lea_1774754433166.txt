@@ -1,0 +1,87 @@
+We are implementing a new public contractor profile / lead page feature.
+
+We have a visual mockup (HTML/CSS) that we LIKE. Use it as a design reference only.
+
+DO NOT copy the HTML directly. Rebuild it cleanly using our stack (Next.js, TypeScript, Tailwind, etc).
+
+CORE REQUIREMENTS:
+
+1. ISOLATION (VERY IMPORTANT)
+- This must be built as a completely isolated feature
+- Do NOT modify existing CRM, jobs, invoices, auth, or dashboard logic
+- Do NOT refactor existing layouts or routes
+- This should live on its own public route:
+  /pro/[slug]  (or similar)
+
+2. BUILD CLEANLY (NOT COPY/PASTE)
+- Recreate the same layout, structure, and visual hierarchy as the mockup
+- Match:
+  - hero layout
+  - CTA buttons
+  - trust strip
+  - stats bar
+  - services
+  - reviews
+  - about section
+  - sticky bottom CTA
+- But implement with proper React components and Tailwind
+- Fix any issues from the HTML (invalid CSS vars, smart quotes, etc)
+
+3. COMPONENT STRUCTURE
+Break into reusable components:
+- ContractorProfilePage
+- HeroSection
+- CTAButtons
+- TrustStrip
+- StatsBar
+- FeaturedReview
+- ServicesSection
+- ProjectsSection
+- ReviewsSection
+- AboutSection
+- StickyCTA
+- QuoteModal
+
+4. DATA (START WITH MOCK DATA)
+- First build using mock data
+- Do NOT connect to Supabase yet
+- Make sure layout is correct before wiring data
+
+5. PUBLIC PAGE BEHAVIOR
+- No login required
+- Loads by slug
+- If no profile exists → show clean 404 state
+- If profile is not published → do not show it
+
+6. PROJECT PHOTOS LOGIC
+- If real job photos exist → display them
+- If NOT → show “Recent jobs being added / photos coming soon” state
+- Do NOT show fake icons or placeholder graphics
+
+7. CTA + LEADS (SAFE IMPLEMENTATION)
+- “Get My Free Quote” opens modal
+- Modal collects:
+  - name
+  - phone
+  - project description
+- For now:
+  - console.log submission OR store locally
+- We will wire to leads system AFTER layout is confirmed
+
+8. STYLING RULES
+- Mobile-first
+- Fast loading
+- No global CSS collisions
+- Keep styles scoped to this feature
+- Match Claude’s visual style but implemented cleanly
+
+9. DO NOT OVERBUILD
+- No page builder
+- No themes
+- No extra features
+- Just this single high-converting page
+
+GOAL:
+Recreate the exact LOOK and FEEL of the Claude mockup as a clean, isolated, production-ready page that does not affect any existing functionality.
+
+This must be safe to deploy without breaking anything else.
