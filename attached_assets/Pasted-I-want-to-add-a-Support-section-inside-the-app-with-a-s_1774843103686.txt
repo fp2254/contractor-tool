@@ -1,0 +1,73 @@
+I want to add a Support section inside the app with a simple feedback system, and I want all submissions to be manageable from the admin panel.
+
+DO NOT break any existing functionality. Keep everything consistent with the current UI and structure. Mobile-first, clean, simple, fast, and consistent with the existing white card design, spacing, and typography.
+
+USER-FACING SUPPORT PAGE:
+Add a new Support page accessible from Settings or Profile.
+
+On the Support page, create 3 selectable support options:
+1. Report a Bug
+2. Request a Feature
+3. General Feedback
+
+When a user selects one, show a form with:
+- Title (short input)
+- Description (multi-line textarea)
+- Optional screenshot upload (image only)
+- Submit button
+
+After submit:
+- Show a confirmation message like: "Got it. We’ll take a look."
+
+BACKEND / DATA:
+Create a new Supabase table called support_tickets with the following fields:
+- id (uuid, primary key)
+- user_id (linked to auth user)
+- user_email (if available)
+- type (bug, feature, feedback)
+- title (text)
+- description (text)
+- screenshot_url (text, nullable)
+- status (default: "open")
+- priority (default: "low")
+- created_at (timestamp)
+
+If a screenshot is uploaded:
+- Store it in Supabase Storage under a bucket/folder like support-uploads
+- Save the file URL to screenshot_url
+
+ADMIN PANEL:
+I want support submissions to go to the admin panel so I can actually review and manage them there.
+
+Create a new admin section called:
+Support Tickets
+
+In the admin panel, show each ticket with:
+- type
+- title
+- description
+- screenshot thumbnail if uploaded
+- user_id
+- user_email
+- status
+- priority
+- created_at
+
+Admin panel functionality should include:
+- view all submissions
+- filter by type (bug, feature, feedback)
+- filter by status (open, in_progress, closed)
+- sort by newest first
+- click into a ticket to read full details
+- update status
+- update priority
+
+IMPORTANT:
+- Admin panel should be the main place I manage support
+- Email notifications are optional, but preferred as alerts only
+- The database/admin panel is the source of truth, not email
+
+OPTIONAL BUT PREFERRED:
+When a new support ticket is submitted, send an email notification to admin using Resend.
+
+Keep this implementation clean and lightweight. Do not overcomplicate it. No full support chat system, no bloated helpdesk features, just a simple support submission flow tied into the admin panel.
