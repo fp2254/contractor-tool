@@ -1,0 +1,116 @@
+DO NOT redesign the app from scratch.
+DO NOT break any functionality, routing, or existing components.
+
+We are refining the Home screen layout to make it visually cohesive, more professional, and easier to use.
+
+Apply the following EXACT changes:
+
+-------------------------------------
+1. KEEP CORE STRUCTURE
+-------------------------------------
+Keep these sections in this order:
+
+1. Header (unchanged)
+2. Needs Attention
+3. Today’s Ops
+4. AI Job Capture (primary action)
+5. Next Step
+6. Quick Actions
+7. Floating + button (global actions)
+
+-------------------------------------
+2. NEEDS ATTENTION (HIGHEST PRIORITY)
+-------------------------------------
+- This should visually stand out more than all other sections
+- Slightly increase padding and spacing
+- Add a subtle left accent (green when all clear, red when issues exist)
+- Make the title slightly larger or bolder than other section headers
+
+-------------------------------------
+3. TODAY’S OPS (REMOVE COLOR NOISE)
+-------------------------------------
+- REMOVE the colored tiles (orange, green, red, blue)
+- Replace with a uniform stat row or cards
+
+Each stat should:
+- Use the same background (white or light gray)
+- Use consistent icon styling (gray or blue)
+- Use small color indicators ONLY where needed (green for good, red for issues)
+
+Goal: clean, professional, not a colorful dashboard
+
+-------------------------------------
+4. AI JOB CAPTURE (PRIMARY ACTION)
+-------------------------------------
+- Keep as a full-width, high-emphasis button/card
+- Ensure it is visually stronger than all other action elements
+- Maintain consistent padding and rounded corners
+
+-------------------------------------
+5. NEXT STEP (GUIDED ACTION)
+-------------------------------------
+- Keep as a single clean card
+- One clear call-to-action button
+- No extra clutter
+
+-------------------------------------
+6. QUICK ACTIONS (TOOLBELT STYLE)
+-------------------------------------
+KEEP this section, but refine it:
+
+- Limit to MAX 4 pinned actions:
+  - New Quote
+  - Add Lead
+  - Collect Payment
+  - Schedule Job
+
+- All buttons must:
+  - Use the SAME style (no variation)
+  - Same height, padding, and border radius
+  - No mixed styles
+
+- This section should feel like a “daily toolbelt”, not a dashboard
+
+-------------------------------------
+7. REMOVE PERMIT ASSISTANT FROM QUICK ACTIONS
+-------------------------------------
+- Remove “Permit Assistant” from Quick Actions
+- Move it into the floating + menu instead
+
+-------------------------------------
+8. FLOATING + BUTTON (GLOBAL ACTIONS)
+-------------------------------------
+KEEP the floating + button.
+
+- This is the full action menu (expanded options)
+- It should include:
+  - All quick actions
+  - Permit Assistant
+  - Any additional less-frequent actions
+
+-------------------------------------
+9. BUTTON STYLE STANDARDIZATION
+-------------------------------------
+- Use ONE primary button style (solid blue)
+- Use ONE secondary style (light gray if needed)
+- REMOVE outline-style buttons entirely
+
+-------------------------------------
+10. COLOR SYSTEM (STRICT)
+-------------------------------------
+Only use:
+- Blue → primary actions / brand
+- Green → success
+- Red → alerts
+
+Everything else:
+- white / gray / black
+
+REMOVE any unnecessary colors (especially orange tiles)
+
+-------------------------------------
+GOAL
+-------------------------------------
+Make the app feel like a serious, professional contractor tool with a clean, consistent design system — not a mixed-component dashboard.
+
+Focus on consistency, clarity, and hierarchy — not redesigning features.
