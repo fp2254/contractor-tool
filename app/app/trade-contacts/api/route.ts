@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { lookupLinkedOrg } from "@/lib/trade-contacts-link";
 
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
@@ -18,6 +19,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
+  // Attempt to link to a TradeBase profile by email (best-effort, never blocks save)
+  let linkedOrgId: string | null = null;
+  if (body.email?.trim()) {
+    linkedOrgId = await lookupLinkedOrg(body.email.trim());
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from("trade_contacts")
@@ -29,6 +36,7 @@ export async function POST(req: Request) {
       phone: body.phone?.trim() || null,
       email: body.email?.trim() || null,
       notes: body.notes?.trim() || null,
+      linked_org_id: linkedOrgId,
     })
     .select()
     .single();

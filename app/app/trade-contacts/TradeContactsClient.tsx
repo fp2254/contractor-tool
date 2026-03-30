@@ -15,6 +15,8 @@ export type TradeContact = {
   notes: string | null;
   archived: boolean | null;
   created_at: string;
+  linked_org_id: string | null;
+  linked_profile_slug: string | null;
 };
 
 const TRADES = [
@@ -334,10 +336,16 @@ function ContactCard({
               {contact.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className={`text-sm font-bold leading-snug ${isArchived ? "text-gray-400" : "text-slate-800"}`}>
                   {contact.name}
                 </p>
+                {contact.linked_profile_slug && !isArchived && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                    style={{ backgroundColor: "#EFF6FF", color: "#1B3A6B", border: "1px solid #BFDBFE" }}>
+                    TradeBase ✓
+                  </span>
+                )}
                 {isArchived && (
                   <span className="text-[10px] bg-gray-200 text-gray-500 rounded-full px-2 py-0.5 font-medium shrink-0">Archived</span>
                 )}
@@ -378,6 +386,23 @@ function ContactCard({
                 </a>
               )}
               {contact.notes && <p className="text-xs text-gray-500 italic">{contact.notes}</p>}
+
+              {contact.linked_profile_slug && (
+                <a
+                  href={`https://tradebase.contractors/pro/${contact.linked_profile_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between w-full rounded-xl px-3 py-2.5 text-sm font-semibold"
+                  style={{ backgroundColor: "#EFF6FF", color: "#1B3A6B", border: "1px solid #BFDBFE" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>🔗</span>
+                    <span>View TradeBase Profile</span>
+                  </span>
+                  <span className="text-xs opacity-60">↗</span>
+                </a>
+              )}
+
               <div className="flex gap-2 pt-1">
                 <button onClick={() => setEditing(true)}
                   className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2"
