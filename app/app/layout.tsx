@@ -34,6 +34,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single();
   const isDemo = orgRow?.is_demo === true;
 
+  // Demo pause gate — set DEMO_PAUSED=true in env to block demo access
+  if (isDemo && process.env.DEMO_PAUSED === "true") {
+    redirect("/demo-paused");
+  }
+
   let graceDaysLeft: number | undefined;
 
   if (!isDemo) {
