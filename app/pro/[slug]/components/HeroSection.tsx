@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { ContractorProfile } from "../types";
 
@@ -9,6 +10,55 @@ const C = {
   green: "#22c55e",
   blue: "#1e4a8c",
 };
+
+function ShareButton({ slug, name, trade }: { slug: string; name: string; trade: string }) {
+  const [state, setState] = useState<"idle" | "shared" | "copied">("idle");
+
+  async function handleShare() {
+    const url = `https://tradebase.contractors/pro/${slug}`;
+    let success = false;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: `${name} — ${trade}`, url });
+        setState("shared");
+        success = true;
+      } catch { /* cancelled */ }
+    }
+    if (!success && typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        setState("copied");
+        success = true;
+      } catch { /* nothing */ }
+    }
+    if (success) setTimeout(() => setState("idle"), 2200);
+  }
+
+  const label = state === "shared" ? "✓ Shared!" : state === "copied" ? "✓ Copied!" : "📤 Share";
+
+  return (
+    <button
+      onClick={handleShare}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        background: state !== "idle" ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.1)",
+        border: `1px solid ${state !== "idle" ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.18)"}`,
+        borderRadius: 20,
+        padding: "4px 11px",
+        color: state !== "idle" ? C.green : "rgba(255,255,255,0.85)",
+        fontSize: 11,
+        fontWeight: 600,
+        cursor: "pointer",
+        transition: "all 0.2s",
+        letterSpacing: "0.2px",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
 function Stars({ count, size = 13 }: { count: number; size?: number }) {
   return (
@@ -86,21 +136,24 @@ export function HeroSection({ profile, condensedFont, onQuoteClick }: Props) {
           </span>
         </Link>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            background: "rgba(34,197,94,0.15)",
-            border: "1px solid rgba(34,197,94,0.3)",
-            color: C.green,
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "4px 10px",
-            borderRadius: 20,
-          }}
-        >
-          ✓ Verified Contractor
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ShareButton slug={profile.slug} name={profile.name} trade={profile.trade} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(34,197,94,0.15)",
+              border: "1px solid rgba(34,197,94,0.3)",
+              color: C.green,
+              fontSize: 11,
+              fontWeight: 600,
+              padding: "4px 10px",
+              borderRadius: 20,
+            }}
+          >
+            ✓ Verified
+          </div>
         </div>
       </div>
 

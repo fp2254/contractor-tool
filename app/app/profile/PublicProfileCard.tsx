@@ -15,7 +15,7 @@ type Props = {
 export function PublicProfileCard({ initialProfile }: Props) {
   const [profile, setProfile] = useState(initialProfile);
   const [publishing, setPublishing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [shareResult, setShareResult] = useState<"idle" | "shared" | "copied">("idle");
 
   const publicUrl = profile?.slug ? `${BASE_URL}/${profile.slug}` : null;
 
@@ -41,12 +41,24 @@ export function PublicProfileCard({ initialProfile }: Props) {
     }
   }
 
-  function copyLink() {
+  async function shareProfile() {
     if (!publicUrl) return;
-    navigator.clipboard.writeText(publicUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    let success = false;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "My Contractor Profile on TradeBase", url: publicUrl });
+        setShareResult("shared");
+        success = true;
+      } catch { /* cancelled */ }
+    }
+    if (!success && typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(publicUrl);
+        setShareResult("copied");
+        success = true;
+      } catch { /* nothing */ }
+    }
+    if (success) setTimeout(() => setShareResult("idle"), 2200);
   }
 
   return (
@@ -101,16 +113,16 @@ export function PublicProfileCard({ initialProfile }: Props) {
           </div>
         )}
         <button
-          onClick={copyLink}
+          onClick={shareProfile}
           disabled={!publicUrl}
           className="text-xs font-semibold rounded-xl py-2.5 border transition-colors disabled:opacity-40"
           style={
-            copied
+            shareResult !== "idle"
               ? { borderColor: "#22C55E", color: "#16A34A", background: "#F0FDF4" }
               : { borderColor: "#E5E7EB", color: "#374151", background: "#F9FAFB" }
           }
         >
-          {copied ? "✓ Copied!" : "Copy Link"}
+          {shareResult === "shared" ? "✓ Shared!" : shareResult === "copied" ? "✓ Copied!" : "📤 Share Profile"}
         </button>
       </div>
 
