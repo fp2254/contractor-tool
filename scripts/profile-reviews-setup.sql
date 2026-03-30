@@ -6,12 +6,14 @@ CREATE TABLE IF NOT EXISTS profile_reviews (
   org_id         uuid        NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
   reviewer_name  text        NOT NULL,
   reviewer_email text        NOT NULL,
-  stars          smallint    NOT NULL CHECK (stars BETWEEN 1 AND 5),
-  comment        text        NOT NULL,
+  rating         smallint    NOT NULL CHECK (rating BETWEEN 1 AND 5),
   job_type       text,
-  location_text  text,
-  approved       boolean     NOT NULL DEFAULT true,
-  created_at     timestamptz NOT NULL DEFAULT now()
+  location       text,
+  text           text        NOT NULL,
+  verified       boolean     NOT NULL DEFAULT false,
+  approved       boolean     NOT NULL DEFAULT false,
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  updated_at     timestamptz NOT NULL DEFAULT now()
 );
 
 -- Prevent duplicate reviews from the same email per contractor

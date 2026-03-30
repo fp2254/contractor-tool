@@ -19,14 +19,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
     const { data: rows } = await (admin as any)
       .from("profile_reviews")
-      .select("id, reviewer_name, stars, comment, job_type, location_text, created_at")
+      .select("id, reviewer_name, rating, text, job_type, location, verified, created_at")
       .eq("org_id", pub.org_id)
       .eq("approved", true)
       .order("created_at", { ascending: false });
 
     const reviews = rows ?? [];
     const rating = reviews.length > 0
-      ? Math.round((reviews.reduce((s: number, r: any) => s + r.stars, 0) / reviews.length) * 10) / 10
+      ? Math.round((reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length) * 10) / 10
       : 0;
 
     return NextResponse.json({ reviews, rating, reviewCount: reviews.length });
@@ -45,19 +45,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     stars?: number;
     comment?: string;
     job_type?: string;
-    location_text?: string;
+    location?: string;
   };
 
   const name = body.reviewer_name?.trim() ?? "";
   const email = body.reviewer_email?.trim().toLowerCase() ?? "";
-  const stars = Number(body.stars);
-  const comment = body.comment?.trim() ?? "";
+  const rating = Number(body.stars);
+  const reviewText = body.comment?.trim() ?? "";
 
-  if (!name || !email || !stars || !comment) {
-    return NextResponse.json({ error: "Name, email, stars, and comment are required." }, { status: 400 });
+  if (!name || !email || !rating || !reviewText) {
+    return NextResponse.json({ error: "Name, email, rating, and review are required." }, { status: 400 });
   }
-  if (stars < 1 || stars > 5 || !Number.isInteger(stars)) {
-    return NextResponse.json({ error: "Stars must be 1–5." }, { status: 400 });
+  if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+    return NextResponse.json({ error: "Rating must be 1–5." }, { status: 400 });
   }
   if (!email.includes("@")) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
@@ -79,16 +79,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         org_id: pub.org_id,
         reviewer_name: name,
         reviewer_email: email,
-        stars,
-        comment,
+        rating,
+        text: reviewText,
         job_type: body.job_type?.trim() || null,
-        location_text: body.location_text?.trim() || null,
-        approved: true,
+        location: body.location?.trim() || null,
+        verified: false,
+        approved: false,
       });
 
     if (error) {
       if (error.code === "23505") {
-        return NextResponse.json({ error: "You've already left a review for this contractor." }, { status: 409 });
+        return NextResponse.json({ error: "You've already submitted a review for this contractor." }, { status: 409 });
       }
       console.error("[reviews] insert error:", error.message);
       return NextResponse.json(

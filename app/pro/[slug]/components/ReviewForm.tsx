@@ -74,14 +74,14 @@ export function ReviewForm({ slug, condensedFont }: Props) {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 26, marginBottom: 6 }}>⭐</div>
+          <div style={{ fontSize: 26, marginBottom: 6 }}>✅</div>
           <div
             className={condensedFont}
             style={{ fontWeight: 700, fontSize: 16, color: C.navy, marginBottom: 4, textTransform: "uppercase" }}
           >
             Thanks for your review!
           </div>
-          <div style={{ fontSize: 13, color: C.gray }}>Your feedback helps other homeowners find great contractors.</div>
+          <div style={{ fontSize: 13, color: C.gray, lineHeight: 1.5 }}>Your review has been submitted and is awaiting approval before it appears publicly.</div>
         </div>
       ) : !open ? (
         <button

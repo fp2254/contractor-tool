@@ -44,10 +44,10 @@ export default async function AdminReviewsPage() {
         <h1 className="text-lg font-bold text-slate-800">Reviews</h1>
         <div className="flex gap-2">
           <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">
-            {rows.filter((r) => r.approved).length} visible
+            {rows.filter((r) => r.approved).length} approved
           </span>
-          <span className="text-xs bg-gray-100 text-gray-500 font-bold px-2 py-0.5 rounded-full">
-            {rows.filter((r) => !r.approved).length} hidden
+          <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">
+            {rows.filter((r) => !r.approved).length} pending
           </span>
         </div>
       </div>

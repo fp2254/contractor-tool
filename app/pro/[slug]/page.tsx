@@ -50,7 +50,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
         .eq("status", "completed"),
       (admin as any)
         .from("profile_reviews")
-        .select("reviewer_name, stars, comment, job_type, location_text, created_at")
+        .select("reviewer_name, rating, text, job_type, location, verified, created_at")
         .eq("org_id", pub.org_id)
         .eq("approved", true)
         .order("created_at", { ascending: false }),
@@ -62,16 +62,16 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
     const fetchedReviews = (reviewRows ?? []) as any[];
     const reviewCount = fetchedReviews.length;
     const avgRating = reviewCount > 0
-      ? Math.round((fetchedReviews.reduce((s, r) => s + r.stars, 0) / reviewCount) * 10) / 10
+      ? Math.round((fetchedReviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10
       : 0;
 
     const mappedReviews = fetchedReviews.map((r) => ({
       name: r.reviewer_name,
-      stars: r.stars,
-      text: r.comment,
+      stars: r.rating,
+      text: r.text,
       jobType: r.job_type ?? "",
-      location: r.location_text ?? "",
-      verified: false,
+      location: r.location ?? "",
+      verified: r.verified ?? false,
     }));
 
     const profile: ContractorProfile = {
