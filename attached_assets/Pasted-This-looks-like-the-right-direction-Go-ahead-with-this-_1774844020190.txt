@@ -1,0 +1,65 @@
+This looks like the right direction. Go ahead with this implementation, but make one important change:
+
+I do NOT want reviews auto-published by default unless there is some spam protection in place. Set approved to default FALSE so reviews must be approved before showing publicly.
+
+Please implement the reviews system using a new profile_reviews table linked by org_id.
+
+Requirements:
+
+DATABASE
+Create profile_reviews with fields:
+- id (uuid primary key)
+- org_id (linked to contractor profile org)
+- reviewer_name (text)
+- reviewer_email (text, stored privately, never shown publicly)
+- rating (integer 1-5)
+- job_type (text, optional)
+- location (text, optional)
+- text (text)
+- verified (boolean, default false)
+- approved (boolean, default false)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+Add a unique constraint so one email can only leave one review per org.
+
+PUBLIC PROFILE
+Use the existing ContractorProfile rating, reviewCount, reviews[], and featuredReview fields and wire them to real database data instead of hardcoded values.
+
+Only APPROVED reviews should display publicly.
+
+Display:
+- average star rating
+- total approved review count
+- approved review list
+- featured review if applicable from approved reviews only
+
+PUBLIC SUBMISSION FORM
+Add a review submission form at the bottom of the public contractor profile page with:
+- name
+- email
+- star rating (1-5)
+- job type (optional)
+- location (optional)
+- written review
+- submit button
+
+After submit:
+- save review to profile_reviews
+- do not show it publicly until approved
+- show a success message like:
+  "Thanks — your review has been submitted and is awaiting approval."
+
+ADMIN
+Add a Reviews section to the admin panel where I can:
+- view all submitted reviews
+- filter by org
+- filter by approved/pending
+- approve/unapprove reviews
+- delete bad/spam reviews if needed
+
+IMPORTANT
+- Do not break any existing contractor profile functionality
+- Keep the UI mobile-first and consistent with the current design
+- Only approved reviews count toward displayed rating and review count
+- Reviewer email should never be shown publicly

@@ -14,6 +14,7 @@ import { AboutSection } from "./components/AboutSection";
 import { BottomCloser } from "./components/BottomCloser";
 import { StickyBar } from "./components/StickyBar";
 import { QuoteModal } from "./components/QuoteModal";
+import { ReviewForm } from "./components/ReviewForm";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -56,6 +57,7 @@ export function ContractorProfilePage({ profile }: Props) {
       <ServicesSection services={profile.services} condensedFont={bc} />
       <ProjectsSection photos={profile.photos} condensedFont={bc} />
       <ReviewsSection reviews={profile.reviews} condensedFont={bc} />
+      <ReviewForm slug={profile.slug} condensedFont={bc} />
       <AboutSection about={profile.about} licenseNumber={profile.licenseNumber} condensedFont={bc} />
       <BottomCloser />
 

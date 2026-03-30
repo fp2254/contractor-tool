@@ -41,17 +41,38 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
 
     if (!pub) return null;
 
-    const [{ data: org }, { count: jobsCompleted }] = await Promise.all([
+    const [{ data: org }, { count: jobsCompleted }, { data: reviewRows }] = await Promise.all([
       admin.from("orgs").select("name").eq("id", pub.org_id).single(),
       (admin as any)
         .from("jobs")
         .select("id", { count: "exact", head: true })
         .eq("org_id", pub.org_id)
         .eq("status", "completed"),
+      (admin as any)
+        .from("profile_reviews")
+        .select("reviewer_name, stars, comment, job_type, location_text, created_at")
+        .eq("org_id", pub.org_id)
+        .eq("approved", true)
+        .order("created_at", { ascending: false }),
     ]);
 
     const phone = pub.phone ?? "";
     const about = parseAboutBullets(pub.about_bullets ?? []);
+
+    const fetchedReviews = (reviewRows ?? []) as any[];
+    const reviewCount = fetchedReviews.length;
+    const avgRating = reviewCount > 0
+      ? Math.round((fetchedReviews.reduce((s, r) => s + r.stars, 0) / reviewCount) * 10) / 10
+      : 0;
+
+    const mappedReviews = fetchedReviews.map((r) => ({
+      name: r.reviewer_name,
+      stars: r.stars,
+      text: r.comment,
+      jobType: r.job_type ?? "",
+      location: r.location_text ?? "",
+      verified: false,
+    }));
 
     const profile: ContractorProfile = {
       slug: pub.slug,
@@ -62,8 +83,8 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       location: pub.service_area ?? "",
       phone: phone.replace(/\D/g, "") ? `tel:${phone.replace(/\D/g, "")}` : "",
       phoneFormatted: formatPhone(phone),
-      rating: 0,
-      reviewCount: 0,
+      rating: avgRating,
+      reviewCount,
       urgencyLine: pub.urgency_line ?? "",
       stats: {
         jobsCompleted: jobsCompleted ?? 0,
@@ -78,7 +99,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       ],
       services: pub.services ?? [],
       photos: [],
-      reviews: [],
+      reviews: mappedReviews,
       about,
       licenseNumber: pub.license_text ?? undefined,
       serviceArea: pub.service_area ?? "",

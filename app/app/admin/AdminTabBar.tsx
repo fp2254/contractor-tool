@@ -10,6 +10,7 @@ const TABS = [
   { label: "Users", href: "/app/admin/users" },
   { label: "Waitlist", href: "/app/admin/waitlist" },
   { label: "Support", href: "/app/admin/support" },
+  { label: "Reviews", href: "/app/admin/reviews" },
   { label: "Demo", href: "/app/admin/demo" },
   { label: "System", href: "/app/admin/system" },
   { label: "Billing", href: "/app/admin/billing" },
