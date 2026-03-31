@@ -27,8 +27,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const resetUrl = linkData.properties.action_link;
-  console.log("[forgot-password] Generated reset URL:", resetUrl);
+  const hashedToken = linkData.properties.hashed_token;
+  const resetUrl = `https://tradebase.contractors/auth/confirm?token_hash=${hashedToken}&type=recovery`;
+  console.log("[forgot-password] Reset URL:", resetUrl);
 
   try {
     const { client: resend, fromEmail } = await getResendClient();
