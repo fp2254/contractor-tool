@@ -1,6 +1,14 @@
 import { Resend } from "resend";
 
 async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> {
+  // Prefer explicit env var (overrides integration connector)
+  if (process.env.RESEND_API_KEY) {
+    return {
+      apiKey: process.env.RESEND_API_KEY,
+      fromEmail: process.env.RESEND_FROM_EMAIL ?? "no-reply@tradebase.contractors",
+    };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? "repl " + process.env.REPL_IDENTITY
@@ -25,7 +33,7 @@ async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> 
 
   return {
     apiKey: settings.api_key as string,
-    fromEmail: (settings.from_email as string | undefined) ?? "quotes@tradebase.app",
+    fromEmail: (settings.from_email as string | undefined) ?? "no-reply@tradebase.contractors",
   };
 }
 
