@@ -1,0 +1,67 @@
+We need to standardize and harden our entire Supabase auth flow using the direct-link token_hash approach we just implemented.
+
+Goal:
+All auth-related email links (password reset, signup confirmation, email change, magic links) should go directly to our app and be handled by a single route instead of relying on Supabase redirects.
+
+Requirements:
+
+1. Central Auth Handler Route
+Create a single route:
+  /auth/confirm
+
+This route must:
+  - Read URL params: token_hash and type
+  - Call supabase.auth.verifyOtp({
+      token_hash,
+      type
+    })
+  - Handle all possible types:
+      - recovery (password reset)
+      - email (signup confirmation)
+      - email_change
+      - magiclink
+
+2. Flow Handling After Verification
+Based on type:
+  - recovery → redirect to /auth/update-password
+  - email → redirect to /app (or onboarding if needed)
+  - magiclink → redirect to /app
+  - email_change → show success message then redirect to settings
+
+3. Error Handling
+If verification fails:
+  - Show a clean error page (no crashes)
+  - Allow user to retry or request a new link
+
+4. Update All Email Links
+Ensure all Supabase email templates generate links like:
+  https://tradebase.contractors/auth/confirm?token_hash=...&type=...
+
+No Supabase redirect URLs should be used anymore.
+
+5. Security + UX
+  - Do NOT expose raw errors to users
+  - Show loading state while verifying token
+  - Prevent double execution
+  - Log errors for debugging
+
+6. Cleanup
+Search the entire codebase and remove:
+  - redirectTo usage for auth emails
+  - any localhost fallback URLs
+  - any old Supabase redirect-based flows
+
+7. Test Cases
+Verify all flows:
+  - Password reset works end-to-end
+  - Signup confirmation logs user in
+  - Magic link login works
+  - Email change confirmation works
+
+IMPORTANT:
+Do not break existing auth session handling.
+Do not change database schema.
+Keep UI consistent with current design.
+
+Goal outcome:
+All authentication flows are fully controlled by TradeBase, stable, and no longer dependent on Supabase redirect behavior.

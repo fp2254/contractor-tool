@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getResendClient, inviteEmailHtml } from "@/lib/email";
 
 export async function POST(req: Request) {
   await requirePlatformAdmin();
@@ -18,22 +19,36 @@ export async function POST(req: Request) {
 
   const { id, email, first_name, last_name, biz_name, trade, phone } = body;
 
-  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: "https://tradebase.contractors/auth/confirm",
-    data: {
-      first_name,
-      last_name,
-      biz_name,
-      trade,
-      phone,
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: {
+      data: { first_name, last_name, biz_name, trade, phone },
+      redirectTo: "https://tradebase.contractors/auth/confirm",
     },
   });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (linkError || !linkData?.properties?.hashed_token) {
+    console.error("[invite] generateLink error:", linkError?.message);
+    return NextResponse.json({ error: linkError?.message ?? "Could not generate invite link" }, { status: 400 });
   }
 
-  // Mark as invited in the source field (works for any entry type)
+  const hashedToken = linkData.properties.hashed_token;
+  const inviteUrl = `https://tradebase.contractors/auth/confirm?token_hash=${hashedToken}&type=invite`;
+
+  try {
+    const { client: resend, fromEmail } = await getResendClient();
+    await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `You're invited to TradeBase`,
+      html: inviteEmailHtml({ firstName: first_name, inviteUrl }),
+    });
+  } catch (emailErr) {
+    console.error("[invite] Resend error:", emailErr);
+    return NextResponse.json({ error: "Could not send invite email" }, { status: 500 });
+  }
+
   await (admin as any)
     .from("waitlist")
     .update({ source: "invited" })

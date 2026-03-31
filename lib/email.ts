@@ -1,5 +1,31 @@
 import { Resend } from "resend";
 
+export function inviteEmailHtml(opts: {
+  firstName: string;
+  inviteUrl: string;
+}): string {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="background:#1B3A6B;padding:24px 32px">
+      <h1 style="margin:0;color:#fff;font-size:22px">TradeBase</h1>
+      <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">You're invited</p>
+    </div>
+    <div style="padding:32px">
+      <p style="margin:0 0 16px;font-size:15px;color:#334155">Hi ${opts.firstName},</p>
+      <p style="margin:0 0 24px;font-size:15px;color:#64748b">You've been invited to TradeBase — the all-in-one platform built for tradespeople. Click below to set up your account.</p>
+      <a href="${opts.inviteUrl}"
+        style="display:block;background:#1B3A6B;color:#fff;text-decoration:none;text-align:center;padding:14px 24px;border-radius:10px;font-size:15px;font-weight:bold;margin-bottom:24px">
+        Set Up My Account
+      </a>
+      <p style="margin:0;font-size:13px;color:#94a3b8">This invite link expires in 24 hours. If you didn't expect this, you can safely ignore it.</p>
+    </div>
+    <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
+      <p style="margin:0;font-size:12px;color:#94a3b8">TradeBase &middot; Built for contractors</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
 async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> {
   // Prefer explicit env var (overrides integration connector)
   if (process.env.RESEND_API_KEY) {
