@@ -10,17 +10,19 @@ const TYPE_DESTINATIONS: Record<string, string> = {
   email_change: "/app/settings",
 };
 
+const BASE = "https://tradebase.contractors";
+
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
   const next = searchParams.get("next");
 
+  console.log("[auth/confirm] token_hash:", !!token_hash, "type:", type);
+
   if (!token_hash || !type) {
     console.error("[auth/confirm] Missing token_hash or type");
-    return NextResponse.redirect(
-      new URL("/auth/error?reason=missing-params", origin)
-    );
+    return NextResponse.redirect(`${BASE}/auth/error?reason=missing-params`);
   }
 
   const supabase = await createClient();
@@ -32,11 +34,10 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error("[auth/confirm] verifyOtp error:", error.message, "type:", type);
-    return NextResponse.redirect(
-      new URL(`/auth/error?reason=invalid-link`, origin)
-    );
+    return NextResponse.redirect(`${BASE}/auth/error?reason=invalid-link`);
   }
 
   const destination = next ?? TYPE_DESTINATIONS[type] ?? "/app";
-  return NextResponse.redirect(new URL(destination, origin));
+  console.log("[auth/confirm] success, redirecting to:", destination);
+  return NextResponse.redirect(`${BASE}${destination}`);
 }
