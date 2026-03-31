@@ -10,15 +10,8 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.VERCEL_URL ??
-    "https://tradebase.contractors";
-
-  const redirectTo = `${siteUrl}/auth/confirm`;
-
   const { error } = await admin.auth.resetPasswordForEmail(email, {
-    redirectTo,
+    redirectTo: "https://tradebase.contractors/auth/confirm",
   });
 
   if (error) {
