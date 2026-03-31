@@ -76,6 +76,12 @@ export default function LoginPage() {
               className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
 
+            <div className="flex justify-end">
+              <Link href="/auth/forgot-password" className="text-xs font-semibold" style={{ color: "#1B3A6B" }}>
+                Forgot password?
+              </Link>
+            </div>
+
             <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
               <input
                 type="checkbox"
