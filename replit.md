@@ -105,9 +105,22 @@ supabase/
 ## Database
 
 - Supabase project: `lrtrbocvcqgfnklknlnu`
-- Admin client bypasses RLS for all data ops
+- Admin client (service role) bypasses RLS for all app data ops
 - Org-based multi-tenancy: every row scoped to `org_id`
-- Tables: orgs, org_members, org_settings, service_presets, customers, leads, quotes, quote_items, jobs, invoices, invoice_items, payments, notes, photos, customer_portal_tokens
+- Tables: orgs, org_members, org_settings, service_presets, customers, leads, quotes, quote_items, jobs, invoices, invoice_items, payments, notes, photos, customer_portal_tokens, inventory_items, trade_contacts, expenses, ai_runs, ai_attachments, org_ai_limits, subscriptions, referral_codes, referrals, referral_payouts, public_profiles, profile_reviews, support_tickets, waitlist, payment_notifications, org_memberships, membership_events, activity_log
+
+## Security
+
+- **RLS script**: `scripts/rls-security.sql` — run once in Supabase Studio SQL Editor
+- **Pattern**: All 35 tables have RLS enabled. Anon key is fully blocked on sensitive tables.
+- **Helper function**: `user_org_ids()` — SECURITY DEFINER, returns org IDs for current auth.uid()
+- **customer_portal_tokens**: zero user-key access; service role only
+- **public_profiles**: published profiles are publicly readable (anon); org members manage their own
+- **profile_reviews**: approved reviews publicly readable; anyone can INSERT; approve/delete via service role
+- **waitlist**: public INSERT only; list is service-role only
+- **support_tickets**: authenticated INSERT only; reads via service role (admin panel)
+- **payment_notifications / org_memberships / membership_events**: service role only, no user policies
+- **Storage buckets**: tradebase-photos, profile-photos, logos, support-uploads all set to private (no public listing)
 
 ## Features Complete
 
