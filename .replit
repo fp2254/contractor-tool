@@ -16,6 +16,7 @@ PORT = "5000"
 NEXT_PUBLIC_SUPABASE_URL = "https://lrtrbocvcqgfnklknlnu.supabase.co"
 ADMIN_EMAIL = "Fp2254@gmail.com"
 NEXT_PUBLIC_SITE_URL = "https://tradebase.contractors"
+DEMO_PAUSED = "true"
 
 [workflows]
 runButton = "Project"
