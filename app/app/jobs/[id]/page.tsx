@@ -104,13 +104,28 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: job }, { data: notes }, { data: photos }] = await Promise.all([
+  const [{ data: job }, { data: notes }, { data: jobPhotos }] = await Promise.all([
     admin.from("jobs").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("notes").select("*").eq("entity_type", "job").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
     admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "job").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }),
   ]);
 
   if (!job) return notFound();
+
+  // Pull in photos from linked quote and invoice so the whole workflow shares photos
+  const relatedPhotoFetches = await Promise.all([
+    job.quote_id
+      ? admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "quote").eq("entity_id", job.quote_id).eq("org_id", orgId!).order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    job.invoice_id
+      ? admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "invoice").eq("entity_id", job.invoice_id).eq("org_id", orgId!).order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+  const photos = [
+    ...(jobPhotos ?? []),
+    ...(relatedPhotoFetches[0].data ?? []),
+    ...(relatedPhotoFetches[1].data ?? []),
+  ];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: aiAttachmentsRaw } = await (admin as any)

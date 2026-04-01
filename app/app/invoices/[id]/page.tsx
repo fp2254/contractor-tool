@@ -102,7 +102,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: photos }, { data: aiAttachmentsRaw }, { data: org }, { data: openedNotes }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: invoicePhotos }, { data: aiAttachmentsRaw }, { data: org }, { data: openedNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
@@ -120,6 +120,27 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const orgName = org?.name ?? "Your Company";
 
   if (!invoice) return notFound();
+
+  // Pull in photos from the linked job so the whole workflow shares photos
+  const { data: jobPhotos } = invoice.job_id
+    ? await admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: false })
+    : { data: [] };
+
+  // Also pull quote photos via the job's quote_id
+  let quotePhotos: typeof invoicePhotos = [];
+  if (invoice.job_id) {
+    const { data: linkedJob } = await admin.from("jobs").select("quote_id").eq("id", invoice.job_id).eq("org_id", orgId!).maybeSingle();
+    if (linkedJob?.quote_id) {
+      const { data } = await admin.from("photos").select("id,url,filename,created_at").eq("entity_type", "quote").eq("entity_id", linkedJob.quote_id).eq("org_id", orgId!).order("created_at", { ascending: false });
+      quotePhotos = data ?? [];
+    }
+  }
+
+  const photos = [
+    ...(invoicePhotos ?? []),
+    ...(jobPhotos ?? []),
+    ...quotePhotos,
+  ];
 
   const { data: customer } = await admin.from("customers").select("first_name,last_name,company_name,phone,email").eq("id", invoice.customer_id).single();
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.company_name || "Unknown";
