@@ -2,9 +2,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import ScheduleClient from "./ScheduleClient";
 
-export default async function SchedulePage() {
+export default async function SchedulePage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+  const { date } = await searchParams;
 
   const [{ data: jobs }, { data: customers }] = await Promise.all([
     admin
@@ -37,5 +38,5 @@ export default async function SchedulePage() {
     customer_name: customerMap[j.customer_id] ?? "Unknown",
   }));
 
-  return <ScheduleClient jobs={enriched} />;
+  return <ScheduleClient jobs={enriched} initialDate={date} />;
 }

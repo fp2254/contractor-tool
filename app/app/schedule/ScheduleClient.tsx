@@ -275,9 +275,9 @@ function WeekView({ jobs, selectedDate, onSelectDate }: {
   );
 }
 
-export default function ScheduleClient({ jobs: initialJobs }: { jobs: Job[] }) {
-  const [view, setView] = useState<View>("month");
-  const [selectedDate, setSelectedDate] = useState(today());
+export default function ScheduleClient({ jobs: initialJobs, initialDate }: { jobs: Job[]; initialDate?: string }) {
+  const [view, setView] = useState<View>(initialDate ? "day" : "month");
+  const [selectedDate, setSelectedDate] = useState(initialDate ?? today());
   const [jobs, setJobs] = useState(initialJobs);
 
   const sel = new Date(selectedDate + "T12:00:00");

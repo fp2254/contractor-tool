@@ -87,7 +87,8 @@ async function convertToJob(formData: FormData) {
   if (!quote?.customer_id) return;
 
   const { data: customer } = await admin.from("customers").select("first_name,last_name,address_line1,city,state").eq("id", quote.customer_id).single();
-  const jobTitle = String(formData.get("job_title")) || `Job from Quote #${quoteId.slice(0,8)}`;
+  const jobTitle = String(formData.get("job_title") || "").trim() || `Job from Quote #${quoteId.slice(0,8).toUpperCase()}`;
+  const scheduledDate = String(formData.get("scheduled_date") || "").trim() || null;
 
   const { data: job } = await admin.from("jobs").insert({
     org_id: orgId!,
@@ -96,13 +97,29 @@ async function convertToJob(formData: FormData) {
     job_title: jobTitle,
     status: "scheduled",
     address: customer?.address_line1 ?? null,
-    scheduled_date: String(formData.get("scheduled_date")) || null,
+    city: customer?.city ?? null,
+    state: customer?.state ?? null,
+    scheduled_date: scheduledDate,
     created_by_user: user.data.user?.id ?? null,
   }).select("id").single();
 
   if (!job) return;
-  await admin.from("quotes").update({ status: "accepted" }).eq("id", quoteId).eq("org_id", orgId!);
-  redirect(`/app/jobs/${job.id}`);
+
+  await Promise.all([
+    admin.from("quotes").update({ status: "accepted" }).eq("id", quoteId).eq("org_id", orgId!),
+    // Copy quote notes/scope of work into a job note so it's visible on the job
+    quote.notes?.trim()
+      ? admin.from("notes").insert({
+          org_id: orgId!,
+          entity_type: "job",
+          entity_id: job.id,
+          body: `Scope of work (from quote):\n${quote.notes.trim()}`,
+          created_by: user.data.user?.id ?? null,
+        })
+      : Promise.resolve(),
+  ]);
+
+  redirect(scheduledDate ? `/app/schedule?date=${scheduledDate}` : `/app/jobs/${job.id}`);
 }
 
 async function saveWarrantyNote(quoteId: string, warrantyText: string | null) {
