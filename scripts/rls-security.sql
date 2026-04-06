@@ -389,11 +389,12 @@ BEGIN
 END $$;
 
 -- ================================================================
--- STORAGE — mark all app buckets as non-public (no open listing)
+-- STORAGE
+-- profile-photos + logos MUST stay public — shown on public contractor profile pages.
+-- tradebase-photos + support-uploads stay private — accessed via signed URLs only.
 -- ================================================================
-UPDATE storage.buckets
-SET public = false
-WHERE id IN ('tradebase-photos', 'profile-photos', 'logos', 'support-uploads');
+UPDATE storage.buckets SET public = false WHERE id IN ('tradebase-photos', 'support-uploads');
+UPDATE storage.buckets SET public = true  WHERE id IN ('profile-photos', 'logos');
 
 -- ================================================================
 -- VERIFY — confirms which tables have RLS enabled
