@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -204,7 +205,9 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
         </div>
         <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
-        <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+        <Suspense fallback={null}>
+          <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+        </Suspense>
       </div>
 
       {/* ── 4. NEXT STEP ────────────────────────────────────────── */}
