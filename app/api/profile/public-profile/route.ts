@@ -58,7 +58,9 @@ export async function POST(req: Request) {
     }
   } catch { /* table may not exist — let upsert fail naturally */ }
 
-  const row = {
+  const selectedTemplate = body.selected_template ?? "";
+
+  const row: Record<string, unknown> = {
     org_id: orgId!,
     slug,
     trade: body.trade ?? "",
@@ -72,29 +74,34 @@ export async function POST(req: Request) {
     about_bullets: body.about_bullets ?? [],
     license_text: body.license_text ?? "",
     photo_url: body.photo_url ?? "",
+    selected_template: selectedTemplate,
     updated_at: new Date().toISOString(),
   };
 
+  // If the column doesn't exist yet, retry without it so the save never fails.
   try {
     const { data, error } = await (admin as any)
       .from("public_profiles")
       .upsert(row, { onConflict: "org_id" })
       .select()
       .single();
-    if (error) throw error;
 
-    // selected_template is saved in a separate call so a missing column
-    // (pre-migration) never blocks the main profile save.
-    const selectedTemplate = body.selected_template ?? "";
-    if (selectedTemplate !== undefined) {
-      await (admin as any)
-        .from("public_profiles")
-        .update({ selected_template: selectedTemplate })
-        .eq("org_id", orgId!)
-        .then(() => {/* silently ignore schema errors until column exists */});
+    if (error) {
+      if (error.message?.includes("selected_template")) {
+        // Column not yet migrated — save without it
+        const { selected_template: _dropped, ...rowWithout } = row;
+        const { data: data2, error: err2 } = await (admin as any)
+          .from("public_profiles")
+          .upsert(rowWithout, { onConflict: "org_id" })
+          .select()
+          .single();
+        if (err2) throw err2;
+        return NextResponse.json({ profile: { ...data2, selected_template: selectedTemplate } });
+      }
+      throw error;
     }
 
-    return NextResponse.json({ profile: { ...data, selected_template: selectedTemplate } });
+    return NextResponse.json({ profile: data });
   } catch (err: any) {
     console.error("[public-profile] save error:", err);
     return NextResponse.json(

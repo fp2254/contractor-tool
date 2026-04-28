@@ -6,6 +6,9 @@ import { ClassicContractorTemplate } from "@/components/templates/ClassicContrac
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import type { ContractorProfile } from "./types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
