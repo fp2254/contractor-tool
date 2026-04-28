@@ -47,4 +47,5 @@ export type ContractorProfile = {
   licenseNumber?: string;
   serviceArea: string;
   photoUrl?: string;
+  selectedTemplate?: string;
 };
