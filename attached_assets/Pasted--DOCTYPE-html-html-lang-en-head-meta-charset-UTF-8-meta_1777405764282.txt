@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeBase — The Operating System for Contractors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0a0a0a;--black-2:#141414;--steel:#1f1f1f;--steel-2:#2a2a2a;
+    --bone:#f4f1ea;--bone-2:#e8e3d6;
+    --hi-vis:#ff5b1f;--safety:#ffd400;--go:#00d96e;
+    --line:rgba(255,255,255,.08);--line-light:rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',sans-serif;background:var(--bone);color:var(--black);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  .topbar{background:var(--black);color:var(--bone);padding:9px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+  .topbar-inner{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+  .topbar .left{display:flex;align-items:center;gap:10px;color:var(--safety)}
+  .topbar .pulse{width:6px;height:6px;background:var(--safety);border-radius:50%;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .topbar .right{display:none;gap:24px;opacity:.65}
+  @media(min-width:760px){.topbar .right{display:flex}}
+
+  nav{background:var(--black);color:var(--bone);padding:18px 0;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--line)}
+  .nav-inner{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
+  .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--bone)}
+  .logo-mark{width:34px;height:34px;background:var(--hi-vis);display:grid;place-items:center;color:var(--black);font-weight:900;font-size:17px;transform:rotate(-3deg);box-shadow:3px 3px 0 var(--safety)}
+  .logo-text{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em}
+  .nav-links{display:none;gap:32px;align-items:center}
+  .nav-links a{color:rgba(244,241,234,.75);text-decoration:none;font-size:13px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;transition:color .15s}
+  .nav-links a:hover{color:var(--safety)}
+  .nav-cta{background:var(--hi-vis);color:var(--black);padding:10px 18px;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:13px;text-decoration:none;transition:all .15s}
+  .nav-cta:hover{background:var(--safety)}
+  @media(min-width:900px){.nav-links{display:flex}}
+
+  .hero{background:var(--black);color:var(--bone);position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 80% 20%,rgba(255,91,31,.10) 0%,transparent 50%),linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:auto,48px 48px,48px 48px;pointer-events:none}
+  .hero-inner{max-width:1400px;margin:0 auto;padding:64px 24px 80px;display:grid;gap:48px;grid-template-columns:1fr;align-items:center;position:relative;z-index:1}
+  @media(min-width:1000px){.hero-inner{grid-template-columns:1.1fr 1fr;gap:64px;padding:80px 24px 100px}}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:10px;background:rgba(255,91,31,.08);border:1px solid rgba(255,91,31,.3);padding:8px 14px;margin-bottom:28px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--hi-vis)}
+  .hero-eyebrow .dot{width:6px;height:6px;background:var(--hi-vis);border-radius:50%;animation:pulse 2s infinite}
+  .hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(54px,8vw,108px);line-height:.88;letter-spacing:-.005em;text-transform:uppercase;margin-bottom:28px}
+  .hero h1 .accent{color:var(--hi-vis)}
+  .hero h1 .underline{position:relative;display:inline-block}
+  .hero h1 .underline::after{content:"";position:absolute;left:-4px;right:-4px;bottom:8px;height:14px;background:var(--hi-vis);z-index:-1;transform:skew(-6deg);opacity:.85}
+  .hero p.sub{font-size:18px;line-height:1.55;color:rgba(244,241,234,.78);max-width:540px;margin-bottom:32px}
+  @media(min-width:768px){.hero p.sub{font-size:20px}}
+  .hero p.sub strong{color:var(--bone);font-weight:700}
+  .hero-bullets{list-style:none;margin-bottom:36px;display:grid;gap:12px;max-width:540px}
+  .hero-bullets li{display:flex;align-items:center;gap:14px;font-size:15px;color:rgba(244,241,234,.92)}
+  .hero-bullets .check{width:22px;height:22px;flex-shrink:0;background:var(--hi-vis);color:var(--black);display:grid;place-items:center;font-weight:900;font-size:13px}
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+  .btn-primary{background:var(--hi-vis);color:var(--black);padding:18px 32px;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:16px;text-decoration:none;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:10px}
+  .btn-primary:hover{background:var(--safety);transform:translateY(-2px)}
+  .btn-primary .arrow{transition:transform .2s}
+  .btn-primary:hover .arrow{transform:translateX(4px)}
+  .btn-secondary{background:transparent;color:var(--bone);padding:18px 28px;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:16px;text-decoration:none;border:2px solid rgba(244,241,234,.25);transition:all .15s;display:inline-flex;align-items:center;gap:10px}
+  .btn-secondary:hover{border-color:var(--bone);background:rgba(244,241,234,.05)}
+  .hero-fineprint{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(244,241,234,.45);letter-spacing:.12em;text-transform:uppercase}
+  .hero-fineprint .check{color:var(--go);margin:0 4px 0 0}
+
+  .hero-visual{position:relative;min-height:520px;display:flex;justify-content:center;align-items:center}
+  .dash-window{position:absolute;top:20px;left:0;right:0;background:var(--black-2);border:2px solid var(--steel);box-shadow:14px 14px 0 var(--hi-vis);transform:rotate(-1deg)}
+  @media(min-width:1000px){.dash-window{left:-30px;right:-10px;top:0}}
+  .dash-bar{background:#000;padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--steel)}
+  .dash-bar .b-dot{width:10px;height:10px;border-radius:50%}
+  .dash-bar .b-dot:nth-child(1){background:#ff5f57}.dash-bar .b-dot:nth-child(2){background:#febc2e}.dash-bar .b-dot:nth-child(3){background:#28c840}
+  .dash-bar .url{margin-left:10px;background:var(--steel);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;flex:1;color:#888}
+  .dash-content{padding:20px}
+  .dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .dash-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--bone)}
+  .dash-badge{background:var(--go);color:var(--black);padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.1em}
+  .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .dash-stat{background:var(--steel);padding:12px;border-left:3px solid var(--hi-vis)}
+  .dash-stat:nth-child(2){border-color:var(--safety)}.dash-stat:nth-child(3){border-color:var(--go)}
+  .dash-stat .n{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;color:var(--bone)}
+  .dash-stat .l{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;color:#888;text-transform:uppercase;margin-top:3px}
+  .dash-pipeline{background:var(--steel);padding:12px}
+  .dash-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #333;font-size:11px;color:var(--bone)}
+  .dash-row:last-child{border:none}
+  .dash-row .name{font-weight:600}
+  .dash-row .stage{font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 7px;letter-spacing:.1em;background:var(--hi-vis);color:var(--black);font-weight:700}
+  .dash-row .stage.green{background:var(--go)}.dash-row .stage.yellow{background:var(--safety)}
+
+  .phone{position:absolute;bottom:0;right:0;width:200px;background:#000;border-radius:30px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 0 2px var(--steel);transform:rotate(6deg);z-index:2}
+  @media(min-width:1000px){.phone{right:-15px;width:230px;bottom:20px}}
+  .phone-screen{background:var(--black-2);border-radius:22px;overflow:hidden;aspect-ratio:9/19;position:relative}
+  .phone-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:60px;height:14px;background:#000;border-radius:8px;z-index:3}
+  .phone-content{padding:30px 12px 12px;color:var(--bone)}
+  .phone-tag{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.15em;color:var(--hi-vis);margin-bottom:6px}
+  .phone-h{font-family:'Bebas Neue',sans-serif;font-size:18px;line-height:1;margin-bottom:8px}
+  .phone-card{background:var(--steel);padding:10px;margin-bottom:8px;border-left:3px solid var(--hi-vis)}
+  .phone-card.green{border-color:var(--go)}.phone-card.yellow{border-color:var(--safety)}
+  .phone-card .pc-name{font-size:11px;font-weight:600;margin-bottom:2px}
+  .phone-card .pc-meta{font-size:9px;color:#888;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+  .phone-card .pc-amt{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--go);margin-top:4px}
+
+  .trust{background:var(--black);color:var(--bone);border-top:1px solid var(--line);padding:24px 0}
+  .trust-inner{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.5)}
+  .trust-inner span{display:flex;align-items:center;gap:10px}
+  .trust-inner span::before{content:"";width:8px;height:8px;background:var(--hi-vis);transform:rotate(45deg)}
+
+  section{padding:80px 0;position:relative}
+  @media(min-width:768px){section{padding:110px 0}}
+  .container{max-width:1400px;margin:0 auto;padding:0 24px}
+  .section-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.25em;text-transform:uppercase;margin-bottom:20px;color:var(--hi-vis);display:flex;align-items:center;gap:14px}
+  .section-num::before{content:"";width:32px;height:2px;background:var(--hi-vis)}
+  h2.section-h{font-family:'Bebas Neue',sans-serif;font-size:clamp(42px,7vw,82px);line-height:.92;letter-spacing:-.005em;text-transform:uppercase;margin-bottom:24px;max-width:16ch}
+  h2.section-h .org{color:var(--hi-vis)}
+  h2.section-h .yel{background:var(--safety);padding:0 10px;display:inline-block;transform:skew(-4deg)}
+  .section-intro{font-size:17px;line-height:1.6;color:#444;max-width:580px;margin-bottom:24px}
+
+  .flow{background:var(--bone)}
+  .flow-grid{display:grid;grid-template-columns:1fr;gap:0;margin-top:48px;border:2px solid var(--black)}
+  @media(min-width:900px){.flow-grid{grid-template-columns:repeat(4,1fr)}}
+  .flow-step{padding:36px 28px;border-bottom:2px solid var(--black);position:relative;background:var(--bone);transition:background .2s}
+  .flow-step:hover{background:var(--bone-2)}
+  @media(min-width:900px){
+    .flow-step{border-bottom:none;border-right:2px solid var(--black)}
+    .flow-step:last-child{border-right:none}
+    .flow-step::after{content:"→";position:absolute;right:-13px;top:50%;transform:translateY(-50%);background:var(--hi-vis);color:var(--black);width:26px;height:26px;display:grid;place-items:center;font-weight:900;z-index:2;font-size:14px}
+    .flow-step:last-child::after{display:none}
+  }
+  .flow-step .num{font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:.85;color:var(--hi-vis);margin-bottom:12px}
+  .flow-step h4{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:18px;margin-bottom:8px}
+  .flow-step p{font-size:14px;color:#555;line-height:1.55}
+  .flow-step .tick{margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--hi-vis);text-transform:uppercase;font-weight:700}
+
+  .compare{background:var(--black);color:var(--bone)}
+  .compare h2.section-h{color:var(--bone)}
+  .compare-table{width:100%;border-collapse:collapse;margin-top:40px;border:2px solid var(--steel)}
+  .compare-table th,.compare-table td{padding:18px 20px;text-align:left;border-bottom:1px solid var(--steel)}
+  .compare-table th{background:var(--steel);color:var(--bone);font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+  .compare-table th.us{background:var(--hi-vis);color:var(--black)}
+  .compare-table td{font-size:14px;color:rgba(244,241,234,.85)}
+  .compare-table td.feature{font-weight:600;color:var(--bone);font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+  .compare-table td.us{background:rgba(255,91,31,.08);font-weight:700;color:var(--bone)}
+  .compare-table .yes{color:var(--go);font-weight:900;font-size:18px}
+  .compare-table .no{color:#ff4d4d;font-weight:900;font-size:18px}
+  .compare-table .partial{color:var(--safety);font-weight:700;font-size:12px}
+  .compare-table tr:last-child td{border-bottom:none}
+  @media(max-width:760px){
+    .compare-table,.compare-table tbody,.compare-table tr,.compare-table td,.compare-table th{display:block;width:100%}
+    .compare-table thead{display:none}
+    .compare-table tr{border-bottom:2px solid var(--steel)}
+    .compare-table td{padding:10px 16px;border:none;display:flex;justify-content:space-between;align-items:center}
+    .compare-table td.feature{background:var(--steel);padding:12px 16px}
+    .compare-table td::before{content:attr(data-label);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#888}
+    .compare-table td.feature::before{content:""}
+  }
+
+  .workflows{background:var(--bone)}
+  .workflow{display:grid;grid-template-columns:1fr;gap:40px;align-items:center;padding:60px 0;border-bottom:1px solid var(--line-light)}
+  @media(min-width:900px){.workflow{grid-template-columns:1fr 1fr;gap:80px}}
+  .workflow:last-child{border-bottom:none}
+  .workflow:nth-child(even) .wf-text{order:2}
+  @media(max-width:899px){.workflow:nth-child(even) .wf-text{order:0}}
+  .wf-num{display:inline-flex;background:var(--black);color:var(--hi-vis);width:48px;height:48px;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:28px;margin-bottom:18px}
+  .wf-text h3{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,52px);line-height:.95;text-transform:uppercase;margin-bottom:16px}
+  .wf-text h3 .org{color:var(--hi-vis)}
+  .wf-text p{font-size:16px;line-height:1.6;color:#444;max-width:480px;margin-bottom:18px}
+  .wf-bullets{list-style:none;display:grid;gap:8px}
+  .wf-bullets li{display:flex;align-items:center;gap:10px;font-size:13px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:#222;font-weight:700}
+  .wf-bullets li::before{content:"▶";color:var(--hi-vis);font-size:10px}
+  .wf-visual{background:var(--black);color:var(--bone);padding:24px;box-shadow:8px 8px 0 var(--hi-vis);min-height:280px;border:1px solid var(--steel)}
+  .wf-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--hi-vis);margin-bottom:14px;text-transform:uppercase}
+  .wf-mock-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--steel);margin-bottom:8px;border-left:3px solid var(--hi-vis)}
+  .wf-mock-row.green{border-color:var(--go)}.wf-mock-row.yellow{border-color:var(--safety)}
+  .wf-mock-row .left .n{font-weight:600;font-size:13px}
+  .wf-mock-row .left .m{font-size:10px;color:#999;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .wf-mock-row .right{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--hi-vis);color:var(--black);padding:5px 8px;font-weight:700;letter-spacing:.1em}
+  .wf-mock-row.green .right{background:var(--go)}.wf-mock-row.yellow .right{background:var(--safety)}
+
+  .ai-section{background:var(--black);color:var(--bone)}
+  .ai-section h2.section-h{color:var(--bone)}
+  .ai-intro{color:rgba(244,241,234,.7);font-size:17px;line-height:1.6;max-width:580px;margin-bottom:48px}
+  .ai-grid{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--steel)}
+  @media(min-width:700px){.ai-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1100px){.ai-grid{grid-template-columns:repeat(4,1fr)}}
+  .ai-tool{padding:28px 24px;border-bottom:1px solid var(--steel);border-right:1px solid var(--steel);background:var(--black);transition:background .2s}
+  .ai-tool:hover{background:var(--steel)}
+  @media(min-width:700px){.ai-tool:nth-child(2n){border-right:none}}
+  @media(min-width:1100px){
+    .ai-tool{border-right:1px solid var(--steel)}
+    .ai-tool:nth-child(2n){border-right:1px solid var(--steel)}
+    .ai-tool:nth-child(4n){border-right:none}
+    .ai-tool:nth-last-child(-n+4){border-bottom:none}
+  }
+  .ai-icon{width:44px;height:44px;background:var(--steel-2);color:var(--hi-vis);display:grid;place-items:center;margin-bottom:18px;transition:all .2s}
+  .ai-tool:hover .ai-icon{background:var(--hi-vis);color:var(--black)}
+  .ai-tool h4{font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;margin-bottom:8px;color:var(--bone)}
+  .ai-tool p{font-size:13px;line-height:1.55;color:rgba(244,241,234,.65)}
+  .ai-live{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;color:var(--go);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+  .ai-live::before{content:"";width:6px;height:6px;background:var(--go);border-radius:50%}
+
+  .earn{background:linear-gradient(135deg,var(--hi-vis) 0%,#ff7842 100%);color:var(--black);position:relative;overflow:hidden}
+  .earn::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.04) 0 1px,transparent 1px 14px)}
+  .earn .container{position:relative;z-index:1}
+  .earn .section-num{color:var(--black)}
+  .earn .section-num::before{background:var(--black)}
+  .earn h2.section-h{color:var(--black)}
+  .earn-intro{color:var(--black);font-size:17px;line-height:1.6;max-width:580px;margin-bottom:48px;font-weight:500}
+  .earn-grid{display:grid;grid-template-columns:1fr;gap:24px;margin-bottom:48px}
+  @media(min-width:900px){.earn-grid{grid-template-columns:repeat(3,1fr)}}
+  .earn-card{background:var(--black);color:var(--bone);padding:32px 28px;position:relative}
+  .earn-card.featured{background:var(--bone);color:var(--black);box-shadow:8px 8px 0 var(--black)}
+  .earn-card .tier-name{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;opacity:.6}
+  .earn-card .pct{font-family:'Bebas Neue',sans-serif;font-size:96px;line-height:.85;color:var(--hi-vis);margin-bottom:6px}
+  .earn-card.featured .pct{color:var(--hi-vis)}
+  .earn-card .pct-sub{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:14px;margin-bottom:18px;opacity:.85}
+  .earn-card ul{list-style:none;border-top:1px solid rgba(255,255,255,.1);padding-top:18px}
+  .earn-card.featured ul{border-color:rgba(0,0,0,.1)}
+  .earn-card li{padding:8px 0;display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4}
+  .earn-card li::before{content:"✓";color:var(--hi-vis);font-weight:900;flex-shrink:0}
+  .earn-math{background:var(--black);color:var(--bone);padding:32px;text-align:center;border:2px solid var(--black);box-shadow:8px 8px 0 rgba(0,0,0,.2)}
+  .earn-math-h{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--hi-vis);margin-bottom:14px}
+  .earn-math-eq{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4vw,44px);line-height:1.05;text-transform:uppercase}
+  .earn-math-eq .op{color:var(--hi-vis);margin:0 8px}
+  .earn-math-eq .res{color:var(--safety);background:var(--steel);padding:0 12px;display:inline-block;margin-left:8px}
+  .earn-math-note{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:rgba(244,241,234,.5);text-transform:uppercase}
+
+  .roadmap{background:var(--bone)}
+  .roadmap-grid{display:grid;grid-template-columns:1fr;gap:24px;margin-top:40px}
+  @media(min-width:800px){.roadmap-grid{grid-template-columns:1fr 1fr}}
+  .roadmap-card{background:var(--bone);border:2px dashed var(--black);padding:36px 32px;position:relative}
+  .roadmap-card .tag{position:absolute;top:-12px;left:24px;background:var(--black);color:var(--safety);padding:4px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+  .roadmap-card h3{font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;margin-bottom:14px;margin-top:8px}
+  .roadmap-card p{font-size:15px;line-height:1.6;color:#444;margin-bottom:16px}
+  .roadmap-card .perks{list-style:none;display:grid;gap:6px;padding-top:16px;border-top:1px solid rgba(0,0,0,.1)}
+  .roadmap-card .perks li{display:flex;align-items:center;gap:8px;font-size:13px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:#222}
+  .roadmap-card .perks li::before{content:"◆";color:var(--hi-vis)}
+
+  .pricing{background:var(--black);color:var(--bone)}
+  .pricing h2.section-h{color:var(--bone)}
+  .price-grid{display:grid;grid-template-columns:1fr;gap:24px;margin-top:48px}
+  @media(min-width:800px){.price-grid{grid-template-columns:repeat(2,1fr);max-width:900px;margin-left:auto;margin-right:auto;margin-top:48px}}
+  .price-card{background:var(--black-2);border:2px solid var(--steel);padding:36px 32px;position:relative;display:flex;flex-direction:column}
+  .price-card.featured{border:3px solid var(--hi-vis);box-shadow:10px 10px 0 var(--safety)}
+  .price-card.featured::before{content:"FOUNDER — FIRST 200";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--hi-vis);color:var(--black);font-family:'Oswald',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;padding:6px 14px;white-space:nowrap}
+  .price-name{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,234,.5);margin-bottom:14px}
+  .price-amount{font-family:'Bebas Neue',sans-serif;line-height:.85;margin-bottom:12px;display:flex;align-items:baseline;gap:6px}
+  .price-amount .dollar{font-size:30px;align-self:flex-start;margin-top:8px;color:var(--hi-vis)}
+  .price-amount .num{font-size:96px;color:var(--hi-vis)}
+  .price-amount .per{font-size:15px;font-family:'Inter',sans-serif;font-weight:500;color:rgba(244,241,234,.5);letter-spacing:0;text-transform:lowercase}
+  .price-tagline{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--safety);margin-bottom:18px}
+  .price-features{list-style:none;margin:18px 0 28px;padding-top:18px;border-top:1px solid var(--steel);flex-grow:1}
+  .price-features li{padding:9px 0;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:rgba(244,241,234,.85)}
+  .price-features li::before{content:"✓";color:var(--black);background:var(--hi-vis);width:18px;height:18px;display:grid;place-items:center;font-weight:900;flex-shrink:0;font-size:11px}
+  .price-cta{background:var(--steel);color:var(--bone);padding:14px 20px;text-align:center;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:14px;text-decoration:none;border:2px solid var(--steel);transition:all .15s}
+  .price-cta:hover{background:var(--hi-vis);color:var(--black);border-color:var(--hi-vis)}
+  .price-card.featured .price-cta{background:var(--hi-vis);color:var(--black);border-color:var(--hi-vis)}
+  .price-card.featured .price-cta:hover{background:var(--safety);border-color:var(--safety)}
+  .price-note{text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(244,241,234,.5)}
+
+  .faq{background:var(--bone)}
+  .faq-grid{display:grid;grid-template-columns:1fr;gap:48px}
+  @media(min-width:900px){.faq-grid{grid-template-columns:1fr 1.4fr}}
+  .faq-list{display:grid;gap:0;border-top:2px solid var(--black)}
+  .faq-item{border-bottom:2px solid var(--black)}
+  .faq-item summary{padding:24px 0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.02em}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary::after{content:"+";font-family:'Bebas Neue',sans-serif;font-size:32px;width:32px;height:32px;background:var(--black);color:var(--bone);display:grid;place-items:center;flex-shrink:0;transition:all .2s;line-height:0}
+  .faq-item details[open] summary::after{content:"−";background:var(--hi-vis);color:var(--black)}
+  .faq-item .answer{padding:0 0 28px;font-size:15px;line-height:1.6;color:#555;max-width:62ch}
+
+  .final-cta{background:var(--hi-vis);color:var(--black);text-align:center;border-top:6px solid var(--safety)}
+  .final-cta h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,108px);line-height:.88;text-transform:uppercase;margin-bottom:20px}
+  .final-cta p{font-size:18px;font-weight:600;margin-bottom:32px;max-width:560px;margin-left:auto;margin-right:auto}
+  .final-cta .btn-big{background:var(--black);color:var(--hi-vis);padding:22px 44px;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:18px;text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:12px}
+  .final-cta .btn-big:hover{background:var(--bone);color:var(--black)}
+  .final-cta .urgent{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:700}
+
+  footer{background:var(--black);color:var(--bone);padding:64px 0 24px;border-top:6px solid var(--hi-vis)}
+  .footer-top{display:grid;grid-template-columns:1fr;gap:36px;margin-bottom:48px}
+  @media(min-width:800px){.footer-top{grid-template-columns:2fr 1fr 1fr 1fr}}
+  .footer-brand p{color:rgba(244,241,234,.5);font-size:14px;line-height:1.6;max-width:320px;margin-top:14px}
+  .footer-col h5{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--hi-vis);margin-bottom:18px}
+  .footer-col ul{list-style:none;display:grid;gap:10px}
+  .footer-col a{color:rgba(244,241,234,.7);text-decoration:none;font-size:14px;transition:color .15s}
+  .footer-col a:hover{color:var(--safety)}
+  .footer-bottom{padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(244,241,234,.4)}
+
+  .reveal{opacity:0;transform:translateY(20px);animation:reveal .8s forwards}
+  @keyframes reveal{to{opacity:1;transform:translateY(0)}}
+  .d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}.d6{animation-delay:.6s}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="left"><span class="pulse"></span><span>Founder Pricing — First 200 Contractors at $20/mo</span></div>
+    <div class="right"><span>BUILT IN MAINE</span><span>FOR THE FIELD</span></div>
+  </div>
+</div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo"><span class="logo-mark">TB</span><span class="logo-text">TRADEBASE</span></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#earn">Earn</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a href="#cta" class="nav-cta">Join Founders</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow reveal d1"><span class="dot"></span><span>The Operating System for Contractors</span></div>
+      <h1 class="reveal d2">Your Website,<br>Leads, Quotes &<br><span class="underline">Jobs</span> — In <span class="accent">One App</span>.</h1>
+      <p class="sub reveal d3">TradeBase replaces five tools with one. <strong>Capture leads from your site, send quotes in 60 seconds, follow up with one tap, and get paid faster.</strong> Built for the truck — not the desk.</p>
+      <ul class="hero-bullets reveal d4">
+        <li><span class="check">✓</span> Branded website included — connect your own domain</li>
+        <li><span class="check">✓</span> Full CRM, quoting, invoicing, receipts, inventory</li>
+        <li><span class="check">✓</span> 8 AI tools that save hours every week</li>
+        <li><span class="check">✓</span> Earn 10–20% lifetime commission referring other contractors</li>
+      </ul>
+      <div class="cta-row reveal d5">
+        <a href="#cta" class="btn-primary">Claim Founder Spot — $20/mo <span class="arrow">→</span></a>
+        <a href="#features" class="btn-secondary">See How It Works</a>
+      </div>
+      <div class="hero-fineprint reveal d6"><span class="check">✓</span> No contract &nbsp; <span class="check">✓</span> Cancel anytime &nbsp; <span class="check">✓</span> Locked-in price for life</div>
+    </div>
+
+    <div class="hero-visual reveal d6">
+      <div class="dash-window">
+        <div class="dash-bar"><span class="b-dot"></span><span class="b-dot"></span><span class="b-dot"></span><span class="url">app.tradebase.contractors/dashboard</span></div>
+        <div class="dash-content">
+          <div class="dash-header"><div class="dash-title">Today's Pipeline</div><div class="dash-badge">● LIVE</div></div>
+          <div class="dash-stats">
+            <div class="dash-stat"><div class="n">12</div><div class="l">New Leads</div></div>
+            <div class="dash-stat"><div class="n">8</div><div class="l">Quoted</div></div>
+            <div class="dash-stat"><div class="n">$8.4K</div><div class="l">Booked</div></div>
+          </div>
+          <div class="dash-pipeline">
+            <div class="dash-row"><span class="name">Smith — 47 Oak St</span><span class="stage">NEW</span></div>
+            <div class="dash-row"><span class="name">Doyle — Basement test</span><span class="stage yellow">QUOTED</span></div>
+            <div class="dash-row"><span class="name">Mills — Mitigation</span><span class="stage green">BOOKED</span></div>
+            <div class="dash-row"><span class="name">Kane — Re-test</span><span class="stage green">PAID</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="phone-content">
+            <div class="phone-tag">⬢ FOLLOW-UP READY</div>
+            <div class="phone-h">Tom — 22 Pine Rd</div>
+            <div class="phone-card yellow">
+              <div class="pc-name">Quote sent 24h ago</div>
+              <div class="pc-meta">Not opened yet</div>
+              <div class="pc-amt">$1,450</div>
+            </div>
+            <div class="phone-card">
+              <div class="pc-name">Draft ready to send</div>
+              <div class="pc-meta">Tap to open Messages</div>
+            </div>
+            <div class="phone-card green">
+              <div class="pc-name">Send Reminder →</div>
+              <div class="pc-meta">One tap. You stay in control.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="trust">
+  <div class="trust-inner">
+    <span>Radon</span><span>HVAC</span><span>Plumbing</span><span>Electrical</span><span>Roofing</span><span>Landscaping</span><span>+ Every Trade</span>
+  </div>
+</div>
+
+<section class="flow">
+  <div class="container">
+    <div class="section-num">SEC // 01 — THE SYSTEM</div>
+    <h2 class="section-h">Lead → Quote → Job → <span class="org">Paid</span>.<br>One App. Not Five.</h2>
+    <p class="section-intro">Most contractors juggle a website, a CRM, a quoting tool, an invoicing app, and a notebook. TradeBase replaces all of it with one workflow that lives on your phone.</p>
+    <div class="flow-grid">
+      <div class="flow-step">
+        <div class="num">01</div>
+        <h4>Lead Hits Your Site</h4>
+        <p>Click-to-call, contact form, or quote request — every lead lands in your inbox automatically.</p>
+        <div class="tick">▶ INSTANT NOTIFICATION</div>
+      </div>
+      <div class="flow-step">
+        <div class="num">02</div>
+        <h4>Quote In 60 Seconds</h4>
+        <p>Pick the service, hit send. Customer gets a branded quote on their phone in under a minute.</p>
+        <div class="tick">▶ TRACKED + TIMESTAMPED</div>
+      </div>
+      <div class="flow-step">
+        <div class="num">03</div>
+        <h4>Tap-To-Send Follow-Up</h4>
+        <p>Quote not opened? TradeBase drafts the message and opens your texts. You hit send.</p>
+        <div class="tick">▶ ONE TAP, NO TYPING</div>
+      </div>
+      <div class="flow-step">
+        <div class="num">04</div>
+        <h4>Job Booked + Paid</h4>
+        <p>Schedule it, complete it, invoice it. Money in the bank without leaving your truck.</p>
+        <div class="tick">▶ TAX-READY EXPORTS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="compare">
+  <div class="container">
+    <div class="section-num">SEC // 02 — VS THE OTHERS</div>
+    <h2 class="section-h">Jobber Sells Pieces. Housecall Sells Pieces. We Sell <span class="org">The Whole Truck</span>.</h2>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>What You Need</th>
+          <th class="us">TRADEBASE</th>
+          <th>Jobber</th>
+          <th>Housecall Pro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="feature">Website Included</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="no">✕</span></td><td data-label="Housecall Pro"><span class="no">✕</span></td></tr>
+        <tr><td class="feature">Custom Domain</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="no">✕</span></td><td data-label="Housecall Pro"><span class="no">✕</span></td></tr>
+        <tr><td class="feature">CRM + Quotes + Invoices</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="yes">✓</span></td><td data-label="Housecall Pro"><span class="yes">✓</span></td></tr>
+        <tr><td class="feature">8 AI Tools Built-In</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="partial">Limited</span></td><td data-label="Housecall Pro"><span class="partial">Limited</span></td></tr>
+        <tr><td class="feature">Receipt + Card Scanner</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="no">✕</span></td><td data-label="Housecall Pro"><span class="partial">Add-on</span></td></tr>
+        <tr><td class="feature">Tax Export</td><td class="us" data-label="TradeBase"><span class="yes">✓</span></td><td data-label="Jobber"><span class="partial">Add-on</span></td><td data-label="Housecall Pro"><span class="partial">Add-on</span></td></tr>
+        <tr><td class="feature">Earn Commissions</td><td class="us" data-label="TradeBase"><span class="yes">10–20%</span></td><td data-label="Jobber"><span class="no">✕</span></td><td data-label="Housecall Pro"><span class="no">✕</span></td></tr>
+        <tr><td class="feature">Starting Price</td><td class="us" data-label="TradeBase"><strong>$20/mo</strong></td><td data-label="Jobber">$69/mo</td><td data-label="Housecall Pro">$89/mo</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="workflows" id="features">
+  <div class="container">
+    <div class="section-num">SEC // 03 — WORKFLOWS</div>
+    <h2 class="section-h">Four Things. Done <span class="org">Stupid Fast</span>.</h2>
+
+    <div class="workflow">
+      <div class="wf-text">
+        <div class="wf-num">01</div>
+        <h3>Capture <span class="org">Every Lead</span></h3>
+        <p>Your TradeBase website is wired into your inbox. Phone calls, forms, click-to-call — every lead lands in one place. The second it hits, your phone buzzes.</p>
+        <ul class="wf-bullets"><li>Live Notifications</li><li>Auto-Tagged By Service</li><li>Source Tracked</li></ul>
+      </div>
+      <div class="wf-visual">
+        <div class="wf-tag">⬢ INBOX — LIVE</div>
+        <div class="wf-mock-row"><div class="left"><div class="n">Tom Walsh</div><div class="m">Form · 22 sec ago</div></div><div class="right">NEW</div></div>
+        <div class="wf-mock-row"><div class="left"><div class="n">Sarah K.</div><div class="m">Phone call · 4 min</div></div><div class="right">NEW</div></div>
+        <div class="wf-mock-row"><div class="left"><div class="n">Mike Doyle</div><div class="m">Click-to-call · 8 min</div></div><div class="right">NEW</div></div>
+      </div>
+    </div>
+
+    <div class="workflow">
+      <div class="wf-text">
+        <div class="wf-num">02</div>
+        <h3>Quote In <span class="org">60 Seconds</span></h3>
+        <p>Pick the service, set the price, tap send. Customer opens it on their phone with a branded portal — no PDF attachments, no email back-and-forth.</p>
+        <ul class="wf-bullets"><li>Saved Service Templates</li><li>One-Tap Accept</li><li>Read Receipts</li></ul>
+      </div>
+      <div class="wf-visual">
+        <div class="wf-tag">⬢ QUOTE BUILDER</div>
+        <div class="wf-mock-row yellow"><div class="left"><div class="n">Sub-slab Depressurization</div><div class="m">Standard · 1 day</div></div><div class="right">$1,450</div></div>
+        <div class="wf-mock-row yellow"><div class="left"><div class="n">Post-Mitigation Test</div><div class="m">Add-on · 48hr</div></div><div class="right">$185</div></div>
+        <div class="wf-mock-row green"><div class="left"><div class="n">TOTAL</div><div class="m">Tap to send</div></div><div class="right">$1,635</div></div>
+      </div>
+    </div>
+
+    <div class="workflow">
+      <div class="wf-text">
+        <div class="wf-num">03</div>
+        <h3>Follow Up With <span class="org">One Tap</span></h3>
+        <p>Quote sits unopened? TradeBase tells you who needs a nudge, drafts the message, and opens your texts ready to send. You stay in control — no spammy auto-messages going out under your name.</p>
+        <ul class="wf-bullets"><li>Smart Reminder Detection</li><li>Pre-Written Drafts</li><li>Send From Your Number</li></ul>
+      </div>
+      <div class="wf-visual">
+        <div class="wf-tag">⬢ FOLLOW-UP READY</div>
+        <div class="wf-mock-row"><div class="left"><div class="n">Smith — Quote #2841</div><div class="m">Sent 24h ago · Unread</div></div><div class="right">NUDGE</div></div>
+        <div class="wf-mock-row yellow"><div class="left"><div class="n">Doyle — Quote #2840</div><div class="m">Draft ready · Tap to send</div></div><div class="right">DRAFTED</div></div>
+        <div class="wf-mock-row green"><div class="left"><div class="n">Kane — Quote #2838</div><div class="m">Reminder sent · WON</div></div><div class="right">+$2,400</div></div>
+      </div>
+    </div>
+
+    <div class="workflow">
+      <div class="wf-text">
+        <div class="wf-num">04</div>
+        <h3>Get <span class="org">Paid Faster</span></h3>
+        <p>Job done? Tap "Complete." Invoice fires automatically with a payment link. Customer taps once, money hits your account. Tax season? Three taps, full export.</p>
+        <ul class="wf-bullets"><li>Auto-Invoice On Completion</li><li>Stripe / Square / ACH</li><li>Tax-Ready Exports</li></ul>
+      </div>
+      <div class="wf-visual">
+        <div class="wf-tag">⬢ PAYMENTS — THIS WEEK</div>
+        <div class="wf-mock-row green"><div class="left"><div class="n">Mills — Mitigation</div><div class="m">Paid · 2 days</div></div><div class="right">+$1,450</div></div>
+        <div class="wf-mock-row green"><div class="left"><div class="n">Kane — Re-test</div><div class="m">Paid · 4 days</div></div><div class="right">+$185</div></div>
+        <div class="wf-mock-row green"><div class="left"><div class="n">Doyle — Inspection</div><div class="m">Paid · 6 days</div></div><div class="right">+$2,400</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ai-section">
+  <div class="container">
+    <div class="section-num">SEC // 04 — AI TOOLKIT</div>
+    <h2 class="section-h">8 AI Tools That Save You <span class="org">Hours</span> A Week.</h2>
+    <p class="ai-intro">Not gimmicks. Practical tools that save time on the jobs you do every day. Every one of these is live in the app right now.</p>
+    <div class="ai-grid">
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M5 12H2M22 12h-3M5.6 5.6l2 2M16.4 16.4l2 2M5.6 18.4l2-2M16.4 7.6l2-2"/><circle cx="12" cy="12" r="4"/></svg></div><h4>AI Job Capture</h4><p>Describe a job in plain English. TradeBase fills in the customer, scope, and line items.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></div><h4>Scope Generator</h4><p>Add line items. AI writes the professional scope of work. Drop it on any quote.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div><h4>Receipt Scanner</h4><p>Point your camera at any receipt. TradeBase reads it and logs the expense.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg></div><h4>Card Scanner</h4><p>Scan a sub's business card on the jobsite. Add to Trade Contacts instantly.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><h4>Permit Assistant</h4><p>Ask about permits, inspections, and code requirements in plain language.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/></svg></div><h4>Client Intel</h4><p>AI summary of a customer's history, open jobs, and balances before you call.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><h4>Follow-Up Drafter</h4><p>AI writes a professional follow-up message. You review and tap send.</p><div class="ai-live">LIVE</div></div>
+      <div class="ai-tool"><div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h4>Daily Ops Summary</h4><p>Open the app each morning. See exactly what needs attention today.</p><div class="ai-live">LIVE</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="earn" id="earn">
+  <div class="container">
+    <div class="section-num">SEC // 05 — EARN</div>
+    <h2 class="section-h">Earn With <span style="background:var(--black);color:var(--hi-vis);padding:0 12px;display:inline-block;transform:skew(-4deg)">TradeBase</span>.</h2>
+    <p class="earn-intro">Refer another contractor, earn recurring commission for as long as they're a customer. No cap on referrals. No expiration. Get paid quarterly, direct deposit. <strong>Use TradeBase for free — or use it to make money.</strong></p>
+
+    <div class="earn-grid">
+      <div class="earn-card featured">
+        <div class="tier-name">⬢ Founders Tier — First 200</div>
+        <div class="pct">20%</div>
+        <div class="pct-sub">Recurring · For Life</div>
+        <ul><li>Locked at 20% forever</li><li>No referral cap</li><li>Quarterly direct deposit</li><li>First-200 contractors only</li></ul>
+      </div>
+      <div class="earn-card">
+        <div class="tier-name">⬢ Standard Tier</div>
+        <div class="pct">10%</div>
+        <div class="pct-sub">Recurring Commission</div>
+        <ul><li>10% baseline, no cap</li><li>Quarterly direct deposit</li><li>Bumped to 20% after 5 active referrals</li><li>Earn for as long as they subscribe</li></ul>
+      </div>
+      <div class="earn-card">
+        <div class="tier-name">⬢ Performance Bonus</div>
+        <div class="pct">+%</div>
+        <div class="pct-sub">Discretionary Bumps</div>
+        <ul><li>Power referrers bumped manually</li><li>Trade influencers + advocates</li><li>Custom payout deals available</li><li>The more you bring, the more you earn</li></ul>
+      </div>
+    </div>
+
+    <div class="earn-math">
+      <div class="earn-math-h">⬢ FOUNDER MATH — REAL NUMBERS</div>
+      <div class="earn-math-eq">10 Referrals <span class="op">×</span> $49/mo <span class="op">×</span> 20% <span class="op">=</span> <span class="res">$98/mo</span></div>
+      <div class="earn-math-note">Refer 3 contractors and TradeBase pays for itself.</div>
+    </div>
+  </div>
+</section>
+
+<section class="roadmap">
+  <div class="container">
+    <div class="section-num">SEC // 06 — FOUNDER ROADMAP</div>
+    <h2 class="section-h">What's Coming. <span class="org">Founders Get In First</span>.</h2>
+    <p class="section-intro">Lock in $20/mo today and you don't pay extra when these ship. Founders get every new feature included, forever.</p>
+    <div class="roadmap-grid">
+      <div class="roadmap-card">
+        <div class="tag">COMING 2026</div>
+        <h3>The Trade Network</h3>
+        <p>A private network of verified contractors. Send a referral to another trade in one tap. Swap jobs you can't take. Build a real book of business with the people you trust.</p>
+        <ul class="perks"><li>Verified contractor profiles</li><li>One-tap warm referrals</li><li>Trade-to-trade messaging</li></ul>
+      </div>
+      <div class="roadmap-card">
+        <div class="tag">COMING 2026</div>
+        <h3>Trade Perks</h3>
+        <p>Discounts at Home Depot, fuel rewards, equipment deals, and contractor-only offers. Negotiated by us. Exclusive to TradeBase members. The bigger the network, the better the deals.</p>
+        <ul class="perks"><li>Home Depot + supplier discounts</li><li>Fuel + fleet rewards</li><li>Equipment + tool deals</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-num">SEC // 07 — PRICING</div>
+    <h2 class="section-h">One Plan. <span class="org">No Bloat</span>. No Tiers To Decode.</h2>
+    <p class="section-intro" style="color:rgba(244,241,234,.7)">First 200 contractors lock in $20/mo for life. After that, it's $49/mo. The product is the same — the timing is what matters.</p>
+
+    <div class="price-grid">
+      <div class="price-card featured">
+        <div class="price-name" style="color:var(--hi-vis)">⬢ Founder</div>
+        <div class="price-amount"><span class="dollar">$</span><span class="num">20</span><span class="per">/mo</span></div>
+        <div class="price-tagline">Locked In For Life · First 200 Only</div>
+        <ul class="price-features">
+          <li>Branded contractor website + custom domain</li>
+          <li>Lead inbox + full CRM</li>
+          <li>Quotes + invoices + payments</li>
+          <li>Receipts + inventory + tax export</li>
+          <li>Trade Contacts + one-tap referrals</li>
+          <li>All 8 AI tools included</li>
+          <li>20% recurring commission on referrals</li>
+          <li>All future features included, forever</li>
+        </ul>
+        <a href="#cta" class="price-cta">Claim Founder Spot →</a>
+      </div>
+      <div class="price-card">
+        <div class="price-name">⬢ Standard (After Launch)</div>
+        <div class="price-amount"><span class="dollar">$</span><span class="num">49</span><span class="per">/mo</span></div>
+        <div class="price-tagline" style="color:#888">Same Product · Different Price</div>
+        <ul class="price-features">
+          <li>Everything Founders get</li>
+          <li>Same features, same support</li>
+          <li>10% commission on referrals (20% after 5)</li>
+          <li>Available after 200 founder spots fill</li>
+        </ul>
+        <a href="#cta" class="price-cta">Wait Until Launch</a>
+      </div>
+    </div>
+    <div class="price-note">✓ NO CONTRACT &nbsp;·&nbsp; ✓ CANCEL ANYTIME &nbsp;·&nbsp; ✓ ONE JOB PAYS FOR THIS</div>
+  </div>
+</section>
+
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="faq-grid">
+      <div>
+        <div class="section-num">SEC // 08 — FAQ</div>
+        <h2 class="section-h">Questions, Answered <span class="org">Straight</span>.</h2>
+        <p style="color:#555;font-size:15px;line-height:1.6;max-width:36ch;margin-top:8px">Don't see it here? Email <strong>support@tradebase.contractors</strong> — a real person answers.</p>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item"><details open><summary>Do I need a website already?</summary><div class="answer">Nope. We build it for you. Pick a layout, drop in your business info, you're live. No designer needed, no developer needed.</div></details></div>
+        <div class="faq-item"><details><summary>Can I use my own domain?</summary><div class="answer">Yes. You can connect your own domain anytime — included in the founder plan. We'll walk you through DNS so you don't have to think about it.</div></details></div>
+        <div class="faq-item"><details><summary>Are the AI tools real or marketing fluff?</summary><div class="answer">All 8 are live in the app right now. Job capture, scope generator, receipt scanner, business card scanner, permit assistant, client intel, follow-up drafter, daily ops summary — all working today.</div></details></div>
+        <div class="faq-item"><details><summary>How does the follow-up actually work?</summary><div class="answer">TradeBase notices when a quote hasn't been opened or replied to, drafts a professional follow-up message, and opens it in your phone's Messages or email app pre-filled. You hit send. No spammy auto-messages going out under your name without you knowing.</div></details></div>
+        <div class="faq-item"><details><summary>How does Earn With TradeBase work?</summary><div class="answer">Refer another contractor with your unique link. They subscribe, you earn recurring commission — 20% if you're a Founder, 10% standard (bumped to 20% after 5 active referrals). Paid quarterly via direct deposit. No cap, no expiration.</div></details></div>
+        <div class="faq-item"><details><summary>What happens after the 200 founder spots fill?</summary><div class="answer">Pricing goes to $49/mo for new sign-ups. Founders stay locked at $20/mo for life. If you're on the fence, this is the only thing that matters — same product, less than half the price, forever.</div></details></div>
+        <div class="faq-item"><details><summary>Will this actually get me leads?</summary><div class="answer">The website is built to convert. Click-to-call, contact forms, instant quote requests on every page. But TradeBase isn't a marketing agency — it's the system that captures and closes the leads you already get. The faster you respond, the more you close. That's what TradeBase is built for.</div></details></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta" id="cta">
+  <div class="container">
+    <h2>Stop Reading.<br>Start Closing.</h2>
+    <p>The first 200 contractors lock in $20/mo for life. After that, $49/mo. Same product — different price.</p>
+    <a href="#" class="btn-big">Claim My Founder Spot →</a>
+    <div class="urgent">⬢ NO CONTRACT &nbsp;·&nbsp; CANCEL ANYTIME &nbsp;·&nbsp; LOCKED IN FOR LIFE ⬢</div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="logo"><span class="logo-mark">TB</span><span class="logo-text">TRADEBASE</span></a>
+        <p>The operating system for contractors. Built for the truck, not the desk.</p>
+      </div>
+      <div class="footer-col"><h5>Product</h5><ul><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#earn">Earn With TradeBase</a></li><li><a href="#">Demo</a></li></ul></div>
+      <div class="footer-col"><h5>Trades</h5><ul><li><a href="#">Radon</a></li><li><a href="#">HVAC</a></li><li><a href="#">Plumbing</a></li><li><a href="#">Electrical</a></li></ul></div>
+      <div class="footer-col"><h5>Support</h5><ul><li><a href="#faq">FAQ</a></li><li><a href="#">Contact</a></li><li><a href="#">Help Docs</a></li><li><a href="#">Login</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 TRADEBASE — BUILT IN MAINE BY A CONTRACTOR</span>
+      <span>NO CONTRACTS · CANCEL ANYTIME</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

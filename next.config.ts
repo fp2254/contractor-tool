@@ -6,8 +6,8 @@ const replitDomain = process.env.REPLIT_DEV_DOMAIN
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
-    "https://*.worf.replit.dev",
-    "https://*.replit.dev",
+    "*.worf.replit.dev",
+    "*.replit.dev",
     ...(replitDomain ? [replitDomain] : []),
   ],
   typescript: {
