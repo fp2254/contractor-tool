@@ -460,45 +460,68 @@ export function PublicProfileEditor() {
           <div className="space-y-2">
             {TEMPLATES.map((t) => {
               const selected = profile.selected_template === t.id;
+              const previewHref = `/pro/preview/${t.id || "default"}`;
               return (
-                <button
+                <div
                   key={t.id}
-                  type="button"
-                  onClick={() => set("selected_template", t.id)}
-                  className="w-full flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors"
+                  className="rounded-xl border transition-colors overflow-hidden"
                   style={{
                     borderColor: selected ? "#1B3A6B" : "#E5E7EB",
                     background: selected ? "#EFF6FF" : "#FAFAFA",
                   }}
                 >
-                  {/* Mini colour swatch */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    {t.preview.map((swatch, si) => (
-                      <div
-                        key={si}
-                        className="w-7 h-10 rounded-md flex items-end justify-center pb-1"
-                        style={{ background: swatch.bg }}
-                      >
+                  {/* Selectable area */}
+                  <button
+                    type="button"
+                    onClick={() => set("selected_template", t.id)}
+                    className="w-full flex items-center gap-3 px-3 pt-3 pb-2 text-left"
+                  >
+                    {/* Mini colour swatches */}
+                    <div className="flex gap-1 flex-shrink-0">
+                      {t.preview.map((swatch, si) => (
                         <div
-                          className="w-4 h-1.5 rounded-full"
-                          style={{ background: swatch.accent }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 leading-tight">{t.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-snug">{t.description}</p>
-                  </div>
-                  {selected && (
-                    <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: "#1B3A6B" }}
-                    >
-                      <span className="text-white text-xs font-bold">✓</span>
+                          key={si}
+                          className="w-7 h-10 rounded-md flex items-end justify-center pb-1"
+                          style={{ background: swatch.bg }}
+                        >
+                          <div
+                            className="w-4 h-1.5 rounded-full"
+                            style={{ background: swatch.accent }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 leading-tight">{t.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-snug">{t.description}</p>
+                    </div>
+                    {selected && (
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "#1B3A6B" }}
+                      >
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* View preview link */}
+                  <div className="px-3 pb-2.5">
+                    <a
+                      href={previewHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors"
+                      style={{
+                        background: selected ? "rgba(27,58,107,0.10)" : "rgba(0,0,0,0.05)",
+                        color: selected ? "#1B3A6B" : "#64748B",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span>👁</span> Preview
+                    </a>
+                  </div>
+                </div>
               );
             })}
           </div>
