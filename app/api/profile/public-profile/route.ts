@@ -72,6 +72,7 @@ export async function POST(req: Request) {
     about_bullets: body.about_bullets ?? [],
     license_text: body.license_text ?? "",
     photo_url: body.photo_url ?? "",
+    selected_template: body.selected_template ?? "",
     updated_at: new Date().toISOString(),
   };
 

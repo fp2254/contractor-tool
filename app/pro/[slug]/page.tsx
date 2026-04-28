@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContractorProfilePage } from "./ContractorProfilePage";
+import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
+import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import type { ContractorProfile } from "./types";
 
 type Props = {
@@ -104,6 +106,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       licenseNumber: pub.license_text ?? undefined,
       serviceArea: pub.service_area ?? "",
       photoUrl: pub.photo_url || undefined,
+      selectedTemplate: pub.selected_template ?? "",
     };
 
     return profile;
@@ -173,5 +176,11 @@ export default async function Page({ params }: Props) {
     );
   }
 
+  if (profile.selectedTemplate === "classic") {
+    return <ClassicContractorTemplate profile={profile} />;
+  }
+  if (profile.selectedTemplate === "modern") {
+    return <ModernProTemplate profile={profile} />;
+  }
   return <ContractorProfilePage profile={profile} />;
 }

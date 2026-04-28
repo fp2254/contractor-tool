@@ -21,6 +21,7 @@ type Profile = {
   about_bullets: string[];
   license_text: string;
   photo_url: string;
+  selected_template: string;
 };
 
 const EMPTY: Profile = {
@@ -37,7 +38,29 @@ const EMPTY: Profile = {
   about_bullets: ["", "", "", ""],
   license_text: "",
   photo_url: "",
+  selected_template: "",
 };
+
+const TEMPLATES = [
+  {
+    id: "",
+    name: "Default",
+    description: "Mobile-first dark design — hi-vis orange + navy",
+    preview: [{ bg: "#0a0a0a", accent: "#ff5b1f" }, { bg: "#1B3A6B", accent: "#ff5b1f" }],
+  },
+  {
+    id: "classic",
+    name: "Classic",
+    description: "Trust-focused, traditional layout — navy + gold",
+    preview: [{ bg: "#0f1f3d", accent: "#f5a623" }, { bg: "#ffffff", accent: "#f5a623" }],
+  },
+  {
+    id: "modern",
+    name: "Modern Pro",
+    description: "Sleek dark design with bold stats — dark + electric blue",
+    preview: [{ bg: "#0d1117", accent: "#58a6ff" }, { bg: "#161b22", accent: "#58a6ff" }],
+  },
+] as const;
 
 const BASE_URL = "https://tradebase.contractors/pro";
 
@@ -423,6 +446,61 @@ export function PublicProfileEditor() {
               />
               <p className="text-[10px] text-gray-400 mt-1">Shown on your stats bar.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Page Template ── */}
+      <div className={sectionCls}>
+        <SectionHead emoji="🎨" title="Page Template" />
+        <div className="px-4 pb-4 pt-3">
+          <p className="text-xs text-gray-400 mb-3">
+            Choose how your public profile looks to customers.
+          </p>
+          <div className="space-y-2">
+            {TEMPLATES.map((t) => {
+              const selected = profile.selected_template === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => set("selected_template", t.id)}
+                  className="w-full flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors"
+                  style={{
+                    borderColor: selected ? "#1B3A6B" : "#E5E7EB",
+                    background: selected ? "#EFF6FF" : "#FAFAFA",
+                  }}
+                >
+                  {/* Mini colour swatch */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    {t.preview.map((swatch, si) => (
+                      <div
+                        key={si}
+                        className="w-7 h-10 rounded-md flex items-end justify-center pb-1"
+                        style={{ background: swatch.bg }}
+                      >
+                        <div
+                          className="w-4 h-1.5 rounded-full"
+                          style={{ background: swatch.accent }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 leading-tight">{t.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-snug">{t.description}</p>
+                  </div>
+                  {selected && (
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: "#1B3A6B" }}
+                    >
+                      <span className="text-white text-xs font-bold">✓</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
