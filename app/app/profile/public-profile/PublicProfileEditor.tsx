@@ -90,7 +90,7 @@ export function PublicProfileEditor() {
       .then((r) => r.json())
       .then((j) => {
         if (j.profile) {
-          setProfile(j.profile);
+          setProfile({ ...EMPTY, ...j.profile });
           setServicesText((j.profile.services ?? []).join(", "));
         }
       })
