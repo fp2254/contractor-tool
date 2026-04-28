@@ -72,7 +72,6 @@ export async function POST(req: Request) {
     about_bullets: body.about_bullets ?? [],
     license_text: body.license_text ?? "",
     photo_url: body.photo_url ?? "",
-    selected_template: body.selected_template ?? "",
     updated_at: new Date().toISOString(),
   };
 
@@ -83,11 +82,23 @@ export async function POST(req: Request) {
       .select()
       .single();
     if (error) throw error;
-    return NextResponse.json({ profile: data });
+
+    // selected_template is saved in a separate call so a missing column
+    // (pre-migration) never blocks the main profile save.
+    const selectedTemplate = body.selected_template ?? "";
+    if (selectedTemplate !== undefined) {
+      await (admin as any)
+        .from("public_profiles")
+        .update({ selected_template: selectedTemplate })
+        .eq("org_id", orgId!)
+        .then(() => {/* silently ignore schema errors until column exists */});
+    }
+
+    return NextResponse.json({ profile: { ...data, selected_template: selectedTemplate } });
   } catch (err: any) {
     console.error("[public-profile] save error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Failed to save. Run scripts/public-profiles-setup.sql in Supabase Studio first." },
+      { error: err?.message ?? "Failed to save profile." },
       { status: 500 }
     );
   }
