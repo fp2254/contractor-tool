@@ -78,6 +78,8 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   };
 
+  console.log("[public-profile] saving selected_template:", selectedTemplate, "for org:", orgId);
+
   // If the column doesn't exist yet, retry without it so the save never fails.
   try {
     const { data, error } = await (admin as any)
@@ -87,20 +89,19 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      if (error.message?.includes("selected_template")) {
-        // Column not yet migrated — save without it
-        const { selected_template: _dropped, ...rowWithout } = row;
-        const { data: data2, error: err2 } = await (admin as any)
-          .from("public_profiles")
-          .upsert(rowWithout, { onConflict: "org_id" })
-          .select()
-          .single();
-        if (err2) throw err2;
-        return NextResponse.json({ profile: { ...data2, selected_template: selectedTemplate } });
+      console.error("[public-profile] upsert error:", error);
+      // If the schema cache hasn't refreshed yet after the ALTER TABLE,
+      // surface a clear message instead of silently dropping the template value.
+      if (error.message?.includes("selected_template") || error.code === "PGRST204") {
+        return NextResponse.json(
+          { error: "Schema not refreshed yet. In Supabase Studio go to Settings → API → Reload schema, then save again." },
+          { status: 500 }
+        );
       }
       throw error;
     }
 
+    console.log("[public-profile] saved, db returned selected_template:", (data as any)?.selected_template);
     return NextResponse.json({ profile: data });
   } catch (err: any) {
     console.error("[public-profile] save error:", err);
