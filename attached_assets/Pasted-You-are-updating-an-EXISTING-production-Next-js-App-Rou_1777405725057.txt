@@ -1,0 +1,72 @@
+You are updating an EXISTING production Next.js (App Router) application.
+
+TASK:
+Completely REPLACE the current homepage UI with the new design I am providing.
+
+IMPORTANT:
+This is a FULL UI REPLACEMENT of the homepage ONLY — not a redesign of the app.
+
+NON-NEGOTIABLE RULES:
+
+* Do NOT modify anything outside of the homepage
+* Do NOT touch backend logic, API routes, or database structure
+* Do NOT change authentication, org_id logic, or Supabase integration
+* Do NOT refactor shared components unless absolutely required
+* Do NOT rename files or move project structure
+
+SCOPE (STRICT):
+
+* Only modify:
+  /app/page.tsx (or wherever the homepage lives)
+  AND any NEW components created specifically for this homepage
+
+* Do NOT edit:
+  /app/api/*
+  /lib/*
+  /hooks/*
+  /components/shared/*
+  /providers/*
+  or anything unrelated to the homepage
+
+UI REQUIREMENTS:
+
+* Recreate the provided homepage EXACTLY (pixel-accurate)
+* Match spacing, typography, colors, and layout precisely
+* Follow existing Tailwind setup and design tokens
+* Mobile-first — must fit cleanly on iPhone without breaking layout
+
+FUNCTIONALITY REQUIREMENTS:
+
+* All buttons must work
+* Use EXISTING routes and navigation (do NOT create new ones unless specified)
+* If a button links somewhere:
+  → connect it to the correct existing route
+* If unsure where something should go:
+  → STOP and ask instead of guessing
+
+IMPLEMENTATION STRATEGY:
+
+* Replace the homepage JSX entirely
+* Keep layout wrapper (if required by Next.js)
+* Build new UI using small, clean components if needed
+* Do NOT introduce unnecessary complexity
+
+SAFETY CHECKS BEFORE FINISH:
+
+* App still runs with no errors
+* Navigation to other pages still works
+* No console errors
+* No broken imports
+* Mobile layout verified
+
+OUTPUT FORMAT:
+
+* Show ONLY changed files
+* Clearly list:
+
+  1. Files modified
+  2. Files created
+* No explanations unless something required clarification
+
+FAIL CONDITION:
+If any change risks affecting other parts of the app, STOP and ask before proceeding.
