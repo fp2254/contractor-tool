@@ -1,0 +1,146 @@
+I am about to add 3 pre-built React + Tailwind homepage templates into this app.
+
+Your job is to integrate them safely into the existing TradeBase system.
+
+DO NOT redesign them.
+DO NOT refactor them.
+DO NOT "improve" them.
+
+---
+
+GOAL:
+Allow each contractor (org) to have a selectable public website template.
+
+---
+
+WHAT I AM ADDING:
+3 components:
+
+* ClassicContractorTemplate
+* ModernProTemplate
+* LeadMachineTemplate
+
+These are frontend-only templates using placeholder data.
+
+---
+
+YOUR JOB:
+
+1. PLACE COMPONENTS
+
+* Put each template in:
+  /components/templates/
+
+Do not move them later.
+
+---
+
+2. CONNECT TO EXISTING PUBLIC PROFILE
+   Find where the public profile is rendered:
+
+* Likely route: /pro/[slug]
+
+DO NOT break this route.
+
+---
+
+3. TEMPLATE SWITCHING
+   Add support for selecting a template:
+
+* Use a field:
+  selected_template
+
+Values:
+
+* "classic"
+* "modern"
+* "lead"
+
+If no value exists → default to current live profile (fallback)
+
+---
+
+4. RENDER LOGIC
+
+Inside /pro/[slug]:
+
+Render based on selected_template:
+
+if classic → ClassicContractorTemplate
+if modern → ModernProTemplate
+if lead → LeadMachineTemplate
+else → existing profile (fallback)
+
+---
+
+5. DATA INJECTION
+
+Replace placeholder data in templates with real org/profile data.
+
+DO NOT change database structure unless absolutely necessary.
+
+If data is missing:
+
+* Use safe fallback values
+* Do NOT crash the UI
+
+---
+
+6. BUTTON FUNCTIONALITY
+
+ALL buttons must connect to EXISTING behavior:
+
+* Call → tel: phone
+* Request Quote → existing lead/contact flow
+* Do NOT invent new routes
+
+If unsure → STOP and ask
+
+---
+
+7. SAFETY RULES
+
+DO NOT TOUCH:
+
+* /app/api/*
+* auth
+* Supabase config
+* billing
+* dashboard
+* invoices
+* quotes
+* jobs
+* global providers
+
+Only work on:
+
+* public profile rendering
+* template system
+
+---
+
+8. BEFORE MAKING CHANGES
+
+First:
+
+* Identify where /pro/[slug] is rendered
+* Show which files will be modified
+* Explain your plan briefly
+
+THEN proceed
+
+---
+
+9. FINAL CHECK
+
+* No console errors
+* App still runs
+* Existing features untouched
+* Public profile still accessible
+* Templates render correctly
+* Mobile layout not broken
+
+---
+
+If ANY change risks breaking existing functionality:
+STOP and ask before proceeding.
