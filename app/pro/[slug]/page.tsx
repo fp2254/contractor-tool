@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
-import type { ContractorProfile } from "./types";
+import type { ContractorProfile, ServiceEntry } from "./types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,6 +22,14 @@ function formatPhone(raw: string): string {
     return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   }
   return raw;
+}
+
+function normalizeServices(raw: unknown[]): ServiceEntry[] {
+  return raw.map((s) => {
+    if (typeof s === "string") return { name: s, description: "", photo_url: "" };
+    const obj = s as Partial<ServiceEntry>;
+    return { name: obj.name ?? "", description: obj.description ?? "", photo_url: obj.photo_url ?? "" };
+  });
 }
 
 function parseAboutBullets(bullets: string[]): { icon: string; text: string }[] {
@@ -102,7 +110,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
         { icon: "🛡️", text: "Licensed & Insured" },
         { icon: "📍", text: "Local Contractor" },
       ],
-      services: pub.services ?? [],
+      services: normalizeServices(pub.services ?? []),
       photos: [],
       reviews: mappedReviews,
       about,

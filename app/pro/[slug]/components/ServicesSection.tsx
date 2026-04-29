@@ -8,7 +8,7 @@ const C = {
 };
 
 type Props = {
-  services: Array<string | ServiceEntry>;
+  services: ServiceEntry[];
   condensedFont: string;
 };
 
@@ -24,25 +24,22 @@ export function ServicesSection({ services, condensedFont }: Props) {
     >
       <SectionTitle condensedFont={condensedFont}>Services</SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {services.map((service, i) => {
-          const label = typeof service === "string" ? service : service.name;
-          return (
-            <span
-              key={i}
-              style={{
-                background: C.offWhite,
-                border: `1px solid ${C.lightGray}`,
-                color: C.navy,
-                fontSize: 13,
-                fontWeight: 600,
-                padding: "6px 14px",
-                borderRadius: 20,
-              }}
-            >
-              {label}
-            </span>
-          );
-        })}
+        {services.map((service, i) => (
+          <span
+            key={i}
+            style={{
+              background: C.offWhite,
+              border: `1px solid ${C.lightGray}`,
+              color: C.navy,
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "6px 14px",
+              borderRadius: 20,
+            }}
+          >
+            {service.name}
+          </span>
+        ))}
       </div>
     </div>
   );

@@ -141,19 +141,16 @@ export function ModernProTemplate({ profile }: { profile: ContractorProfile }) {
               Services
             </h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {profile.services.map((s, i) => {
-                const label = typeof s === "string" ? s : s.name;
-                return (
-                  <span
-                    key={i}
-                    className="mp-card"
-                    style={{ padding: "6px 14px", fontSize: 13, color: WHITE, display: "inline-flex", alignItems: "center", gap: 6 }}
-                  >
-                    <span style={{ color: BLUE, fontSize: 10 }}>▸</span>
-                    {label}
-                  </span>
-                );
-              })}
+              {profile.services.map((s, i) => (
+                <span
+                  key={i}
+                  className="mp-card"
+                  style={{ padding: "6px 14px", fontSize: 13, color: WHITE, display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <span style={{ color: BLUE, fontSize: 10 }}>▸</span>
+                  {s.name}
+                </span>
+              ))}
             </div>
           </section>
         )}

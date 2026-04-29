@@ -46,7 +46,7 @@ export type ContractorProfile = {
     jobType: string;
     location: string;
   };
-  services: Array<string | ServiceEntry>;
+  services: ServiceEntry[];
   photos: Photo[];
   reviews: Review[];
   about: Array<{ icon: string; text: string }>;
