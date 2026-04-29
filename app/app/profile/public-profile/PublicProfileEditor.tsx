@@ -236,7 +236,7 @@ export function PublicProfileEditor() {
             <p className="text-xs text-gray-400 break-all">{publicUrl}</p>
             <div className="flex gap-2">
               <a
-                href={publicUrl}
+                href={`/pro/${profile.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 text-center text-xs font-semibold rounded-xl py-2.5 border border-gray-200 text-slate-700 bg-gray-50"

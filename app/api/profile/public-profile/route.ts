@@ -78,8 +78,6 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   };
 
-  console.log("[public-profile] saving selected_template:", selectedTemplate, "for org:", orgId);
-
   // If the column doesn't exist yet, retry without it so the save never fails.
   try {
     const { data, error } = await (admin as any)
@@ -101,7 +99,6 @@ export async function POST(req: Request) {
       throw error;
     }
 
-    console.log("[public-profile] saved, db returned selected_template:", (data as any)?.selected_template);
     return NextResponse.json({ profile: data });
   } catch (err: any) {
     console.error("[public-profile] save error:", err);
