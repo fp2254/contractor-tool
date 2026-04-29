@@ -44,6 +44,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       .eq("is_published", true)
       .maybeSingle();
 
+    console.log("[pro/slug] pub.selected_template:", pub?.selected_template, "slug:", slug);
     if (!pub) return null;
 
     const [{ data: org }, { count: jobsCompleted }, { data: reviewRows }] = await Promise.all([
