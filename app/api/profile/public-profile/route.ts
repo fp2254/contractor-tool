@@ -79,26 +79,32 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   };
 
-  // If the column doesn't exist yet, retry without it so the save never fails.
-  try {
+  // Attempt the full upsert. If optional new columns don't exist yet, retry
+  // without them so the save never fails while the DB migration is pending.
+  const optionalCols = ["stat_label", "selected_template"] as const;
+
+  async function tryUpsert(r: Record<string, unknown>) {
     const { data, error } = await (admin as any)
       .from("public_profiles")
-      .upsert(row, { onConflict: "org_id" })
+      .upsert(r, { onConflict: "org_id" })
       .select()
       .single();
+    return { data, error };
+  }
 
-    if (error) {
-      console.error("[public-profile] upsert error:", error);
-      // If the schema cache hasn't refreshed yet after the ALTER TABLE,
-      // surface a clear message instead of silently dropping the template value.
-      if (error.message?.includes("selected_template") || error.code === "PGRST204") {
-        return NextResponse.json(
-          { error: "Schema not refreshed yet. In Supabase Studio go to Settings → API → Reload schema, then save again." },
-          { status: 500 }
-        );
+  try {
+    let { data, error } = await tryUpsert(row);
+
+    // If a column doesn't exist yet, strip optional cols one-by-one and retry.
+    if (error && (error.code === "PGRST204" || error.code === "42703" || error.message?.includes("column"))) {
+      const stripped = { ...row };
+      for (const col of optionalCols) {
+        delete stripped[col];
       }
-      throw error;
+      ({ data, error } = await tryUpsert(stripped));
     }
+
+    if (error) throw error;
 
     return NextResponse.json({ profile: data });
   } catch (err: any) {
