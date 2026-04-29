@@ -17,6 +17,7 @@ type Profile = {
   urgency_line: string;
   years_experience: number;
   revenue_display: string;
+  stat_label: string;
   services: string[];
   about_bullets: string[];
   license_text: string;
@@ -34,6 +35,7 @@ const EMPTY: Profile = {
   urgency_line: "",
   years_experience: 0,
   revenue_display: "",
+  stat_label: "",
   services: [],
   about_bullets: ["", "", "", ""],
   license_text: "",
@@ -437,14 +439,24 @@ export function PublicProfileEditor() {
               />
             </div>
             <div>
-              <label className={labelCls}>Revenue Display</label>
+              <label className={labelCls}>Stat Value</label>
               <input
                 value={profile.revenue_display}
                 onChange={(e) => set("revenue_display", e.target.value)}
-                placeholder="e.g. $380K"
+                placeholder="e.g. 500+"
                 className={inputCls}
               />
-              <p className="text-[10px] text-gray-400 mt-1">Shown on your stats bar.</p>
+              <p className="text-[10px] text-gray-400 mt-1">The number shown on your stats bar.</p>
+            </div>
+            <div>
+              <label className={labelCls}>Stat Label</label>
+              <input
+                value={profile.stat_label}
+                onChange={(e) => set("stat_label", e.target.value)}
+                placeholder="e.g. Systems Installed"
+                className={inputCls}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">The word under the stat (e.g. "Systems Installed", "Jobs Done").</p>
             </div>
           </div>
         </div>

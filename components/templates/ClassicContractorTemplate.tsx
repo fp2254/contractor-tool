@@ -457,7 +457,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
                   <div className="font-serif text-3xl sm:text-4xl font-bold text-red-700">
                     {data.about.homesServed}
                   </div>
-                  <div className="text-xs uppercase tracking-wider text-slate-600 mt-1">Customers</div>
+                  <div className="text-xs uppercase tracking-wider text-slate-600 mt-1">{profile.statLabel || "Customers"}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-serif text-3xl sm:text-4xl font-bold text-red-700">

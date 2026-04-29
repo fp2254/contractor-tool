@@ -110,6 +110,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       serviceArea: pub.service_area ?? "",
       photoUrl: pub.photo_url || undefined,
       selectedTemplate: pub.selected_template ?? "",
+      statLabel: pub.stat_label ?? "",
     };
 
     return profile;

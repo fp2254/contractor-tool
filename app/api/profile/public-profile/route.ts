@@ -70,6 +70,7 @@ export async function POST(req: Request) {
     urgency_line: body.urgency_line ?? "",
     years_experience: Number(body.years_experience) || 0,
     revenue_display: body.revenue_display ?? "",
+    stat_label: body.stat_label ?? "",
     services: body.services ?? [],
     about_bullets: body.about_bullets ?? [],
     license_text: body.license_text ?? "",

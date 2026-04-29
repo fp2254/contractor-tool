@@ -48,4 +48,5 @@ export type ContractorProfile = {
   serviceArea: string;
   photoUrl?: string;
   selectedTemplate?: string;
+  statLabel?: string;
 };
