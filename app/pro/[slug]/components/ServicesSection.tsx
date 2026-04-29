@@ -1,4 +1,5 @@
 import { SectionTitle } from "./SectionTitle";
+import type { ServiceEntry } from "../types";
 
 const C = {
   navy: "#0f1f3d",
@@ -7,7 +8,7 @@ const C = {
 };
 
 type Props = {
-  services: string[];
+  services: Array<string | ServiceEntry>;
   condensedFont: string;
 };
 
@@ -23,22 +24,25 @@ export function ServicesSection({ services, condensedFont }: Props) {
     >
       <SectionTitle condensedFont={condensedFont}>Services</SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {services.map((service) => (
-          <span
-            key={service}
-            style={{
-              background: C.offWhite,
-              border: `1px solid ${C.lightGray}`,
-              color: C.navy,
-              fontSize: 13,
-              fontWeight: 600,
-              padding: "6px 14px",
-              borderRadius: 20,
-            }}
-          >
-            {service}
-          </span>
-        ))}
+        {services.map((service, i) => {
+          const label = typeof service === "string" ? service : service.name;
+          return (
+            <span
+              key={i}
+              style={{
+                background: C.offWhite,
+                border: `1px solid ${C.lightGray}`,
+                color: C.navy,
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "6px 14px",
+                borderRadius: 20,
+              }}
+            >
+              {label}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
