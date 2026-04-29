@@ -180,7 +180,10 @@ function buildData(profile: ContractorProfile) {
     },
     services:
       profile.services.length > 0
-        ? profile.services.map((s) => ({ name: s, description: "", image: null as string | null }))
+        ? profile.services.map((s) => {
+            if (typeof s === "string") return { name: s, description: "", image: null as string | null };
+            return { name: s.name, description: s.description, image: s.photo_url || null as string | null };
+          })
         : [
             { name: "Service One", description: "Contact us for details on this service.", image: null },
             { name: "Service Two", description: "Contact us for details on this service.", image: null },

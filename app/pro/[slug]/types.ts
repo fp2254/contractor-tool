@@ -16,6 +16,12 @@ export type Photo = {
   featured?: boolean;
 };
 
+export type ServiceEntry = {
+  name: string;
+  description: string;
+  photo_url: string;
+};
+
 export type ContractorProfile = {
   slug: string;
   isPublished: boolean;
@@ -40,7 +46,7 @@ export type ContractorProfile = {
     jobType: string;
     location: string;
   };
-  services: string[];
+  services: Array<string | ServiceEntry>;
   photos: Photo[];
   reviews: Review[];
   about: Array<{ icon: string; text: string }>;

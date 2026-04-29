@@ -3,6 +3,20 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
+type ServiceItem = {
+  name: string;
+  description: string;
+  photo_url: string;
+};
+
+function normalizeServices(raw: unknown[]): ServiceItem[] {
+  return raw.map((s) => {
+    if (typeof s === "string") return { name: s, description: "", photo_url: "" };
+    const obj = s as Partial<ServiceItem>;
+    return { name: obj.name ?? "", description: obj.description ?? "", photo_url: obj.photo_url ?? "" };
+  });
+}
+
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
 const sectionCls = "bg-white rounded-2xl shadow-sm overflow-hidden";
@@ -18,7 +32,7 @@ type Profile = {
   years_experience: number;
   revenue_display: string;
   stat_label: string;
-  services: string[];
+  services: ServiceItem[];
   about_bullets: string[];
   license_text: string;
   photo_url: string;
@@ -77,7 +91,7 @@ function SectionHead({ emoji, title }: { emoji: string; title: string }) {
 
 export function PublicProfileEditor() {
   const [profile, setProfile] = useState<Profile>(EMPTY);
-  const [servicesText, setServicesText] = useState("");
+  const [uploadingServiceIdx, setUploadingServiceIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -92,8 +106,11 @@ export function PublicProfileEditor() {
       .then((r) => r.json())
       .then((j) => {
         if (j.profile) {
-          setProfile({ ...EMPTY, ...j.profile });
-          setServicesText((j.profile.services ?? []).join(", "));
+          setProfile({
+            ...EMPTY,
+            ...j.profile,
+            services: normalizeServices(j.profile.services ?? []),
+          });
         }
       })
       .catch(() => {})
@@ -115,23 +132,22 @@ export function PublicProfileEditor() {
     setSaving(true);
     setSaveStatus("idle");
     setSaveError("");
-    const services = servicesText
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
     try {
       const res = await fetch("/api/profile/public-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...profile, services }),
+        body: JSON.stringify(profile),
       });
       const j = await res.json();
       if (!res.ok) {
         setSaveError(j.error ?? "Failed to save");
         setSaveStatus("error");
       } else {
-        setProfile(j.profile);
-        setServicesText((j.profile.services ?? []).join(", "));
+        setProfile({
+          ...EMPTY,
+          ...j.profile,
+          services: normalizeServices(j.profile.services ?? []),
+        });
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
@@ -170,6 +186,43 @@ export function PublicProfileEditor() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  function setService(idx: number, field: keyof ServiceItem, value: string) {
+    const next = [...profile.services];
+    next[idx] = { ...next[idx], [field]: value };
+    set("services", next);
+  }
+
+  function addService() {
+    set("services", [...profile.services, { name: "", description: "", photo_url: "" }]);
+  }
+
+  function removeService(idx: number) {
+    set("services", profile.services.filter((_, i) => i !== idx));
+  }
+
+  async function handleServicePhotoChange(e: React.ChangeEvent<HTMLInputElement>, idx: number) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    setService(idx, "photo_url", localPreview);
+    setUploadingServiceIdx(idx);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("index", String(idx));
+      const res = await fetch("/api/upload/service-image", { method: "POST", body: fd });
+      const json = await res.json() as { url?: string; error?: string };
+      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      setService(idx, "photo_url", json.url!);
+    } catch (err: any) {
+      setService(idx, "photo_url", "");
+      alert(err.message ?? "Image upload failed");
+    } finally {
+      setUploadingServiceIdx(null);
+      if (e.target) e.target.value = "";
+    }
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -374,16 +427,79 @@ export function PublicProfileEditor() {
       {/* ── Services ── */}
       <div className={sectionCls}>
         <SectionHead emoji="⚡" title="Services" />
-        <div className="px-4 pb-4 pt-3">
-          <label className={labelCls}>Services (comma-separated)</label>
-          <textarea
-            value={servicesText}
-            onChange={(e) => setServicesText(e.target.value)}
-            rows={3}
-            placeholder="Roof Replacement, Roof Repair, Gutters, Siding, Skylights"
-            className={inputCls}
-          />
-          <p className="text-[11px] text-gray-400 mt-1">Each service becomes a tag on your public profile.</p>
+        <div className="px-4 pb-4 pt-3 space-y-4">
+          {profile.services.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-2">No services yet. Tap below to add one.</p>
+          )}
+          {profile.services.map((svc, idx) => {
+            const fileRef = { current: null as HTMLInputElement | null };
+            return (
+              <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden">
+                {/* Image area */}
+                <div className="relative aspect-video bg-gray-100">
+                  {svc.photo_url ? (
+                    <img src={svc.photo_url} alt={svc.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">🔧</div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    ref={(el) => { fileRef.current = el; }}
+                    onChange={(e) => handleServicePhotoChange(e, idx)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploadingServiceIdx === idx}
+                    className="absolute bottom-2 right-2 bg-white/90 border border-gray-200 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm active:bg-gray-100 disabled:opacity-50"
+                  >
+                    {uploadingServiceIdx === idx ? "Uploading…" : svc.photo_url ? "Change Photo" : "Add Photo"}
+                  </button>
+                  {svc.photo_url && uploadingServiceIdx !== idx && (
+                    <button
+                      type="button"
+                      onClick={() => setService(idx, "photo_url", "")}
+                      className="absolute top-2 right-2 bg-white/90 border border-red-100 text-red-500 text-xs font-semibold px-2 py-1 rounded-lg shadow-sm"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {/* Fields */}
+                <div className="p-3 space-y-2">
+                  <input
+                    value={svc.name}
+                    onChange={(e) => setService(idx, "name", e.target.value)}
+                    placeholder="Service name (e.g. Radon Mitigation)"
+                    className={inputCls}
+                  />
+                  <textarea
+                    value={svc.description}
+                    onChange={(e) => setService(idx, "description", e.target.value)}
+                    placeholder="Short description (optional)"
+                    rows={2}
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeService(idx)}
+                    className="text-xs text-red-500 font-semibold"
+                  >
+                    Remove service
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={addService}
+            className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-400 active:border-blue-200 active:text-blue-500 transition-colors"
+          >
+            + Add Service
+          </button>
         </div>
       </div>
 
