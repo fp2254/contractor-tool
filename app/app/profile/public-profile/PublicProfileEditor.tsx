@@ -76,6 +76,12 @@ const TEMPLATES = [
     description: "Sleek dark design with bold stats — dark + electric blue",
     preview: [{ bg: "#0d1117", accent: "#58a6ff" }, { bg: "#161b22", accent: "#58a6ff" }],
   },
+  {
+    id: "trust",
+    name: "Trust Builder",
+    description: "Services, reviews, service areas & gallery — stone + red",
+    preview: [{ bg: "#0f172a", accent: "#f59e0b" }, { bg: "#fafaf9", accent: "#b91c1c" }],
+  },
 ] as const;
 
 const BASE_URL = "https://tradebase.contractors/pro";

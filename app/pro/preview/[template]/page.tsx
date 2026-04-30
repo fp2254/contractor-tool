@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ContractorProfilePage } from "@/app/pro/[slug]/ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
+import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
 import { PreviewBanner } from "@/app/pro/preview/PreviewBanner";
 import type { ContractorProfile } from "@/app/pro/[slug]/types";
 
@@ -93,6 +94,7 @@ const TEMPLATE_MAP: Record<string, { name: string; id: string }> = {
   default: { name: "Default",    id: "" },
   classic: { name: "Classic",    id: "classic" },
   modern:  { name: "Modern Pro", id: "modern" },
+  trust:   { name: "Trust",      id: "trust" },
 };
 
 export default async function PreviewPage({ params }: Props) {
@@ -108,6 +110,7 @@ export default async function PreviewPage({ params }: Props) {
       <div style={{ paddingTop: 38 }}>
         {entry.id === "classic" && <ClassicContractorTemplate profile={profile} />}
         {entry.id === "modern"  && <ModernProTemplate profile={profile} />}
+        {entry.id === "trust"   && <TrustContractorTemplate profile={profile} />}
         {entry.id === ""        && <ContractorProfilePage profile={profile} />}
       </div>
     </>

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
+import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
 import type { ContractorProfile, ServiceEntry } from "./types";
 
 export const dynamic = "force-dynamic";
@@ -193,6 +194,9 @@ export default async function Page({ params }: Props) {
   }
   if (profile.selectedTemplate === "modern") {
     return <ModernProTemplate profile={profile} />;
+  }
+  if (profile.selectedTemplate === "trust") {
+    return <TrustContractorTemplate profile={profile} />;
   }
   return <ContractorProfilePage profile={profile} />;
 }
