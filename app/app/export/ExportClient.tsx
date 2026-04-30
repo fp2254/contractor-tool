@@ -57,7 +57,6 @@ export default function ExportClient() {
   const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [statuses, setStatuses] = useState<Record<string, string>>({ invoices: "all" });
-  const [downloading, setDownloading] = useState<string | null>(null);
 
   function buildUrl(endpoint: string, key?: string) {
     const params = new URLSearchParams();
@@ -68,55 +67,17 @@ export default function ExportClient() {
     return `${endpoint}${sep}${params.toString()}`;
   }
 
-  function triggerDownload(blob: Blob, filename: string) {
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = filename;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(objectUrl);
-    }, 150);
+  function openInTab(endpoint: string, key?: string) {
+    const url = buildUrl(endpoint, key);
+    window.open(url, "_blank", "noopener");
   }
 
-  async function handleDownload(ex: ExportType) {
-    setDownloading(ex.key);
-    try {
-      const url = buildUrl(ex.endpoint, ex.hasStatus ? ex.key : undefined);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Export failed (${res.status})`);
-      const blob = await res.blob();
-      const cd = res.headers.get("content-disposition") ?? "";
-      const match = cd.match(/filename="?([^"]+)"?/);
-      triggerDownload(blob, match?.[1] ?? `tradebase-${ex.key}.csv`);
-    } catch (err: any) {
-      alert(err?.message ?? "Download failed — please try again.");
-    } finally {
-      setDownloading(null);
-    }
+  function handleDownload(ex: ExportType) {
+    openInTab(ex.endpoint, ex.hasStatus ? ex.key : undefined);
   }
 
-  async function handlePdfDownload(key: string, endpoint: string) {
-    setDownloading(`pdf-${key}`);
-    try {
-      const url = buildUrl(endpoint, key === "invoices" ? "invoices" : undefined);
-      const res = await fetch(url);
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`PDF generation failed (${res.status})${text ? ": " + text.slice(0, 120) : ""}`);
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get("content-disposition") ?? "";
-      const match = cd.match(/filename="?([^"]+)"?/);
-      triggerDownload(blob, match?.[1] ?? `tradebase-${key}.pdf`);
-    } catch (err: any) {
-      alert(err?.message ?? "PDF download failed — please try again.");
-    } finally {
-      setDownloading(null);
-    }
+  function handlePdfDownload(key: string, endpoint: string) {
+    openInTab(endpoint, key === "invoices" ? "invoices" : undefined);
   }
 
   const QUICK_RANGES = [
@@ -183,19 +144,12 @@ export default function ExportClient() {
             <button
               type="button"
               onClick={() => handlePdfDownload("receipts", "/api/export/pdf?type=receipts")}
-              disabled={downloading === "pdf-receipts"}
-              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
               style={{ backgroundColor: "#16a34a" }}>
-              {downloading === "pdf-receipts" ? (
-                <span className="animate-pulse">…</span>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                  </svg>
-                  PDF
-                </>
-              )}
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              PDF
             </button>
           </div>
         </div>
@@ -218,37 +172,23 @@ export default function ExportClient() {
                 <button
                   type="button"
                   onClick={() => handleDownload(ex)}
-                  disabled={!!downloading}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white"
                   style={{ backgroundColor: "#1B3A6B" }}>
-                  {downloading === ex.key ? (
-                    <span className="animate-pulse">…</span>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                      </svg>
-                      CSV
-                    </>
-                  )}
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                  </svg>
+                  CSV
                 </button>
                 {ex.pdfEndpoint && (
                   <button
                     type="button"
                     onClick={() => handlePdfDownload(ex.key, ex.pdfEndpoint!)}
-                    disabled={!!downloading}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
                     style={{ backgroundColor: "#e8ecf2", color: "#0f1f3d" }}>
-                    {downloading === `pdf-${ex.key}` ? (
-                      <span className="animate-pulse">…</span>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-                        </svg>
-                        PDF
-                      </>
-                    )}
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                    PDF
                   </button>
                 )}
               </div>
