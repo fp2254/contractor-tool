@@ -98,13 +98,6 @@ const REPORTS: ReportCard[] = [
     endpoint: "/api/reports?type=job-profit",
   },
   {
-    key: "tax-summary",
-    label: "Tax Summary",
-    emoji: "🏦",
-    description: "Tax collected vs tax paid for the period",
-    endpoint: "/api/reports?type=tax-summary",
-  },
-  {
     key: "revenue-by-client",
     label: "Revenue by Client",
     emoji: "👤",
@@ -375,6 +368,31 @@ export default function ExportClient() {
               onClick={() => openInTab("/api/export/pdf?type=invoices", "invoices")}
               className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
               style={{ backgroundColor: "#e8ecf2", color: "#0f1f3d" }}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              PDF
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                style={{ backgroundColor: "#7c3aed14" }}>
+                🏦
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800 text-sm">Tax Summary PDF</p>
+                <p className="text-xs text-gray-400 mt-0.5">Tax collected vs paid · net amount owed</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => openInTab("/api/export/pdf?type=tax-summary")}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
+              style={{ backgroundColor: "#f3f0ff", color: "#7c3aed" }}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
               </svg>

@@ -289,13 +289,127 @@ function ReceiptsPDF({
   );
 }
 
+// ─── Tax Summary PDF ──────────────────────────────────────────────────────────
+
+function TaxSummaryPDF({
+  invoices,
+  expenses,
+  orgName,
+  startDate,
+  endDate,
+}: {
+  invoices: Record<string, unknown>[];
+  expenses: Record<string, unknown>[];
+  orgName: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const taxCollected = invoices.reduce((s, i) => s + Number(i.tax_amount ?? 0), 0);
+  const taxPaid = expenses.reduce((s, e) => s + Number(e.tax_amount ?? 0), 0);
+  const netOwed = taxCollected - taxPaid;
+
+  const summaryRow = (label: string, value: string, bold = false, accent = false) =>
+    React.createElement(
+      View,
+      { style: { flexDirection: "row", justifyContent: "space-between", padding: "7 10", borderBottomWidth: 1, borderBottomColor: "#e8ecf2", backgroundColor: bold ? "#f0f4ff" : "transparent" } },
+      React.createElement(Text, { style: { fontSize: 10, fontFamily: bold ? "Helvetica-Bold" : "Helvetica", color: accent ? "#dc2626" : "#1a2035" } }, label),
+      React.createElement(Text, { style: { fontSize: 10, fontFamily: bold ? "Helvetica-Bold" : "Helvetica", color: accent && netOwed > 0 ? "#dc2626" : bold ? "#0f1f3d" : "#1a2035" } }, value),
+    );
+
+  const detailRow = (label: string, value: string, idx: number) =>
+    React.createElement(
+      View,
+      { style: { flexDirection: "row", padding: "5 10", backgroundColor: idx % 2 === 0 ? "transparent" : "#f8f9fa", borderBottomWidth: 1, borderBottomColor: "#e8ecf2" } },
+      React.createElement(Text, { style: { flex: 1, fontSize: 9, color: "#1a2035" } }, label),
+      React.createElement(Text, { style: { width: 80, fontSize: 9, textAlign: "right", color: "#1a2035" } }, value),
+    );
+
+  return React.createElement(
+    Document,
+    null,
+    React.createElement(
+      Page,
+      { size: "A4", style: S.page },
+      // Header
+      React.createElement(
+        View,
+        { style: { ...S.header, marginBottom: 28 } },
+        React.createElement(
+          View,
+          { style: S.headerRow },
+          React.createElement(
+            View,
+            null,
+            React.createElement(Text, { style: S.companyName }, orgName),
+            React.createElement(Text, { style: S.dateRange }, `Tax Summary · ${fmtDate(startDate)} – ${fmtDate(endDate)}`),
+          ),
+          React.createElement(Text, { style: S.docTitle }, "TAX SUMMARY"),
+        ),
+      ),
+      // Summary box
+      React.createElement(
+        View,
+        { style: { marginBottom: 24, borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: "#e8ecf2" } },
+        summaryRow("Tax Collected (from invoices)", fmtMoney(taxCollected)),
+        summaryRow("Tax Paid (on expenses)", fmtMoney(taxPaid)),
+        summaryRow("Net Tax Owed", fmtMoney(netOwed), true, netOwed > 0),
+      ),
+      // Tax collected detail
+      invoices.length > 0 && React.createElement(
+        View,
+        { style: { marginBottom: 20 } },
+        React.createElement(
+          View,
+          { style: { ...S.tableHeader, marginBottom: 0 } },
+          React.createElement(Text, { style: [S.tableHeaderCell, { flex: 1 }] }, "Invoice"),
+          React.createElement(Text, { style: [S.tableHeaderCell, { width: "18%" }] }, "Date"),
+          React.createElement(Text, { style: [S.tableHeaderCell, { width: 80, textAlign: "right" }] }, "Tax Collected"),
+        ),
+        ...invoices.map((inv, i) =>
+          detailRow(
+            `${(inv.invoice_number as string) ?? `INV-${String(inv.id).slice(0, 8).toUpperCase()}`} · ${clientName(inv.customers as Record<string, unknown> | null)}`,
+            fmtMoney(Number(inv.tax_amount ?? 0)),
+            i,
+          )
+        ),
+      ),
+      // Tax paid detail
+      expenses.length > 0 && React.createElement(
+        View,
+        { style: { marginBottom: 20 } },
+        React.createElement(
+          View,
+          { style: { ...S.tableHeader, marginBottom: 0 } },
+          React.createElement(Text, { style: [S.tableHeaderCell, { flex: 1 }] }, "Expense / Vendor"),
+          React.createElement(Text, { style: [S.tableHeaderCell, { width: "18%" }] }, "Date"),
+          React.createElement(Text, { style: [S.tableHeaderCell, { width: 80, textAlign: "right" }] }, "Tax Paid"),
+        ),
+        ...expenses.map((e, i) =>
+          detailRow(
+            String(e.vendor ?? "Unknown"),
+            fmtMoney(Number(e.tax_amount ?? 0)),
+            i,
+          )
+        ),
+      ),
+      // Footer
+      React.createElement(
+        View,
+        { style: S.footer },
+        React.createElement(Text, { style: S.footerText }, `Generated ${fmtDate(new Date().toISOString())} · ${orgName}`),
+        React.createElement(Text, { style: S.footerText }, "Powered by TradeBase"),
+      ),
+    ),
+  );
+}
+
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function GET(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
   const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type") ?? "invoices"; // invoices | receipts
+  const type = searchParams.get("type") ?? "invoices"; // invoices | receipts | tax-summary
   const start = searchParams.get("start");
   const end = searchParams.get("end");
   const status = searchParams.get("status");
@@ -304,7 +418,47 @@ export async function GET(req: Request) {
   const { data: org } = await admin.from("orgs").select("name").eq("id", orgId!).single();
   const orgName = (org?.name as string) ?? "Your Company";
 
-  // Fetch invoices
+  let pdfBuffer: Buffer;
+
+  // ── Tax Summary ────────────────────────────────────────────────────────────
+  if (type === "tax-summary") {
+    let invQ: any = (admin as any)
+      .from("invoices")
+      .select("id,invoice_number,tax_amount,created_at,customers(first_name,last_name,company_name)")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false });
+    if (start) invQ = invQ.gte("created_at", start);
+    if (end) invQ = invQ.lte("created_at", end + "T23:59:59");
+    const { data: invoices } = await invQ;
+
+    let expQ: any = (admin as any)
+      .from("expenses")
+      .select("vendor,tax_amount,receipt_date")
+      .eq("org_id", orgId!)
+      .order("receipt_date", { ascending: false });
+    if (start) expQ = expQ.gte("receipt_date", start);
+    if (end) expQ = expQ.lte("receipt_date", end + "T23:59:59");
+    const { data: expenses } = await expQ;
+
+    pdfBuffer = await renderToBuffer(
+      React.createElement(TaxSummaryPDF, {
+        invoices: (invoices ?? []) as Record<string, unknown>[],
+        expenses: (expenses ?? []) as Record<string, unknown>[],
+        orgName,
+        startDate: start ?? new Date(new Date().getFullYear(), 0, 1).toISOString(),
+        endDate: end ?? new Date().toISOString(),
+      }),
+    );
+
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="tradebase-tax-summary-${today()}.pdf"`,
+      },
+    });
+  }
+
+  // ── Invoices / Receipts ────────────────────────────────────────────────────
   let query: any = (admin as any)
     .from("invoices")
     .select("id,invoice_number,status,total_amount,tax_amount,created_at,due_date,customers(first_name,last_name,company_name)")
@@ -315,7 +469,6 @@ export async function GET(req: Request) {
   if (end) query = query.lte("created_at", end + "T23:59:59");
 
   if (type === "receipts") {
-    // Receipts = paid invoices only
     query = query.eq("status", "paid");
   } else if (status && status !== "all") {
     query = query.eq("status", status);
@@ -324,10 +477,7 @@ export async function GET(req: Request) {
   const { data: invoices } = await query;
   const invoiceList = (invoices ?? []) as Record<string, unknown>[];
 
-  let pdfBuffer: Buffer;
-
   if (type === "receipts") {
-    // Fetch line items for all invoices
     const invoiceIds = invoiceList.map((i) => String(i.id));
     const { data: items } = await (admin as any)
       .from("invoice_items")
