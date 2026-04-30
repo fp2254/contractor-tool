@@ -68,20 +68,32 @@ export default function ExportClient() {
     return `${endpoint}${sep}${params.toString()}`;
   }
 
+  function triggerDownload(blob: Blob, filename: string) {
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    }, 150);
+  }
+
   async function handleDownload(ex: ExportType) {
     setDownloading(ex.key);
     try {
       const url = buildUrl(ex.endpoint, ex.hasStatus ? ex.key : undefined);
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
       const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
       const cd = res.headers.get("content-disposition") ?? "";
       const match = cd.match(/filename="?([^"]+)"?/);
-      a.download = match?.[1] ?? `tradebase-${ex.key}.csv`;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
+      triggerDownload(blob, match?.[1] ?? `tradebase-${ex.key}.csv`);
+    } catch (err: any) {
+      alert(err?.message ?? "Download failed — please try again.");
     } finally {
       setDownloading(null);
     }
@@ -92,16 +104,16 @@ export default function ExportClient() {
     try {
       const url = buildUrl(endpoint, key === "invoices" ? "invoices" : undefined);
       const res = await fetch(url);
-      if (!res.ok) throw new Error("PDF generation failed");
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`PDF generation failed (${res.status})${text ? ": " + text.slice(0, 120) : ""}`);
+      }
       const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
       const cd = res.headers.get("content-disposition") ?? "";
       const match = cd.match(/filename="?([^"]+)"?/);
-      a.download = match?.[1] ?? `tradebase-${key}.pdf`;
-      a.click();
-      URL.revokeObjectURL(objectUrl);
+      triggerDownload(blob, match?.[1] ?? `tradebase-${key}.pdf`);
+    } catch (err: any) {
+      alert(err?.message ?? "PDF download failed — please try again.");
     } finally {
       setDownloading(null);
     }
