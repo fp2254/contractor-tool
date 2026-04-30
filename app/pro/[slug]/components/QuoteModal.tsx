@@ -12,6 +12,7 @@ const C = {
 
 type Props = {
   contractorName: string;
+  slug: string;
   open: boolean;
   onClose: () => void;
   condensedFont: string;
@@ -19,7 +20,7 @@ type Props = {
 
 type FormState = "idle" | "submitting" | "success";
 
-export function QuoteModal({ contractorName, open, onClose, condensedFont }: Props) {
+export function QuoteModal({ contractorName, slug, open, onClose, condensedFont }: Props) {
   const firstName = contractorName.split(" ")[0];
   const overlayRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({ name: "", phone: "", description: "" });
@@ -32,9 +33,15 @@ export function QuoteModal({ contractorName, open, onClose, condensedFont }: Pro
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState("submitting");
-    // Log for now — will wire to leads API in a future pass
-    console.log("[QuoteModal] submission:", form);
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      await fetch("/api/public/quote-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, ...form }),
+      });
+    } catch {
+      // fail silently — still show success to the visitor
+    }
     setState("success");
   }
 

@@ -759,6 +759,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
 
       <SharedQuoteModal
         contractorName={profile.name}
+        slug={profile.slug}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         accentColor="#f5a623"

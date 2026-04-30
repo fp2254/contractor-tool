@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v58";
+const CACHE_VERSION = "v59";
 const SHELL_CACHE = `tradebase-shell-${CACHE_VERSION}`;
 const STATIC_CACHE = `tradebase-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `tradebase-pages-${CACHE_VERSION}`;

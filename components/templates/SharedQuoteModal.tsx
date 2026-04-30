@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 type Props = {
   contractorName: string;
+  slug: string;
   open: boolean;
   onClose: () => void;
   accentColor?: string;
@@ -11,7 +12,7 @@ type Props = {
 
 type FormState = "idle" | "submitting" | "success";
 
-export function SharedQuoteModal({ contractorName, open, onClose, accentColor = "#f5a623" }: Props) {
+export function SharedQuoteModal({ contractorName, slug, open, onClose, accentColor = "#f5a623" }: Props) {
   const firstName = contractorName.split(" ")[0] || contractorName;
   const overlayRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({ name: "", phone: "", description: "" });
@@ -24,8 +25,15 @@ export function SharedQuoteModal({ contractorName, open, onClose, accentColor = 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState("submitting");
-    console.log("[QuoteModal] submission:", form);
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      await fetch("/api/public/quote-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, ...form }),
+      });
+    } catch {
+      // fail silently — still show success to the visitor
+    }
     setState("success");
   }
 

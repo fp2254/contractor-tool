@@ -114,6 +114,7 @@ export function ContractorProfilePage({ profile }: Props) {
 
       <QuoteModal
         contractorName={profile.name}
+        slug={profile.slug}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         condensedFont={bc}
