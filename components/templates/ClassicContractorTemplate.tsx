@@ -290,46 +290,71 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900/70" />
 
         <div className="relative max-w-6xl mx-auto px-4 py-16 sm:py-24 lg:py-28">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 text-amber-400 px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider mb-6">
-              <Shield className="w-3.5 h-3.5" />
-              {data.hero.badge}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 text-amber-400 px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider mb-6">
+                <Shield className="w-3.5 h-3.5" />
+                {data.hero.badge}
+              </div>
+
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+                {data.hero.headline}
+              </h1>
+
+              <p className="text-lg text-stone-300 mb-8 leading-relaxed max-w-xl">
+                {data.hero.subhead}
+              </p>
+
+              <ul className="space-y-2.5 mb-9 text-stone-200">
+                {data.hero.trustPoints.map((point, i) => (
+                  <li key={i} className="flex items-center gap-2.5 text-sm sm:text-base">
+                    <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {phoneHref && (
+                  <a
+                    href={phoneHref}
+                    className="inline-flex items-center justify-center gap-2 bg-red-700 hover:bg-red-800 text-white px-6 py-4 rounded font-bold text-lg transition shadow-lg"
+                  >
+                    <Phone className="w-5 h-5" />
+                    {data.hero.primaryCtaText} {data.business.phone}
+                  </a>
+                )}
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 bg-white hover:bg-stone-100 text-slate-900 px-6 py-4 rounded font-bold text-lg transition shadow-lg"
+                >
+                  {data.hero.secondaryCtaText}
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
-              {data.hero.headline}
-            </h1>
-
-            <p className="text-lg text-stone-300 mb-8 leading-relaxed max-w-xl">
-              {data.hero.subhead}
-            </p>
-
-            <ul className="space-y-2.5 mb-9 text-stone-200">
-              {data.hero.trustPoints.map((point, i) => (
-                <li key={i} className="flex items-center gap-2.5 text-sm sm:text-base">
-                  <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                  {point}
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              {phoneHref && (
-                <a
-                  href={phoneHref}
-                  className="inline-flex items-center justify-center gap-2 bg-red-700 hover:bg-red-800 text-white px-6 py-4 rounded font-bold text-lg transition shadow-lg"
-                >
-                  <Phone className="w-5 h-5" />
-                  {data.hero.primaryCtaText} {data.business.phone}
-                </a>
+            {/* Logo / photo in the empty right column */}
+            <div className="hidden md:flex flex-shrink-0 items-center justify-center">
+              {data.business.logoUrl ? (
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-2xl bg-amber-400/20 blur-2xl scale-110" />
+                  <img
+                    src={data.business.logoUrl}
+                    alt={data.business.name}
+                    className="relative w-64 h-64 xl:w-72 xl:h-72 rounded-2xl object-cover border-2 border-amber-400/40 shadow-2xl"
+                  />
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-2xl bg-amber-400/20 blur-2xl scale-110" />
+                  <div className="relative w-64 h-64 xl:w-72 xl:h-72 rounded-2xl bg-slate-800 border-2 border-amber-400/40 shadow-2xl flex items-center justify-center">
+                    <span className="font-serif font-bold text-amber-400" style={{ fontSize: 96 }}>
+                      {data.business.logoMark}
+                    </span>
+                  </div>
+                </div>
               )}
-              <button
-                onClick={() => setModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-stone-100 text-slate-900 px-6 py-4 rounded font-bold text-lg transition shadow-lg"
-              >
-                {data.hero.secondaryCtaText}
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
