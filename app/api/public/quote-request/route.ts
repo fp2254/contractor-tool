@@ -7,10 +7,12 @@ export async function POST(req: Request) {
       slug: string;
       name: string;
       phone: string;
+      email?: string;
+      address?: string;
       description: string;
     };
 
-    const { slug, name, phone, description } = body;
+    const { slug, name, phone, email, address, description } = body;
 
     if (!slug || !name?.trim()) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -35,6 +37,8 @@ export async function POST(req: Request) {
       org_id: pub.org_id,
       name: name.trim(),
       phone: phone?.trim() || null,
+      email: email?.trim() || null,
+      address: address?.trim() || null,
       notes: description?.trim() || null,
       lead_source: "Website",
       status: "new",

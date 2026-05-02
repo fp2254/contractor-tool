@@ -15,7 +15,7 @@ type FormState = "idle" | "submitting" | "success";
 export function SharedQuoteModal({ contractorName, slug, open, onClose, accentColor = "#f5a623" }: Props) {
   const firstName = contractorName.split(" ")[0] || contractorName;
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [form, setForm] = useState({ name: "", phone: "", description: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", description: "" });
   const [state, setState] = useState<FormState>("idle");
 
   function handleOverlayClick(e: React.MouseEvent) {
@@ -39,7 +39,7 @@ export function SharedQuoteModal({ contractorName, slug, open, onClose, accentCo
 
   function handleClose() {
     setState("idle");
-    setForm({ name: "", phone: "", description: "" });
+    setForm({ name: "", phone: "", email: "", address: "", description: "" });
     onClose();
   }
 
@@ -137,16 +137,18 @@ export function SharedQuoteModal({ contractorName, slug, open, onClose, accentCo
               {firstName} will get back to you within a few hours
             </p>
             {[
-              { label: "Your Name", key: "name", type: "text", placeholder: "John Smith" },
-              { label: "Phone Number", key: "phone", type: "tel", placeholder: "(555) 000-0000" },
-            ].map(({ label, key, type, placeholder }) => (
+              { label: "Your Name", key: "name", type: "text", placeholder: "John Smith", required: true },
+              { label: "Phone Number", key: "phone", type: "tel", placeholder: "(555) 000-0000", required: true },
+              { label: "Email Address", key: "email", type: "email", placeholder: "you@example.com", required: false },
+              { label: "Property Address", key: "address", type: "text", placeholder: "123 Main St, City, State", required: false },
+            ].map(({ label, key, type, placeholder, required }) => (
               <div key={key} style={{ marginBottom: 13 }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#0f1f3d", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
-                  {label}
+                  {label}{!required && <span style={{ fontWeight: 400, color: "#a0aec0", marginLeft: 4 }}>(optional)</span>}
                 </label>
                 <input
                   type={type}
-                  required
+                  required={required}
                   placeholder={placeholder}
                   value={form[key as keyof typeof form]}
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
