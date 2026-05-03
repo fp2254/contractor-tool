@@ -29,6 +29,7 @@ export default async function SetupPage() {
     hasPortalTokens, hasRevokedAt, hasQuoteId, hasSignatures,
     hasAiRuns, hasAiAttachments,
     hasInventory, hasTradeContacts,
+    hasSquare,
   ] = await Promise.all([
     tbl(admin, "customer_portal_tokens"),
     col(admin, "customer_portal_tokens", "revoked_at"),
@@ -38,6 +39,7 @@ export default async function SetupPage() {
     tbl(admin, "ai_attachments"),
     tbl(admin, "inventory_items"),
     tbl(admin, "trade_contacts"),
+    col(admin, "org_settings", "square_access_token"),
   ]);
 
   const migrations = [
@@ -50,6 +52,7 @@ export default async function SetupPage() {
     { title: "Phase 7 — AI Answer Attachments (ai_runs, ai_attachments)", file: "migration_ai_attachments.sql" },
     { title: "Phase 8 — Inventory (inventory_items)", file: "migration_inventory.sql" },
     { title: "Phase 9 — Trade Contacts (trade_contacts)", file: "migration_trade_contacts.sql" },
+    { title: "Phase 10 — Square OAuth (org_settings columns)", file: "migration_square.sql" },
   ];
 
   type Check = { label: string; ok: boolean };
@@ -85,6 +88,13 @@ export default async function SetupPage() {
       pending: !hasTradeContacts,
       checks: [
         { label: "trade_contacts table", ok: hasTradeContacts },
+      ],
+    },
+    {
+      title: "Square OAuth",
+      pending: !hasSquare,
+      checks: [
+        { label: "org_settings.square_access_token", ok: hasSquare },
       ],
     },
   ];

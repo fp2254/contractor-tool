@@ -8,6 +8,7 @@ import { PhotoGallery } from "@/components/PhotoGallery";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
+import { SquarePaymentButton } from "@/components/SquarePaymentButton";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -102,7 +103,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: invoicePhotos }, { data: aiAttachmentsRaw }, { data: org }, { data: openedNotes }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: allNotes }, { data: invoicePhotos }, { data: aiAttachmentsRaw }, { data: org }, { data: openedNotes }, { data: orgSettings }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).maybeSingle(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("notes").select("*").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: false }).limit(20),
@@ -110,6 +111,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     aiAttachmentsPromise,
     admin.from("orgs").select("name").eq("id", orgId!).single(),
     admin.from("notes").select("created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).eq("body", "__opened__").order("created_at", { ascending: true }).limit(1),
+    (admin as any).from("org_settings").select("square_access_token").eq("org_id", orgId!).maybeSingle(),
   ]);
   const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
@@ -152,6 +154,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     : null;
   const dueLabel = dueDays === null ? null : dueDays < 0 ? `${Math.abs(dueDays)}d overdue` : dueDays === 0 ? "Due today" : `Due in ${dueDays}d`;
 
+  const squareConnected = !!(orgSettings as any)?.square_access_token;
   const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
   return (
@@ -201,10 +204,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {invoice.status !== "paid" && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Collect Payment</p>
+        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Collect Payment</p>
+
+          {squareConnected && (
+            <SquarePaymentButton invoiceId={invoice.id} />
+          )}
+
           <form action={markPaid} className="space-y-3">
             <input type="hidden" name="invoice_id" value={invoice.id} />
+            <p className="text-xs text-gray-400 font-medium">Or mark as paid manually:</p>
             <div className="grid grid-cols-3 gap-2">
               {["cash","check","card","venmo","paypal","other"].map(method => (
                 <label key={method} className="flex items-center gap-2 cursor-pointer">
