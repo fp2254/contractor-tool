@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   const overdueInvoices = invoices.data?.filter(i => !archivedInvoiceIds.has(i.id) && i.status === "overdue") ?? [];
   const sentQuotes = quotes.data ?? [];
   const estimatesCount = sentQuotes.length;
-  const sentQuotesHref = sentQuotes.length === 1 ? `/app/quotes/${sentQuotes[0].id}` : "/app/quotes";
+  const sentQuotesHref = sentQuotes.length === 1 ? `/app/quotes/${sentQuotes[0].id}` : "/app/quotes?tab=sent";
 
   const allCaughtUp = overdueInvoices.length === 0 && estimatesCount === 0;
 

@@ -4,7 +4,21 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import QuotesListClient from "./QuotesListClient";
 
-export default async function QuotesPage() {
+const TABS = [
+  { label: "Sent",     key: "sent" },
+  { label: "Draft",    key: "draft" },
+  { label: "Accepted", key: "accepted" },
+  { label: "Declined", key: "declined" },
+  { label: "Archived", key: "archived" },
+  { label: "All",      key: "all" },
+];
+
+type PageProps = { searchParams: Promise<Record<string, string>> };
+
+export default async function QuotesPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const activeTab = TABS.some(t => t.key === params.tab) ? params.tab : "sent";
+
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
@@ -35,24 +49,55 @@ export default async function QuotesPage() {
     ])
   );
 
+  const all = quotes ?? [];
+
+  const buckets: Record<string, typeof all> = {
+    sent:     all.filter(q => q.status === "sent"),
+    draft:    all.filter(q => q.status === "draft"),
+    accepted: all.filter(q => q.status === "accepted"),
+    declined: all.filter(q => q.status === "declined"),
+    archived: all.filter(q => q.status === "archived"),
+    all:      all.filter(q => q.status !== "archived"),
+  };
+
+  const shown = buckets[activeTab] ?? [];
+
   return (
-    <div className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">Quotes</h1>
+    <div className="p-4 space-y-3 pb-24">
+      <h1 className="text-xl font-bold text-slate-800">Quotes</h1>
+
+      {/* Tab bar */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 no-scrollbar">
+        {TABS.map((tab) => {
+          const count = buckets[tab.key]?.length ?? 0;
+          const isActive = activeTab === tab.key;
+          return (
+            <Link
+              key={tab.key}
+              href={`/app/quotes?tab=${tab.key}`}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive ? "text-white" : "bg-white text-gray-600 shadow-sm"
+              }`}
+              style={isActive ? { backgroundColor: "#1B3A6B" } : {}}>
+              {tab.label}{count > 0 && <span className="opacity-70 ml-1">{count}</span>}
+            </Link>
+          );
+        })}
       </div>
 
       <Link
         href="/app/quotes/new"
         className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-white font-semibold"
         style={{ backgroundColor: "#1B3A6B" }}>
-        <span className="text-lg">+</span> New Quote
+        <span className="text-lg leading-none">+</span> New Quote
       </Link>
 
       <Suspense fallback={null}>
         <QuotesListClient
-          initialQuotes={quotes ?? []}
+          quotes={shown}
           customerMap={customerMap}
           openedIds={Array.from(openedIds)}
+          activeTab={activeTab}
         />
       </Suspense>
     </div>
