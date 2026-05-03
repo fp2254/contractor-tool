@@ -33,6 +33,7 @@ export default async function AdminUsersPage() {
     createdAt: u.created_at,
     lastSignIn: u.last_sign_in_at ?? null,
     isPlatformAdmin: isPlatformAdmin(u.email),
+    banned: !!u.banned_until && new Date(u.banned_until) > new Date(),
     orgs: orgsByUser[u.id] ?? [],
   }));
 
