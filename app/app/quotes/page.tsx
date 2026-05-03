@@ -92,7 +92,7 @@ export default async function QuotesPage({ searchParams }: PageProps) {
         <span className="text-lg leading-none">+</span> New Quote
       </Link>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={null} key={activeTab}>
         <QuotesListClient
           quotes={shown}
           customerMap={customerMap}
