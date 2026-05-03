@@ -35,6 +35,7 @@ export default function QuotesListClient({
   const router = useRouter();
   const [quotes, setQuotes] = useState(initialQuotes);
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
+  const [archivingAll, setArchivingAll] = useState(false);
   const openedSet = new Set(openedIds);
 
   const isArchived = activeTab === "archived";
@@ -49,6 +50,26 @@ export default function QuotesListClient({
     setQuotes(prev => prev.filter(q => q.id !== id));
     setOpenSwipeId(null);
     router.refresh();
+  }
+
+  async function handleArchiveAll() {
+    if (!confirm(`Archive all ${quotes.length} quote${quotes.length !== 1 ? "s" : ""} in this tab? You can unarchive them later.`)) return;
+    setArchivingAll(true);
+    try {
+      await Promise.all(
+        quotes.map(q =>
+          fetch(`/app/quotes/api/${q.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "archived" }),
+          })
+        )
+      );
+      setQuotes([]);
+      router.refresh();
+    } finally {
+      setArchivingAll(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -131,6 +152,19 @@ export default function QuotesListClient({
 
   return (
     <div className="space-y-3">
+      {quotes.length > 1 && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleArchiveAll}
+            disabled={archivingAll}
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-white border border-gray-200 rounded-full px-3 py-1.5 shadow-sm active:bg-gray-50 disabled:opacity-50 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8" />
+            </svg>
+            {archivingAll ? "Archiving…" : `Archive All (${quotes.length})`}
+          </button>
+        </div>
+      )}
       {quotes.map(q => (
         <SwipeActionRow
           key={q.id}
