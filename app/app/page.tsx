@@ -16,13 +16,14 @@ export default async function DashboardPage() {
 
   const isDemo = await getOrgIsDemo(orgId!);
 
-  const [leads, jobs, invoices, quotes, orgSettings, pubProfileResult] = await Promise.all([
+  const [leads, jobs, invoices, quotes, orgSettings, pubProfileResult, archivedNotes] = await Promise.all([
     admin.from("leads").select("id", { count: "exact", head: true }).eq("org_id", orgId!).eq("status", "new"),
     admin.from("jobs").select("id,scheduled_date,status", { count: "exact" }).eq("org_id", orgId!),
     admin.from("invoices").select("id,status,total_amount").eq("org_id", orgId!),
     admin.from("quotes").select("id").eq("org_id", orgId!).eq("status", "sent"),
     admin.from("org_settings").select("default_warranty_text").eq("org_id", orgId!).maybeSingle(),
     (async () => { try { return await (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle(); } catch { return { data: null }; } })(),
+    admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "invoice").eq("body", "__archived__"),
   ]);
 
   // Suppress unused import warning — supabase client kept for session context
@@ -31,13 +32,15 @@ export default async function DashboardPage() {
   const pubProfile = (pubProfileResult as any)?.data ?? null;
   const defaultWarrantyText = (orgSettings.data as { default_warranty_text?: string } | null)?.default_warranty_text ?? "";
 
+  const archivedInvoiceIds = new Set((archivedNotes.data ?? []).map((n) => n.entity_id as string));
+
   const today = new Date().toISOString().slice(0, 10);
   const jobsTodayCount = jobs.data?.filter(j => j.scheduled_date === today).length ?? 0;
   const newLeadsCount = leads.count ?? 0;
   const unpaidTotal = invoices.data
-    ?.filter(i => i.status === "unpaid" || i.status === "overdue")
+    ?.filter(i => !archivedInvoiceIds.has(i.id) && (i.status === "unpaid" || i.status === "overdue"))
     .reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0) ?? 0;
-  const overdueInvoices = invoices.data?.filter(i => i.status === "overdue") ?? [];
+  const overdueInvoices = invoices.data?.filter(i => !archivedInvoiceIds.has(i.id) && i.status === "overdue") ?? [];
   const sentQuotes = quotes.data ?? [];
   const estimatesCount = sentQuotes.length;
   const sentQuotesHref = sentQuotes.length === 1 ? `/app/quotes/${sentQuotes[0].id}` : "/app/quotes";
