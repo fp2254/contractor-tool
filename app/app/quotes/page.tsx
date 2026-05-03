@@ -22,7 +22,7 @@ export default async function QuotesPage({ searchParams }: PageProps) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
-  const [{ data: quotes }, { data: customers }, { data: openedNotes }] = await Promise.all([
+  const [{ data: quotes }, { data: customers }, { data: openedNotes }, { data: archivedNotes }] = await Promise.all([
     admin
       .from("quotes")
       .select("id,status,total_amount,created_at,customer_id")
@@ -38,9 +38,16 @@ export default async function QuotesPage({ searchParams }: PageProps) {
       .eq("org_id", orgId!)
       .eq("entity_type", "quote")
       .eq("body", "__opened__"),
+    admin
+      .from("notes")
+      .select("entity_id")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("body", "__archived__"),
   ]);
 
   const openedIds = new Set((openedNotes ?? []).map(n => n.entity_id as string));
+  const archivedIds = new Set((archivedNotes ?? []).map(n => n.entity_id as string));
 
   const customerMap = Object.fromEntries(
     (customers ?? []).map(c => [
@@ -52,12 +59,12 @@ export default async function QuotesPage({ searchParams }: PageProps) {
   const all = quotes ?? [];
 
   const buckets: Record<string, typeof all> = {
-    sent:     all.filter(q => q.status === "sent"),
-    draft:    all.filter(q => q.status === "draft"),
-    accepted: all.filter(q => q.status === "accepted"),
-    declined: all.filter(q => q.status === "declined"),
-    archived: all.filter(q => q.status === "archived"),
-    all:      all.filter(q => q.status !== "archived"),
+    sent:     all.filter(q => !archivedIds.has(q.id) && q.status === "sent"),
+    draft:    all.filter(q => !archivedIds.has(q.id) && q.status === "draft"),
+    accepted: all.filter(q => !archivedIds.has(q.id) && q.status === "accepted"),
+    declined: all.filter(q => !archivedIds.has(q.id) && q.status === "declined"),
+    archived: all.filter(q => archivedIds.has(q.id)),
+    all:      all.filter(q => !archivedIds.has(q.id)),
   };
 
   const shown = buckets[activeTab] ?? [];

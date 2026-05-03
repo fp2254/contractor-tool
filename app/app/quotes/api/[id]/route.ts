@@ -17,9 +17,39 @@ export async function PATCH(
   const admin = createAdminClient();
   const body = await req.json() as {
     status?: string;
+    unarchive?: boolean;
     notes?: string;
     items?: LineItemInput[];
   };
+
+  // Archive: write a note flag instead of touching the enum status column
+  if (body.status === "archived") {
+    await admin.from("notes").delete()
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("entity_id", id)
+      .eq("body", "__archived__");
+    const { error } = await admin.from("notes").insert({
+      org_id: orgId!,
+      entity_type: "quote",
+      entity_id: id,
+      body: "__archived__",
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Unarchive: delete the note flag, restore to draft
+  if (body.status === "draft" || body.unarchive) {
+    await admin.from("notes").delete()
+      .eq("org_id", orgId!)
+      .eq("entity_type", "quote")
+      .eq("entity_id", id)
+      .eq("body", "__archived__");
+    // Also set status back to draft in the quotes table
+    await admin.from("quotes").update({ status: "draft" }).eq("id", id).eq("org_id", orgId!);
+    return NextResponse.json({ ok: true });
+  }
 
   const patch: Record<string, unknown> = {};
   if (body.status !== undefined) patch.status = body.status;
@@ -30,7 +60,6 @@ export async function PATCH(
     const total = body.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
     patch.total_amount = total;
 
-    // Replace all items
     await admin.from("quote_items").delete().eq("quote_id", id).eq("org_id", orgId!);
     if (body.items.length > 0) {
       const rows = body.items
@@ -69,6 +98,7 @@ export async function DELETE(
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
+  await admin.from("notes").delete().eq("entity_type", "quote").eq("entity_id", id);
   await admin.from("quote_items").delete().eq("quote_id", id);
   const { error } = await admin
     .from("quotes")
