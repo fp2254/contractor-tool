@@ -15,6 +15,7 @@ const ALL_ACTIONS = [
   { id: "new-payment",   label: "Log Payment",        icon: "💰", href: "/app/invoices?tab=open" },
   { id: "schedule",      label: "Schedule",           icon: "📅", href: "/app/schedule" },
   { id: "inventory",     label: "Inventory",          icon: "📦", href: "/app/inventory" },
+  { id: "team",          label: "Team",               icon: "👥", href: "/app/team" },
 ];
 
 const DEFAULT_IDS = ["new-client", "new-quote", "new-job", "new-invoice"];
