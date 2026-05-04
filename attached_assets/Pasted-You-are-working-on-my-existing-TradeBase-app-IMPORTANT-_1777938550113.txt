@@ -1,0 +1,196 @@
+You are working on my existing TradeBase app.
+
+IMPORTANT:
+The app is currently working. Do NOT break existing functionality.
+
+This must be done as a safe, additive Phase 1 only.
+
+Do NOT replace, remove, or rewrite existing:
+
+* Jobs
+* Quotes
+* Invoices
+* Clients
+* Photos
+* Notes
+* Status buttons
+* Existing job screen
+* Existing invoice creation flow
+* Existing quote flow
+* Bottom navigation
+* Auth/roles
+
+Goal:
+Add the foundation for a future job template/report system without changing how the current app works.
+
+PHASE 1 ONLY:
+
+1. Add Job Template database structure
+
+Create tables as needed for:
+
+job_templates:
+
+* id
+* org_id
+* name
+* description
+* required_photo_count
+* allow_tech_send_invoice_warranty
+* warranty_title
+* warranty_body
+* is_active
+* created_by
+* created_at
+* updated_at
+
+job_template_fields:
+
+* id
+* org_id
+* template_id
+* label
+* field_type
+* required
+* sort_order
+* options JSONB/null
+* created_at
+* updated_at
+
+job_template_invoice_items:
+
+* id
+* org_id
+* template_id
+* description
+* amount
+* sort_order
+* created_at
+* updated_at
+
+Use proper org_id scoping and RLS policies consistent with the rest of the app.
+
+2. Add Owner/Admin-only Templates page
+
+Create a new page for job templates.
+
+Owner/Admin can:
+
+* View templates
+* Create template
+* Edit template
+* Mark template inactive
+* Delete template only if it is not used anywhere
+
+Tech users should NOT be able to create, edit, or delete templates.
+
+3. Template builder fields
+
+Template form should support:
+
+* Template name
+* Description
+* Required photo count
+* Toggle: Allow tech to send invoice/warranty
+* Custom fields
+* Invoice line items
+* Warranty title
+* Warranty body
+
+4. Custom job fields
+
+Support only these field types for now:
+
+* Short text
+* Dropdown
+* Yes/No
+
+Each field must support:
+
+* Label
+* Required/optional
+* Sort order
+* Dropdown options when field_type = dropdown
+
+Do NOT hardcode any trade-specific fields like radon, HVAC, plumbing, roofing, sump pump, system type, etc.
+
+This must work for any trade.
+
+5. Invoice items
+
+Allow template invoice line items:
+
+* Description
+* Amount
+* Sort order
+
+Do not connect these to the live invoice flow yet.
+
+6. Warranty
+
+Allow template warranty:
+
+* Warranty title
+* Warranty body
+
+Do not send warranties yet.
+Do not connect warranty to live jobs yet.
+
+7. Navigation
+
+Add a safe route/page for Templates.
+
+It can be under:
+
+* More menu
+  or
+* Admin/settings area
+
+Only Owner/Admin should see it.
+
+8. Do NOT connect templates to jobs yet
+
+Very important:
+
+* Do not add template assignment to jobs yet
+* Do not change the current job screen
+* Do not change Field View yet
+* Do not change completion flow yet
+* Do not change invoice sending yet
+* Do not change warranty sending yet
+
+This phase is only the template management foundation.
+
+9. Safety requirements
+
+Before making changes:
+
+* Inspect existing schema, auth/role system, RLS policies, and routing patterns.
+* Follow the existing code style.
+* Reuse existing UI components where possible.
+* Keep all changes additive.
+* Avoid migrations that modify or risk existing production data.
+* Do not rename existing tables/columns.
+* Do not remove existing functionality.
+
+10. Success criteria
+
+After this phase:
+
+* Existing app works exactly the same as before
+* Existing jobs still work
+* Existing quotes still work
+* Existing invoices still work
+* Existing photo uploads still work
+* Existing statuses still work
+* Owner/Admin can create and edit job templates
+* Tech users cannot access template management
+* No existing workflow is changed
+
+Add TODO comments for Phase 2:
+
+* Assign template to job
+* Render dynamic fields in Field View
+* Validate required photos/fields
+* Generate report/invoice/warranty from template
+* Allow trusted techs to send closeout documents

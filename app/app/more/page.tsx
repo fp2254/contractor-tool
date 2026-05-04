@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { isPlatformAdmin } from "@/lib/admin";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 import { redirect } from "next/navigation";
 
 const menuItems = [
@@ -28,6 +29,8 @@ export default async function MorePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isAdmin = isPlatformAdmin(user?.email);
+  const { role } = await getUserOrgRole();
+  const canManageTemplates = isOwnerOrAdmin(role);
 
   return (
     <div className="p-4">
@@ -44,6 +47,18 @@ export default async function MorePage() {
             <span className="text-gray-300 text-lg">›</span>
           </Link>
         ))}
+
+        {canManageTemplates && (
+          <Link href="/app/templates"
+            className="flex items-center gap-4 px-4 py-4">
+            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg"
+              style={{ backgroundColor: "#1B3A6B20" }}>
+              🗂️
+            </div>
+            <span className="flex-1 font-medium text-slate-700">Job Templates</span>
+            <span className="text-gray-300 text-lg">›</span>
+          </Link>
+        )}
 
         {isAdmin && (
           <Link href="/app/admin"

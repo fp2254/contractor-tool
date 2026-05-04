@@ -1,0 +1,606 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.app{max-width:390px;margin:0 auto;font-family:var(--font-sans);background:var(--color-background-tertiary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);overflow:hidden}
+.topnav{background:#1e3a5f;padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
+.topnav-logo{color:#fff;font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px}
+.topnav-logo svg{width:16px;height:16px}
+.nav-tabs{display:flex;gap:2px}
+.ntab{padding:5px 10px;border-radius:5px;font-size:12px;font-weight:500;border:none;background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;font-family:var(--font-sans);transition:all 0.15s}
+.ntab.active{background:rgba(255,255,255,0.15);color:#fff}
+.screen{display:none}.screen.active{display:block}
+
+.lib-header{padding:12px 16px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between}
+.lib-title{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.new-btn{display:flex;align-items:center;gap:5px;padding:7px 11px;border-radius:var(--border-radius-md);border:none;background:#1e3a5f;color:#fff;font-size:12px;font-weight:500;font-family:var(--font-sans);cursor:pointer}
+.new-btn svg{width:13px;height:13px}
+.empty-state{padding:32px 16px;text-align:center;color:var(--color-text-tertiary);font-size:13px;background:var(--color-background-primary)}
+.empty-state svg{width:28px;height:28px;margin:0 auto 10px;display:block;color:var(--color-text-tertiary)}
+
+.tmpl-card{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
+.tmpl-card-name{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.tmpl-card-meta{font-size:12px;color:var(--color-text-secondary)}
+.tmpl-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px}
+.icon-btn{width:30px;height:30px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn svg{width:13px;height:13px;color:var(--color-text-secondary)}
+.icon-btn.danger svg{color:var(--color-text-danger)}
+.send-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--color-background-success);color:var(--color-text-success);margin-left:5px}
+
+.editor-header{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:11px 16px;display:flex;align-items:center;gap:10px}
+.back-btn{display:flex;align-items:center;gap:4px;background:none;border:none;font-size:13px;color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-sans);padding:0;flex-shrink:0}
+.back-btn svg{width:14px;height:14px}
+.editor-title{font-size:14px;font-weight:500;color:var(--color-text-primary);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.save-btn{padding:7px 13px;border-radius:var(--border-radius-md);border:none;background:#1e3a5f;color:#fff;font-size:12px;font-weight:500;font-family:var(--font-sans);cursor:pointer;flex-shrink:0}
+.save-btn:active{transform:scale(0.98)}
+
+.ed-section{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:13px 16px}
+.ed-lbl{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:9px}
+.ed-input{width:100%;padding:9px 11px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);outline:none}
+.ed-input::placeholder{color:var(--color-text-tertiary)}
+.num-input{width:70px;padding:9px 11px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);outline:none}
+
+.toggle-setting{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 16px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.toggle-setting-label{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.toggle-setting-sub{font-size:12px;color:var(--color-text-secondary);line-height:1.4}
+.toggle-switch{position:relative;width:40px;height:24px;flex-shrink:0;margin-top:1px;cursor:pointer}
+.tog-track{position:absolute;inset:0;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:12px;transition:all 0.2s}
+.tog-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--color-text-tertiary);border-radius:50%;transition:all 0.2s;pointer-events:none}
+
+.field-editor{background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:11px 12px;margin-bottom:8px}
+.fe-row{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+.fe-row:last-child{margin-bottom:0}
+.fe-input{flex:1;padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary);outline:none}
+.fe-input::placeholder{color:var(--color-text-tertiary)}
+.fe-sel{padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary);outline:none;cursor:pointer}
+.fe-del{width:28px;height:28px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-danger);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.fe-del svg{width:13px;height:13px;color:var(--color-text-danger)}
+.req-toggle{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary);cursor:pointer}
+.req-toggle input{cursor:pointer}
+.options-wrap{margin-top:7px}
+.options-lbl{font-size:10px;color:var(--color-text-tertiary);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.4px}
+.option-row{display:flex;gap:5px;margin-bottom:5px;align-items:center}
+.opt-del{width:22px;height:22px;border-radius:4px;border:0.5px solid var(--color-border-tertiary);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.opt-del svg{width:10px;height:10px;color:var(--color-text-secondary)}
+.add-opt-btn{font-size:11px;color:var(--color-text-info);background:none;border:none;cursor:pointer;font-family:var(--font-sans);padding:0;margin-top:2px;display:block}
+.add-field-btn{width:100%;padding:10px;border-radius:var(--border-radius-md);border:0.5px dashed var(--color-border-secondary);background:transparent;font-size:13px;color:var(--color-text-secondary);font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s}
+.add-field-btn svg{width:13px;height:13px}
+.add-field-btn:hover{background:var(--color-background-secondary)}
+.inv-line-row{display:flex;gap:6px;margin-bottom:7px;align-items:center}
+.inv-line-row .fe-input{flex:1}
+.inv-line-row .num-input{width:80px}
+.warr-ta{width:100%;min-height:80px;padding:9px 11px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);resize:none;outline:none}
+.warr-ta::placeholder{color:var(--color-text-tertiary)}
+.toast{margin:10px 16px 0;padding:10px 13px;border-radius:var(--border-radius-md);background:var(--color-background-success);border:0.5px solid var(--color-border-success);font-size:13px;color:var(--color-text-success);display:none;align-items:center;gap:7px}
+.toast svg{width:14px;height:14px;flex-shrink:0}
+.toast.show{display:flex}
+
+.fv-tmpl-bar{background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);padding:9px 16px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-text-secondary)}
+.fv-tmpl-bar select{flex:1;padding:6px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:12px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary);outline:none;cursor:pointer}
+.contact-block{background:var(--color-background-primary);padding:11px 16px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.c-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:14px;color:var(--color-text-primary)}
+.c-row svg{width:13px;height:13px;color:#c0392b;flex-shrink:0}
+.fv-section{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:13px 16px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sec-lbl{font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:0.5px;text-transform:uppercase}
+.sec-meta{font-size:12px;color:var(--color-text-tertiary)}
+.sec-meta.done{color:var(--color-text-success);font-weight:500}
+.sec-meta.warn{color:var(--color-text-warning);font-weight:500}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pslot{aspect-ratio:1;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background 0.15s;position:relative;overflow:hidden}
+.pslot svg{width:18px;height:18px;color:var(--color-text-tertiary)}
+.slot-lbl{font-size:10px;color:var(--color-text-tertiary);margin-top:4px}
+.pslot.filled{background:#2d3f50;border-color:#4a6080}
+.pslot.filled::after{content:'';position:absolute;top:5px;right:5px;width:13px;height:13px;background:var(--color-background-success);border-radius:50%}
+.prog-bar{height:3px;background:var(--color-background-secondary);border-radius:2px;margin-top:10px;overflow:hidden}
+.prog-fill{height:100%;background:var(--color-background-success);border-radius:2px;transition:width 0.3s}
+.dyn-fields{display:flex;flex-direction:column;gap:8px}
+.d-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary)}
+.d-lbl{font-size:13px;color:var(--color-text-secondary);flex:1;padding-right:8px}
+.d-lbl .req{color:var(--color-text-danger);font-size:11px;margin-left:2px}
+.d-sel{border:none;background:transparent;font-size:13px;font-weight:500;color:var(--color-text-primary);font-family:var(--font-sans);outline:none;cursor:pointer;max-width:150px}
+.d-txt{border:none;background:transparent;font-size:13px;font-weight:500;color:var(--color-text-primary);font-family:var(--font-sans);outline:none;text-align:right;width:110px}
+.d-txt::placeholder{color:var(--color-text-tertiary);font-weight:400}
+.yn-pair{display:flex;gap:4px}
+.yn{padding:5px 11px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;font-size:12px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-sans);transition:all 0.15s}
+.yn.y{background:#1A5C3A;border-color:#1A5C3A;color:#fff}
+.yn.n{background:#7a1e1e;border-color:#7a1e1e;color:#fff}
+.notes-ta{width:100%;min-height:64px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:10px 12px;font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);resize:none;outline:none}
+.notes-ta::placeholder{color:var(--color-text-tertiary)}
+.fv-action{padding:14px 16px;background:var(--color-background-primary);display:flex;flex-direction:column;gap:8px}
+.complete-btn{width:100%;padding:13px;border-radius:var(--border-radius-md);border:none;font-size:15px;font-weight:500;font-family:var(--font-sans);cursor:pointer;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s}
+.complete-btn:active{transform:scale(0.98)}
+.complete-btn svg{width:16px;height:16px}
+.send-invoice-btn{width:100%;padding:13px;border-radius:var(--border-radius-md);border:0.5px solid #1e3a5f;font-size:15px;font-weight:500;font-family:var(--font-sans);cursor:pointer;background:transparent;color:#1e3a5f;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s}
+.send-invoice-btn:active{transform:scale(0.98)}
+.send-invoice-btn svg{width:16px;height:16px}
+.val-msg{padding:9px 12px;border-radius:var(--border-radius-md);background:var(--color-background-warning);border:0.5px solid var(--color-border-warning);font-size:12px;color:var(--color-text-warning);display:none}
+.val-msg.show{display:block}
+
+.preview-screen{display:none;background:var(--color-background-tertiary)}
+.preview-screen.visible{display:block}
+.preview-header{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:11px 16px;display:flex;align-items:center;gap:10px}
+.preview-title{font-size:14px;font-weight:500;color:var(--color-text-primary);flex:1}
+.ptabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+.ptab{flex:1;padding:10px 0;font-size:12px;font-weight:500;text-align:center;border:none;background:none;cursor:pointer;font-family:var(--font-sans);color:var(--color-text-secondary);border-bottom:2px solid transparent;transition:all 0.15s}
+.ptab.active{color:var(--color-text-primary);border-bottom-color:#1e3a5f}
+.pane{display:none;padding:14px 16px;background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.pane.active{display:block}
+.doc-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:14px}
+.doc-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.doc-sub{font-size:12px;color:var(--color-text-secondary);margin-bottom:12px}
+.inv-line{display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
+.inv-line:last-child{border-bottom:none;font-weight:500;padding-top:8px}
+.inv-line span:first-child{color:var(--color-text-secondary)}
+.edit-section{margin-top:10px}
+.edit-lbl{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.4px;text-transform:uppercase;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.edit-badge{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--color-background-info);color:var(--color-text-info)}
+.edit-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:6px;font-size:13px}
+.edit-row span{color:var(--color-text-secondary)}
+.edit-row input{border:none;background:transparent;font-size:13px;font-weight:500;color:var(--color-text-primary);font-family:var(--font-sans);outline:none;text-align:right;width:80px}
+.lock-row{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:10px}
+.lock-row svg{width:13px;height:13px;color:var(--color-text-tertiary);flex-shrink:0}
+.lock-row span{font-size:11px;color:var(--color-text-tertiary)}
+.warranty-body{font-size:12px;color:var(--color-text-secondary);line-height:1.65}
+.send-actions{padding:14px 16px;background:var(--color-background-primary);display:flex;flex-direction:column;gap:8px}
+.send-btn{width:100%;padding:13px;border-radius:var(--border-radius-md);border:none;font-size:15px;font-weight:500;font-family:var(--font-sans);cursor:pointer;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s}
+.send-btn svg{width:15px;height:15px}
+.send-btn:active{transform:scale(0.98)}
+.sec-btns{display:flex;gap:8px}
+.sec-btn{flex:1;padding:11px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);font-size:13px;font-weight:500;font-family:var(--font-sans);cursor:pointer;color:var(--color-text-primary);text-align:center}
+.submitted-block{padding:36px 16px;text-align:center;background:var(--color-background-primary)}
+.sub-icon{width:52px;height:52px;background:#E1F5EE;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.sub-icon svg{width:24px;height:24px;color:#1A5C3A}
+.sub-title{font-size:17px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.sub-sub{font-size:13px;color:var(--color-text-secondary);line-height:1.5}
+.no-templates-fv{padding:24px 16px;text-align:center;background:var(--color-background-primary);font-size:13px;color:var(--color-text-secondary)}
+.hidden{display:none!important}
+</style>
+
+<h2 class="sr-only">TradeBase template builder — all templates fully customizable, no hardcoded fields.</h2>
+
+<div class="app">
+  <div class="topnav">
+    <div class="topnav-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      TradeBase
+    </div>
+    <div class="nav-tabs">
+      <button class="ntab active" onclick="switchTab('templates')">Templates</button>
+      <button class="ntab" onclick="switchTab('fieldview')">Field view</button>
+    </div>
+  </div>
+
+  <!-- TEMPLATES TAB -->
+  <div class="screen active" id="tab-templates">
+    <div id="view-library">
+      <div class="lib-header">
+        <span class="lib-title">Job templates</span>
+        <button class="new-btn" onclick="openEditor(null)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New template
+        </button>
+      </div>
+      <div id="tmpl-list"></div>
+    </div>
+
+    <div id="view-editor" style="display:none">
+      <div class="editor-header">
+        <button class="back-btn" onclick="closeEditor()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+          Back
+        </button>
+        <span class="editor-title" id="editor-title">New template</span>
+        <button class="save-btn" onclick="saveTemplate()">Save</button>
+      </div>
+      <div class="toast" id="save-toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+        Template saved
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-lbl">Template name</div>
+        <input class="ed-input" type="text" id="ed-name" placeholder="e.g. HVAC service call, Roof inspection…">
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-lbl">Required photos</div>
+        <input class="num-input" type="number" id="ed-photos" min="0" max="20" value="0">
+      </div>
+
+      <div class="toggle-setting">
+        <div>
+          <div class="toggle-setting-label">Send invoice &amp; warranty on completion</div>
+          <div class="toggle-setting-sub">Adds a second button for techs to send documents directly to the customer.</div>
+        </div>
+        <div class="toggle-switch" id="tog" onclick="toggleSend()">
+          <div class="tog-track" id="tog-track"></div>
+          <div class="tog-thumb" id="tog-thumb"></div>
+        </div>
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-lbl">Job fields</div>
+        <div id="ed-fields"></div>
+        <button class="add-field-btn" onclick="addField()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add field
+        </button>
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-lbl">Invoice line items</div>
+        <div id="ed-inv-lines"></div>
+        <button class="add-field-btn" onclick="addInvLine()" style="margin-top:2px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add line item
+        </button>
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-lbl">Warranty text</div>
+        <input class="ed-input" type="text" id="ed-warr-title" placeholder="Warranty title" style="margin-bottom:7px">
+        <textarea class="warr-ta" id="ed-warr-body" placeholder="Warranty details shown to customers…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIELD VIEW TAB -->
+  <div class="screen" id="tab-fieldview">
+    <div id="fv-main">
+      <div class="fv-tmpl-bar">
+        <span>Template:</span>
+        <select id="fv-tmpl-sel" onchange="loadFV(this.value)"></select>
+      </div>
+      <div class="contact-block">
+        <div class="c-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          559 Ridge Rd, Portland
+        </div>
+        <div class="c-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.07 10.2 19.79 19.79 0 011 4.54a2 2 0 011.72-2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          207-230-4823
+        </div>
+      </div>
+      <div class="fv-section" id="fv-photos-section">
+        <div class="sec-head">
+          <span class="sec-lbl">Photos</span>
+          <span class="sec-meta" id="fv-photo-meta">0 / 0 required</span>
+        </div>
+        <div class="photo-grid" id="fv-photo-grid"></div>
+        <div class="prog-bar"><div class="prog-fill" id="fv-prog" style="width:0%"></div></div>
+      </div>
+      <div class="fv-section hidden" id="fv-fields-section">
+        <div class="sec-head"><span class="sec-lbl">Job details</span></div>
+        <div class="dyn-fields" id="fv-fields-list"></div>
+      </div>
+      <div class="fv-section">
+        <div class="sec-head">
+          <span class="sec-lbl">Notes</span>
+          <span class="sec-meta">Optional</span>
+        </div>
+        <textarea class="notes-ta" placeholder="Add notes…"></textarea>
+      </div>
+      <div class="fv-action">
+        <button class="complete-btn" onclick="fvComplete()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+          Complete job
+        </button>
+        <button class="send-invoice-btn hidden" id="fv-send-btn" onclick="fvOpenSend()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Send invoice &amp; warranty
+        </button>
+        <div class="val-msg" id="fv-val-msg"></div>
+      </div>
+    </div>
+
+    <div class="preview-screen" id="fv-preview">
+      <div class="preview-header">
+        <button class="back-btn" onclick="fvClosePreview()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+          Back
+        </button>
+        <span class="preview-title">Review &amp; send</span>
+      </div>
+      <div class="ptabs">
+        <button class="ptab active" onclick="showTab('invoice',this)">Invoice</button>
+        <button class="ptab" onclick="showTab('warranty',this)">Warranty</button>
+      </div>
+      <div class="pane active" id="pane-invoice">
+        <div class="doc-card">
+          <div class="doc-title">Invoice</div>
+          <div class="doc-sub" id="prev-inv-sub"></div>
+          <div id="prev-inv-lines"></div>
+        </div>
+        <div class="edit-section">
+          <div class="edit-lbl">Adjustments <span class="edit-badge">editable</span></div>
+          <div class="edit-row"><span>Discount</span><input type="number" placeholder="$0" id="prev-discount" oninput="recalc()"></div>
+          <div class="edit-row"><span>Additional charge</span><input type="number" placeholder="$0" id="prev-extra" oninput="recalc()"></div>
+        </div>
+      </div>
+      <div class="pane" id="pane-warranty">
+        <div class="lock-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span>Set by your company — not editable by technicians</span>
+        </div>
+        <div class="doc-card">
+          <div class="doc-title" id="prev-warr-title"></div>
+          <div class="warranty-body" id="prev-warr-body" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="send-actions">
+        <button class="send-btn" onclick="fvSend()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          Send to customer
+        </button>
+        <div class="sec-btns">
+          <button class="sec-btn" onclick="showTab('invoice',document.querySelectorAll('.ptab')[0])">Edit invoice</button>
+          <button class="sec-btn" onclick="fvClosePreview()">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="fv-submitted" style="display:none">
+      <div class="submitted-block">
+        <div class="sub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg></div>
+        <div class="sub-title" id="fv-sub-title">Job complete</div>
+        <div class="sub-sub" id="fv-sub-sub"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var templates = [];
+var editingId = null;
+var edFields = [];
+var edInvLines = [];
+var sendEnabled = false;
+var fvState = {photos:[], fieldValues:{}};
+var _invBase = 0;
+
+function uid(){ return 'tmpl_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
+function findT(id){ return templates.find(function(t){return t.id===id;}); }
+
+function toggleSend(){
+  sendEnabled = !sendEnabled;
+  document.getElementById('tog-track').style.background = sendEnabled ? '#1e3a5f' : '';
+  document.getElementById('tog-track').style.borderColor = sendEnabled ? '#1e3a5f' : '';
+  document.getElementById('tog-thumb').style.transform = sendEnabled ? 'translateX(16px)' : '';
+  document.getElementById('tog-thumb').style.background = sendEnabled ? '#fff' : '';
+}
+function setSend(val){
+  if(sendEnabled !== val) toggleSend();
+}
+
+function renderLibrary(){
+  var list = document.getElementById('tmpl-list');
+  list.innerHTML = '';
+  if(templates.length === 0){
+    list.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>No templates yet. Create one to get started.</div>';
+    refreshFVSelect(); return;
+  }
+  templates.forEach(function(t){
+    var card = document.createElement('div'); card.className = 'tmpl-card';
+    var fc = t.fields ? t.fields.length : 0;
+    var sendTag = t.sendInvoice ? '<span class="send-tag">sends invoice</span>' : '';
+    card.innerHTML = '<div style="flex:1;min-width:0"><div class="tmpl-card-name">'+esc(t.name)+sendTag+'</div><div class="tmpl-card-meta">'+fc+' field'+(fc!==1?'s':'')+' · '+t.requiredPhotos+' photo'+(t.requiredPhotos!==1?'s':'')+' required</div></div><div class="tmpl-card-actions"><div class="icon-btn" data-edit="'+t.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="icon-btn danger" data-del="'+t.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg></div></div>';
+    list.appendChild(card);
+  });
+  list.addEventListener('click', function(e){
+    var ed = e.target.closest('[data-edit]');
+    var dl = e.target.closest('[data-del]');
+    if(ed) openEditor(ed.dataset.edit);
+    if(dl){ templates = templates.filter(function(t){return t.id!==dl.dataset.del;}); renderLibrary(); }
+  });
+  refreshFVSelect();
+}
+
+function openEditor(id){
+  editingId = id;
+  var t = id ? findT(id) : null;
+  document.getElementById('editor-title').textContent = t ? 'Edit: '+t.name : 'New template';
+  document.getElementById('ed-name').value = t ? t.name : '';
+  document.getElementById('ed-photos').value = t ? t.requiredPhotos : 0;
+  setSend(t ? !!t.sendInvoice : false);
+  document.getElementById('ed-warr-title').value = t ? (t.warrantyTitle||'') : '';
+  document.getElementById('ed-warr-body').value = t ? (t.warrantyBody||'') : '';
+  edFields = t && t.fields ? JSON.parse(JSON.stringify(t.fields)) : [];
+  edInvLines = t && t.invoiceLines ? JSON.parse(JSON.stringify(t.invoiceLines)) : [];
+  renderEdFields(); renderEdInvLines();
+  document.getElementById('view-library').style.display = 'none';
+  document.getElementById('view-editor').style.display = 'block';
+  document.getElementById('save-toast').classList.remove('show');
+}
+
+function closeEditor(){
+  document.getElementById('view-library').style.display = 'block';
+  document.getElementById('view-editor').style.display = 'none';
+  renderLibrary();
+}
+
+function renderEdFields(){
+  var c = document.getElementById('ed-fields'); c.innerHTML = '';
+  edFields.forEach(function(f, fi){
+    var w = document.createElement('div'); w.className = 'field-editor';
+    var to = ['text','dropdown','yesno'].map(function(v){return '<option value="'+v+'"'+(f.type===v?' selected':'')+'>'+v+'</option>';}).join('');
+    var optsHTML = f.type==='dropdown' ? buildOptsHTML(fi, f.options||[]) : '';
+    w.innerHTML = '<div class="fe-row"><input class="fe-input" type="text" placeholder="Field label" value="'+esc(f.label||'')+'" data-fi="'+fi+'" data-key="label"><select class="fe-sel" data-fi="'+fi+'" data-key="type">'+to+'</select><button class="fe-del" data-del-fi="'+fi+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="fe-row"><label class="req-toggle"><input type="checkbox" data-fi="'+fi+'" data-key="required"'+(f.required?' checked':'')+'>Required</label></div>'+optsHTML;
+    c.appendChild(w);
+    w.querySelectorAll('[data-key]').forEach(function(el){
+      var ev = el.type==='checkbox'?'change':(el.tagName==='SELECT'?'change':'input');
+      el.addEventListener(ev, function(){
+        var i=parseInt(this.dataset.fi), k=this.dataset.key;
+        if(k==='required') edFields[i][k]=this.checked;
+        else if(k==='type'){ edFields[i][k]=this.value; if(this.value==='dropdown'&&!edFields[i].options)edFields[i].options=['']; renderEdFields(); }
+        else edFields[i][k]=this.value;
+      });
+    });
+    w.querySelectorAll('[data-del-fi]').forEach(function(el){ el.addEventListener('click', function(){ edFields.splice(parseInt(this.dataset.delFi),1); renderEdFields(); }); });
+    w.querySelectorAll('[data-add-opt]').forEach(function(el){ el.addEventListener('click', function(){ edFields[parseInt(this.dataset.addOpt)].options.push(''); renderEdFields(); }); });
+    w.querySelectorAll('[data-opt-i]').forEach(function(el){ el.addEventListener('input', function(){ edFields[parseInt(this.dataset.optFi)].options[parseInt(this.dataset.optI)]=this.value; }); });
+    w.querySelectorAll('[data-del-opt]').forEach(function(el){ el.addEventListener('click', function(){ edFields[parseInt(this.dataset.delOptFi)].options.splice(parseInt(this.dataset.delOpt),1); renderEdFields(); }); });
+  });
+}
+
+function buildOptsHTML(fi, options){
+  var rows = options.map(function(o,oi){ return '<div class="option-row"><input class="fe-input" type="text" placeholder="Option '+(oi+1)+'" value="'+esc(o)+'" data-opt-fi="'+fi+'" data-opt-i="'+oi+'"><button class="opt-del" data-del-opt="'+oi+'" data-del-opt-fi="'+fi+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'; }).join('');
+  return '<div class="options-wrap"><div class="options-lbl">Dropdown options</div>'+rows+'<button class="add-opt-btn" data-add-opt="'+fi+'">+ Add option</button></div>';
+}
+
+function addField(){ edFields.push({label:'',type:'text',required:false}); renderEdFields(); }
+
+function renderEdInvLines(){
+  var c = document.getElementById('ed-inv-lines'); c.innerHTML = '';
+  edInvLines.forEach(function(l, li){
+    var row = document.createElement('div'); row.className = 'inv-line-row';
+    row.innerHTML = '<input class="fe-input" type="text" placeholder="Description" value="'+esc(l.label||'')+'" data-li="'+li+'" data-lk="label"><input class="num-input" type="number" placeholder="$0" value="'+(l.amt||'')+'" data-li="'+li+'" data-lk="amt"><button class="fe-del" data-del-li="'+li+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+    row.querySelectorAll('[data-lk]').forEach(function(el){ el.addEventListener('input', function(){ edInvLines[parseInt(this.dataset.li)][this.dataset.lk] = this.dataset.lk==='amt' ? parseFloat(this.value)||0 : this.value; }); });
+    row.querySelector('[data-del-li]').addEventListener('click', function(){ edInvLines.splice(parseInt(this.dataset.delLi),1); renderEdInvLines(); });
+    c.appendChild(row);
+  });
+}
+
+function addInvLine(){ edInvLines.push({label:'',amt:0}); renderEdInvLines(); }
+
+function saveTemplate(){
+  var name = document.getElementById('ed-name').value.trim();
+  if(!name){ document.getElementById('ed-name').focus(); return; }
+  var t = { id: editingId || uid(), name: name, requiredPhotos: parseInt(document.getElementById('ed-photos').value)||0, sendInvoice: sendEnabled, fields: JSON.parse(JSON.stringify(edFields)), invoiceLines: JSON.parse(JSON.stringify(edInvLines)), warrantyTitle: document.getElementById('ed-warr-title').value, warrantyBody: document.getElementById('ed-warr-body').value };
+  if(editingId){ var idx = templates.findIndex(function(x){return x.id===editingId;}); if(idx>-1) templates[idx]=t; else templates.push(t); }
+  else{ templates.push(t); editingId = t.id; }
+  document.getElementById('editor-title').textContent = 'Edit: '+t.name;
+  var toast = document.getElementById('save-toast'); toast.classList.add('show'); setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+  refreshFVSelect();
+}
+
+function refreshFVSelect(){
+  var sel = document.getElementById('fv-tmpl-sel'), prev = sel.value;
+  sel.innerHTML = '';
+  if(templates.length === 0){ sel.innerHTML = '<option>— no templates —</option>'; document.getElementById('fv-main').style.display='none'; return; }
+  document.getElementById('fv-main').style.display='block';
+  templates.forEach(function(t){ var o = document.createElement('option'); o.value=t.id; o.textContent=t.name; sel.appendChild(o); });
+  sel.value = (prev && findT(prev)) ? prev : templates[0].id;
+  loadFV(sel.value);
+}
+
+function loadFV(id){
+  var t = findT(id); if(!t) return;
+  fvState = {photos: new Array(t.requiredPhotos||0).fill(false), fieldValues: {}};
+  var grid = document.getElementById('fv-photo-grid'); grid.innerHTML = '';
+  for(var i=0; i<(t.requiredPhotos||0); i++){
+    var s = document.createElement('div'); s.className='pslot'; s.id='fvps-'+i;
+    s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span class="slot-lbl">Add</span>';
+    (function(idx,tot){ s.onclick = function(){ fvTogglePhoto(idx,tot); }; })(i, t.requiredPhotos);
+    grid.appendChild(s);
+  }
+  updateFVPhotoMeta(t.requiredPhotos||0);
+  var fsec = document.getElementById('fv-fields-section'), flist = document.getElementById('fv-fields-list');
+  flist.innerHTML = '';
+  if(!t.fields || t.fields.length===0){ fsec.classList.add('hidden'); }
+  else{
+    fsec.classList.remove('hidden');
+    t.fields.forEach(function(f, fi){
+      var row = document.createElement('div'); row.className='d-row';
+      var lbl = document.createElement('span'); lbl.className='d-lbl'; lbl.innerHTML=esc(f.label)+(f.required?'<span class="req">*</span>':'');
+      var ctrl;
+      if(f.type==='dropdown'){ ctrl=document.createElement('select'); ctrl.className='d-sel'; var blank=document.createElement('option'); blank.value=''; blank.textContent='—'; ctrl.appendChild(blank); (f.options||[]).forEach(function(o){ var opt=document.createElement('option'); opt.value=o; opt.textContent=o; ctrl.appendChild(opt); }); (function(fid){ ctrl.onchange=function(){ fvState.fieldValues[fid]=this.value; }; })(fi); }
+      else if(f.type==='yesno'){ ctrl=document.createElement('div'); ctrl.className='yn-pair'; ['Yes','No'].forEach(function(v){ var b=document.createElement('button'); b.className='yn'; b.textContent=v; (function(fid,val,btn){ btn.onclick=function(){ ctrl.querySelectorAll('.yn').forEach(function(x){x.className='yn';}); btn.classList.add(val==='Yes'?'y':'n'); fvState.fieldValues[fid]=val; }; })(fi,v,b); ctrl.appendChild(b); }); }
+      else{ ctrl=document.createElement('input'); ctrl.type='text'; ctrl.className='d-txt'; ctrl.placeholder=f.placeholder||'Enter value'; (function(fid){ ctrl.oninput=function(){ fvState.fieldValues[fid]=this.value; }; })(fi); }
+      row.appendChild(lbl); row.appendChild(ctrl); flist.appendChild(row);
+    });
+  }
+  document.getElementById('fv-val-msg').classList.remove('show');
+  document.getElementById('fv-send-btn').classList.toggle('hidden', !t.sendInvoice);
+  document.getElementById('fv-preview').classList.remove('visible');
+  document.getElementById('fv-submitted').style.display='none';
+  document.getElementById('fv-main').style.display='block';
+}
+
+function fvTogglePhoto(i, total){
+  fvState.photos[i] = !fvState.photos[i];
+  var s = document.getElementById('fvps-'+i);
+  if(fvState.photos[i]){ s.classList.add('filled'); s.innerHTML=''; }
+  else{ s.classList.remove('filled'); s.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px;color:var(--color-text-tertiary)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span class="slot-lbl">Add</span>'; (function(idx,tot){ s.onclick=function(){ fvTogglePhoto(idx,tot); }; })(i,total); }
+  updateFVPhotoMeta(total);
+}
+
+function updateFVPhotoMeta(total){
+  var done = fvState.photos.filter(Boolean).length;
+  var m = document.getElementById('fv-photo-meta');
+  m.textContent = done+' / '+total+' required';
+  m.className = 'sec-meta'+(done===total&&total>0?' done':done>0?' warn':'');
+  document.getElementById('fv-prog').style.width = (total>0 ? Math.round(done/total*100) : 0)+'%';
+}
+
+function validate(){
+  var t = findT(document.getElementById('fv-tmpl-sel').value); if(!t) return[];
+  var msgs = [], done = fvState.photos.filter(Boolean).length;
+  if(done < (t.requiredPhotos||0)) msgs.push((t.requiredPhotos-done)+' more photo'+(t.requiredPhotos-done>1?'s':'')+' required');
+  (t.fields||[]).forEach(function(f,fi){ if(f.required&&!fvState.fieldValues[fi]) msgs.push('"'+f.label+'" is required'); });
+  return msgs;
+}
+
+function fvComplete(){
+  var msgs = validate(), vm = document.getElementById('fv-val-msg');
+  if(msgs.length>0){ vm.textContent=msgs.join(' · '); vm.classList.add('show'); return; }
+  vm.classList.remove('show');
+  var t = findT(document.getElementById('fv-tmpl-sel').value);
+  document.getElementById('fv-main').style.display='none';
+  document.getElementById('fv-sub-title').textContent='Job complete';
+  document.getElementById('fv-sub-sub').textContent=(t?t.name:'Job')+' · submitted for review';
+  document.getElementById('fv-submitted').style.display='block';
+}
+
+function fvOpenSend(){
+  var msgs = validate(), vm = document.getElementById('fv-val-msg');
+  if(msgs.length>0){ vm.textContent=msgs.join(' · '); vm.classList.add('show'); return; }
+  vm.classList.remove('show');
+  var t = findT(document.getElementById('fv-tmpl-sel').value);
+  document.getElementById('prev-inv-sub').textContent = t ? t.name : '';
+  var lines = document.getElementById('prev-inv-lines'); lines.innerHTML='';
+  var total = 0;
+  (t&&t.invoiceLines||[]).forEach(function(l){ total+=l.amt; var d=document.createElement('div'); d.className='inv-line'; d.innerHTML='<span>'+esc(l.label)+'</span><span>$'+l.amt.toFixed(2)+'</span>'; lines.appendChild(d); });
+  var totRow = document.createElement('div'); totRow.className='inv-line'; totRow.innerHTML='<span>Total</span><span id="prev-total">$'+total.toFixed(2)+'</span>'; lines.appendChild(totRow);
+  _invBase = total;
+  document.getElementById('prev-discount').value='';
+  document.getElementById('prev-extra').value='';
+  document.getElementById('prev-warr-title').textContent = t ? (t.warrantyTitle||'Warranty') : 'Warranty';
+  document.getElementById('prev-warr-body').textContent = t ? (t.warrantyBody||'') : '';
+  document.getElementById('fv-preview').classList.add('visible');
+}
+
+function fvClosePreview(){ document.getElementById('fv-preview').classList.remove('visible'); }
+
+function recalc(){
+  var disc=parseFloat(document.getElementById('prev-discount').value)||0;
+  var extra=parseFloat(document.getElementById('prev-extra').value)||0;
+  var el=document.getElementById('prev-total');
+  if(el) el.textContent='$'+Math.max(0,_invBase-disc+extra).toFixed(2);
+}
+
+function fvSend(){
+  var t = findT(document.getElementById('fv-tmpl-sel').value);
+  document.getElementById('fv-preview').classList.remove('visible');
+  document.getElementById('fv-main').style.display='none';
+  document.getElementById('fv-sub-title').textContent='Sent to customer';
+  document.getElementById('fv-sub-sub').textContent=(t?t.name:'Job')+' · invoice & warranty delivered';
+  document.getElementById('fv-submitted').style.display='block';
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.ptab').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('pane-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.ntab').forEach(function(b,i){ b.classList.toggle('active',(i===0&&tab==='templates')||(i===1&&tab==='fieldview')); });
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+renderLibrary();
+</script>
