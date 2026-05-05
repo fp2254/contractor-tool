@@ -304,6 +304,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </Link>
       )}
 
+      {/* Phase 4: Closeout package — shown for completed jobs with a template */}
+      {(job as any).template_id && job.status === "completed" && (
+        <Link
+          href={`/app/jobs/${job.id}/closeout`}
+          className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-white font-bold text-sm shadow-sm"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          📦 Prepare Closeout Package
+        </Link>
+      )}
+
       {/* Phase 3: Admin review panel — shown when job awaiting review */}
       {job.status === "submitted_for_review" && canReview && (
         <JobReviewPanel jobId={job.id} />

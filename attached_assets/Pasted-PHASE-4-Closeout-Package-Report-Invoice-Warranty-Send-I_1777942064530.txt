@@ -1,0 +1,168 @@
+PHASE 4: Closeout Package — Report + Invoice + Warranty Send
+
+IMPORTANT:
+The app is currently working. Do NOT break existing functionality.
+
+Do NOT remove existing:
+
+* Job screen
+* Existing invoice flow
+* Existing quote flow
+* Existing photo upload
+* Existing status controls
+* Existing report preview
+* Existing admin review
+
+GOAL:
+Allow trusted users to generate, preview, and send a complete job closeout package to the customer.
+
+The closeout package includes:
+
+1. Job Report
+2. Invoice
+3. Warranty
+
+PHASE 4 REQUIREMENTS:
+
+1. Closeout package generation
+
+After a job is completed or approved, generate a closeout package using:
+
+* Job report data
+* Existing quote data if linked
+* Template invoice line items if no quote exists
+* Template warranty title/body
+* Customer email/phone
+* Job photos
+* Notes
+* Field responses
+
+2. Invoice preview
+
+Create an invoice preview before sending.
+
+Invoice source priority:
+
+1. Existing linked invoice, if already created
+2. Linked accepted quote converted to invoice
+3. Template invoice line items
+4. Manual fallback line item
+
+Allow limited adjustment before sending:
+
+* Discount
+* Additional charge
+* Internal note
+* Customer-facing invoice note
+
+Do NOT let techs break invoice structure.
+
+3. Warranty preview
+
+Create a warranty preview.
+
+Warranty rules:
+
+* Warranty comes from the assigned job template
+* Warranty is locked for tech users
+* Warranty can be edited only by Owner/Admin
+* Warranty should auto-fill:
+
+  * Customer name
+  * Job address
+  * Completion date
+  * Company name
+  * Job/template name
+
+4. Send package screen
+
+Create a “Review & Send” screen after completion/approval.
+
+Show tabs or sections:
+
+* Report
+* Invoice
+* Warranty
+
+Actions:
+
+* Send to Customer
+* Save Draft
+* Back
+
+5. Send permissions
+
+Add template/org setting:
+
+allow_tech_send_closeout_package
+
+Rules:
+
+* Owner/Admin can always send
+* Tech can send only if this setting is enabled
+* If disabled, tech can complete/submit, but Owner/Admin sends
+
+6. Sending behavior
+
+When user taps Send to Customer:
+
+* Send report, invoice, and warranty to customer email if available
+* If SMS/customer phone system exists, send customer link by text if safe
+* Log who sent it
+* Log timestamp
+* Mark closeout package as sent
+
+7. Add closeout package table
+
+Create table if needed:
+
+job_closeout_packages:
+
+* id
+* org_id
+* job_id
+* report_id
+* invoice_id
+* warranty_title
+* warranty_body
+* package_data JSONB
+* status draft/sent
+* sent_by
+* sent_at
+* created_at
+* updated_at
+
+8. Status behavior
+
+After package is sent:
+
+* job status should remain completed
+* closeout package status → sent
+* show “Sent to customer” badge on job
+
+9. Safety rules
+
+* Do not delete or rewrite existing invoices
+* Do not replace current invoice system
+* Do not affect jobs without templates
+* Do not force every job to use closeout packages
+* Keep everything additive and reversible
+
+10. Success criteria
+
+After Phase 4:
+
+* Completed jobs can generate closeout packages
+* User can preview report/invoice/warranty before sending
+* Techs can send only if allowed
+* Warranty is locked for techs
+* Sent packages are logged
+* Existing invoice flow still works
+* Existing jobs without templates still work
+
+Add TODO comments for Phase 5:
+
+* PDF generation/download
+* Customer signature
+* Payment links
+* Review request automation

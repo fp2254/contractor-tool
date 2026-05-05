@@ -209,6 +209,16 @@ export default async function JobReportPage({ params }: { params: Promise<{ id: 
       {/* TODO Phase 4: Add warranty preview */}
       {/* TODO Phase 4: Allow trusted techs to send report/invoice/warranty to customer */}
 
+      {/* Phase 4: Closeout package link — shown for completed jobs */}
+      {isCompleted && (
+        <Link
+          href={`/app/jobs/${jobId}/closeout`}
+          className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-white font-bold text-sm shadow-sm"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          📦 Prepare Closeout Package
+        </Link>
+      )}
+
       <Link
         href={`/app/jobs/${jobId}`}
         className="flex items-center justify-center gap-2 w-full rounded-xl py-3 bg-white border border-gray-200 text-slate-700 font-semibold text-sm shadow-sm">

@@ -143,6 +143,75 @@ export function portalEmailHtml(opts: {
 </body></html>`;
 }
 
+export function closeoutEmailHtml(opts: {
+  businessName: string;
+  customerFirstName: string;
+  jobTitle: string;
+  jobAddress: string | null;
+  completedDate: string;
+  invoiceLines: { description: string; quantity: number; total: number }[];
+  effectiveTotal: number;
+  customerNote: string | null;
+  warrantyTitle: string;
+  warrantyBody: string;
+}): string {
+  const lineRows = opts.invoiceLines
+    .map(l => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155">${l.description}${l.quantity !== 1 ? ` × ${l.quantity}` : ""}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:14px;color:${l.total < 0 ? "#16a34a" : "#334155"};text-align:right">${l.total < 0 ? "-" : ""}$${Math.abs(l.total).toFixed(2)}</td>
+      </tr>`)
+    .join("");
+
+  const warrantyLines = opts.warrantyBody
+    .split("\n")
+    .filter(l => l.trim())
+    .map(l => `<p style="margin:0 0 8px;font-size:13px;color:#475569">• ${l.trim()}</p>`)
+    .join("");
+
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="background:#1B3A6B;padding:24px 32px">
+      <h1 style="margin:0;color:#fff;font-size:22px">${opts.businessName}</h1>
+      <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">Job Complete — ${opts.jobTitle}</p>
+    </div>
+    <div style="padding:32px">
+      <p style="margin:0 0 8px;font-size:15px;color:#334155">Hi ${opts.customerFirstName},</p>
+      <p style="margin:0 0 24px;font-size:15px;color:#64748b">Your job has been completed. Please find your job summary, invoice, and warranty below.</p>
+
+      <!-- Job Summary -->
+      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:24px">
+        <p style="margin:0 0 4px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Job Summary</p>
+        <p style="margin:4px 0;font-size:14px;color:#334155"><strong>${opts.jobTitle}</strong></p>
+        ${opts.jobAddress ? `<p style="margin:2px 0;font-size:13px;color:#64748b">📍 ${opts.jobAddress}</p>` : ""}
+        <p style="margin:2px 0;font-size:13px;color:#64748b">✓ Completed ${opts.completedDate}</p>
+      </div>
+
+      <!-- Invoice -->
+      <p style="margin:0 0 12px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Invoice</p>
+      ${lineRows.length ? `<table style="width:100%;border-collapse:collapse;margin-bottom:12px">${lineRows}</table>` : ""}
+      <div style="background:#1B3A6B;border-radius:8px;padding:12px 16px;text-align:right;margin-bottom:${opts.customerNote ? "12px" : "24px"}">
+        <span style="color:#94b4e0;font-size:13px;margin-right:16px">Total Due</span>
+        <span style="color:#fff;font-size:18px;font-weight:bold">$${Number(opts.effectiveTotal).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+      </div>
+      ${opts.customerNote ? `<p style="margin:0 0 24px;font-size:14px;color:#64748b;background:#f0f9ff;padding:12px 16px;border-left:3px solid #1B3A6B;border-radius:4px">${opts.customerNote}</p>` : ""}
+
+      <!-- Warranty -->
+      ${opts.warrantyBody ? `
+      <p style="margin:0 0 12px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">${opts.warrantyTitle || "Warranty & Terms"}</p>
+      <div style="background:#f0fdf4;border-radius:8px;padding:14px 16px;border-left:3px solid #22c55e;margin-bottom:24px">
+        ${warrantyLines}
+      </div>` : ""}
+
+      <p style="margin:0;font-size:14px;color:#64748b">Thank you for your business.<br><strong>${opts.businessName}</strong></p>
+    </div>
+    <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
+      <p style="margin:0;font-size:12px;color:#94a3b8">Sent with <a href="https://tradebase.contractors" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
 export function invoiceEmailHtml(opts: {
   businessName: string;
   customerFirstName: string;
