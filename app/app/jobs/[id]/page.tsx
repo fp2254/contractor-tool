@@ -11,6 +11,7 @@ import { JobBrain } from "@/components/JobBrain";
 import { JobDetailsSection, type TemplateField, type FieldResponse } from "@/components/JobDetailsSection";
 import { JobCompleteButton } from "@/components/JobCompleteButton";
 import { JobReviewPanel } from "@/components/JobReviewPanel";
+import { JobTemplateAssigner } from "@/components/JobTemplateAssigner";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -150,13 +151,25 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     admin.from("jobs").select("id,status").eq("customer_id", job.customer_id).eq("org_id", orgId!),
   ]);
 
-  // Phase 2 + 3: template fields + responses + role
+  // Phase 2 + 3 + template assigner: template fields + responses + role
   const { role: userRole } = await getUserOrgRole();
   const canReview = isOwnerOrAdmin(userRole);
   let templateFields: TemplateField[] = [];
   let fieldResponses: FieldResponse[] = [];
   let templateName = "";
   let requiredPhotoCount = 0;
+
+  // Fetch available templates for Owner/Admin (for the assigner dropdown)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const availableTemplates: { id: string; name: string }[] = canReview
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? ((await (admin as any)
+        .from("job_templates")
+        .select("id,name")
+        .eq("org_id", orgId!)
+        .eq("is_active", true)
+        .order("name", { ascending: true })).data ?? [])
+    : [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((job as any).template_id) {
@@ -269,6 +282,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
+
+      {/* Template assigner — Owner/Admin only */}
+      {canReview && !["completed", "submitted_for_review"].includes(job.status) && (
+        <JobTemplateAssigner
+          jobId={job.id}
+          currentTemplateId={(job as any).template_id ?? null}
+          currentTemplateName={templateName || null}
+          templates={availableTemplates}
+        />
+      )}
 
       {/* Phase 2+3: Job Details (template fields) — only shown if template is assigned */}
       {(job as any).template_id && (
