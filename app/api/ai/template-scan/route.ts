@@ -29,16 +29,18 @@ export type TemplateScanResult = {
 export async function POST(req: Request) {
   await ensureUserOrg();
 
-  const { image_data_url } = await req.json() as { image_data_url?: string };
-  if (!image_data_url?.startsWith("data:image")) {
-    return NextResponse.json({ error: "image_data_url is required" }, { status: 400 });
+  const body = await req.json() as { image_data_url?: string; text?: string };
+  const { image_data_url, text } = body;
+
+  if (!image_data_url?.startsWith("data:image") && !text?.trim()) {
+    return NextResponse.json({ error: "Provide image_data_url or text" }, { status: 400 });
   }
 
   const client = getOpenAIClient();
 
   const systemPrompt = [
     "You are a job template extractor for a trades business app.",
-    "The user will upload a photo or scan of an existing paper job template, checklist, or form.",
+    "The user will provide either a photo/scan of an existing paper job template OR pasted text from a form, checklist, or document.",
     "Your job is to extract all structured information from it and return it as JSON.",
     "",
     "Rules:",
@@ -60,6 +62,13 @@ export async function POST(req: Request) {
     '{ "name": "", "description": "", "required_photo_count": 0, "fields": [{ "label": "", "field_type": "short_text", "required": false, "options": [] }], "invoice_items": [{ "description": "", "amount": 0 }], "warranty_title": "", "warranty_body": "" }',
   ].join("\n");
 
+  const userContent = image_data_url
+    ? [
+        { type: "image_url" as const, image_url: { url: image_data_url, detail: "high" as const } },
+        { type: "text" as const, text: "Extract all template information from this document. Return JSON only." },
+      ]
+    : `Extract all template information from the following text. Return JSON only.\n\n${text}`;
+
   try {
     const completion = await client.chat.completions.create({
       model: "gpt-4o",
@@ -67,19 +76,7 @@ export async function POST(req: Request) {
       max_completion_tokens: 1200,
       messages: [
         { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: image_data_url, detail: "high" },
-            },
-            {
-              type: "text",
-              text: "Extract all template information from this document. Return JSON only.",
-            },
-          ],
-        },
+        { role: "user", content: userContent },
       ],
     });
 
