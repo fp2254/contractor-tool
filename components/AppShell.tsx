@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#1B3A6B" }}>
-        <Link href="/app" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <svg viewBox="0 0 24 24" className="h-7 w-7" fill="white">
             <path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
             <rect x="9" y="14" width="6" height="7" rx="0.5" fill="white" />
