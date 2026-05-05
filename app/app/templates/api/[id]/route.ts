@@ -4,6 +4,32 @@ import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 
 type Params = { params: Promise<{ id: string }> };
 
+export async function GET(_req: Request, { params }: Params) {
+  const { id } = await params;
+  const { orgId, role } = await getUserOrgRole();
+  if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isOwnerOrAdmin(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const admin = createAdminClient();
+  const [{ data: template }, { data: fields }, { data: invoiceItems }] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from("job_templates")
+      .select("id,name,description,required_photo_count,allow_tech_send_invoice_warranty,warranty_title,warranty_body,is_active,created_at")
+      .eq("id", id).eq("org_id", orgId).single(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from("job_template_fields")
+      .select("id,label,field_type,required,sort_order,options")
+      .eq("template_id", id).order("sort_order", { ascending: true }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from("job_template_invoice_items")
+      .select("id,description,amount,sort_order")
+      .eq("template_id", id).order("sort_order", { ascending: true }),
+  ]);
+
+  if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ template, fields: fields ?? [], invoiceItems: invoiceItems ?? [] });
+}
+
 export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
   const { orgId, role } = await getUserOrgRole();
