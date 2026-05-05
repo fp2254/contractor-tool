@@ -48,17 +48,16 @@ export default async function MorePage() {
           </Link>
         ))}
 
-        {canManageTemplates && (
-          <Link href="/app/templates"
-            className="flex items-center gap-4 px-4 py-4">
-            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg"
-              style={{ backgroundColor: "#1B3A6B20" }}>
-              🗂️
-            </div>
-            <span className="flex-1 font-medium text-slate-700">Job Templates</span>
-            <span className="text-gray-300 text-lg">›</span>
-          </Link>
-        )}
+        <Link href="/app/templates"
+          className="flex items-center gap-4 px-4 py-4">
+          <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg"
+            style={{ backgroundColor: "#1B3A6B20" }}>
+            🗂️
+          </div>
+          <span className="flex-1 font-medium text-slate-700">Job Templates</span>
+          <span className="text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 mr-1">Soon</span>
+          <span className="text-gray-300 text-lg">›</span>
+        </Link>
 
         {isAdmin && (
           <Link href="/app/admin"
