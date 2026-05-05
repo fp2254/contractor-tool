@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TemplateScannerButton } from "@/components/TemplateScannerButton";
+import type { TemplateScanResult } from "@/app/api/ai/template-scan/route";
 
 type FieldType = "short_text" | "dropdown" | "yes_no";
 
@@ -71,6 +73,31 @@ export default function TemplateEditorClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+
+  function handleScanExtracted(data: TemplateScanResult) {
+    if (data.name) setName(data.name);
+    if (data.description) setDescription(data.description);
+    if (data.required_photo_count > 0) setPhotoCount(data.required_photo_count);
+    if (data.warranty_title) setWarrantyTitle(data.warranty_title);
+    if (data.warranty_body) setWarrantyBody(data.warranty_body);
+    if (data.fields?.length) {
+      setFields(data.fields.map((f, i) => ({
+        label: f.label,
+        field_type: f.field_type,
+        required: f.required,
+        sort_order: i,
+        options: f.options ?? [],
+      })));
+    }
+    if (data.invoice_items?.length) {
+      setInvoiceItems(data.invoice_items.map((item, i) => ({
+        description: item.description,
+        amount: item.amount,
+        sort_order: i,
+      })));
+    }
+    setSaved(false);
+  }
 
   function addField() {
     setFields(prev => [...prev, emptyField(prev.length)]);
@@ -174,6 +201,14 @@ export default function TemplateEditorClient({
       )}
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">{error}</div>
+      )}
+
+      {/* ── AI Scan ── */}
+      <TemplateScannerButton onExtracted={handleScanExtracted} />
+      {isNew && (
+        <p className="text-xs text-gray-400 text-center -mt-2">
+          Scan an existing paper template to auto-fill the form below, or fill it in manually.
+        </p>
       )}
 
       {/* ── Basic Info ── */}
