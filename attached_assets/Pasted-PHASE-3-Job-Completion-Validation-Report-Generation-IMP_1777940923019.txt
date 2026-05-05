@@ -1,0 +1,159 @@
+PHASE 3: Job Completion Validation + Report Generation
+
+IMPORTANT:
+The app is currently working. Do NOT break existing functionality.
+
+Do NOT remove existing job controls, invoice flows, quote flows, photos, notes, or statuses.
+
+GOAL:
+When a job has a template assigned, allow the user to complete the job with required validation and generate a professional job report.
+
+PHASE 3 REQUIREMENTS:
+
+1. Add completion validation
+
+When a user attempts to complete a job with a template assigned:
+
+Validate:
+
+* Required photo count is met
+* Required template fields are filled
+* Job notes remain optional unless template says otherwise
+
+If incomplete:
+
+* Show clear inline warning
+* Do NOT submit completion
+
+Example:
+“2 more photos required”
+“Filter replaced is required”
+
+2. Add template-based completion status
+
+Add/support status:
+
+submitted_for_review
+
+Workflow:
+
+* Tech completes job → submitted_for_review
+* Owner/Admin completes job → completed unless review setting requires submitted_for_review
+
+Do not remove current statuses.
+
+3. Generate job report
+
+When completion succeeds, generate a job report record.
+
+Create table if needed:
+
+job_reports:
+
+* id
+* org_id
+* job_id
+* template_id
+* technician_id
+* customer_id
+* report_data JSONB
+* generated_at
+* created_at
+* updated_at
+
+Report data should include:
+
+* Customer name
+* Job address
+* Job date
+* Technician name
+* Job template name
+* Completed template field responses
+* Notes
+* Photos/photos metadata
+* Completion timestamp
+
+4. Add report preview
+
+After successful completion, show a report preview screen.
+
+Preview should show:
+
+* Customer
+* Address
+* Tech
+* Date
+* Work completed
+* Field responses
+* Notes
+* Photos
+
+Do not generate PDF yet unless easy and safe.
+
+5. Admin review
+
+If job status is submitted_for_review:
+
+Owner/Admin sees:
+
+* Report preview
+* Completion photos
+* Field responses
+* Tech notes
+
+Owner/Admin actions:
+
+* Approve Job
+* Send Back
+
+Approve Job:
+
+* status → completed
+
+Send Back:
+
+* status → in_progress
+* allow admin to add a short reason/note
+
+6. Tech permissions
+
+Tech users:
+
+* Can complete assigned jobs
+* Can view their submitted report
+* Cannot approve their own submitted_for_review job unless Owner/Admin
+
+Owner/Admin:
+
+* Can complete jobs
+* Can approve/send back reports
+
+7. Safety rules
+
+* Do not change invoice creation yet
+* Do not send warranty yet
+* Do not send documents to customer yet
+* Do not remove existing Create Invoice button
+* Do not remove existing job status controls
+* Do not affect jobs without templates
+
+8. Jobs without templates
+
+Jobs without templates should continue to work exactly as they do now.
+
+9. Success criteria
+
+After Phase 3:
+
+* Jobs with templates validate required fields/photos on completion
+* Completion creates a job report record
+* Report preview works
+* Tech-submitted jobs can go to submitted_for_review
+* Owner/Admin can approve or send back
+* Existing non-template job workflow still works
+
+Add TODO comments for Phase 4:
+
+* Generate invoice preview from report/template/quote
+* Add warranty preview
+* Allow trusted techs to send report/invoice/warranty to customer

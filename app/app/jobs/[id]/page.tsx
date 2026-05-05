@@ -9,19 +9,23 @@ import { PermitAssistant } from "@/components/PermitAssistant";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { JobBrain } from "@/components/JobBrain";
 import { JobDetailsSection, type TemplateField, type FieldResponse } from "@/components/JobDetailsSection";
-import { getUserOrgRole } from "@/lib/orgRole";
+import { JobCompleteButton } from "@/components/JobCompleteButton";
+import { JobReviewPanel } from "@/components/JobReviewPanel";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
   in_progress: "bg-amber-100 text-amber-700",
   completed: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+  submitted_for_review: "bg-purple-100 text-purple-700",
 };
 const STATUS_LABELS: Record<string, string> = {
   scheduled: "Scheduled",
   in_progress: "In Progress",
   completed: "Completed",
   cancelled: "Cancelled",
+  submitted_for_review: "Awaiting Review",
 };
 
 async function updateStatus(formData: FormData) {
@@ -146,9 +150,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     admin.from("jobs").select("id,status").eq("customer_id", job.customer_id).eq("org_id", orgId!),
   ]);
 
-  // Phase 2: template fields + responses (only if template is assigned)
-  // TODO Phase 3: use role to gate Owner/Admin-only template reassignment UI
-  await getUserOrgRole();
+  // Phase 2 + 3: template fields + responses + role
+  const { role: userRole } = await getUserOrgRole();
+  const canReview = isOwnerOrAdmin(userRole);
   let templateFields: TemplateField[] = [];
   let fieldResponses: FieldResponse[] = [];
   let templateName = "";
@@ -266,7 +270,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
       <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
 
-      {/* Phase 2: Job Details (template fields) — only shown if template is assigned */}
+      {/* Phase 2+3: Job Details (template fields) — only shown if template is assigned */}
       {(job as any).template_id && (
         <JobDetailsSection
           jobId={job.id}
@@ -278,7 +282,35 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           initialResponses={fieldResponses}
         />
       )}
-      {/* TODO Phase 3: Add true Complete Job validation, generate job report, invoice/warranty preview, tech closeout send */}
+
+      {/* Phase 3: Complete Job button — shown when template assigned and job still active */}
+      {(job as any).template_id && !["completed", "cancelled", "submitted_for_review"].includes(job.status) && (
+        <JobCompleteButton
+          jobId={job.id}
+          fields={templateFields}
+          savedResponses={fieldResponses}
+          currentPhotoCount={photos.length}
+          requiredPhotoCount={requiredPhotoCount}
+          isOwnerOrAdmin={canReview}
+        />
+      )}
+
+      {/* Phase 3: Report link — shown when job has a report (completed or submitted) */}
+      {(job as any).template_id && ["completed", "submitted_for_review"].includes(job.status) && (
+        <Link
+          href={`/app/jobs/${job.id}/report`}
+          className="flex items-center justify-center gap-2 w-full rounded-xl py-3 bg-purple-50 border border-purple-200 text-purple-700 font-semibold text-sm shadow-sm">
+          📋 View Job Report
+        </Link>
+      )}
+
+      {/* Phase 3: Admin review panel — shown when job awaiting review */}
+      {job.status === "submitted_for_review" && canReview && (
+        <JobReviewPanel jobId={job.id} />
+      )}
+      {/* TODO Phase 4: Generate invoice preview from report/template/quote */}
+      {/* TODO Phase 4: Add warranty preview */}
+      {/* TODO Phase 4: Allow trusted techs to send report/invoice/warranty to customer */}
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
