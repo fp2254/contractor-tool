@@ -1,0 +1,133 @@
+PHASE 2: Connect Job Templates to Jobs Safely
+
+IMPORTANT:
+The app is currently working. Do NOT break existing functionality.
+
+This phase should connect job templates to jobs, but still preserve the current job screen and existing workflows.
+
+Do NOT remove existing:
+
+* Job screen
+* Status buttons
+* Photo upload
+* Notes
+* Invoice creation
+* Quote flow
+* Existing completion flow
+
+GOAL:
+Allow Owner/Admin users to assign a job template to a job, then show that template’s required fields in a new optional Field View section.
+
+PHASE 2 REQUIREMENTS:
+
+1. Add template assignment to jobs
+
+Add a nullable template_id to jobs.
+
+Rules:
+
+* Existing jobs should continue working with template_id = null
+* New jobs may optionally have a template assigned
+* Jobs without templates should behave exactly as they do today
+
+2. Job create/edit screen
+
+Allow Owner/Admin to select a template when creating or editing a job.
+
+Show:
+
+* Template dropdown
+* Optional “No template” option
+
+Do not require a template.
+
+3. Field View dynamic section
+
+On the job screen, if a template is assigned:
+
+* Show a new “Job Details” section
+* Render fields from job_template_fields
+* Support:
+
+  * Short text
+  * Dropdown
+  * Yes/No
+
+If no template is assigned:
+
+* Hide this section
+
+4. Save field responses
+
+Create table:
+
+job_field_responses:
+
+* id
+* org_id
+* job_id
+* template_id
+* field_id
+* value
+* created_by
+* created_at
+* updated_at
+
+Save responses without affecting existing job notes/photos.
+
+5. Required field validation
+
+If a template field is marked required:
+
+* Show it as required
+* Warn user if incomplete when completing job
+
+Do not hard-block existing completion flow yet unless safe.
+
+6. Required photo count display
+
+If template has required_photo_count:
+
+* Show “Photos: X / Y required”
+* Use existing job photos if possible
+
+Do not change existing photo upload logic.
+
+7. Role behavior
+
+Owner/Admin:
+
+* Can assign/change template
+* Can view/edit all template responses
+
+Tech:
+
+* Can only fill responses on jobs assigned to them
+* Cannot change the assigned template
+
+8. Safety rules
+
+* Do not delete or alter existing job data
+* Do not change invoice behavior
+* Do not send warranty yet
+* Do not auto-generate report yet
+* Do not remove current controls
+
+9. Success criteria
+
+After Phase 2:
+
+* Existing jobs without templates still work normally
+* Owner/Admin can assign templates to jobs
+* Jobs with templates show dynamic fields
+* Field responses save correctly
+* Required photo count displays
+* Techs can fill job details
+* Nothing breaks in current job/quote/invoice flows
+
+Add TODO comments for Phase 3:
+
+* Add true Complete Job validation
+* Generate job report
+* Generate invoice/warranty preview
+* Allow tech closeout send

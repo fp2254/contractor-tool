@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     scheduled_date?: string;
     address?: string;
     notes?: string;
+    template_id?: string;
     new_customer?: { first_name: string; last_name: string; phone: string; email: string };
   };
 
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
       scheduled_date: body.scheduled_date || null,
       address: body.address || null,
       notes: body.notes || null,
+      template_id: body.template_id || null,
       created_by_user: user?.id ?? null,
     })
     .select("id")

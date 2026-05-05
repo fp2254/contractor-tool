@@ -8,8 +8,12 @@ const EMPTY_NC: NewCustomer = { first_name: "", last_name: "", phone: "", email:
 
 export default function NewJobClient({
   customers,
+  templates = [],
+  canAssignTemplate = false,
 }: {
   customers: { id: string; name: string }[];
+  templates?: { id: string; name: string }[];
+  canAssignTemplate?: boolean;
 }) {
   const router = useRouter();
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "__new__");
@@ -18,6 +22,7 @@ export default function NewJobClient({
   const [scheduledDate, setScheduledDate] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [templateId, setTemplateId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,6 +44,7 @@ export default function NewJobClient({
           scheduled_date: scheduledDate || undefined,
           address: address || undefined,
           notes: notes || undefined,
+          template_id: templateId || undefined,
           ...(isNew ? { new_customer: newCustomer } : {}),
         }),
       });
@@ -144,6 +150,22 @@ export default function NewJobClient({
           className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100"
         />
       </div>
+
+      {canAssignTemplate && templates.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Job Template</label>
+          <select
+            value={templateId}
+            onChange={e => setTemplateId(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-100">
+            <option value="">No template</option>
+            {templates.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Assign a template to enable job detail fields on this job.</p>
+        </div>
+      )}
 
       <button
         type="submit"

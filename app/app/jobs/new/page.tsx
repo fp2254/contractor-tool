@@ -1,24 +1,42 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 import NewJobClient from "./NewJobClient";
 
 export default async function NewJobPage() {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+  const { role } = await getUserOrgRole();
+  const canAssignTemplate = isOwnerOrAdmin(role);
 
-  const { data: customers } = await admin
-    .from("customers")
-    .select("id,first_name,last_name,company_name")
-    .eq("org_id", orgId!)
-    .order("created_at", { ascending: false });
+  const [customersRes, templatesRes] = await Promise.all([
+    admin
+      .from("customers")
+      .select("id,first_name,last_name,company_name")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false }),
+    canAssignTemplate
+      ? (admin as any)
+          .from("job_templates")
+          .select("id,name")
+          .eq("org_id", orgId!)
+          .eq("is_active", true)
+          .order("name", { ascending: true })
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  const customerOptions = (customers ?? []).map((c) => ({
+  const customerOptions = (customersRes.data ?? []).map((c) => ({
     id: c.id,
     name:
       [c.first_name, c.last_name].filter(Boolean).join(" ") ||
       c.company_name ||
       "Unnamed",
+  }));
+
+  const templateOptions = ((templatesRes.data ?? []) as { id: string; name: string }[]).map((t) => ({
+    id: t.id,
+    name: t.name,
   }));
 
   return (
@@ -32,7 +50,11 @@ export default async function NewJobPage() {
         <h1 className="text-xl font-bold text-slate-800">New Job</h1>
       </div>
       <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <NewJobClient customers={customerOptions} />
+        <NewJobClient
+          customers={customerOptions}
+          templates={templateOptions}
+          canAssignTemplate={canAssignTemplate}
+        />
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import { PhotoGallery } from "@/components/PhotoGallery";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { JobBrain } from "@/components/JobBrain";
+import { JobDetailsSection, type TemplateField, type FieldResponse } from "@/components/JobDetailsSection";
+import { getUserOrgRole } from "@/lib/orgRole";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -144,6 +146,32 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     admin.from("jobs").select("id,status").eq("customer_id", job.customer_id).eq("org_id", orgId!),
   ]);
 
+  // Phase 2: template fields + responses (only if template is assigned)
+  // TODO Phase 3: use role to gate Owner/Admin-only template reassignment UI
+  await getUserOrgRole();
+  let templateFields: TemplateField[] = [];
+  let fieldResponses: FieldResponse[] = [];
+  let templateName = "";
+  let requiredPhotoCount = 0;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((job as any).template_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const templateId = (job as any).template_id as string;
+    const [templateRes, fieldsRes, responsesRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any).from("job_templates").select("name,required_photo_count").eq("id", templateId).single(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any).from("job_template_fields").select("id,label,field_type,required,sort_order,options").eq("template_id", templateId).order("sort_order", { ascending: true }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any).from("job_field_responses").select("field_id,value").eq("job_id", id).eq("org_id", orgId!),
+    ]);
+    templateName = templateRes.data?.name ?? "";
+    requiredPhotoCount = templateRes.data?.required_photo_count ?? 0;
+    templateFields = (fieldsRes.data ?? []) as TemplateField[];
+    fieldResponses = (responsesRes.data ?? []) as FieldResponse[];
+  }
+
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Unknown";
   const cityState = [customer?.city, customer?.state].filter(Boolean).join(", ") || null;
 
@@ -237,6 +265,20 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
+
+      {/* Phase 2: Job Details (template fields) — only shown if template is assigned */}
+      {(job as any).template_id && (
+        <JobDetailsSection
+          jobId={job.id}
+          templateId={(job as any).template_id as string}
+          templateName={templateName}
+          requiredPhotoCount={requiredPhotoCount}
+          currentPhotoCount={photos.length}
+          fields={templateFields}
+          initialResponses={fieldResponses}
+        />
+      )}
+      {/* TODO Phase 3: Add true Complete Job validation, generate job report, invoice/warranty preview, tech closeout send */}
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
