@@ -27,8 +27,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "File too large (max 10 MB)" }, { status: 400 });
   }
 
-  // Create bucket if it doesn't exist yet (idempotent)
+  // Ensure bucket exists and is public (both calls are idempotent)
   await admin.storage.createBucket(BUCKET, { public: true }).catch(() => {});
+  await admin.storage.updateBucket(BUCKET, { public: true }).catch(() => {});
 
   const ext = file.name.split(".").pop() ?? "jpg";
   const filename = `${Date.now()}.${ext}`;
