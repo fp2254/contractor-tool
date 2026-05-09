@@ -17,65 +17,63 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const demoBlock = await checkDemoBlock(orgId!, "Email sending");
   if (demoBlock) return demoBlock;
 
-  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: warrantyNote }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: invoiceNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
-    admin
-      .from("notes")
-      .select("body")
-      .eq("org_id", orgId!)
-      .eq("entity_type", "invoice")
-      .eq("entity_id", id)
-      .like("body", "__warranty__%")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    admin.from("notes").select("body").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!),
   ]);
 
-  if (!invoice || !org) {
-    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  if (!invoice || !org) return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+
+  const { data: customer } = await admin.from("customers").select("*").eq("id", invoice.customer_id).single();
+  if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+  if (!customer.email) return NextResponse.json({ error: "Customer has no email address on file" }, { status: 400 });
+
+  // Resolve the linked quote: direct link (quotes.invoice_id) OR via job
+  const [linkedQuoteDirect, linkedJob] = await Promise.all([
+    admin.from("quotes").select("id").eq("invoice_id", id).eq("org_id", orgId!).maybeSingle(),
+    invoice.job_id
+      ? admin.from("jobs").select("quote_id").eq("id", invoice.job_id).eq("org_id", orgId!).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const linkedQuoteId: string | null =
+    (linkedQuoteDirect as { data: { id: string } | null }).data?.id ??
+    (linkedJob as { data: { quote_id: string | null } | null }).data?.quote_id ??
+    null;
+
+  // Warranty: invoice note first, fall back to linked quote note
+  const invoiceWarrantyNote = (invoiceNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
+  let warrantyText: string | null = invoiceWarrantyNote
+    ? invoiceWarrantyNote.body.replace("__warranty__:", "")
+    : null;
+
+  if (!warrantyText && linkedQuoteId) {
+    const { data: quoteWarrantyNotes } = await admin
+      .from("notes")
+      .select("body")
+      .eq("entity_type", "quote")
+      .eq("entity_id", linkedQuoteId)
+      .eq("org_id", orgId!)
+      .like("body", "__warranty__%")
+      .limit(1);
+    const qw = (quoteWarrantyNotes ?? [])[0];
+    if (qw) warrantyText = String(qw.body).replace("__warranty__:", "");
   }
 
-  const { data: customer } = await admin
-    .from("customers")
-    .select("*")
-    .eq("id", invoice.customer_id)
-    .single();
-
-  if (!customer) {
-    return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-  }
-
-  if (!customer.email) {
-    return NextResponse.json({ error: "Customer has no email address on file" }, { status: 400 });
-  }
-
-  const [{ data: invoicePhotos }, { data: jobPhotos }, { data: quotePhotos }] = await Promise.all([
+  // Photos: invoice + job + quote (all paths)
+  const photoSources = [
     admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }),
     invoice.job_id
       ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
-    invoice.job_id
-      ? admin
-          .from("jobs")
-          .select("quote_id")
-          .eq("id", invoice.job_id)
-          .eq("org_id", orgId!)
-          .maybeSingle()
-          .then(async ({ data }) =>
-            data?.quote_id
-              ? admin.from("photos").select("url,filename").eq("entity_type", "quote").eq("entity_id", data.quote_id).eq("org_id", orgId!).order("created_at", { ascending: true })
-              : { data: [] as { url: string; filename: string | null }[] }
-          )
+    linkedQuoteId
+      ? admin.from("photos").select("url,filename").eq("entity_type", "quote").eq("entity_id", linkedQuoteId).eq("org_id", orgId!).order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
-  ]);
-  const photos = [...(invoicePhotos ?? []), ...(jobPhotos ?? []), ...(quotePhotos ?? [])];
-
-  const warrantyText = warrantyNote?.body
-    ? String(warrantyNote.body).replace("__warranty__:", "")
-    : null;
+  ];
+  const photoResults = await Promise.all(photoSources);
+  const photos = photoResults.flatMap(r => (r as { data: { url: string; filename: string | null }[] | null }).data ?? []);
 
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
@@ -92,10 +90,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const invoiceNum = invoice.invoice_number ?? `INV-${id.slice(0, 8).toUpperCase()}`;
   const businessName = org.business_name ?? "Your Contractor";
   const customerFirstName = customer.first_name || customer.company_name || "there";
+  const paymentMethods = (settings as any)?.payment_methods ?? null;
 
   const { client, fromEmail } = await getResendClient();
-
-  const paymentMethods = (settings as any)?.payment_methods ?? null;
 
   const { error: sendError } = await client.emails.send({
     from: `${businessName} <${fromEmail}>`,
@@ -114,7 +111,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       })),
       paymentMethods,
       photos: photos.map(p => ({ url: p.url, filename: p.filename ?? "Photo" })),
-      warrantyText: warrantyNote?.body ? String(warrantyNote.body).replace("__warranty__:", "") : null,
+      warrantyText,
     }),
     attachments: [
       {

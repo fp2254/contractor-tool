@@ -23,7 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 });
   }
 
-  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: allNotes }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: invoiceNotes }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", invoiceId).eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", invoiceId).eq("org_id", pt.org_id),
     admin.from("orgs").select("*").eq("id", pt.org_id).single(),
@@ -31,43 +31,54 @@ export async function GET(
     admin.from("notes").select("body").eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", pt.org_id),
   ]);
 
-  if (!invoice || !org) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!invoice || !org) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { data: customer } = await admin.from("customers").select("*").eq("id", pt.customer_id).single();
-  if (!customer) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!customer) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const warrantyNote = (allNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
-  const warrantyText = warrantyNote ? warrantyNote.body.replace("__warranty__:", "") : null;
-
-  // Fetch photos: invoice + linked job + linked quote (via job.quote_id)
-  const [{ data: invoicePhotos }, { data: jobPhotos }, linkedJobRow] = await Promise.all([
-    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", pt.org_id).order("created_at", { ascending: true }),
-    invoice.job_id
-      ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", pt.org_id).order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+  // Resolve the linked quote: direct link (quotes.invoice_id) OR via job
+  const [linkedQuoteDirect, linkedJob] = await Promise.all([
+    admin.from("quotes").select("id").eq("invoice_id", invoiceId).eq("org_id", pt.org_id).maybeSingle(),
     invoice.job_id
       ? admin.from("jobs").select("quote_id").eq("id", invoice.job_id).eq("org_id", pt.org_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+  const linkedQuoteId: string | null =
+    (linkedQuoteDirect as { data: { id: string } | null }).data?.id ??
+    (linkedJob as { data: { quote_id: string | null } | null }).data?.quote_id ??
+    null;
 
-  let quotePhotos: { url: string; filename: string | null }[] = [];
-  const linkedQuoteId = (linkedJobRow as { data: { quote_id: string | null } | null }).data?.quote_id;
-  if (linkedQuoteId) {
-    const { data } = await admin
-      .from("photos")
-      .select("url,filename")
+  // Warranty: invoice note first, fall back to linked quote note
+  const invoiceWarrantyNote = (invoiceNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
+  let warrantyText: string | null = invoiceWarrantyNote
+    ? invoiceWarrantyNote.body.replace("__warranty__:", "")
+    : null;
+
+  if (!warrantyText && linkedQuoteId) {
+    const { data: quoteWarrantyNotes } = await admin
+      .from("notes")
+      .select("body")
       .eq("entity_type", "quote")
       .eq("entity_id", linkedQuoteId)
       .eq("org_id", pt.org_id)
-      .order("created_at", { ascending: true });
-    quotePhotos = data ?? [];
+      .like("body", "__warranty__%")
+      .limit(1);
+    const qw = (quoteWarrantyNotes ?? [])[0];
+    if (qw) warrantyText = String(qw.body).replace("__warranty__:", "");
   }
 
-  const photos = [...(invoicePhotos ?? []), ...(jobPhotos ?? []), ...quotePhotos];
+  // Photos: invoice + job + quote (all paths)
+  const photoSources = [
+    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", pt.org_id).order("created_at", { ascending: true }),
+    invoice.job_id
+      ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", pt.org_id).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+    linkedQuoteId
+      ? admin.from("photos").select("url,filename").eq("entity_type", "quote").eq("entity_id", linkedQuoteId).eq("org_id", pt.org_id).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+  ];
+  const photoResults = await Promise.all(photoSources);
+  const photos = photoResults.flatMap(r => (r as { data: { url: string; filename: string | null }[] | null }).data ?? []);
 
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
