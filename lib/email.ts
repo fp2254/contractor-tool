@@ -220,6 +220,7 @@ export function invoiceEmailHtml(opts: {
   dueDate: string | null;
   lineItems: { description: string; quantity: number; total_price: number }[];
   paymentMethods?: string | null;
+  photos?: { url: string; filename: string }[];
 }): string {
   const items = opts.lineItems
     .map(
@@ -239,6 +240,23 @@ export function invoiceEmailHtml(opts: {
     ? opts.paymentMethods.split(",").map(m => m.trim().charAt(0).toUpperCase() + m.trim().slice(1)).join(", ")
     : "Cash, Check, Card";
 
+  const photoGrid = opts.photos && opts.photos.length > 0
+    ? `<div style="margin-top:24px">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Job Photos (${opts.photos.length})</p>
+        <table style="width:100%;border-collapse:collapse">
+          <tr>${opts.photos.slice(0, 6).map((p, i) => `
+            ${i > 0 && i % 3 === 0 ? '</tr><tr>' : ''}
+            <td style="width:33%;padding:3px;vertical-align:top">
+              <a href="${p.url}" target="_blank" style="display:block">
+                <img src="${p.url}" alt="${p.filename}" width="160" style="width:100%;height:100px;object-fit:cover;border-radius:6px;display:block" />
+              </a>
+            </td>`).join("")}
+          </tr>
+        </table>
+        ${opts.photos.length > 6 ? `<p style="margin:8px 0 0;font-size:12px;color:#94a3b8;text-align:center">+ ${opts.photos.length - 6} more photos on file</p>` : ""}
+      </div>`
+    : "";
+
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif">
   <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
     <div style="background:#1B3A6B;padding:24px 32px">
@@ -257,10 +275,11 @@ export function invoiceEmailHtml(opts: {
         <p style="margin:0;font-size:13px;font-weight:bold;color:#166534">Accepted Payment Methods</p>
         <p style="margin:4px 0 0;font-size:13px;color:#15803d">${methods}</p>
       </div>
+      ${photoGrid}
       <p style="margin:24px 0 0;font-size:15px;color:#64748b">Thank you,<br><strong>${opts.businessName}</strong></p>
     </div>
     <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
-      <p style="margin:0;font-size:12px;color:#94a3b8">Invoice powered by <a href="https://trade-base.biz" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
+      <p style="margin:0;font-size:12px;color:#94a3b8">Invoice powered by <a href="https://tradebase.contractors" style="color:#94a3b8;text-decoration:underline">TradeBase</a> &middot; Built for contractors</p>
     </div>
   </div>
 </body></html>`;

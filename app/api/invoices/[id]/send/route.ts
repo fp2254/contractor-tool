@@ -42,6 +42,18 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Customer has no email address on file" }, { status: 400 });
   }
 
+  // Fetch photos: invoice photos + any linked job photos
+  const photoPromises: Promise<{ data: { url: string; filename: string | null }[] | null }>[] = [
+    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }) as unknown as Promise<{ data: { url: string; filename: string | null }[] | null }>,
+  ];
+  if (invoice.job_id) {
+    photoPromises.push(
+      admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true }) as unknown as Promise<{ data: { url: string; filename: string | null }[] | null }>
+    );
+  }
+  const photoResults = await Promise.all(photoPromises);
+  const photos = photoResults.flatMap(r => r.data ?? []);
+
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
       invoice,
@@ -76,6 +88,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         total_price: Number(i.total_price),
       })),
       paymentMethods,
+      photos: photos.map(p => ({ url: p.url, filename: p.filename ?? "Photo" })),
     }),
     attachments: [
       {
