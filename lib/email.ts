@@ -221,6 +221,7 @@ export function invoiceEmailHtml(opts: {
   lineItems: { description: string; quantity: number; total_price: number }[];
   paymentMethods?: string | null;
   photos?: { url: string; filename: string }[];
+  warrantyText?: string | null;
 }): string {
   const items = opts.lineItems
     .map(
@@ -242,7 +243,7 @@ export function invoiceEmailHtml(opts: {
 
   const photoGrid = opts.photos && opts.photos.length > 0
     ? `<div style="margin-top:24px">
-        <p style="margin:0 0 10px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Job Photos (${opts.photos.length})</p>
+        <p style="margin:0 0 10px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Photos (${opts.photos.length})</p>
         <table style="width:100%;border-collapse:collapse">
           <tr>${opts.photos.slice(0, 6).map((p, i) => `
             ${i > 0 && i % 3 === 0 ? '</tr><tr>' : ''}
@@ -275,6 +276,7 @@ export function invoiceEmailHtml(opts: {
         <p style="margin:0;font-size:13px;font-weight:bold;color:#166534">Accepted Payment Methods</p>
         <p style="margin:4px 0 0;font-size:13px;color:#15803d">${methods}</p>
       </div>
+      ${opts.warrantyText ? `<div style="margin-top:20px;background:#f8fafc;border-radius:8px;padding:12px 16px;border-left:3px solid #1B3A6B"><p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#334155">Terms &amp; Warranty</p><p style="margin:0;font-size:13px;color:#64748b;white-space:pre-line">${opts.warrantyText}</p></div>` : ""}
       ${photoGrid}
       <p style="margin:24px 0 0;font-size:15px;color:#64748b">Thank you,<br><strong>${opts.businessName}</strong></p>
     </div>

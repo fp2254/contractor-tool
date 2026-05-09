@@ -17,11 +17,21 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const demoBlock = await checkDemoBlock(orgId!, "Email sending");
   if (demoBlock) return demoBlock;
 
-  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
+  const [{ data: invoice }, { data: items }, { data: org }, { data: settings }, { data: warrantyNote }] = await Promise.all([
     admin.from("invoices").select("*").eq("id", id).eq("org_id", orgId!).single(),
     admin.from("invoice_items").select("*").eq("invoice_id", id).eq("org_id", orgId!),
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+    admin
+      .from("notes")
+      .select("body")
+      .eq("org_id", orgId!)
+      .eq("entity_type", "invoice")
+      .eq("entity_id", id)
+      .like("body", "__warranty__%")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (!invoice || !org) {
@@ -42,17 +52,26 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Customer has no email address on file" }, { status: 400 });
   }
 
-  // Fetch photos: invoice photos + any linked job photos
-  const photoPromises: Promise<{ data: { url: string; filename: string | null }[] | null }>[] = [
-    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }) as unknown as Promise<{ data: { url: string; filename: string | null }[] | null }>,
-  ];
-  if (invoice.job_id) {
-    photoPromises.push(
-      admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true }) as unknown as Promise<{ data: { url: string; filename: string | null }[] | null }>
-    );
-  }
-  const photoResults = await Promise.all(photoPromises);
-  const photos = photoResults.flatMap(r => r.data ?? []);
+  const [{ data: invoicePhotos }, { data: jobPhotos }, { data: quotePhotos }] = await Promise.all([
+    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }),
+    invoice.job_id
+      ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+    invoice.job_id
+      ? admin
+          .from("jobs")
+          .select("quote_id")
+          .eq("id", invoice.job_id)
+          .eq("org_id", orgId!)
+          .maybeSingle()
+          .then(async ({ data }) =>
+            data?.quote_id
+              ? admin.from("photos").select("url,filename").eq("entity_type", "quote").eq("entity_id", data.quote_id).eq("org_id", orgId!).order("created_at", { ascending: true })
+              : { data: [] as { url: string; filename: string | null }[] }
+          )
+      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+  ]);
+  const photos = [...(invoicePhotos ?? []), ...(jobPhotos ?? []), ...(quotePhotos ?? [])];
 
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
@@ -89,6 +108,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       })),
       paymentMethods,
       photos: photos.map(p => ({ url: p.url, filename: p.filename ?? "Photo" })),
+      warrantyText: warrantyNote?.body ? String(warrantyNote.body).replace("__warranty__:", "") : null,
     }),
     attachments: [
       {
