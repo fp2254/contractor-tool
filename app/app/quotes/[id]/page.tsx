@@ -91,7 +91,7 @@ async function convertToInvoice(formData: FormData) {
         entity_type: "invoice",
         entity_id: invoice.id,
         body: quoteWarrantyNote.body,
-        created_by_user: user.data.user?.id ?? null,
+        created_by: user.data.user?.id ?? null,
       })
     );
   }

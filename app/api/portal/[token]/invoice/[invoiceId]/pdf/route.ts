@@ -43,6 +43,32 @@ export async function GET(
   const warrantyNote = (allNotes ?? []).find((n: { body: string }) => n.body.startsWith("__warranty__:"));
   const warrantyText = warrantyNote ? warrantyNote.body.replace("__warranty__:", "") : null;
 
+  // Fetch photos: invoice + linked job + linked quote (via job.quote_id)
+  const [{ data: invoicePhotos }, { data: jobPhotos }, linkedJobRow] = await Promise.all([
+    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", invoiceId).eq("org_id", pt.org_id).order("created_at", { ascending: true }),
+    invoice.job_id
+      ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", pt.org_id).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+    invoice.job_id
+      ? admin.from("jobs").select("quote_id").eq("id", invoice.job_id).eq("org_id", pt.org_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  let quotePhotos: { url: string; filename: string | null }[] = [];
+  const linkedQuoteId = (linkedJobRow as { data: { quote_id: string | null } | null }).data?.quote_id;
+  if (linkedQuoteId) {
+    const { data } = await admin
+      .from("photos")
+      .select("url,filename")
+      .eq("entity_type", "quote")
+      .eq("entity_id", linkedQuoteId)
+      .eq("org_id", pt.org_id)
+      .order("created_at", { ascending: true });
+    quotePhotos = data ?? [];
+  }
+
+  const photos = [...(invoicePhotos ?? []), ...(jobPhotos ?? []), ...quotePhotos];
+
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
       invoice,
@@ -51,6 +77,7 @@ export async function GET(
       org,
       settings: settings as any,
       warrantyText,
+      photos,
     })
   );
 
