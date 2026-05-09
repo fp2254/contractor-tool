@@ -64,13 +64,39 @@ async function convertToInvoice(formData: FormData) {
 
   if (!invoice) return;
 
-  await Promise.all([
+  // Fetch quote's warranty note so we can copy it to the invoice
+  const { data: quoteWarrantyNote } = await admin
+    .from("notes")
+    .select("body")
+    .eq("org_id", orgId!)
+    .eq("entity_type", "quote")
+    .eq("entity_id", quoteId)
+    .like("body", "__warranty__%")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const insertOps: Promise<unknown>[] = [
     admin.from("invoice_items").insert((items ?? []).map(i => ({
       org_id: orgId!, invoice_id: invoice.id,
       description: i.description, quantity: i.quantity, unit_price: i.unit_price, total_price: i.total_price,
     }))),
     admin.from("quotes").update({ invoice_id: invoice.id }).eq("id", quoteId).eq("org_id", orgId!),
-  ]);
+  ];
+
+  if (quoteWarrantyNote?.body) {
+    insertOps.push(
+      admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "invoice",
+        entity_id: invoice.id,
+        body: quoteWarrantyNote.body,
+        created_by_user: user.data.user?.id ?? null,
+      })
+    );
+  }
+
+  await Promise.all(insertOps);
 
   redirect(`/app/invoices/${invoice.id}`);
 }

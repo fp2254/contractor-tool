@@ -73,6 +73,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   ]);
   const photos = [...(invoicePhotos ?? []), ...(jobPhotos ?? []), ...(quotePhotos ?? [])];
 
+  const warrantyText = warrantyNote?.body
+    ? String(warrantyNote.body).replace("__warranty__:", "")
+    : null;
+
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
       invoice,
@@ -80,6 +84,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       customer,
       org,
       settings: settings as any,
+      warrantyText,
+      photos,
     })
   );
 

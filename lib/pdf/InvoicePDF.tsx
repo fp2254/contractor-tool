@@ -50,6 +50,7 @@ type Props = {
     logo_url?: string | null;
   } | null;
   warrantyText?: string | null;
+  photos?: { url: string; filename: string | null }[];
 };
 
 function fmt(n: number) {
@@ -59,7 +60,7 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function InvoicePDF({ invoice, items, customer, org, settings, warrantyText }: Props) {
+export function InvoicePDF({ invoice, items, customer, org, settings, warrantyText, photos }: Props) {
   const s = settings ?? {};
   const taxRate = s.tax_applied_auto ? (s.default_tax_rate ?? 0) : 0;
   const subtotal = items.reduce((sum, i) => sum + Number(i.total_price), 0);
@@ -185,6 +186,24 @@ export function InvoicePDF({ invoice, items, customer, org, settings, warrantyTe
           <View style={[base.notesBox, { marginTop: 12, borderLeft: `3px solid ${NAVY}` }]}>
             <Text style={base.notesLabel}>Terms &amp; Warranty</Text>
             <Text style={base.notesText}>{warrantyText}</Text>
+          </View>
+        ) : null}
+
+        {/* Job Photos */}
+        {photos && photos.length > 0 ? (
+          <View style={{ marginTop: 16 }}>
+            <Text style={[base.notesLabel, { marginBottom: 6 }]}>
+              Photos ({photos.length})
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+              {photos.slice(0, 9).map((p, i) => (
+                <Image
+                  key={i}
+                  src={p.url}
+                  style={{ width: "31%", height: 90, objectFit: "cover", borderRadius: 4 }}
+                />
+              ))}
+            </View>
           </View>
         ) : null}
 
