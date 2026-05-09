@@ -195,13 +195,21 @@ export function InvoicePDF({ invoice, items, customer, org, settings, warrantyTe
             <Text style={[base.notesLabel, { marginBottom: 6 }]}>
               Photos ({photos.length})
             </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
               {photos.slice(0, 9).map((p, i) => (
-                <Image
+                <View
                   key={i}
-                  src={p.url}
-                  style={{ width: "31%", height: 90, objectFit: "cover", borderRadius: 4 }}
-                />
+                  style={{
+                    width: "33%",
+                    paddingRight: i % 3 !== 2 ? 3 : 0,
+                    paddingBottom: 3,
+                  }}
+                >
+                  <Image
+                    src={p.url}
+                    style={{ width: "100%", height: 85 }}
+                  />
+                </View>
               ))}
             </View>
           </View>
