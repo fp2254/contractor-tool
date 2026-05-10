@@ -41,6 +41,9 @@ export async function POST(req: Request) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
 
+  // If a specific doc is being linked, always reissue so the URL contains the correct invoice/quote path
+  if (body.invoice_id || body.quote_id) body.reissue = true;
+
   if (body.reissue) {
     const { data: existing } = await admin
       .from("customer_portal_tokens")

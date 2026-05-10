@@ -46,7 +46,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const regularNotes = (invoiceNotes ?? [])
     .filter((n: { body: string }) => !n.body.startsWith("__"))
     .map((n: { body: string }) => n.body);
-  console.log(`[invoice-pdf] id=${id} org=${orgId} totalNotes=${(invoiceNotes ?? []).length} regularNotes=${regularNotes.length}`, regularNotes);
+  console.log(`[invoice-pdf] id=${id} org=${orgId} totalNotes=${(invoiceNotes ?? []).length} regularNotes=${regularNotes.length} warrantyText=${warrantyText ? warrantyText.slice(0,40) : "NONE"}`, regularNotes);
 
   if (!warrantyText && linkedQuoteId) {
     const { data: quoteWarrantyNotes } = await admin
