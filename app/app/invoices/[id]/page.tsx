@@ -264,17 +264,6 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         invoiceId={invoice.id}
       />
 
-      <ShareCard
-        type="invoice"
-        customerName={customerName}
-        customerPhone={customer?.phone ?? null}
-        customerEmail={customer?.email ?? null}
-        amount={Number(invoice.total_amount)}
-        customerId={invoice.customer_id ?? ""}
-        portalToken={null}
-        orgName={orgName}
-      />
-
       <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
 
       <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />

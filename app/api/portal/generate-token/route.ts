@@ -20,6 +20,7 @@ export async function POST(req: Request) {
 
   const admin = createAdminClient();
   const body = await req.json() as { customer_id: string; quote_id?: string; invoice_id?: string; reissue?: boolean };
+  console.log("[generate-token] body:", JSON.stringify(body));
 
   if (!body.customer_id) {
     return NextResponse.json({ error: "customer_id required" }, { status: 400 });

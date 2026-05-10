@@ -57,6 +57,7 @@ export async function GET(
   const regularNotes = (invoiceNotes ?? [])
     .filter((n: { body: string }) => !n.body.startsWith("__"))
     .map((n: { body: string }) => n.body);
+  console.log(`[portal-invoice-pdf] invoiceId=${invoiceId} org=${pt.org_id} totalNotes=${(invoiceNotes ?? []).length} regularNotes=${regularNotes.length}`, regularNotes);
 
   if (!warrantyText && linkedQuoteId) {
     const { data: quoteWarrantyNotes } = await admin
