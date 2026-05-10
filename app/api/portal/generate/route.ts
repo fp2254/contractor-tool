@@ -126,12 +126,12 @@ export async function POST(req: Request) {
     token = newToken.token;
   }
 
-  const docSuffix = body.invoice_id
-    ? `?invoice=${body.invoice_id}`
+  const docPath = body.invoice_id
+    ? `/invoice/${body.invoice_id}`
     : body.quote_id
-    ? `?quote=${body.quote_id}`
+    ? `/quote/${body.quote_id}`
     : "";
-  const portalUrl = `${getOrigin(req)}/portal/${token}${docSuffix}`;
+  const portalUrl = `${getOrigin(req)}/portal/${token}${docPath}`;
   const customerFirstName = customer.first_name || customer.company_name || "there";
 
   const { client, fromEmail } = await getResendClient();

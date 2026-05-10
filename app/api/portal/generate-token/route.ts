@@ -71,12 +71,12 @@ export async function POST(req: Request) {
 
     if (existing?.token) {
       const origin = getOrigin(req);
-      const docSuffix = body.invoice_id
-        ? `?invoice=${body.invoice_id}`
+      const docPath = body.invoice_id
+        ? `/invoice/${body.invoice_id}`
         : body.quote_id
-        ? `?quote=${body.quote_id}`
+        ? `/quote/${body.quote_id}`
         : "";
-      const portalUrl = `${origin}/portal/${existing.token}${docSuffix}`;
+      const portalUrl = `${origin}/portal/${existing.token}${docPath}`;
       return NextResponse.json({ token: existing.token, portalUrl });
     }
   }
@@ -96,12 +96,12 @@ export async function POST(req: Request) {
   }
 
   const origin = getOrigin(req);
-  const docSuffix = body.invoice_id
-    ? `?invoice=${body.invoice_id}`
+  const docPath = body.invoice_id
+    ? `/invoice/${body.invoice_id}`
     : body.quote_id
-    ? `?quote=${body.quote_id}`
+    ? `/quote/${body.quote_id}`
     : "";
-  const portalUrl = `${origin}/portal/${newToken.token}${docSuffix}`;
+  const portalUrl = `${origin}/portal/${newToken.token}${docPath}`;
 
   return NextResponse.json({ token: newToken.token, portalUrl });
 }
