@@ -74,7 +74,6 @@ export async function POST(req: Request) {
       total_amount: totalAmount,
       invoice_number: `INV-${Date.now()}`,
       due_date: due_date ?? null,
-      notes: notes ?? "",
       created_by_user: user?.id ?? null,
     } as Record<string, unknown>)
     .select("id")
@@ -84,18 +83,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error?.message ?? "Could not create invoice" }, { status: 400 });
   }
 
+  const inserts: Promise<unknown>[] = [];
+
   if (items.length) {
-    await admin.from("invoice_items").insert(
-      items.map((item) => ({
-        org_id: orgId!,
-        invoice_id: invoice.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.quantity * item.unit_price,
-      }))
+    inserts.push(
+      admin.from("invoice_items").insert(
+        items.map((item) => ({
+          org_id: orgId!,
+          invoice_id: invoice.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.quantity * item.unit_price,
+        }))
+      )
     );
   }
+
+  // Save notes and warranty as rows in the notes table (invoices has no notes column)
+  if (notes && notes.trim()) {
+    inserts.push(
+      admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "invoice",
+        entity_id: invoice.id,
+        body: notes.trim(),
+        created_by: user?.id ?? null,
+      })
+    );
+  }
+
+  await Promise.all(inserts);
 
   return NextResponse.json({ id: invoice.id });
 }
