@@ -4,6 +4,7 @@ import React from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import { InvoicePDF } from "@/lib/pdf/InvoicePDF";
+import { loadPhotosForPdf } from "@/lib/pdf/loadPhotos";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   ];
   const photoResults = await Promise.all(photoSources);
   const photos = photoResults.flatMap(r => (r as { data: { url: string; filename: string | null }[] | null }).data ?? []);
+  const pdfPhotos = await loadPhotosForPdf(photos);
 
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
@@ -77,7 +79,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       org,
       settings: settings as any,
       warrantyText,
-      photos,
+      photos: pdfPhotos,
     })
   );
 
