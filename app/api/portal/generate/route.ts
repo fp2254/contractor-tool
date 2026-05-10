@@ -18,7 +18,7 @@ function getOrigin(req: Request): string {
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
-  const body = await req.json() as { customer_id: string; quote_id?: string; reissue?: boolean };
+  const body = await req.json() as { customer_id: string; quote_id?: string; invoice_id?: string; reissue?: boolean };
 
   const { checkDemoBlock } = await import("@/lib/demo");
   const demoBlock = await checkDemoBlock(orgId!, "Portal email sending");
@@ -126,7 +126,12 @@ export async function POST(req: Request) {
     token = newToken.token;
   }
 
-  const portalUrl = `${getOrigin(req)}/portal/${token}`;
+  const docSuffix = body.invoice_id
+    ? `?invoice=${body.invoice_id}`
+    : body.quote_id
+    ? `?quote=${body.quote_id}`
+    : "";
+  const portalUrl = `${getOrigin(req)}/portal/${token}${docSuffix}`;
   const customerFirstName = customer.first_name || customer.company_name || "there";
 
   const { client, fromEmail } = await getResendClient();

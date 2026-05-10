@@ -48,8 +48,15 @@ const INV_STATUS: Record<string, { label: string; color: string }> = {
   overdue: { label: "Overdue", color: "bg-red-100 text-red-700" },
 };
 
-export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function PortalPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ invoice?: string; quote?: string }>;
+}) {
   const { token } = await params;
+  const { invoice: filterInvoice, quote: filterQuote } = await searchParams;
   const admin = createAdminClient();
 
   const { data: pt } = await admin
@@ -126,7 +133,7 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-6">
 
         {/* Quotes */}
-        {quotes && quotes.length > 0 && quotes.map((q) => {
+        {quotes && quotes.length > 0 && quotes.filter(q => !filterQuote && !filterInvoice ? true : filterQuote === q.id).map((q) => {
           const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
           const canAct = q.status === "draft" || q.status === "sent";
           const pdfUrl = `/api/portal/${token}/quote/${q.id}/pdf`;
@@ -208,9 +215,9 @@ export default async function PortalPage({ params }: { params: Promise<{ token: 
         {/* Invoices */}
         {invoices && invoices.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Invoices</p>
+            {!filterInvoice && !filterQuote && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Invoices</p>}
             <div className="space-y-4">
-              {invoices.map((inv) => {
+              {invoices.filter(inv => !filterQuote && !filterInvoice ? true : filterInvoice === inv.id).map((inv) => {
                 const st = INV_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-600" };
                 const dueDate = inv.due_date
                   ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })

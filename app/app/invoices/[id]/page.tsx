@@ -10,6 +10,7 @@ import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
 import { SquarePaymentButton } from "@/components/SquarePaymentButton";
 import { SendEmailButton } from "@/components/SendEmailButton";
+import { PortalLinkCard } from "@/components/PortalLinkCard";
 
 const STATUS_COLORS: Record<string, string> = {
   unpaid: "bg-amber-100 text-amber-700",
@@ -252,6 +253,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </p>
         )}
       </div>
+
+      <PortalLinkCard
+        customerId={invoice.customer_id ?? ""}
+        customerPhone={customer?.phone ?? null}
+        customerEmail={customer?.email ?? null}
+        customerName={customerName}
+        orgName={orgName}
+        activeToken={null}
+        invoiceId={invoice.id}
+      />
 
       <ShareCard
         type="invoice"

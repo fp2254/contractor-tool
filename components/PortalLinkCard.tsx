@@ -9,6 +9,8 @@ type Props = {
   customerName: string;
   orgName?: string;
   activeToken?: string | null;
+  quoteId?: string | null;
+  invoiceId?: string | null;
 };
 
 export function PortalLinkCard({
@@ -18,6 +20,8 @@ export function PortalLinkCard({
   customerName,
   orgName = "Your Company",
   activeToken: initialToken,
+  quoteId,
+  invoiceId,
 }: Props) {
   const [token, setToken] = useState<string | null>(initialToken ?? null);
   const [portalUrl, setPortalUrl] = useState<string | null>(
@@ -42,7 +46,12 @@ export function PortalLinkCard({
       const res = await fetch("/api/portal/generate-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_id: customerId, reissue }),
+        body: JSON.stringify({
+          customer_id: customerId,
+          reissue,
+          ...(invoiceId ? { invoice_id: invoiceId } : {}),
+          ...(quoteId ? { quote_id: quoteId } : {}),
+        }),
       });
       const j = await res.json() as { token?: string; portalUrl?: string; error?: string };
       if (!res.ok || !j.token) throw new Error(j.error ?? "Failed to generate link");
@@ -79,7 +88,11 @@ export function PortalLinkCard({
       const res = await fetch("/api/portal/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_id: customerId }),
+        body: JSON.stringify({
+          customer_id: customerId,
+          ...(invoiceId ? { invoice_id: invoiceId } : {}),
+          ...(quoteId ? { quote_id: quoteId } : {}),
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({})) as { error?: string };

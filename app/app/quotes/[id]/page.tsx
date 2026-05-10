@@ -338,6 +338,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         customerName={customerName}
         orgName={orgName}
         activeToken={activeToken?.token ?? null}
+        quoteId={quote.id}
       />
 
       <QuoteNotesEditor quoteId={quote.id} initialNotes={quote.notes ?? null} />

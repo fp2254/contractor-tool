@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  const body = await req.json() as { customer_id: string; reissue?: boolean };
+  const body = await req.json() as { customer_id: string; quote_id?: string; invoice_id?: string; reissue?: boolean };
 
   if (!body.customer_id) {
     return NextResponse.json({ error: "customer_id required" }, { status: 400 });
@@ -71,7 +71,12 @@ export async function POST(req: Request) {
 
     if (existing?.token) {
       const origin = getOrigin(req);
-      const portalUrl = `${origin}/portal/${existing.token}`;
+      const docSuffix = body.invoice_id
+        ? `?invoice=${body.invoice_id}`
+        : body.quote_id
+        ? `?quote=${body.quote_id}`
+        : "";
+      const portalUrl = `${origin}/portal/${existing.token}${docSuffix}`;
       return NextResponse.json({ token: existing.token, portalUrl });
     }
   }
@@ -91,7 +96,12 @@ export async function POST(req: Request) {
   }
 
   const origin = getOrigin(req);
-  const portalUrl = `${origin}/portal/${newToken.token}`;
+  const docSuffix = body.invoice_id
+    ? `?invoice=${body.invoice_id}`
+    : body.quote_id
+    ? `?quote=${body.quote_id}`
+    : "";
+  const portalUrl = `${origin}/portal/${newToken.token}${docSuffix}`;
 
   return NextResponse.json({ token: newToken.token, portalUrl });
 }
