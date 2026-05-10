@@ -58,18 +58,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   // Photos: invoice + job + quote (all paths)
+  type PhotoRow = { url: string; storage_path: string | null; filename: string | null };
   const photoSources = [
-    admin.from("photos").select("url,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }),
+    admin.from("photos").select("url,storage_path,filename").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).order("created_at", { ascending: true }),
     invoice.job_id
-      ? admin.from("photos").select("url,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+      ? admin.from("photos").select("url,storage_path,filename").eq("entity_type", "job").eq("entity_id", invoice.job_id).eq("org_id", orgId!).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as PhotoRow[] }),
     linkedQuoteId
-      ? admin.from("photos").select("url,filename").eq("entity_type", "quote").eq("entity_id", linkedQuoteId).eq("org_id", orgId!).order("created_at", { ascending: true })
-      : Promise.resolve({ data: [] as { url: string; filename: string | null }[] }),
+      ? admin.from("photos").select("url,storage_path,filename").eq("entity_type", "quote").eq("entity_id", linkedQuoteId).eq("org_id", orgId!).order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as PhotoRow[] }),
   ];
   const photoResults = await Promise.all(photoSources);
-  const photos = photoResults.flatMap(r => (r as { data: { url: string; filename: string | null }[] | null }).data ?? []);
-  const pdfPhotos = await loadPhotosForPdf(photos);
+  const photos = photoResults.flatMap(r => (r as { data: PhotoRow[] | null }).data ?? []);
+  const pdfPhotos = await loadPhotosForPdf(photos, admin);
 
   const buffer = await renderToBuffer(
     React.createElement(InvoicePDF, {
