@@ -132,8 +132,8 @@ export default async function PortalPage({
 
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-6">
 
-        {/* Quotes */}
-        {quotes && quotes.length > 0 && quotes.filter(q => !filterQuote && !filterInvoice ? true : filterQuote === q.id).map((q) => {
+        {/* Quotes — hidden entirely when filtering to a specific invoice */}
+        {!filterInvoice && quotes && quotes.length > 0 && quotes.filter(q => !filterQuote || filterQuote === q.id).map((q) => {
           const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
           const canAct = q.status === "draft" || q.status === "sent";
           const pdfUrl = `/api/portal/${token}/quote/${q.id}/pdf`;
@@ -217,7 +217,7 @@ export default async function PortalPage({
           <div>
             {!filterInvoice && !filterQuote && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Invoices</p>}
             <div className="space-y-4">
-              {invoices.filter(inv => !filterQuote && !filterInvoice ? true : filterInvoice === inv.id).map((inv) => {
+              {invoices.filter(inv => !filterInvoice || filterInvoice === inv.id).map((inv) => {
                 const st = INV_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-600" };
                 const dueDate = inv.due_date
                   ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })

@@ -54,6 +54,9 @@ export async function GET(
   let warrantyText: string | null = invoiceWarrantyNote
     ? invoiceWarrantyNote.body.replace("__warranty__:", "")
     : null;
+  const regularNotes = (invoiceNotes ?? [])
+    .filter((n: { body: string }) => !n.body.startsWith("__"))
+    .map((n: { body: string }) => n.body);
 
   if (!warrantyText && linkedQuoteId) {
     const { data: quoteWarrantyNotes } = await admin
@@ -91,6 +94,7 @@ export async function GET(
       org,
       settings: settings as any,
       warrantyText,
+      notes: regularNotes,
       photos: pdfPhotos,
     })
   );

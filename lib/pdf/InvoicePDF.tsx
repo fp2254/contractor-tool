@@ -50,6 +50,7 @@ type Props = {
     logo_url?: string | null;
   } | null;
   warrantyText?: string | null;
+  notes?: string[];
   photos?: { url: string; filename: string | null }[];
 };
 
@@ -60,7 +61,7 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function InvoicePDF({ invoice, items, customer, org, settings, warrantyText, photos }: Props) {
+export function InvoicePDF({ invoice, items, customer, org, settings, warrantyText, notes, photos }: Props) {
   const s = settings ?? {};
   const taxRate = s.tax_applied_auto ? (s.default_tax_rate ?? 0) : 0;
   const subtotal = items.reduce((sum, i) => sum + Number(i.total_price), 0);
@@ -180,6 +181,16 @@ export function InvoicePDF({ invoice, items, customer, org, settings, warrantyTe
             </View>
           </View>
         )}
+
+        {/* Job Notes */}
+        {notes && notes.length > 0 ? (
+          <View style={[base.notesBox, { marginTop: 12, borderLeft: `3px solid #94A3B8` }]}>
+            <Text style={base.notesLabel}>Notes</Text>
+            {notes.map((n, i) => (
+              <Text key={i} style={[base.notesText, i > 0 ? { marginTop: 4 } : {}]}>{n}</Text>
+            ))}
+          </View>
+        ) : null}
 
         {/* Warranty / Terms */}
         {warrantyText ? (
