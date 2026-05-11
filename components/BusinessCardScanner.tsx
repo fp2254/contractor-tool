@@ -14,11 +14,27 @@ export function BusinessCardScanner({ onExtracted, onCancel }: Props) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
 
-  function readAsDataURL(file: File): Promise<string> {
+  function resizeImage(file: File, maxPx = 1200, quality = 0.82): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("canvas")); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.src = ev.target?.result as string;
+      };
       reader.readAsDataURL(file);
     });
   }
@@ -28,7 +44,7 @@ export function BusinessCardScanner({ onExtracted, onCancel }: Props) {
     if (!file) return;
     setError("");
     try {
-      const dataUrl = await readAsDataURL(file);
+      const dataUrl = await resizeImage(file);
       setPreview(dataUrl);
       await scan(dataUrl);
     } catch {
