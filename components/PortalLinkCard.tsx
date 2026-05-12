@@ -24,7 +24,7 @@ export function PortalLinkCard({
   invoiceId,
 }: Props) {
   const [token, setToken] = useState<string | null>(initialToken ?? null);
-  const docSuffix = invoiceId ? `?invoice=${invoiceId}` : quoteId ? `?quote=${quoteId}` : "";
+  const docSuffix = invoiceId ? `/invoice/${invoiceId}` : quoteId ? `/quote/${quoteId}` : "";
   const [portalUrl, setPortalUrl] = useState<string | null>(
     initialToken
       ? typeof window !== "undefined"

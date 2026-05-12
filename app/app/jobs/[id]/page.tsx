@@ -13,6 +13,7 @@ import { JobCompleteButton } from "@/components/JobCompleteButton";
 import { JobReviewPanel } from "@/components/JobReviewPanel";
 import { JobTemplateAssigner } from "@/components/JobTemplateAssigner";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
+import { JobScheduleModal } from "@/components/JobScheduleModal";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -69,16 +70,30 @@ async function createInvoiceFromJob(formData: FormData) {
   const user = await supabase.auth.getUser();
   const admin = createAdminClient();
 
-  const { data: job } = await admin.from("jobs").select("customer_id,job_title,quote_id").eq("id", jobId).eq("org_id", orgId!).single();
+  const { data: job } = await admin.from("jobs").select("customer_id,job_title,quote_id,invoice_id").eq("id", jobId).eq("org_id", orgId!).single();
   if (!job) return;
+
+  // Server-side duplicate guard — if invoice already exists, redirect to it
+  if (job.invoice_id) {
+    redirect(`/app/invoices/${job.invoice_id}`);
+    return;
+  }
 
   let amount = 0;
   let items: { description: string; quantity: number; unit_price: number; total_price: number }[] = [];
+  let warrantyText: string | null = null;
 
   if (job.quote_id) {
-    const { data: qItems } = await admin.from("quote_items").select("*").eq("quote_id", job.quote_id).eq("org_id", orgId!);
+    const [{ data: qItems }, { data: qWarrantyNotes }] = await Promise.all([
+      admin.from("quote_items").select("*").eq("quote_id", job.quote_id).eq("org_id", orgId!),
+      admin.from("notes").select("body")
+        .eq("entity_type", "quote").eq("entity_id", job.quote_id).eq("org_id", orgId!)
+        .like("body", "__warranty__%").limit(1),
+    ]);
     items = (qItems ?? []).map(i => ({ description: i.description, quantity: i.quantity, unit_price: i.unit_price, total_price: i.total_price }));
     amount = items.reduce((s, i) => s + i.total_price, 0);
+    const qw = (qWarrantyNotes ?? [])[0];
+    if (qw) warrantyText = String(qw.body);
   }
 
   const { data: org } = await admin.from("orgs").select("default_payment_terms_days").eq("id", orgId!).single();
@@ -98,11 +113,22 @@ async function createInvoiceFromJob(formData: FormData) {
 
   if (!invoice) return;
 
+  const insertOps: Promise<unknown>[] = [];
   if (items.length > 0) {
-    await admin.from("invoice_items").insert(items.map(i => ({ ...i, org_id: orgId!, invoice_id: invoice.id })));
+    insertOps.push(admin.from("invoice_items").insert(items.map(i => ({ ...i, org_id: orgId!, invoice_id: invoice.id }))));
   }
+  if (warrantyText) {
+    insertOps.push(admin.from("notes").insert({
+      org_id: orgId!,
+      entity_type: "invoice",
+      entity_id: invoice.id,
+      body: warrantyText,
+      created_by: user.data.user?.id ?? null,
+    }));
+  }
+  insertOps.push(admin.from("jobs").update({ invoice_id: invoice.id }).eq("id", jobId).eq("org_id", orgId!));
+  await Promise.all(insertOps);
 
-  await admin.from("jobs").update({ invoice_id: invoice.id }).eq("id", jobId).eq("org_id", orgId!);
   redirect(`/app/invoices/${invoice.id}`);
 }
 
@@ -257,15 +283,22 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         jobId={job.id}
       />
 
+      <JobScheduleModal
+        jobId={job.id}
+        jobTitle={job.job_title}
+        initialDate={job.scheduled_date ?? null}
+        initialAddress={job.address ?? null}
+      />
+
       <div className="grid grid-cols-2 gap-3">
-        {job.scheduled_date && (
+        {job.address && (
           <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address ?? "")}`} target="_blank" rel="noreferrer"
             className="flex items-center justify-center gap-2 rounded-xl py-3 bg-white border border-gray-200 text-slate-700 font-semibold text-sm shadow-sm">
             🗺 Navigate
           </a>
         )}
         {!job.invoice_id ? (
-          <form action={createInvoiceFromJob}>
+          <form action={createInvoiceFromJob} className={job.address ? "" : "col-span-2"}>
             <input type="hidden" name="id" value={job.id} />
             <button type="submit"
               className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
@@ -275,7 +308,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </form>
         ) : (
           <Link href={`/app/invoices/${job.invoice_id}`}
-            className="flex items-center justify-center gap-2 rounded-xl py-3 bg-green-100 text-green-700 font-semibold text-sm">
+            className={`flex items-center justify-center gap-2 rounded-xl py-3 bg-green-100 text-green-700 font-semibold text-sm ${job.address ? "" : "col-span-2"}`}>
             ✅ View Invoice
           </Link>
         )}

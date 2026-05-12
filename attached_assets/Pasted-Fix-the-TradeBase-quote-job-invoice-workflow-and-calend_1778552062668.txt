@@ -1,0 +1,56 @@
+Fix the TradeBase quote → job → invoice workflow and calendar scheduling friction.
+
+Current problems:
+
+1. Quote conversion is not creating clean invoices.
+- When a quote is converted to an invoice, it should create ONE new invoice tied to that quote/job/customer.
+- It should copy only that quote’s line items, notes, totals, tax, and customer info.
+- It should not pull unrelated quotes or invoices.
+- It should preserve relationships:
+  - quote_id
+  - job_id if converted from a job
+  - customer_id
+  - org_id
+
+2. Invoice email/text links are wrong.
+- When sending an invoice by email or SMS, the customer portal link should open only that specific invoice.
+- Right now it seems like the link is showing multiple quotes/invoices or using the wrong shared portal route.
+- Create unique public tokens/URLs per document type:
+  - /portal/quote/[token]
+  - /portal/invoice/[token]
+  - /portal/job/[token] if needed
+- A quote link should only show the quote.
+- An invoice link should only show the invoice.
+- Never expose all customer documents from a single shared link unless intentionally using a customer portal dashboard.
+
+3. Schedule Job button should open the calendar flow immediately.
+- On the Job detail page, when I tap “Schedule Job,” it should open the scheduling modal/screen directly.
+- It should not make me hunt through menus.
+- The modal should include:
+  - date
+  - start time
+  - end time or duration
+  - assigned tech
+  - location/address
+  - notes
+  - option to add to Google Calendar / Apple Calendar using an .ics download or calendar link
+- After saving, the job status should update to “Scheduled.”
+- The scheduled date/time should show clearly on the job detail screen.
+
+4. Make the whole flow smoother:
+- Quote accepted → Create Job → Schedule Job → Complete Job → Create Invoice → Send Invoice.
+- Each step should be one obvious button.
+- Do not duplicate data.
+- Do not create multiple invoices from the same quote unless the user confirms.
+- If an invoice already exists for a quote/job, show “View Invoice” instead of creating another one.
+
+5. Add guardrails:
+- Prevent duplicate invoices from the same quote unless explicitly confirmed.
+- Log conversion history so we can see:
+  - quote converted to job
+  - job scheduled
+  - job converted to invoice
+  - invoice sent
+- Make sure all queries are scoped by org_id so one user/org never sees another user/org’s documents.
+
+Please inspect the existing quote, job, invoice, customer portal, and send-email/SMS code before changing anything. Fix the routing, token generation, document scoping, and conversion logic without breaking the current UI.

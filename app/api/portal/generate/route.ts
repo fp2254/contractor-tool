@@ -20,6 +20,9 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
   const body = await req.json() as { customer_id: string; quote_id?: string; invoice_id?: string; reissue?: boolean };
 
+  // Always reissue when sending a specific doc link so the URL is always correct
+  if (body.invoice_id || body.quote_id) body.reissue = true;
+
   const { checkDemoBlock } = await import("@/lib/demo");
   const demoBlock = await checkDemoBlock(orgId!, "Portal email sending");
   if (demoBlock) return demoBlock;

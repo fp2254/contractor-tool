@@ -44,6 +44,12 @@ async function convertToInvoice(formData: FormData) {
   const { data: quote } = await admin.from("quotes").select("*").eq("id", quoteId).eq("org_id", orgId!).single();
   if (!quote?.customer_id) return;
 
+  // Server-side duplicate guard — if an invoice already exists for this quote, redirect to it
+  if (quote.invoice_id) {
+    redirect(`/app/invoices/${quote.invoice_id}`);
+    return;
+  }
+
   const [{ data: items }, { data: org }] = await Promise.all([
     admin.from("quote_items").select("*").eq("quote_id", quoteId).eq("org_id", orgId!),
     admin.from("orgs").select("default_payment_terms_days").eq("id", orgId!).single(),
