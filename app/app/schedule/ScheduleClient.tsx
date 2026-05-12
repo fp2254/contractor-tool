@@ -343,7 +343,7 @@ export default function ScheduleClient({ jobs: initialJobs, initialDate }: { job
 
       {/* View toggle */}
       <div className="flex bg-white rounded-xl shadow-sm p-1 gap-1">
-        {(["month", "week", "day"] as View[]).map(v => (
+        {(["day", "week", "month"] as View[]).map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
