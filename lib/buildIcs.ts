@@ -1,4 +1,4 @@
-export function buildIcsDataUrl(
+export function buildIcsContent(
   jobId: string,
   jobTitle: string,
   date: string,
@@ -17,7 +17,6 @@ export function buildIcsDataUrl(
   const dtEnd = endTime ? toIcsDate(date, endTime) : toIcsDate(date, computedEnd);
 
   const nowIso = new Date().toISOString();
-  // Build stamp without using a regex that Tailwind would misparse
   const stamp = nowIso.split("").filter(c => c !== "-" && c !== ":" && c !== ".").join("").slice(0, 15) + "Z";
 
   const lines = [
@@ -35,5 +34,5 @@ export function buildIcsDataUrl(
     "END:VCALENDAR",
   ].filter(Boolean);
 
-  return "data:text/calendar;charset=utf-8," + encodeURIComponent(lines.join("\r\n"));
+  return lines.join("\r\n");
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { buildIcsDataUrl } from "@/lib/buildIcs";
+import { buildIcsContent } from "@/lib/buildIcs";
 
 interface Props {
   jobId: string;
@@ -58,6 +58,21 @@ export function JobScheduleModal({ jobId, jobTitle, initialDate, initialAddress 
 
   const hasDate = date.length === 10;
   const safeFilename = jobTitle.split("").map(c => /[a-zA-Z0-9]/.test(c) ? c : "-").join("") + ".ics";
+
+  function downloadIcs() {
+    const content = buildIcsContent(jobId, jobTitle, date, startTime, endTime, address);
+    const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = safeFilename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+  }
 
   return (
     <>
@@ -148,13 +163,13 @@ export function JobScheduleModal({ jobId, jobTitle, initialDate, initialAddress 
             </form>
 
             {hasDate && (
-              <a
-                href={buildIcsDataUrl(jobId, jobTitle, date, startTime, endTime, address)}
-                download={safeFilename}
-                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 border border-gray-200 text-sm font-semibold text-slate-600"
+              <button
+                type="button"
+                onClick={downloadIcs}
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 border border-gray-200 text-sm font-semibold text-slate-600 active:bg-gray-50"
               >
-                📆 Add to Google / Apple Calendar (.ics)
-              </a>
+                📆 Add to Calendar (.ics)
+              </button>
             )}
           </div>
         </div>
