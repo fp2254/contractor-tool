@@ -87,11 +87,12 @@ export function JobScheduleModal({ jobId, jobTitle, initialDate, initialAddress 
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-white rounded-t-3xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto pb-10"
+            className="bg-white rounded-2xl w-full max-w-lg mx-auto mt-12 mb-8 p-6 space-y-4"
+            style={{ minHeight: "auto" }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
