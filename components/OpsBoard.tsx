@@ -63,6 +63,7 @@ export default function OpsBoard() {
   const [data, setData] = useState<OpsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     fetch("/app/ops/api")
@@ -75,55 +76,68 @@ export default function OpsBoard() {
   if (loading) return <Skeleton />;
   if (!data) return null;
 
-  const { tasks, categories, summary, totalTasks } = data;
+  const { tasks, categories, totalTasks } = data;
   const visibleTasks = showAll ? tasks : tasks.slice(0, 5);
-  const cleared = categories.filter((c) => c.cleared).length;
   const allClear = totalTasks === 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <div className="px-4 pt-3 pb-2 border-b border-gray-100">
+      <div className={`px-4 pt-3 ${collapsed ? "pb-3" : "pb-2 border-b border-gray-100"}`}>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800">
-            Today&apos;s Ops
-          </h2>
-          {allClear ? (
-            <span className="text-xs font-semibold text-green-600 bg-green-50 rounded-full px-2 py-0.5">
-              All clear
-            </span>
-          ) : (
-            <span className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 rounded-full px-2 py-0.5">
-              {totalTasks} task{totalTasks !== 1 ? "s" : ""}
-            </span>
-          )}
+          <h2 className="text-sm font-bold text-slate-800">Today&apos;s Ops</h2>
+          <div className="flex items-center gap-2">
+            {allClear ? (
+              <span className="text-xs font-semibold text-green-600 bg-green-50 rounded-full px-2 py-0.5">
+                All clear
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 rounded-full px-2 py-0.5">
+                {totalTasks} task{totalTasks !== 1 ? "s" : ""}
+              </span>
+            )}
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 active:bg-gray-100 transition-colors"
+              aria-label={collapsed ? "Expand" : "Collapse"}
+            >
+              <svg
+                className={`w-4 h-4 transition-transform duration-200 ${collapsed ? "-rotate-90" : "rotate-0"}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <ProgressBar categories={categories} />
+        {!collapsed && <ProgressBar categories={categories} />}
       </div>
 
-      {allClear ? (
-        <div className="px-4 py-2.5 flex items-center gap-2.5">
-          <span className="text-base shrink-0">✅</span>
-          <p className="text-sm font-semibold text-slate-700">
-            Everything&apos;s on track today
-          </p>
-        </div>
-      ) : (
+      {!collapsed && (
         <>
-          <div className="divide-y divide-gray-100">
-            {visibleTasks.map((task) => (
-              <TaskRow key={task.id} task={task} />
-            ))}
-          </div>
+          {allClear ? (
+            <div className="px-4 py-2.5 flex items-center gap-2.5">
+              <span className="text-base shrink-0">✅</span>
+              <p className="text-sm font-semibold text-slate-700">
+                Everything&apos;s on track today
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="divide-y divide-gray-100">
+                {visibleTasks.map((task) => (
+                  <TaskRow key={task.id} task={task} />
+                ))}
+              </div>
 
-          {totalTasks > 5 && (
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="w-full px-4 py-3 text-sm font-semibold text-[#1B3A6B] text-center border-t border-gray-100 active:bg-gray-50">
-              {showAll
-                ? "Show less"
-                : `View all ${totalTasks} tasks`}
-            </button>
+              {totalTasks > 5 && (
+                <button
+                  onClick={() => setShowAll((v) => !v)}
+                  className="w-full px-4 py-3 text-sm font-semibold text-[#1B3A6B] text-center border-t border-gray-100 active:bg-gray-50">
+                  {showAll ? "Show less" : `View all ${totalTasks} tasks`}
+                </button>
+              )}
+            </>
           )}
         </>
       )}
