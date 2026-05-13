@@ -82,7 +82,7 @@ export default async function PortalPage({
     admin.from("quotes").select("id,status,total_amount,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("invoices").select("id,status,total_amount,invoice_number,due_date,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("orgs").select("name,phone").eq("id", pt.org_id).single(),
-    admin.from("org_settings").select("primary_phone").eq("org_id", pt.org_id).maybeSingle(),
+    admin.from("org_settings").select("primary_phone,business_name").eq("org_id", pt.org_id).maybeSingle(),
   ]);
 
   // Track first open: insert __opened__ notes for any quote/invoice not yet tracked
@@ -111,7 +111,9 @@ export default async function PortalPage({
   if (!customer) return notFound();
 
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.company_name || "Customer";
-  const businessName = (org as Record<string, unknown> | null)?.name as string ?? "Your Contractor";
+  const businessName = (orgSettings as Record<string, unknown> | null)?.business_name as string
+    || (org as Record<string, unknown> | null)?.name as string
+    || "Your Contractor";
   const orgPhone = (orgSettings as Record<string, unknown> | null)?.primary_phone as string | undefined
     ?? (org as Record<string, unknown> | null)?.phone as string | undefined;
 

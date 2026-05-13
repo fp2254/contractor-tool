@@ -35,7 +35,7 @@ export default async function PortalInvoicePage({
       .single(),
     admin.from("customers").select("first_name,last_name,company_name,email").eq("id", pt.customer_id).single(),
     admin.from("orgs").select("name,phone").eq("id", pt.org_id).single(),
-    admin.from("org_settings").select("primary_phone").eq("org_id", pt.org_id).maybeSingle(),
+    admin.from("org_settings").select("primary_phone,business_name").eq("org_id", pt.org_id).maybeSingle(),
   ]);
 
   if (!invoice) return notFound();
@@ -54,7 +54,9 @@ export default async function PortalInvoicePage({
   }
 
   const customerName = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.company_name || "Customer";
-  const businessName = (org as Record<string, unknown> | null)?.name as string ?? "Your Contractor";
+  const businessName = (orgSettings as Record<string, unknown> | null)?.business_name as string
+    || (org as Record<string, unknown> | null)?.name as string
+    || "Your Contractor";
   const orgPhone = (orgSettings as Record<string, unknown> | null)?.primary_phone as string | undefined
     ?? (org as Record<string, unknown> | null)?.phone as string | undefined;
 
