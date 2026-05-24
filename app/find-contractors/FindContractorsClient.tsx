@@ -197,6 +197,12 @@ function RecentProjectsCarousel({
   onLeaveContractor: () => void;
   onSelectProject: (p: Project) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(dir: "left" | "right") {
+    scrollRef.current?.scrollBy({ left: dir === "right" ? 230 : -230, behavior: "smooth" });
+  }
+
   return (
     <div className="bg-white border-b-2 border-gray-100 flex-shrink-0">
       {/* Header */}
@@ -205,13 +211,27 @@ function RecentProjectsCarousel({
           <p className="text-sm font-bold text-slate-800 leading-tight">Recent Projects Near You</p>
           <p className="text-[10px] text-gray-400 mt-0.5">Real completed work by local contractors</p>
         </div>
-        <button className="text-[10px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 rounded-full px-2.5 py-1 hover:bg-blue-50 transition-colors flex-shrink-0">
-          See all →
-        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button onClick={() => scroll("left")}
+            className="w-7 h-7 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center text-slate-500 hover:bg-gray-50 hover:border-gray-300 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button onClick={() => scroll("right")}
+            className="w-7 h-7 rounded-full border border-gray-200 bg-white shadow-sm flex items-center justify-center text-slate-500 hover:bg-gray-50 hover:border-gray-300 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <button className="text-[10px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 rounded-full px-2.5 py-1 hover:bg-blue-50 transition-colors ml-1">
+            See all →
+          </button>
+        </div>
       </div>
 
       {/* Carousel */}
-      <div className="flex gap-3 overflow-x-auto pb-3.5 px-4 scrollbar-none">
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-3.5 px-4 scrollbar-none scroll-smooth">
         {projects.map((p) => (
           <div
             key={p.id}
