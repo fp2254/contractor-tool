@@ -96,8 +96,22 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
         attributionControl: true,
       });
 
-      // Ensure map sizes correctly after flex layout settles
-      requestAnimationFrame(() => map.invalidateSize());
+      // Fire invalidateSize repeatedly until the container has real dimensions
+      const forceSize = () => {
+        map.invalidateSize({ animate: false });
+      };
+      requestAnimationFrame(forceSize);
+      setTimeout(forceSize, 100);
+      setTimeout(forceSize, 300);
+      setTimeout(forceSize, 600);
+
+      // ResizeObserver: fire whenever the container resizes (covers flex layout settling)
+      if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+        const ro = new ResizeObserver(() => forceSize());
+        ro.observe(containerRef.current);
+        // store ro for cleanup
+        (map as any)._tbRO = ro;
+      }
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -127,6 +141,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
 
     return () => {
       if (mapRef.current) {
+        (mapRef.current as any)._tbRO?.disconnect();
         mapRef.current.remove();
         mapRef.current = null;
         markersRef.current = {};
@@ -226,7 +241,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
   }, [selectedId, contractors]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, borderRadius: "1rem", overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", borderRadius: "1rem", overflow: "hidden", minHeight: 0 }}>
       <style>{`
         .tb-contractor-popup .leaflet-popup-content-wrapper {
           padding: 0 !important;
@@ -246,7 +261,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
           font-size: 9px !important;
         }
       `}</style>
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
     </div>
   );
 }

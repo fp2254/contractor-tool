@@ -451,61 +451,64 @@ export default function FindContractorsClient() {
       </div>
 
       {/* Body: fills all remaining height */}
+      {/* Mobile visibility is CSS-driven so the map is never unmounted (Leaflet needs a stable DOM node) */}
+      <style>{`
+        @media (max-width: 767px) {
+          .fc-list-panel { display: ${mobileView === "list" ? "flex" : "none"} !important; }
+          .fc-map-panel  { display: ${mobileView === "map"  ? "flex" : "none"} !important; }
+        }
+      `}</style>
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-        {/* LEFT: scrollable card list */}
-        {(isDesktop || mobileView === "list") && (
-          <div style={{ width: isDesktop ? 400 : "100%", flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
-            <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
-              <p className="text-xs text-gray-500">
-                <span className="font-bold text-slate-800">{filtered.length}</span> contractors
-              </p>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
-              >
-                <option value="distance">Nearest first</option>
-                <option value="rating">Highest rated</option>
-                <option value="reviews">Most reviewed</option>
-                <option value="featured">Featured first</option>
-              </select>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              {filtered.length === 0 ? (
-                <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
-                  <p className="text-2xl mb-2">🔍</p>
-                  <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
-                  <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
-                  <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
-                </div>
-              ) : (
-                filtered.map((c) => (
-                  <ContractorCard
-                    key={c.id}
-                    c={c}
-                    hovered={hoveredId === c.id}
-                    onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
-                    onLeave={() => setHoveredId(null)}
-                  />
-                ))
-              )}
-            </div>
+        {/* LEFT: scrollable card list — always in DOM, hidden on mobile map view */}
+        <div className="fc-list-panel" style={{ width: 400, maxWidth: "100%", flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
+            <p className="text-xs text-gray-500">
+              <span className="font-bold text-slate-800">{filtered.length}</span> contractors
+            </p>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
+            >
+              <option value="distance">Nearest first</option>
+              <option value="rating">Highest rated</option>
+              <option value="reviews">Most reviewed</option>
+              <option value="featured">Featured first</option>
+            </select>
           </div>
-        )}
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            {filtered.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
+                <p className="text-2xl mb-2">🔍</p>
+                <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
+                <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
+                <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
+              </div>
+            ) : (
+              filtered.map((c) => (
+                <ContractorCard
+                  key={c.id}
+                  c={c}
+                  hovered={hoveredId === c.id}
+                  onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
+                  onLeave={() => setHoveredId(null)}
+                />
+              ))
+            )}
+          </div>
+        </div>
 
-        {/* RIGHT: map — always visible on desktop, toggled on mobile */}
-        {(isDesktop || mobileView === "map") && (
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative" }}>
-            <LeafletMap
-              contractors={filtered}
-              hoveredId={hoveredId}
-              selectedId={selectedPinId}
-              onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
-              onHover={setHoveredId}
-            />
-          </div>
-        )}
+        {/* RIGHT: map — always in DOM so Leaflet never loses its container */}
+        <div className="fc-map-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <LeafletMap
+            contractors={filtered}
+            hoveredId={hoveredId}
+            selectedId={selectedPinId}
+            onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
+            onHover={setHoveredId}
+          />
+        </div>
       </div>
 
       <FilterSheet
