@@ -90,8 +90,8 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
       const L = (await import("leaflet")).default;
 
       const map = L.map(containerRef.current!, {
-        center: [45.505, -122.675],
-        zoom: 11,
+        center: [39.5, -98.35],
+        zoom: 4,
         zoomControl: true,
         attributionControl: true,
       });
