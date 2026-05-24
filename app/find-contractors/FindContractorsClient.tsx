@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { CONTRACTORS, SERVICES, CITIES, type Contractor } from "./mockData";
+
+const LeafletMap = dynamic(() => import("./LeafletMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full rounded-2xl bg-gray-100 flex items-center justify-center">
+      <p className="text-sm text-gray-400 animate-pulse">Loading map…</p>
+    </div>
+  ),
+});
 
 // ─── Stars ───────────────────────────────────────────────────────────────────
 
@@ -313,127 +323,6 @@ function ContractorCard({
   );
 }
 
-// ─── Map ─────────────────────────────────────────────────────────────────────
-
-function MapPin({
-  c, active, selected, onClick,
-}: {
-  c: Contractor; active: boolean; selected: boolean; onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ left: `${c.lng}%`, top: `${c.lat}%`, position: "absolute", transform: "translate(-50%, -100%)" }}
-      className={`flex flex-col items-center transition-all duration-150 ${active || selected ? "scale-125 z-20" : "z-10 hover:scale-110"}`}
-    >
-      <div
-        className={`rounded-xl px-2.5 py-1.5 text-[11px] font-black text-white shadow-lg whitespace-nowrap transition-colors ${selected ? "ring-2 ring-white ring-offset-1" : ""}`}
-        style={{ backgroundColor: selected ? "#1B3A6B" : active ? "#1B3A6B" : c.avatar_color }}
-      >
-        {c.name.split(" ")[0]}
-      </div>
-      <div
-        className="w-2 h-2 rotate-45 -mt-1 shadow-sm"
-        style={{ backgroundColor: selected ? "#1B3A6B" : active ? "#1B3A6B" : c.avatar_color }}
-      />
-    </button>
-  );
-}
-
-function MapPopup({ c, onClose }: { c: Contractor; onClose: () => void }) {
-  return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-64 bg-white rounded-2xl shadow-2xl overflow-hidden z-30 border border-gray-100">
-      <div className={`h-24 bg-gradient-to-br ${c.cover_color} relative flex items-center justify-center`}>
-        <span className="text-4xl opacity-20">{c.cover_emoji}</span>
-        <div
-          className="absolute -bottom-3 left-3 w-8 h-8 rounded-lg border-2 border-white shadow flex items-center justify-center text-white font-black text-xs"
-          style={{ backgroundColor: c.avatar_color }}
-        >
-          {c.name.charAt(0)}
-        </div>
-        <button onClick={onClose} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 text-gray-500 text-xs font-bold flex items-center justify-center">✕</button>
-      </div>
-      <div className="px-3 pt-4 pb-3">
-        <p className="font-bold text-slate-800 text-sm">{c.name}</p>
-        <div className="flex items-center gap-1.5 my-1">
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{c.trade}</span>
-          <span className="text-yellow-400 text-xs">★</span>
-          <span className="text-xs font-bold">{c.rating_google.toFixed(1)}</span>
-          <span className="text-[10px] text-gray-400">· {c.distance} mi</span>
-        </div>
-        <div className="flex gap-1 mb-2">
-          {c.verified && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: "#EFF6FF", color: "#1B3A6B" }}>✓ Verified</span>}
-          {c.licensed && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-50 text-green-700">Licensed</span>}
-        </div>
-        <div className="flex gap-1.5">
-          <Link href={`/pro/${c.slug}`} className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-center border border-gray-200 text-slate-700 hover:border-blue-200">Profile</Link>
-          <button className="flex-1 rounded-lg py-1.5 text-[11px] font-bold text-white" style={{ backgroundColor: "#1B3A6B" }}>Quote</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MapView({
-  contractors, hoveredId, onPinHover, onPinLeave, selectedPinId, onPinClick, onClosePopup,
-}: {
-  contractors: Contractor[];
-  hoveredId: string | null;
-  onPinHover: (id: string) => void;
-  onPinLeave: () => void;
-  selectedPinId: string | null;
-  onPinClick: (id: string) => void;
-  onClosePopup: () => void;
-}) {
-  const selectedContractor = contractors.find((c) => c.id === selectedPinId) ?? null;
-  return (
-    <div className="relative w-full h-full overflow-hidden rounded-2xl" style={{ background: "#e8ecef" }}>
-      {/* Fake map background */}
-      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="#eef0f3" />
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        {/* Fake roads */}
-        <line x1="0" y1="40%" x2="100%" y2="38%" stroke="#fff" strokeWidth="8" />
-        <line x1="0" y1="60%" x2="100%" y2="63%" stroke="#fff" strokeWidth="5" />
-        <line x1="30%" y1="0" x2="28%" y2="100%" stroke="#fff" strokeWidth="8" />
-        <line x1="65%" y1="0" x2="67%" y2="100%" stroke="#fff" strokeWidth="5" />
-        <line x1="0" y1="75%" x2="50%" y2="72%" stroke="#fff" strokeWidth="4" />
-        <line x1="50%" y1="20%" x2="80%" y2="45%" stroke="#fff" strokeWidth="4" />
-        {/* Fake parks */}
-        <rect x="10%" y="15%" width="12%" height="8%" rx="4" fill="#c8e6c9" opacity="0.7" />
-        <rect x="55%" y="65%" width="15%" height="10%" rx="4" fill="#c8e6c9" opacity="0.7" />
-        {/* Fake water */}
-        <ellipse cx="82%" cy="25%" rx="8%" ry="6%" fill="#b3d9f5" opacity="0.6" />
-      </svg>
-
-      {/* Pins */}
-      {contractors.map((c) => (
-        <MapPin
-          key={c.id}
-          c={c}
-          active={hoveredId === c.id}
-          selected={selectedPinId === c.id}
-          onClick={() => onPinClick(c.id)}
-        />
-      ))}
-
-      {/* Popup */}
-      {selectedContractor && (
-        <MapPopup c={selectedContractor} onClose={onClosePopup} />
-      )}
-
-      {/* Map attribution */}
-      <div className="absolute bottom-2 right-2 bg-white/80 rounded px-1.5 py-0.5 text-[9px] text-gray-400">
-        Map placeholder — real map coming soon
-      </div>
-    </div>
-  );
-}
 
 // ─── Sort Bar ─────────────────────────────────────────────────────────────────
 
@@ -586,16 +475,14 @@ export default function FindContractorsClient() {
             )}
           </div>
 
-          {/* Right: map */}
+          {/* Right: real Leaflet map */}
           <div className={`${mobileView === "list" ? "hidden" : "block"} md:block md:sticky md:top-[120px] md:self-start md:h-[calc(100vh-140px)] h-[65vh]`}>
-            <MapView
+            <LeafletMap
               contractors={filtered}
               hoveredId={hoveredId}
-              onPinHover={setHoveredId}
-              onPinLeave={() => setHoveredId(null)}
-              selectedPinId={selectedPinId}
-              onPinClick={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
-              onClosePopup={() => setSelectedPinId(null)}
+              selectedId={selectedPinId}
+              onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
+              onHover={setHoveredId}
             />
           </div>
         </div>
