@@ -422,24 +422,81 @@ export function PublicProfileEditor() {
           <p className="font-semibold text-slate-800 text-sm">What Do You Do?</p>
         </div>
         <div className="px-4 py-3 space-y-3">
-          {/* Tag chips */}
+          {/* Service chips with optional photo */}
           {profile.services.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {profile.services.map((svc, i) => (
-                <span
+                <div
                   key={i}
-                  className="inline-flex items-center gap-1 bg-blue-50 text-[#1B3A6B] rounded-full px-3 py-1 text-xs font-semibold border border-blue-100"
+                  className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2"
                 >
-                  {svc.name}
+                  {/* Thumbnail or camera button */}
+                  <label className="relative flex-shrink-0 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const local = URL.createObjectURL(file);
+                        const next = profile.services.map((s, idx) =>
+                          idx === i ? { ...s, photo_url: local } : s
+                        );
+                        update("services", next);
+                        try {
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          fd.append("index", String(i));
+                          const res = await fetch("/api/upload/service-image", { method: "POST", body: fd });
+                          const j = await res.json() as { url?: string; error?: string };
+                          if (j.url) {
+                            update("services", profile.services.map((s, idx) =>
+                              idx === i ? { ...s, photo_url: j.url! } : s
+                            ));
+                          }
+                        } catch { /* silent */ }
+                        (e.target as HTMLInputElement).value = "";
+                      }}
+                    />
+                    {svc.photo_url ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden border border-blue-200 flex-shrink-0">
+                        <img src={svc.photo_url} alt={svc.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg border-2 border-dashed border-blue-200 flex items-center justify-center text-blue-300 flex-shrink-0 hover:border-blue-400 hover:text-blue-500 transition-colors">
+                        <span className="text-base leading-none">📷</span>
+                      </div>
+                    )}
+                  </label>
+
+                  <span className="flex-1 text-xs font-semibold text-[#1B3A6B] truncate">{svc.name}</span>
+
+                  {svc.photo_url && (
+                    <button
+                      type="button"
+                      onClick={() => update("services", profile.services.map((s, idx) =>
+                        idx === i ? { ...s, photo_url: "" } : s
+                      ))}
+                      className="text-[10px] text-gray-400 hover:text-red-500 leading-none flex-shrink-0"
+                      aria-label="Remove photo"
+                      title="Remove photo"
+                    >
+                      🗑
+                    </button>
+                  )}
+
                   <button
+                    type="button"
                     onClick={() => update("services", profile.services.filter((_, idx) => idx !== i))}
-                    className="ml-0.5 text-blue-400 hover:text-red-500 leading-none"
+                    className="text-blue-300 hover:text-red-500 leading-none flex-shrink-0 text-sm"
                     aria-label={`Remove ${svc.name}`}
                   >
                     ✕
                   </button>
-                </span>
+                </div>
               ))}
+              <p className="text-[11px] text-gray-400">Tap 📷 to add an example photo for each service</p>
             </div>
           )}
 
