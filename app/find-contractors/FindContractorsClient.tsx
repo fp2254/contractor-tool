@@ -74,58 +74,55 @@ function SearchBar({
   onShowFilters: () => void;
   activeFilterCount: number;
 }) {
-  const inputCls = "bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 w-full";
+  const selCls = "h-9 bg-white border border-gray-200 rounded-lg px-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 text-slate-700";
   return (
-    <div className="bg-white border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3 space-y-2">
-        {/* Main search */}
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
+      <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
+        {/* Search input */}
+        <div className="relative flex-1 min-w-[180px]">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
           </svg>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="What service do you need? (e.g. roof repair, electrician)"
-            className="w-full rounded-xl border border-gray-200 pl-9 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            placeholder="What service do you need?"
+            className="w-full h-9 rounded-lg border border-gray-200 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
           />
         </div>
-        {/* Secondary row */}
-        <div className="flex gap-2 flex-wrap">
-          <select value={service} onChange={(e) => setService(e.target.value)} className={`${inputCls} min-w-[150px] flex-1`}>
-            {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select value={city} onChange={(e) => setCity(e.target.value)} className={`${inputCls} min-w-[160px] flex-1`}>
-            <option value="">All Locations</option>
-            {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select value={distance} onChange={(e) => setDistance(e.target.value)} className={`${inputCls} w-28`}>
-            <option value="50">Any distance</option>
-            <option value="5">Within 5 mi</option>
-            <option value="10">Within 10 mi</option>
-            <option value="25">Within 25 mi</option>
-          </select>
-          <button
-            onClick={onShowFilters}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold text-slate-700 bg-white hover:bg-gray-50 transition-colors relative"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M7 8h10M10 12h4" />
-            </svg>
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={onSurpriseMe}
-            className="flex items-center gap-1.5 rounded-xl border border-purple-200 px-3 py-2.5 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
-          >
-            🎲 Surprise Me
-          </button>
-        </div>
+        <select value={service} onChange={(e) => setService(e.target.value)} className={`${selCls} min-w-[130px]`}>
+          {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={city} onChange={(e) => setCity(e.target.value)} className={`${selCls} min-w-[140px]`}>
+          <option value="">All Locations</option>
+          {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={distance} onChange={(e) => setDistance(e.target.value)} className={`${selCls} w-28`}>
+          <option value="50">Any distance</option>
+          <option value="5">Within 5 mi</option>
+          <option value="10">Within 10 mi</option>
+          <option value="25">Within 25 mi</option>
+        </select>
+        <button
+          onClick={onShowFilters}
+          className="h-9 flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-slate-700 bg-white hover:bg-gray-50 transition-colors relative flex-shrink-0"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M7 8h10M10 12h4" />
+          </svg>
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={onSurpriseMe}
+          className="h-9 flex items-center gap-1 rounded-lg border border-purple-200 px-3 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors flex-shrink-0"
+        >
+          🎲 Surprise Me
+        </button>
       </div>
     </div>
   );
@@ -417,7 +414,7 @@ export default function FindContractorsClient() {
   }, [query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, minRating, sort]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <Header />
       <SearchBar
         query={query} setQuery={setQuery}
@@ -429,62 +426,74 @@ export default function FindContractorsClient() {
         activeFilterCount={activeFilterCount}
       />
 
-      {/* Mobile view toggle */}
-      <div className="md:hidden flex items-center gap-0 border-b border-gray-100 bg-white px-4 py-2">
+      {/* Mobile toggle bar */}
+      <div className="md:hidden flex flex-shrink-0 border-b border-gray-100 bg-white">
         <button
           onClick={() => setMobileView("list")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-l-xl border transition-colors ${mobileView === "list" ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-gray-200"}`}
+          className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "list" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}
         >
           📋 Results ({filtered.length})
         </button>
         <button
           onClick={() => setMobileView("map")}
-          className={`flex-1 py-2 text-sm font-semibold rounded-r-xl border-t border-b border-r transition-colors ${mobileView === "map" ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-600 border-gray-200"}`}
+          className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "map" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}
         >
-          🗺️ Map View
+          🗺️ Map
         </button>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-4">
-        <div className="md:grid md:grid-cols-[1fr_420px] md:gap-4 h-full">
+      {/* Body: fills all remaining height */}
+      <div className="flex-1 flex overflow-hidden">
 
-          {/* Left: results list */}
-          <div className={`${mobileView === "map" ? "hidden" : "block"} md:block md:overflow-y-auto`}>
-            <SortBar count={filtered.length} sort={sort} setSort={setSort} />
+        {/* LEFT: scrollable card list */}
+        <div className={`${mobileView === "map" ? "hidden" : "flex"} md:flex flex-col w-full md:w-[400px] flex-shrink-0 overflow-y-auto bg-gray-50 border-r border-gray-100`}>
+          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
+            <p className="text-xs text-gray-500">
+              <span className="font-bold text-slate-800">{filtered.length}</span> contractors
+            </p>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
+            >
+              <option value="distance">Nearest first</option>
+              <option value="rating">Highest rated</option>
+              <option value="reviews">Most reviewed</option>
+              <option value="featured">Featured first</option>
+            </select>
+          </div>
 
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {filtered.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
-                <p className="text-3xl mb-3">🔍</p>
-                <p className="font-bold text-slate-700 mb-1">No contractors found</p>
-                <p className="text-sm text-gray-400">Try broadening your search or adjusting the filters.</p>
-                <button onClick={clearFilters} className="mt-4 text-sm font-semibold text-blue-600 hover:underline">Clear all filters</button>
+              <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
+                <p className="text-2xl mb-2">🔍</p>
+                <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
+                <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
+                <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
               </div>
             ) : (
-              <div className="space-y-3 pb-6">
-                {filtered.map((c) => (
-                  <ContractorCard
-                    key={c.id}
-                    c={c}
-                    hovered={hoveredId === c.id}
-                    onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
-                    onLeave={() => setHoveredId(null)}
-                  />
-                ))}
-              </div>
+              filtered.map((c) => (
+                <ContractorCard
+                  key={c.id}
+                  c={c}
+                  hovered={hoveredId === c.id}
+                  onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
+                  onLeave={() => setHoveredId(null)}
+                />
+              ))
             )}
           </div>
+        </div>
 
-          {/* Right: real Leaflet map */}
-          <div className={`${mobileView === "list" ? "hidden" : "block"} md:block md:sticky md:top-[120px] md:self-start md:h-[calc(100vh-140px)] h-[65vh]`}>
-            <LeafletMap
-              contractors={filtered}
-              hoveredId={hoveredId}
-              selectedId={selectedPinId}
-              onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
-              onHover={setHoveredId}
-            />
-          </div>
+        {/* RIGHT: map fills all remaining space */}
+        <div className={`${mobileView === "list" ? "hidden" : "flex"} md:flex flex-1 relative`}>
+          <LeafletMap
+            contractors={filtered}
+            hoveredId={hoveredId}
+            selectedId={selectedPinId}
+            onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
+            onHover={setHoveredId}
+          />
         </div>
       </div>
 
