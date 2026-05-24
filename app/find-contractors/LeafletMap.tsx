@@ -226,7 +226,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
   }, [selectedId, contractors]);
 
   return (
-    <div className="absolute inset-0 rounded-2xl overflow-hidden">
+    <div style={{ position: "absolute", inset: 0, borderRadius: "1rem", overflow: "hidden" }}>
       <style>{`
         .tb-contractor-popup .leaflet-popup-content-wrapper {
           padding: 0 !important;
@@ -246,7 +246,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
           font-size: 9px !important;
         }
       `}</style>
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }

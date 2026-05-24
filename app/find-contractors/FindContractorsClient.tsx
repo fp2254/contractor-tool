@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { CONTRACTORS, SERVICES, CITIES, type Contractor } from "./mockData";
@@ -360,6 +360,14 @@ export default function FindContractorsClient() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   function handleSurpriseMe() {
     const randomService = SERVICES[Math.floor(Math.random() * (SERVICES.length - 1)) + 1];
@@ -443,58 +451,61 @@ export default function FindContractorsClient() {
       </div>
 
       {/* Body: fills all remaining height */}
-      <div className="flex-1 flex overflow-hidden">
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT: scrollable card list */}
-        <div className={`${mobileView === "map" ? "hidden" : "flex"} md:flex flex-col w-full md:w-[400px] flex-shrink-0 overflow-y-auto bg-gray-50 border-r border-gray-100`}>
-          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
-            <p className="text-xs text-gray-500">
-              <span className="font-bold text-slate-800">{filtered.length}</span> contractors
-            </p>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
-            >
-              <option value="distance">Nearest first</option>
-              <option value="rating">Highest rated</option>
-              <option value="reviews">Most reviewed</option>
-              <option value="featured">Featured first</option>
-            </select>
+        {(isDesktop || mobileView === "list") && (
+          <div style={{ width: isDesktop ? 400 : "100%", flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+            <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
+              <p className="text-xs text-gray-500">
+                <span className="font-bold text-slate-800">{filtered.length}</span> contractors
+              </p>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
+              >
+                <option value="distance">Nearest first</option>
+                <option value="rating">Highest rated</option>
+                <option value="reviews">Most reviewed</option>
+                <option value="featured">Featured first</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              {filtered.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
+                  <p className="text-2xl mb-2">🔍</p>
+                  <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
+                  <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
+                  <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
+                </div>
+              ) : (
+                filtered.map((c) => (
+                  <ContractorCard
+                    key={c.id}
+                    c={c}
+                    hovered={hoveredId === c.id}
+                    onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
+                    onLeave={() => setHoveredId(null)}
+                  />
+                ))
+              )}
+            </div>
           </div>
+        )}
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {filtered.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
-                <p className="text-2xl mb-2">🔍</p>
-                <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
-                <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
-                <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
-              </div>
-            ) : (
-              filtered.map((c) => (
-                <ContractorCard
-                  key={c.id}
-                  c={c}
-                  hovered={hoveredId === c.id}
-                  onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
-                  onLeave={() => setHoveredId(null)}
-                />
-              ))
-            )}
+        {/* RIGHT: map — always visible on desktop, toggled on mobile */}
+        {(isDesktop || mobileView === "map") && (
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative" }}>
+            <LeafletMap
+              contractors={filtered}
+              hoveredId={hoveredId}
+              selectedId={selectedPinId}
+              onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
+              onHover={setHoveredId}
+            />
           </div>
-        </div>
-
-        {/* RIGHT: map fills all remaining space */}
-        <div className={`${mobileView === "list" ? "hidden" : "flex"} md:flex flex-1 relative`}>
-          <LeafletMap
-            contractors={filtered}
-            hoveredId={hoveredId}
-            selectedId={selectedPinId}
-            onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
-            onHover={setHoveredId}
-          />
-        </div>
+        )}
       </div>
 
       <FilterSheet
