@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import "leaflet/dist/leaflet.css";
 import type { Contractor } from "./mockData";
 
 interface Props {
@@ -87,7 +88,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
 
     (async () => {
       const L = (await import("leaflet")).default;
-      await import("leaflet/dist/leaflet.css" as any);
 
       const map = L.map(containerRef.current!, {
         center: [45.505, -122.675],
@@ -95,6 +95,9 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
         zoomControl: true,
         attributionControl: true,
       });
+
+      // Ensure map sizes correctly after flex layout settles
+      requestAnimationFrame(() => map.invalidateSize());
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -223,7 +226,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
   }, [selectedId, contractors]);
 
   return (
-    <>
+    <div className="absolute inset-0 rounded-2xl overflow-hidden">
       <style>{`
         .tb-contractor-popup .leaflet-popup-content-wrapper {
           padding: 0 !important;
@@ -243,7 +246,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
           font-size: 9px !important;
         }
       `}</style>
-      <div ref={containerRef} className="w-full h-full rounded-2xl overflow-hidden" />
-    </>
+      <div ref={containerRef} className="w-full h-full" />
+    </div>
   );
 }
