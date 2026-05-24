@@ -420,11 +420,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
                   alt={data.about.ownerName}
                   className="w-full rounded-lg shadow-2xl"
                 />
-              ) : (
-                <div className="w-full aspect-[4/5] bg-stone-200 rounded-lg shadow-2xl grid place-items-center text-stone-400">
-                  <User className="w-24 h-24" />
-                </div>
-              )}
+              ) : null}
               <div className="mt-4 flex items-center gap-3 bg-stone-100 p-4 rounded-lg border-l-4 border-red-700">
                 <div className="font-serif italic text-lg">{data.about.ownerQuote}</div>
               </div>
@@ -600,22 +596,16 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-              {data.gallery.map((photo, i) => (
+              {data.gallery.filter(p => p.src).map((photo, i) => (
                 <div
                   key={i}
                   className="relative aspect-square overflow-hidden rounded-lg group cursor-pointer bg-stone-200"
                 >
-                  {photo.src ? (
-                    <img
-                      src={photo.src}
-                      alt={photo.alt}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full grid place-items-center text-stone-400">
-                      <Wrench className="w-10 h-10" />
-                    </div>
-                  )}
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 sm:p-4">
                     <div className="text-white text-xs sm:text-sm font-semibold">{photo.caption}</div>
                   </div>

@@ -529,13 +529,13 @@ export function PublicProfileEditor() {
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Gallery</p>
             {profile.photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="flex flex-row gap-2 overflow-x-auto pb-1 mb-3">
                 {profile.photos.map((ph, i) => (
-                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                  <div key={i} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                     <img src={ph.url} alt={ph.title} className="w-full h-full object-cover" />
                     <button
                       onClick={() => update("photos", profile.photos.filter((_, idx) => idx !== i))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 text-red-500 text-[10px] font-bold flex items-center justify-center shadow-sm"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-red-500 text-[9px] font-bold flex items-center justify-center shadow-sm"
                     >
                       ✕
                     </button>
