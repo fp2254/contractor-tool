@@ -8,7 +8,7 @@ export type Contractor = {
   description: string;
   location: string;
   city: string;
-  distance: number; // miles
+  distance: number;
   rating_google: number;
   reviews_google: number;
   rating_tb: number;
@@ -17,16 +17,34 @@ export type Contractor = {
   insured: boolean;
   emergency: boolean;
   verified: boolean;
+  veteran_owned: boolean;
   years_in_business: number;
   jobs_completed: number;
-  cover_color: string; // gradient fallback
-  cover_emoji: string;
+  cover_color: string;
+  cover_photo: string;
+  project_photos: string[];
   avatar_color: string;
-  lat: number; // pseudo-coords for map pin placement (0–100)
+  lat: number;
   lng: number;
   featured: boolean;
   response_time: string;
 };
+
+export type Project = {
+  id: string;
+  contractor_id: string;
+  contractor_slug: string;
+  contractor_name: string;
+  avatar_color: string;
+  trade: string;
+  title: string;
+  location: string;
+  photo: string;
+  time_ago: string;
+};
+
+const U = (id: string, w = 600, h = 280) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&h=${h}&q=80`;
 
 export const CONTRACTORS: Contractor[] = [
   {
@@ -36,7 +54,7 @@ export const CONTRACTORS: Contractor[] = [
     trade: "Roofing",
     services: ["Roof Replacement", "Roof Repair", "Gutters", "Skylights"],
     tagline: "Portland's most trusted roofer since 2003",
-    description: "Family-owned roofing company with 20+ years serving the Portland metro. We specialize in asphalt shingle, metal roofing, and flat roofs. Free estimates.",
+    description: "Family-owned roofing company with 20+ years serving the Portland metro. We specialize in asphalt shingle, metal roofing, and flat roofs. Free estimates always.",
     location: "Portland, OR",
     city: "Portland",
     distance: 1.2,
@@ -48,10 +66,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: true,
+    veteran_owned: true,
     years_in_business: 21,
     jobs_completed: 1840,
     cover_color: "from-slate-700 to-slate-900",
-    cover_emoji: "🏠",
+    cover_photo: U("1582268611958-ebfd161ef9cf"),
+    project_photos: [
+      U("1568605114-ccfd63f70d8e", 120, 80),
+      U("1570129477492-7b76ee02d73c", 120, 80),
+      U("1558618666-fcd25c85cd64", 120, 80),
+    ],
     avatar_color: "#1B3A6B",
     lat: 45.521,
     lng: -122.675,
@@ -77,10 +101,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: true,
     verified: true,
+    veteran_owned: false,
     years_in_business: 12,
     jobs_completed: 920,
     cover_color: "from-yellow-600 to-amber-800",
-    cover_emoji: "⚡",
+    cover_photo: U("1621905252507-b35492cc74b4"),
+    project_photos: [
+      U("1581094288338-2314dddb0f7b", 120, 80),
+      U("1606760329800-74a6b1538ee6", 120, 80),
+      U("1565814329452-e7fcdb4820a4", 120, 80),
+    ],
     avatar_color: "#D97706",
     lat: 45.548,
     lng: -122.643,
@@ -106,10 +136,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: true,
     verified: true,
+    veteran_owned: false,
     years_in_business: 9,
     jobs_completed: 1340,
     cover_color: "from-blue-700 to-blue-900",
-    cover_emoji: "🔧",
+    cover_photo: U("1603796846097-bee99e4a601f"),
+    project_photos: [
+      U("1585771724684-38269d6639fd", 120, 80),
+      U("1552321554-5fefe8c9ef14", 120, 80),
+      U("1556909172-8c2f746b8d72", 120, 80),
+    ],
     avatar_color: "#1D4ED8",
     lat: 45.487,
     lng: -122.803,
@@ -123,7 +159,7 @@ export const CONTRACTORS: Contractor[] = [
     trade: "HVAC",
     services: ["AC Install", "Furnace Repair", "Heat Pumps", "Air Quality"],
     tagline: "Year-round comfort for your home",
-    description: "NATE-certified HVAC technicians serving Lake Oswego and surrounding areas. Expert installation and maintenance of all major brands. Energy-efficient heat pump specialists.",
+    description: "NATE-certified HVAC technicians serving Lake Oswego and surrounding areas. Expert installation of all major brands. Energy-efficient heat pump specialists.",
     location: "Lake Oswego, OR",
     city: "Lake Oswego",
     distance: 8.1,
@@ -135,10 +171,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: true,
+    veteran_owned: true,
     years_in_business: 15,
     jobs_completed: 780,
     cover_color: "from-cyan-700 to-teal-900",
-    cover_emoji: "❄️",
+    cover_photo: U("1581094288338-2314dddb0f7b"),
+    project_photos: [
+      U("1558618047-3c95c7f0b8c4", 120, 80),
+      U("1525785967-5e5bed3e3a92", 120, 80),
+      U("1504307651254-35680f356dfd", 120, 80),
+    ],
     avatar_color: "#0891B2",
     lat: 45.421,
     lng: -122.701,
@@ -152,7 +194,7 @@ export const CONTRACTORS: Contractor[] = [
     trade: "Painting",
     services: ["Interior Painting", "Exterior Painting", "Cabinet Refinishing", "Deck Staining"],
     tagline: "Flawless finishes — on time, every time",
-    description: "Professional residential painting with meticulous prep work and premium materials. Interior and exterior specialists with a 2-year workmanship guarantee on all projects.",
+    description: "Professional residential painting with meticulous prep and premium materials. Interior and exterior specialists with a 2-year workmanship guarantee on all projects.",
     location: "SW Portland, OR",
     city: "Portland",
     distance: 3.4,
@@ -164,10 +206,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: false,
+    veteran_owned: false,
     years_in_business: 6,
     jobs_completed: 430,
     cover_color: "from-purple-700 to-purple-900",
-    cover_emoji: "🎨",
+    cover_photo: U("1562259929-b4e1fd3aef09"),
+    project_photos: [
+      U("1589939018090-7b0f0d7b9a05", 120, 80),
+      U("1558618666-fcd25c85cd64", 120, 80),
+      U("1568605114-ccfd63f70d8e", 120, 80),
+    ],
     avatar_color: "#7C3AED",
     lat: 45.497,
     lng: -122.695,
@@ -193,10 +241,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: true,
+    veteran_owned: false,
     years_in_business: 30,
     jobs_completed: 2100,
     cover_color: "from-stone-600 to-stone-800",
-    cover_emoji: "🏗️",
+    cover_photo: U("1504307651254-35680f356dfd"),
+    project_photos: [
+      U("1501854140801-50d01698950b", 120, 80),
+      U("1570129477492-7b76ee02d73c", 120, 80),
+      U("1503708928676-1cb796a0891e", 120, 80),
+    ],
     avatar_color: "#78716C",
     lat: 45.502,
     lng: -122.431,
@@ -222,10 +276,16 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: false,
+    veteran_owned: false,
     years_in_business: 4,
     jobs_completed: 610,
     cover_color: "from-green-700 to-emerald-900",
-    cover_emoji: "🌧️",
+    cover_photo: U("1558618666-fcd25c85cd64"),
+    project_photos: [
+      U("1568605114-ccfd63f70d8e", 120, 80),
+      U("1582268611958-ebfd161ef9cf", 120, 80),
+      U("1570129477492-7b76ee02d73c", 120, 80),
+    ],
     avatar_color: "#16A34A",
     lat: 45.431,
     lng: -122.771,
@@ -251,15 +311,120 @@ export const CONTRACTORS: Contractor[] = [
     insured: true,
     emergency: false,
     verified: true,
+    veteran_owned: false,
     years_in_business: 16,
     jobs_completed: 890,
     cover_color: "from-rose-700 to-rose-900",
-    cover_emoji: "🏛️",
+    cover_photo: U("1556909114-f6e7ad7d3136"),
+    project_photos: [
+      U("1552321554-5fefe8c9ef14", 120, 80),
+      U("1556909172-8c2f746b8d72", 120, 80),
+      U("1536566482680-fca31930a0bd", 120, 80),
+    ],
     avatar_color: "#E11D48",
     lat: 45.533,
     lng: -122.700,
     featured: false,
     response_time: "Usually responds in 2 hrs",
+  },
+];
+
+export const PROJECTS: Project[] = [
+  {
+    id: "p1",
+    contractor_id: "1",
+    contractor_slug: "mike-sullivan-roofing",
+    contractor_name: "Sullivan Roofing",
+    avatar_color: "#1B3A6B",
+    trade: "Roofing",
+    title: "Full Roof Replacement",
+    location: "SE Portland",
+    photo: U("1582268611958-ebfd161ef9cf", 300, 200),
+    time_ago: "2 days ago",
+  },
+  {
+    id: "p2",
+    contractor_id: "8",
+    contractor_slug: "cascade-tile-stone",
+    contractor_name: "Cascade Tile",
+    avatar_color: "#E11D48",
+    trade: "Tile & Flooring",
+    title: "Master Bath Tile Remodel",
+    location: "NW Portland",
+    photo: U("1556909114-f6e7ad7d3136", 300, 200),
+    time_ago: "4 days ago",
+  },
+  {
+    id: "p3",
+    contractor_id: "2",
+    contractor_slug: "portland-electric",
+    contractor_name: "Portland Electric",
+    avatar_color: "#D97706",
+    trade: "Electrician",
+    title: "EV Charger + Panel Upgrade",
+    location: "NE Portland",
+    photo: U("1621905252507-b35492cc74b4", 300, 200),
+    time_ago: "1 week ago",
+  },
+  {
+    id: "p4",
+    contractor_id: "6",
+    contractor_slug: "concrete-masters-nw",
+    contractor_name: "Concrete Masters",
+    avatar_color: "#78716C",
+    trade: "Concrete",
+    title: "Stamped Concrete Patio",
+    location: "Gresham",
+    photo: U("1504307651254-35680f356dfd", 300, 200),
+    time_ago: "1 week ago",
+  },
+  {
+    id: "p5",
+    contractor_id: "5",
+    contractor_slug: "nw-painting-pros",
+    contractor_name: "NW Painting Pros",
+    avatar_color: "#7C3AED",
+    trade: "Painting",
+    title: "Whole-Home Exterior Paint",
+    location: "SW Portland",
+    photo: U("1562259929-b4e1fd3aef09", 300, 200),
+    time_ago: "2 weeks ago",
+  },
+  {
+    id: "p6",
+    contractor_id: "3",
+    contractor_slug: "pacific-plumbing",
+    contractor_name: "Pacific Plumbing",
+    avatar_color: "#1D4ED8",
+    trade: "Plumbing",
+    title: "Tankless Water Heater Install",
+    location: "Beaverton",
+    photo: U("1603796846097-bee99e4a601f", 300, 200),
+    time_ago: "3 weeks ago",
+  },
+  {
+    id: "p7",
+    contractor_id: "4",
+    contractor_slug: "summit-hvac",
+    contractor_name: "Summit HVAC",
+    avatar_color: "#0891B2",
+    trade: "HVAC",
+    title: "Heat Pump + Air Handler",
+    location: "Lake Oswego",
+    photo: U("1581094288338-2314dddb0f7b", 300, 200),
+    time_ago: "3 weeks ago",
+  },
+  {
+    id: "p8",
+    contractor_id: "1",
+    contractor_slug: "mike-sullivan-roofing",
+    contractor_name: "Sullivan Roofing",
+    avatar_color: "#1B3A6B",
+    trade: "Roofing",
+    title: "Metal Roof + Skylights",
+    location: "Sellwood",
+    photo: U("1570129477492-7b76ee02d73c", 300, 200),
+    time_ago: "1 month ago",
   },
 ];
 

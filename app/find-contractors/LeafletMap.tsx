@@ -5,10 +5,20 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Contractor } from "./mockData";
 
-// Portland, OR — where the mock contractors are (city-level default)
 const DEFAULT_CENTER: L.LatLngExpression = [45.52, -122.68];
-const DEFAULT_ZOOM = 10;
+const DEFAULT_ZOOM = 11;
 const MAX_BOUNDS: L.LatLngBoundsLiteral = [[24, -130], [52, -60]];
+
+const TRADE_EMOJI: Record<string, string> = {
+  Roofing: "🏠",
+  Electrician: "⚡",
+  Plumbing: "🔧",
+  HVAC: "❄️",
+  Painting: "🎨",
+  Concrete: "🏗️",
+  Gutters: "🌧️",
+  "Tile & Flooring": "🪟",
+};
 
 interface Props {
   contractors: Contractor[];
@@ -19,17 +29,36 @@ interface Props {
 }
 
 function makeIcon(c: Contractor, active: boolean, selected: boolean) {
-  const bg = selected || active ? "#1B3A6B" : c.avatar_color;
-  const scale = selected || active ? 1.15 : 1;
+  const color = selected ? "#1B3A6B" : active ? c.avatar_color : c.avatar_color;
+  const size = selected ? 46 : active ? 42 : 36;
+  const border = selected ? "3px solid #F59E0B" : active ? "3px solid white" : "2.5px solid white";
+  const shadow = selected
+    ? "0 4px 16px rgba(27,58,107,0.5), 0 0 0 4px rgba(245,158,11,0.25)"
+    : active
+    ? "0 4px 12px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.4)"
+    : "0 2px 8px rgba(0,0,0,0.3)";
+  const emoji = TRADE_EMOJI[c.trade] ?? "🔨";
+
   return L.divIcon({
-    html: `<div style="transform:scale(${scale});transform-origin:bottom center;transition:transform 0.15s;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35));cursor:pointer">
-      <div style="background:${bg};color:white;font-weight:800;font-size:12px;width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25)">
-        <span style="transform:rotate(45deg)">${c.name.charAt(0)}</span>
-      </div>
-    </div>`,
+    html: `
+      <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all 0.15s ease">
+        <div style="
+          width:${size}px;height:${size}px;
+          background:${color};
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          display:flex;align-items:center;justify-content:center;
+          border:${border};
+          box-shadow:${shadow};
+          transition:all 0.15s ease;
+        ">
+          <span style="transform:rotate(45deg);font-size:${selected ? 15 : active ? 13 : 11}px;line-height:1">${emoji}</span>
+        </div>
+      </div>`,
     className: "",
-    iconSize: [36, 42],
-    iconAnchor: [18, 42],
+    iconSize: [size, size + 6],
+    iconAnchor: [size / 2, size + 6],
+    popupAnchor: [0, -(size + 6)],
   });
 }
 
@@ -80,7 +109,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
 
     const currentIds = new Set(contractors.map((c) => c.id));
 
-    // Remove stale markers
     markersRef.current.forEach((marker, id) => {
       if (!currentIds.has(id)) {
         marker.remove();
@@ -88,7 +116,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
       }
     });
 
-    // Add or update
     contractors.forEach((c) => {
       const active = hoveredId === c.id;
       const selected = selectedId === c.id;
@@ -103,25 +130,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
           .on("mouseover", () => onHover(c.id))
           .on("mouseout", () => onHover(null));
         markersRef.current.set(c.id, marker);
-      }
-
-      // Open/close popup on selected marker
-      const marker = markersRef.current.get(c.id)!;
-      if (selected) {
-        if (!marker.getPopup()) {
-          marker.bindPopup(
-            `<div style="min-width:180px;font-family:sans-serif;padding:4px">
-              <p style="font-weight:700;font-size:14px;margin:0 0 2px">${c.name}</p>
-              <p style="font-size:12px;color:#64748b;margin:0 0 6px">${c.trade} · ${c.city}</p>
-              <p style="font-size:12px;margin:0 0 8px">⭐ ${c.rating_google} (${c.reviews_google} reviews)</p>
-              <a href="/pro/${c.slug}" style="display:block;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px;text-align:center;font-size:11px;font-weight:700;color:#475569;text-decoration:none">View Profile</a>
-            </div>`,
-            { offset: [0, -42], closeButton: false }
-          );
-        }
-        marker.openPopup();
-      } else {
-        marker.closePopup();
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

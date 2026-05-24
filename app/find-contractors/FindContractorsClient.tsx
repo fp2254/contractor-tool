@@ -3,29 +3,326 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CONTRACTORS, SERVICES, CITIES, type Contractor } from "./mockData";
+import { CONTRACTORS, PROJECTS, SERVICES, CITIES, type Contractor, type Project } from "./mockData";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full rounded-2xl bg-gray-100 flex items-center justify-center">
+    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
       <p className="text-sm text-gray-400 animate-pulse">Loading map…</p>
     </div>
   ),
 });
 
+// ─── Trust Badge ──────────────────────────────────────────────────────────────
+
+function TrustBadge({ icon, label, color }: { icon: string; label: string; color: string }) {
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${color}`}>
+      {icon} {label}
+    </span>
+  );
+}
+
 // ─── Stars ───────────────────────────────────────────────────────────────────
 
-function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
-  const full = Math.floor(rating);
-  const half = rating % 1 >= 0.5;
-  const cls = size === "xs" ? "text-[10px]" : "text-xs";
+function StarRow({ rating, count, source }: { rating: number; count: number; source: string }) {
   return (
-    <span className={cls}>
-      {"★".repeat(full)}
-      {half ? "½" : ""}
-      {"☆".repeat(5 - full - (half ? 1 : 0))}
-    </span>
+    <div className="flex items-center gap-1">
+      <span className="text-yellow-400 text-xs">★</span>
+      <span className="text-xs font-bold text-slate-800">{rating.toFixed(1)}</span>
+      <span className="text-[10px] text-gray-400">{source} ({count})</span>
+    </div>
+  );
+}
+
+// ─── Photo cover with gradient fallback ──────────────────────────────────────
+
+function CoverPhoto({ src, gradient, h = 152 }: { src: string; gradient: string; h?: number }) {
+  return (
+    <div className={`relative w-full bg-gradient-to-br ${gradient} overflow-hidden`} style={{ height: h }}>
+      <img
+        src={src}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+    </div>
+  );
+}
+
+// ─── Contractor Card ─────────────────────────────────────────────────────────
+
+function ContractorCard({
+  c, hovered, selected, onHover, onLeave, onSelect,
+}: {
+  c: Contractor; hovered: boolean; selected: boolean;
+  onHover: () => void; onLeave: () => void; onSelect: () => void;
+}) {
+  return (
+    <div
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+      onClick={onSelect}
+      className={`bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all duration-150 cursor-pointer ${
+        selected ? "border-blue-500 shadow-lg" : hovered ? "border-blue-300 shadow-md -translate-y-0.5" : "border-transparent hover:border-gray-200"
+      }`}
+    >
+      {/* Cover Photo */}
+      <div className="relative">
+        <CoverPhoto src={c.cover_photo} gradient={c.cover_color} h={148} />
+
+        {/* Overlay badges */}
+        <div className="absolute top-2.5 left-2.5 flex gap-1.5 flex-wrap">
+          {c.featured && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 shadow-sm">
+              ⭐ Featured
+            </span>
+          )}
+          {c.verified && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
+              ✓ TB Verified
+            </span>
+          )}
+        </div>
+        {c.emergency && (
+          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shadow-sm">
+            🚨 24/7
+          </span>
+        )}
+
+        {/* Avatar logo */}
+        <div
+          className="absolute -bottom-4 left-3.5 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm"
+          style={{ backgroundColor: c.avatar_color }}
+        >
+          {c.name.charAt(0)}
+        </div>
+
+        {/* Jobs completed pill */}
+        <div className="absolute -bottom-3 right-3.5 bg-white rounded-full px-2 py-0.5 shadow-sm border border-gray-100">
+          <span className="text-[10px] font-bold text-gray-600">{c.jobs_completed.toLocaleString()} jobs</span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="pt-6 px-3.5 pb-3.5">
+        {/* Name + distance */}
+        <div className="flex items-start justify-between gap-2 mb-0.5">
+          <div>
+            <p className="font-bold text-slate-800 text-sm leading-tight">{c.name}</p>
+            <p className="text-[11px] text-gray-400 leading-tight">{c.tagline}</p>
+          </div>
+          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">📍 {c.distance} mi</span>
+        </div>
+
+        {/* Trade + city */}
+        <div className="flex items-center gap-1.5 mt-1.5 mb-2">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
+          <span className="text-[10px] text-gray-400">{c.location}</span>
+          <span className="text-[10px] text-gray-300">·</span>
+          <span className="text-[10px] text-gray-400">{c.years_in_business} yrs</span>
+        </div>
+
+        {/* Ratings */}
+        <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+          <StarRow rating={c.rating_google} count={c.reviews_google} source="Google" />
+          {c.verified && <StarRow rating={c.rating_tb} count={c.reviews_tb} source="TB" />}
+        </div>
+
+        {/* Trust badges */}
+        <div className="flex gap-1 flex-wrap mb-2.5">
+          {c.licensed && <TrustBadge icon="🏛" label="Licensed" color="bg-green-50 text-green-700" />}
+          {c.insured && <TrustBadge icon="🛡" label="Insured" color="bg-emerald-50 text-emerald-700" />}
+          {c.veteran_owned && <TrustBadge icon="🎖" label="Veteran Owned" color="bg-amber-50 text-amber-700" />}
+          {c.emergency && <TrustBadge icon="⚡" label="Emergency" color="bg-red-50 text-red-600" />}
+        </div>
+
+        {/* Description */}
+        <p className="text-[11px] text-gray-500 line-clamp-2 mb-2.5 leading-relaxed">{c.description}</p>
+
+        {/* Project photo thumbnails */}
+        {c.project_photos.length > 0 && (
+          <div className="flex gap-1 mb-3">
+            {c.project_photos.map((photo, i) => (
+              <div key={i} className={`flex-1 rounded-lg overflow-hidden bg-gradient-to-br ${c.cover_color}`} style={{ height: 52 }}>
+                <img
+                  src={photo}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
+                />
+              </div>
+            ))}
+            <div className="flex-shrink-0 w-10 h-[52px] rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
+              <span className="text-[9px] font-bold text-gray-400 text-center leading-tight">more<br />work</span>
+            </div>
+          </div>
+        )}
+
+        {/* Response time */}
+        <p className="text-[10px] text-gray-400 mb-3">🕐 {c.response_time}</p>
+
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <Link
+            href={`/pro/${c.slug}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors"
+          >
+            View Profile
+          </Link>
+          <button
+            onClick={(e) => { e.stopPropagation(); }}
+            className="flex-1 rounded-xl py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 shadow-sm"
+            style={{ backgroundColor: "#1B3A6B" }}
+          >
+            Request Quote
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Recent Projects Strip ────────────────────────────────────────────────────
+
+function RecentProjectsStrip({
+  projects, onHoverContractor, onLeaveContractor,
+}: {
+  projects: Project[];
+  onHoverContractor: (id: string) => void;
+  onLeaveContractor: () => void;
+}) {
+  return (
+    <div className="bg-white border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
+        <div>
+          <p className="text-xs font-bold text-slate-800">Recent Projects Near You</p>
+          <p className="text-[10px] text-gray-400">Completed work by contractors in this area</p>
+        </div>
+        <button className="text-[10px] font-semibold text-blue-600 hover:underline flex-shrink-0">
+          See all →
+        </button>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-3 px-3.5 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+        {projects.map((p) => (
+          <div
+            key={p.id}
+            onMouseEnter={() => onHoverContractor(p.contractor_id)}
+            onMouseLeave={onLeaveContractor}
+            className="flex-shrink-0 w-44 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer group"
+          >
+            {/* Photo */}
+            <div className={`relative w-full bg-gray-200`} style={{ height: 88 }}>
+              <img
+                src={p.photo}
+                alt={p.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <span className="absolute bottom-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#1B3A6B80" }}>
+                {p.trade}
+              </span>
+            </div>
+            {/* Info */}
+            <div className="p-2">
+              <p className="text-[11px] font-bold text-slate-700 leading-tight line-clamp-1">{p.title}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <div
+                  className="w-3.5 h-3.5 rounded-sm flex items-center justify-center text-white text-[7px] font-black flex-shrink-0"
+                  style={{ backgroundColor: p.avatar_color }}
+                >
+                  {p.contractor_name.charAt(0)}
+                </div>
+                <p className="text-[9px] text-gray-400 line-clamp-1">{p.contractor_name}</p>
+              </div>
+              <p className="text-[9px] text-gray-400 mt-0.5">{p.location} · {p.time_ago}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Map Floating Card ─────────────────────────────────────────────────────────
+
+function MapFloatingCard({
+  contractor, onClose,
+}: {
+  contractor: Contractor;
+  onClose: () => void;
+}) {
+  const c = contractor;
+  return (
+    <div
+      className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500] w-[340px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 animate-in"
+      style={{ animation: "fadeSlideUp 0.18s ease-out" }}
+    >
+      {/* Cover */}
+      <div className="relative">
+        <CoverPhoto src={c.cover_photo} gradient={c.cover_color} h={120} />
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white text-sm flex items-center justify-center hover:bg-black/60 transition-colors z-10"
+        >
+          ✕
+        </button>
+        <div
+          className="absolute -bottom-3.5 left-4 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm"
+          style={{ backgroundColor: c.avatar_color }}
+        >
+          {c.name.charAt(0)}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="pt-5 px-4 pb-4">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div>
+            <p className="font-bold text-slate-800 text-sm">{c.name}</p>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-1 justify-end">
+              <span className="text-yellow-400 text-xs">★</span>
+              <span className="text-xs font-bold text-slate-800">{c.rating_google.toFixed(1)}</span>
+            </div>
+            <p className="text-[9px] text-gray-400">({c.reviews_google} reviews)</p>
+          </div>
+        </div>
+
+        <div className="flex gap-1 flex-wrap my-2">
+          {c.verified && <TrustBadge icon="✓" label="TB Verified" color="bg-blue-50 text-blue-700" />}
+          {c.licensed && <TrustBadge icon="🏛" label="Licensed" color="bg-green-50 text-green-700" />}
+          {c.insured && <TrustBadge icon="🛡" label="Insured" color="bg-emerald-50 text-emerald-700" />}
+          {c.veteran_owned && <TrustBadge icon="🎖" label="Veteran" color="bg-amber-50 text-amber-700" />}
+          {c.emergency && <TrustBadge icon="⚡" label="24/7" color="bg-red-50 text-red-600" />}
+        </div>
+
+        <p className="text-[11px] text-gray-500 line-clamp-2 mb-3">{c.description}</p>
+
+        <p className="text-[10px] text-gray-400 mb-3">📍 {c.location} · 🕐 {c.response_time}</p>
+
+        <div className="flex gap-2">
+          <Link
+            href={`/pro/${c.slug}`}
+            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors"
+          >
+            View Profile
+          </Link>
+          <button
+            className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: "#1B3A6B" }}
+          >
+            Request Quote
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -33,7 +330,7 @@ function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) 
 
 function Header() {
   return (
-    <header style={{ backgroundColor: "#1B3A6B" }} className="sticky top-0 z-40 shadow-md">
+    <header style={{ backgroundColor: "#1B3A6B" }} className="sticky top-0 z-40 shadow-md flex-shrink-0">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
           <span className="text-white font-bold text-lg tracking-tight">🏠 TradeBase</span>
@@ -78,7 +375,6 @@ function SearchBar({
   return (
     <div className="bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
       <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
-        {/* Search input */}
         <div className="relative flex-1 min-w-[180px]">
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
@@ -136,6 +432,7 @@ function FilterSheet({
   licensedOnly, setLicensedOnly,
   insuredOnly, setInsuredOnly,
   emergencyOnly, setEmergencyOnly,
+  veteranOnly, setVeteranOnly,
   minRating, setMinRating,
   onClear,
 }: {
@@ -144,13 +441,17 @@ function FilterSheet({
   licensedOnly: boolean; setLicensedOnly: (v: boolean) => void;
   insuredOnly: boolean; setInsuredOnly: (v: boolean) => void;
   emergencyOnly: boolean; setEmergencyOnly: (v: boolean) => void;
+  veteranOnly: boolean; setVeteranOnly: (v: boolean) => void;
   minRating: number; setMinRating: (v: number) => void;
   onClear: () => void;
 }) {
   if (!open) return null;
-  const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) => (
+  const Toggle = ({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: () => void }) => (
     <label className="flex items-center justify-between py-3 border-b border-gray-100 cursor-pointer">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <div>
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+        {sub && <p className="text-[10px] text-gray-400">{sub}</p>}
+      </div>
       <div
         onClick={onChange}
         className={`w-10 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? "bg-blue-600" : "bg-gray-200"}`}
@@ -183,10 +484,12 @@ function FilterSheet({
           </div>
         </div>
 
-        <Toggle label="TradeBase Verified" checked={verifiedOnly} onChange={() => setVerifiedOnly(!verifiedOnly)} />
-        <Toggle label="Licensed" checked={licensedOnly} onChange={() => setLicensedOnly(!licensedOnly)} />
-        <Toggle label="Insured" checked={insuredOnly} onChange={() => setInsuredOnly(!insuredOnly)} />
-        <Toggle label="Emergency Service Available" checked={emergencyOnly} onChange={() => setEmergencyOnly(!emergencyOnly)} />
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trust & Credentials</p>
+        <Toggle label="TradeBase Verified" sub="Background checked + reviewed by TB" checked={verifiedOnly} onChange={() => setVerifiedOnly(!verifiedOnly)} />
+        <Toggle label="Licensed" sub="State contractor license on file" checked={licensedOnly} onChange={() => setLicensedOnly(!licensedOnly)} />
+        <Toggle label="Insured" sub="General liability + workers comp" checked={insuredOnly} onChange={() => setInsuredOnly(!insuredOnly)} />
+        <Toggle label="Veteran Owned" checked={veteranOnly} onChange={() => setVeteranOnly(!veteranOnly)} />
+        <Toggle label="Emergency Service Available" sub="Available nights and weekends" checked={emergencyOnly} onChange={() => setEmergencyOnly(!emergencyOnly)} />
 
         <button
           onClick={onClose}
@@ -197,149 +500,6 @@ function FilterSheet({
         </button>
       </div>
     </>
-  );
-}
-
-// ─── Contractor Card ─────────────────────────────────────────────────────────
-
-function ContractorCard({
-  c, hovered, onHover, onLeave,
-}: {
-  c: Contractor; hovered: boolean; onHover: () => void; onLeave: () => void;
-}) {
-  return (
-    <div
-      onMouseEnter={onHover}
-      onMouseLeave={onLeave}
-      className={`bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all duration-150 ${hovered ? "border-blue-400 shadow-md -translate-y-0.5" : "border-transparent"}`}
-    >
-      {/* Cover */}
-      <div className={`relative h-36 bg-gradient-to-br ${c.cover_color} flex items-center justify-center`}>
-        <span className="text-5xl opacity-20 select-none">{c.cover_emoji}</span>
-        {c.featured && (
-          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900">
-            ⭐ Featured
-          </span>
-        )}
-        {c.emergency && (
-          <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white">
-            🚨 24/7
-          </span>
-        )}
-        {/* Logo avatar */}
-        <div
-          className="absolute -bottom-4 left-4 w-10 h-10 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm"
-          style={{ backgroundColor: c.avatar_color }}
-        >
-          {c.name.charAt(0)}
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="pt-6 px-4 pb-4">
-        {/* Name + distance */}
-        <div className="flex items-start justify-between gap-2 mb-0.5">
-          <p className="font-bold text-slate-800 text-sm leading-snug">{c.name}</p>
-          <span className="text-xs text-gray-400 flex-shrink-0">{c.distance} mi</span>
-        </div>
-
-        {/* Trade chip + location */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{c.trade}</span>
-          <span className="text-xs text-gray-400">📍 {c.location}</span>
-        </div>
-
-        {/* Ratings row */}
-        <div className="flex items-center gap-3 mb-2 flex-wrap">
-          <div className="flex items-center gap-1">
-            <span className="text-yellow-400 text-xs">★</span>
-            <span className="text-xs font-bold text-slate-700">{c.rating_google.toFixed(1)}</span>
-            <span className="text-[10px] text-gray-400">Google ({c.reviews_google})</span>
-          </div>
-          {c.verified && (
-            <div className="flex items-center gap-1">
-              <span className="text-[10px]">🔵</span>
-              <span className="text-xs font-bold text-slate-700">{c.rating_tb.toFixed(1)}</span>
-              <span className="text-[10px] text-gray-400">TB ({c.reviews_tb})</span>
-            </div>
-          )}
-        </div>
-
-        {/* Badges */}
-        <div className="flex gap-1 flex-wrap mb-2">
-          {c.verified && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: "#EFF6FF", color: "#1B3A6B" }}>
-              ✓ TB Verified
-            </span>
-          )}
-          {c.licensed && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-green-50 text-green-700">
-              🏛 Licensed
-            </span>
-          )}
-          {c.insured && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700">
-              🛡 Insured
-            </span>
-          )}
-        </div>
-
-        {/* Description */}
-        <p className="text-xs text-gray-500 line-clamp-2 mb-3">{c.description}</p>
-
-        {/* Response time */}
-        <p className="text-[10px] text-gray-400 mb-3">{c.response_time}</p>
-
-        {/* Services pills */}
-        <div className="flex flex-wrap gap-1 mb-3">
-          {c.services.slice(0, 3).map((s) => (
-            <span key={s} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{s}</span>
-          ))}
-          {c.services.length > 3 && (
-            <span className="text-[10px] text-gray-400">+{c.services.length - 3} more</span>
-          )}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-2">
-          <Link
-            href={`/pro/${c.slug}`}
-            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-700 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors"
-          >
-            View Profile
-          </Link>
-          <button
-            className="flex-1 rounded-xl py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: "#1B3A6B" }}
-          >
-            Request Quote
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ─── Sort Bar ─────────────────────────────────────────────────────────────────
-
-function SortBar({ count, sort, setSort }: { count: number; sort: string; setSort: (v: string) => void }) {
-  return (
-    <div className="flex items-center justify-between mb-3">
-      <p className="text-sm text-gray-500">
-        <span className="font-bold text-slate-800">{count}</span> contractors found
-      </p>
-      <select
-        value={sort}
-        onChange={(e) => setSort(e.target.value)}
-        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-white text-slate-700 font-medium"
-      >
-        <option value="distance">Nearest first</option>
-        <option value="rating">Highest rated</option>
-        <option value="reviews">Most reviewed</option>
-        <option value="featured">Featured first</option>
-      </select>
-    </div>
   );
 }
 
@@ -354,12 +514,14 @@ export default function FindContractorsClient() {
   const [licensedOnly, setLicensedOnly] = useState(false);
   const [insuredOnly, setInsuredOnly] = useState(false);
   const [emergencyOnly, setEmergencyOnly] = useState(false);
+  const [veteranOnly, setVeteranOnly] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
+
   function handleSurpriseMe() {
     const randomService = SERVICES[Math.floor(Math.random() * (SERVICES.length - 1)) + 1];
     setService(randomService);
@@ -371,10 +533,11 @@ export default function FindContractorsClient() {
     setLicensedOnly(false);
     setInsuredOnly(false);
     setEmergencyOnly(false);
+    setVeteranOnly(false);
     setMinRating(0);
   }
 
-  const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
+  const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
 
   const filtered = useMemo(() => {
     let list = [...CONTRACTORS];
@@ -401,19 +564,32 @@ export default function FindContractorsClient() {
     if (licensedOnly) list = list.filter((c) => c.licensed);
     if (insuredOnly) list = list.filter((c) => c.insured);
     if (emergencyOnly) list = list.filter((c) => c.emergency);
+    if (veteranOnly) list = list.filter((c) => c.veteran_owned);
     if (minRating > 0) list = list.filter((c) => c.rating_google >= minRating);
 
-    // Sort
     if (sort === "distance") list.sort((a, b) => a.distance - b.distance);
     else if (sort === "rating") list.sort((a, b) => b.rating_google - a.rating_google);
     else if (sort === "reviews") list.sort((a, b) => b.reviews_google - a.reviews_google);
     else if (sort === "featured") list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
 
     return list;
-  }, [query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, minRating, sort]);
+  }, [query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
+
+  const selectedContractor = selectedPinId ? filtered.find((c) => c.id === selectedPinId) ?? null : null;
+
+  const activeContractorIds = new Set(filtered.map((c) => c.id));
+  const visibleProjects = PROJECTS.filter((p) => activeContractorIds.has(p.contractor_id));
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+      `}</style>
+
       <Header />
       <SearchBar
         query={query} setQuery={setQuery}
@@ -425,30 +601,35 @@ export default function FindContractorsClient() {
         activeFilterCount={activeFilterCount}
       />
 
-      {/* Mobile toggle bar */}
+      {/* Mobile toggle */}
       <div className="md:hidden flex flex-shrink-0 border-b border-gray-100 bg-white">
-        <button
-          onClick={() => setMobileView("list")}
-          className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "list" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}
-        >
+        <button onClick={() => setMobileView("list")} className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "list" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}>
           📋 Results ({filtered.length})
         </button>
-        <button
-          onClick={() => setMobileView("map")}
-          className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "map" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}
-        >
+        <button onClick={() => setMobileView("map")} className={`flex-1 py-2 text-sm font-semibold transition-colors ${mobileView === "map" ? "text-slate-800 border-b-2 border-slate-800" : "text-slate-400"}`}>
           🗺️ Map
         </button>
       </div>
 
-      {/* Body: fills all remaining height */}
+      {/* Body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-        {/* LEFT: scrollable card list */}
-        <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+        {/* LEFT: card list */}
+        <div style={{ width: 388, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+
+          {/* Recent Projects Strip */}
+          {visibleProjects.length > 0 && (
+            <RecentProjectsStrip
+              projects={visibleProjects}
+              onHoverContractor={(id) => setHoveredId(id)}
+              onLeaveContractor={() => setHoveredId(null)}
+            />
+          )}
+
+          {/* Sort bar */}
           <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
             <p className="text-xs text-gray-500">
-              <span className="font-bold text-slate-800">{filtered.length}</span> contractors
+              <span className="font-bold text-slate-800">{filtered.length}</span> contractors found
             </p>
             <select
               value={sort}
@@ -461,6 +642,8 @@ export default function FindContractorsClient() {
               <option value="featured">Featured first</option>
             </select>
           </div>
+
+          {/* Cards */}
           <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
             {filtered.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
@@ -475,23 +658,40 @@ export default function FindContractorsClient() {
                   key={c.id}
                   c={c}
                   hovered={hoveredId === c.id}
-                  onHover={() => { setHoveredId(c.id); setSelectedPinId(null); }}
+                  selected={selectedPinId === c.id}
+                  onHover={() => setHoveredId(c.id)}
                   onLeave={() => setHoveredId(null)}
+                  onSelect={() => setSelectedPinId((prev) => prev === c.id ? null : c.id)}
                 />
               ))
             )}
           </div>
         </div>
 
-        {/* RIGHT: map — always visible */}
+        {/* RIGHT: map */}
         <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
           <LeafletMap
             contractors={filtered}
             hoveredId={hoveredId}
             selectedId={selectedPinId}
-            onSelect={(id) => setSelectedPinId((prev) => (prev === id ? null : id))}
+            onSelect={(id) => setSelectedPinId((prev) => prev === id ? null : id)}
             onHover={setHoveredId}
           />
+
+          {/* Floating card on pin click */}
+          {selectedContractor && (
+            <MapFloatingCard
+              contractor={selectedContractor}
+              onClose={() => setSelectedPinId(null)}
+            />
+          )}
+
+          {/* Map attribution overlay hint */}
+          {!selectedContractor && (
+            <div className="absolute top-3 right-3 z-[400] bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm border border-gray-100">
+              <p className="text-[10px] font-semibold text-slate-600">Click a pin to see details</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -502,6 +702,7 @@ export default function FindContractorsClient() {
         licensedOnly={licensedOnly} setLicensedOnly={setLicensedOnly}
         insuredOnly={insuredOnly} setInsuredOnly={setInsuredOnly}
         emergencyOnly={emergencyOnly} setEmergencyOnly={setEmergencyOnly}
+        veteranOnly={veteranOnly} setVeteranOnly={setVeteranOnly}
         minRating={minRating} setMinRating={setMinRating}
         onClear={clearFilters}
       />
