@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CONTRACTORS, PROJECTS, SERVICES, CITIES, type Contractor, type Project } from "./mockData";
+import {
+  CONTRACTORS, PROJECTS, TRENDING_SEARCHES, SERVICES, CITIES,
+  type Contractor, type Project,
+} from "./mockData";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
@@ -14,7 +17,19 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ),
 });
 
-// ─── Trust Badge ──────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function Img({ src, alt = "", className = "", h }: { src: string; alt?: string; className?: string; h?: number }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      style={h ? { height: h } : undefined}
+      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+    />
+  );
+}
 
 function TrustBadge({ icon, label, color }: { icon: string; label: string; color: string }) {
   return (
@@ -24,30 +39,275 @@ function TrustBadge({ icon, label, color }: { icon: string; label: string; color
   );
 }
 
-// ─── Stars ───────────────────────────────────────────────────────────────────
-
-function StarRow({ rating, count, source }: { rating: number; count: number; source: string }) {
+function StarRow({ rating, count, source, color = "text-yellow-400" }: { rating: number; count: number; source: string; color?: string }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-yellow-400 text-xs">★</span>
+      <span className={`${color} text-xs`}>★</span>
       <span className="text-xs font-bold text-slate-800">{rating.toFixed(1)}</span>
       <span className="text-[10px] text-gray-400">{source} ({count})</span>
     </div>
   );
 }
 
-// ─── Photo cover with gradient fallback ──────────────────────────────────────
+// ─── Header ──────────────────────────────────────────────────────────────────
 
-function CoverPhoto({ src, gradient, h = 152 }: { src: string; gradient: string; h?: number }) {
+function Header() {
   return (
-    <div className={`relative w-full bg-gradient-to-br ${gradient} overflow-hidden`} style={{ height: h }}>
-      <img
-        src={src}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+    <header style={{ backgroundColor: "#1B3A6B" }} className="sticky top-0 z-40 shadow-md flex-shrink-0">
+      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-white font-bold text-lg tracking-tight">🏠 TradeBase</span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-6">
+          <Link href="/find-contractors" className="text-white text-sm font-semibold border-b-2 border-white pb-0.5">Find Contractors</Link>
+          <Link href="/find-contractors" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">Projects Near You</Link>
+          <Link href="/auth/login" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">For Contractors</Link>
+        </nav>
+        <Link href="/auth/signup" className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white border-2 border-white/40 hover:bg-white/10 transition-colors">
+          Join TradeBase
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+// ─── Search Bar with Suggestions ──────────────────────────────────────────────
+
+function SearchBar({
+  query, setQuery, service, setService, city, setCity, distance, setDistance,
+  onSurpriseMe, onShowFilters, activeFilterCount,
+}: {
+  query: string; setQuery: (v: string) => void;
+  service: string; setService: (v: string) => void;
+  city: string; setCity: (v: string) => void;
+  distance: string; setDistance: (v: string) => void;
+  onSurpriseMe: () => void;
+  onShowFilters: () => void;
+  activeFilterCount: number;
+}) {
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const suggestions = useMemo(() => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return SERVICES.filter((s) => s !== "All Services" && s.toLowerCase().includes(q)).slice(0, 5);
+  }, [query]);
+
+  const showDropdown = focused && (query.trim().length === 0 || suggestions.length > 0);
+
+  const selCls = "h-9 bg-white border border-gray-200 rounded-lg px-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 text-slate-700";
+
+  return (
+    <div className="bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
+      <div className="px-4 pt-2.5 pb-1.5 flex items-center gap-2 flex-wrap">
+        {/* Search input with dropdown */}
+        <div className="relative flex-1 min-w-[180px]">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
+            placeholder="Search roofing, plumbing, HVAC…"
+            className="w-full h-9 rounded-lg border border-gray-200 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+          />
+          {showDropdown && (
+            <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+              {query.trim().length === 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide px-3 pt-2.5 pb-1">🔥 Trending searches</p>
+                  {TRENDING_SEARCHES.map((s) => (
+                    <button key={s} onMouseDown={() => { setQuery(s); setFocused(false); }}
+                      className="w-full text-left px-3 py-1.5 text-sm text-slate-700 hover:bg-gray-50 flex items-center gap-2">
+                      <span className="text-gray-400 text-xs">↗</span> {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {suggestions.map((s) => (
+                <button key={s} onMouseDown={() => { setQuery(s); setService(s); setFocused(false); }}
+                  className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50">
+                  <span className="text-blue-400 text-xs">🔍</span> {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <select value={service} onChange={(e) => setService(e.target.value)} className={`${selCls} min-w-[130px]`}>
+          {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={city} onChange={(e) => setCity(e.target.value)} className={`${selCls} min-w-[140px]`}>
+          <option value="">All Locations</option>
+          {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={distance} onChange={(e) => setDistance(e.target.value)} className={`${selCls} w-28`}>
+          <option value="50">Any distance</option>
+          <option value="5">Within 5 mi</option>
+          <option value="10">Within 10 mi</option>
+          <option value="25">Within 25 mi</option>
+        </select>
+        <button onClick={onShowFilters}
+          className="h-9 flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-slate-700 bg-white hover:bg-gray-50 transition-colors relative flex-shrink-0">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M7 8h10M10 12h4" />
+          </svg>
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <button onClick={onSurpriseMe}
+          className="h-9 flex items-center gap-1 rounded-lg border border-purple-200 px-3 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors flex-shrink-0">
+          🎲 Surprise Me
+        </button>
+      </div>
+
+      {/* Trending search chips */}
+      <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-none">
+        <span className="text-[10px] text-gray-400 font-semibold flex-shrink-0">Trending:</span>
+        {TRENDING_SEARCHES.map((s) => (
+          <button key={s} onClick={() => { setQuery(s); setService(s === "Roofing" || SERVICES.includes(s) ? s : "All Services"); }}
+            className={`flex-shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+              query === s || service === s
+                ? "border-blue-500 text-blue-700 bg-blue-50"
+                : "border-gray-200 text-gray-500 bg-white hover:border-gray-300"
+            }`}>
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Recent Projects Carousel ─────────────────────────────────────────────────
+
+function RecentProjectsCarousel({
+  projects, onHoverContractor, onLeaveContractor,
+}: {
+  projects: Project[];
+  onHoverContractor: (id: string) => void;
+  onLeaveContractor: () => void;
+}) {
+  return (
+    <div className="bg-white border-b-2 border-gray-100 flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5">
+        <div>
+          <p className="text-sm font-bold text-slate-800 leading-tight">Recent Projects Near You</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Real completed work by local contractors</p>
+        </div>
+        <button className="text-[10px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 rounded-full px-2.5 py-1 hover:bg-blue-50 transition-colors flex-shrink-0">
+          See all →
+        </button>
+      </div>
+
+      {/* Carousel */}
+      <div className="flex gap-3 overflow-x-auto pb-3.5 px-4 scrollbar-none">
+        {projects.map((p) => (
+          <div
+            key={p.id}
+            onMouseEnter={() => onHoverContractor(p.contractor_id)}
+            onMouseLeave={onLeaveContractor}
+            className="flex-shrink-0 w-[210px] rounded-2xl overflow-hidden border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+          >
+            {/* Photo */}
+            <div className="relative w-full bg-gray-200 overflow-hidden" style={{ height: 136 }}>
+              <Img
+                src={p.photo}
+                alt={p.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              {/* Trade tag */}
+              <span className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-sm">
+                {p.trade}
+              </span>
+              {/* Time */}
+              <span className="absolute top-2 right-2 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-black/40 text-white">
+                {p.time_ago}
+              </span>
+              {/* Title overlay */}
+              <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
+                <p className="text-white font-bold text-xs leading-tight line-clamp-1 drop-shadow">{p.title}</p>
+                <p className="text-white/80 text-[9px] mt-0.5">📍 {p.location}</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-2.5 py-2">
+              {/* Contractor */}
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[8px] font-black flex-shrink-0" style={{ backgroundColor: p.avatar_color }}>
+                  {p.contractor_name.charAt(0)}
+                </div>
+                <span className="text-[10px] font-semibold text-gray-600 line-clamp-1">{p.contractor_name}</span>
+              </div>
+              {/* Buttons */}
+              <div className="flex gap-1.5">
+                <Link href={`/project/${p.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 text-center text-[9px] font-bold py-1.5 rounded-lg border border-gray-200 text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors">
+                  View Project
+                </Link>
+                <Link href={`/pro/${p.contractor_slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 text-center text-[9px] font-bold py-1.5 rounded-lg text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#1B3A6B" }}>
+                  Contractor
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Trending Local Stats ─────────────────────────────────────────────────────
+
+function TrendingStatsRow({ contractors }: { contractors: Contractor[] }) {
+  const fastest = contractors.reduce((a, b) => {
+    const aTime = parseInt(a.response_time.replace(/\D/g, "")) || 99;
+    const bTime = parseInt(b.response_time.replace(/\D/g, "")) || 99;
+    return aTime < bTime ? a : b;
+  }, contractors[0]);
+
+  const topRated = [...contractors].sort((a, b) => b.rating_google - a.rating_google)[0];
+  const veteranCount = contractors.filter((c) => c.veteran_owned).length;
+
+  if (!fastest || !topRated) return null;
+
+  return (
+    <div className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-gray-100 px-3 py-2.5 flex gap-2 overflow-x-auto scrollbar-none flex-shrink-0">
+      <StatChip icon="⚡" label="Fastest Response" value={fastest.name.split(" ")[0]} sub={fastest.response_time} />
+      <StatChip icon="⭐" label="Top Rated" value={`${topRated.rating_google}★`} sub={`${topRated.reviews_google} reviews`} />
+      <StatChip icon="✓" label="TB Verified" value={`${contractors.filter((c) => c.verified).length}`} sub="in this area" />
+      {veteranCount > 0 && (
+        <StatChip icon="🎖" label="Veteran Owned" value={`${veteranCount}`} sub="contractor(s)" />
+      )}
+      <StatChip icon="🚨" label="Emergency" value={`${contractors.filter((c) => c.emergency).length}`} sub="available 24/7" />
+    </div>
+  );
+}
+
+function StatChip({ icon, label, value, sub }: { icon: string; label: string; value: string; sub: string }) {
+  return (
+    <div className="flex-shrink-0 bg-white rounded-xl px-2.5 py-1.5 border border-gray-100 shadow-sm flex items-center gap-2 min-w-[130px]">
+      <span className="text-base leading-none">{icon}</span>
+      <div>
+        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-[11px] font-bold text-slate-800 leading-tight">{value}</p>
+        <p className="text-[9px] text-gray-400">{sub}</p>
+      </div>
     </div>
   );
 }
@@ -66,183 +326,119 @@ function ContractorCard({
       onMouseLeave={onLeave}
       onClick={onSelect}
       className={`bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all duration-150 cursor-pointer ${
-        selected ? "border-blue-500 shadow-lg" : hovered ? "border-blue-300 shadow-md -translate-y-0.5" : "border-transparent hover:border-gray-200"
+        selected
+          ? "border-blue-500 shadow-lg ring-2 ring-blue-100"
+          : hovered
+          ? "border-blue-200 shadow-md -translate-y-0.5"
+          : "border-transparent hover:border-gray-100 hover:shadow-md"
       }`}
     >
-      {/* Cover Photo */}
+      {/* Cover */}
       <div className="relative">
-        <CoverPhoto src={c.cover_photo} gradient={c.cover_color} h={148} />
+        <div className={`relative h-40 w-full overflow-hidden bg-gradient-to-br ${c.cover_color}`}>
+          <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
+        </div>
 
-        {/* Overlay badges */}
+        {/* Top badges */}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5 flex-wrap">
           {c.featured && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 shadow-sm">
-              ⭐ Featured
-            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-yellow-900 shadow-sm">⭐ Featured</span>
           )}
           {c.verified && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
-              ✓ TB Verified
-            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>✓ TB Verified</span>
           )}
         </div>
         {c.emergency && (
-          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shadow-sm">
-            🚨 24/7
-          </span>
+          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shadow-sm">🚨 24/7</span>
         )}
 
-        {/* Avatar logo */}
-        <div
-          className="absolute -bottom-4 left-3.5 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm"
-          style={{ backgroundColor: c.avatar_color }}
-        >
+        {/* Avatar */}
+        <div className="absolute -bottom-4 left-4 w-10 h-10 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm" style={{ backgroundColor: c.avatar_color }}>
           {c.name.charAt(0)}
         </div>
 
-        {/* Jobs completed pill */}
-        <div className="absolute -bottom-3 right-3.5 bg-white rounded-full px-2 py-0.5 shadow-sm border border-gray-100">
+        {/* Stats pill */}
+        <div className="absolute -bottom-3 right-3.5 bg-white rounded-full px-2.5 py-0.5 shadow-sm border border-gray-100 flex items-center gap-1.5">
           <span className="text-[10px] font-bold text-gray-600">{c.jobs_completed.toLocaleString()} jobs</span>
+          <span className="text-gray-200">·</span>
+          <span className="text-[10px] font-bold text-gray-600">{c.years_in_business}y exp</span>
         </div>
       </div>
 
       {/* Body */}
-      <div className="pt-6 px-3.5 pb-3.5">
-        {/* Name + distance */}
+      <div className="pt-7 px-4 pb-3.5">
+        {/* Name row */}
         <div className="flex items-start justify-between gap-2 mb-0.5">
           <div>
             <p className="font-bold text-slate-800 text-sm leading-tight">{c.name}</p>
             <p className="text-[11px] text-gray-400 leading-tight">{c.tagline}</p>
           </div>
-          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">📍 {c.distance} mi</span>
+          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap">📍 {c.distance} mi</span>
         </div>
 
         {/* Trade + city */}
-        <div className="flex items-center gap-1.5 mt-1.5 mb-2">
+        <div className="flex items-center gap-1.5 mt-2 mb-2.5 flex-wrap">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
           <span className="text-[10px] text-gray-400">{c.location}</span>
-          <span className="text-[10px] text-gray-300">·</span>
-          <span className="text-[10px] text-gray-400">{c.years_in_business} yrs</span>
         </div>
 
-        {/* Ratings */}
-        <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+        {/* Dual ratings */}
+        <div className="bg-gray-50 rounded-xl px-3 py-2 mb-2.5 space-y-1">
           <StarRow rating={c.rating_google} count={c.reviews_google} source="Google" />
-          {c.verified && <StarRow rating={c.rating_tb} count={c.reviews_tb} source="TB" />}
+          {c.verified && (
+            <div className="flex items-center gap-1">
+              <span className="text-blue-500 text-xs">★</span>
+              <span className="text-xs font-bold text-slate-800">{c.rating_tb.toFixed(1)}</span>
+              <span className="text-[10px] text-gray-400">TradeBase ({c.verified_projects} verified projects)</span>
+            </div>
+          )}
         </div>
 
         {/* Trust badges */}
         <div className="flex gap-1 flex-wrap mb-2.5">
           {c.licensed && <TrustBadge icon="🏛" label="Licensed" color="bg-green-50 text-green-700" />}
           {c.insured && <TrustBadge icon="🛡" label="Insured" color="bg-emerald-50 text-emerald-700" />}
-          {c.veteran_owned && <TrustBadge icon="🎖" label="Veteran Owned" color="bg-amber-50 text-amber-700" />}
+          {c.veteran_owned && <TrustBadge icon="🎖" label="Veteran" color="bg-amber-50 text-amber-700" />}
           {c.emergency && <TrustBadge icon="⚡" label="Emergency" color="bg-red-50 text-red-600" />}
         </div>
 
         {/* Description */}
         <p className="text-[11px] text-gray-500 line-clamp-2 mb-2.5 leading-relaxed">{c.description}</p>
 
-        {/* Project photo thumbnails */}
+        {/* Project photo row */}
         {c.project_photos.length > 0 && (
-          <div className="flex gap-1 mb-3">
+          <div className="flex gap-1.5 mb-3">
             {c.project_photos.map((photo, i) => (
               <div key={i} className={`flex-1 rounded-lg overflow-hidden bg-gradient-to-br ${c.cover_color}`} style={{ height: 52 }}>
-                <img
-                  src={photo}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
-                />
+                <img src={photo} alt="" className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }} />
               </div>
             ))}
-            <div className="flex-shrink-0 w-10 h-[52px] rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
-              <span className="text-[9px] font-bold text-gray-400 text-center leading-tight">more<br />work</span>
+            <div className="flex-shrink-0 w-10 h-[52px] rounded-lg bg-gray-50 border border-gray-100 flex flex-col items-center justify-center">
+              <span className="text-[9px] font-bold text-gray-400 text-center leading-tight">+more</span>
             </div>
           </div>
         )}
 
-        {/* Response time */}
-        <p className="text-[10px] text-gray-400 mb-3">🕐 {c.response_time}</p>
+        {/* Stats row */}
+        <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-500">
+          <span>🕐 Responds {c.response_time}</span>
+          {c.repeat_customers > 0 && <span>🔄 {c.repeat_customers}% repeat</span>}
+        </div>
 
-        {/* Action buttons */}
+        {/* Buttons */}
         <div className="flex gap-2">
-          <Link
-            href={`/pro/${c.slug}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors"
-          >
+          <Link href={`/pro/${c.slug}`} onClick={(e) => e.stopPropagation()}
+            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors">
             View Profile
           </Link>
-          <button
-            onClick={(e) => { e.stopPropagation(); }}
+          <button onClick={(e) => e.stopPropagation()}
             className="flex-1 rounded-xl py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 shadow-sm"
-            style={{ backgroundColor: "#1B3A6B" }}
-          >
+            style={{ backgroundColor: "#1B3A6B" }}>
             Request Quote
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Recent Projects Strip ────────────────────────────────────────────────────
-
-function RecentProjectsStrip({
-  projects, onHoverContractor, onLeaveContractor,
-}: {
-  projects: Project[];
-  onHoverContractor: (id: string) => void;
-  onLeaveContractor: () => void;
-}) {
-  return (
-    <div className="bg-white border-b border-gray-100 flex-shrink-0">
-      <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
-        <div>
-          <p className="text-xs font-bold text-slate-800">Recent Projects Near You</p>
-          <p className="text-[10px] text-gray-400">Completed work by contractors in this area</p>
-        </div>
-        <button className="text-[10px] font-semibold text-blue-600 hover:underline flex-shrink-0">
-          See all →
-        </button>
-      </div>
-      <div className="flex gap-2 overflow-x-auto pb-3 px-3.5 scrollbar-none" style={{ scrollbarWidth: "none" }}>
-        {projects.map((p) => (
-          <div
-            key={p.id}
-            onMouseEnter={() => onHoverContractor(p.contractor_id)}
-            onMouseLeave={onLeaveContractor}
-            className="flex-shrink-0 w-44 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer group"
-          >
-            {/* Photo */}
-            <div className={`relative w-full bg-gray-200`} style={{ height: 88 }}>
-              <img
-                src={p.photo}
-                alt={p.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              <span className="absolute bottom-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: "#1B3A6B80" }}>
-                {p.trade}
-              </span>
-            </div>
-            {/* Info */}
-            <div className="p-2">
-              <p className="text-[11px] font-bold text-slate-700 leading-tight line-clamp-1">{p.title}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <div
-                  className="w-3.5 h-3.5 rounded-sm flex items-center justify-center text-white text-[7px] font-black flex-shrink-0"
-                  style={{ backgroundColor: p.avatar_color }}
-                >
-                  {p.contractor_name.charAt(0)}
-                </div>
-                <p className="text-[9px] text-gray-400 line-clamp-1">{p.contractor_name}</p>
-              </div>
-              <p className="text-[9px] text-gray-400 mt-0.5">{p.location} · {p.time_ago}</p>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -250,52 +446,52 @@ function RecentProjectsStrip({
 
 // ─── Map Floating Card ─────────────────────────────────────────────────────────
 
-function MapFloatingCard({
-  contractor, onClose,
-}: {
-  contractor: Contractor;
-  onClose: () => void;
-}) {
+function MapFloatingCard({ contractor, onClose }: { contractor: Contractor; onClose: () => void }) {
   const c = contractor;
   return (
     <div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500] w-[340px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 animate-in"
-      style={{ animation: "fadeSlideUp 0.18s ease-out" }}
+      className="absolute bottom-6 left-1/2 z-[500] w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
+      style={{ transform: "translateX(-50%)", animation: "floatUp 0.18s ease-out" }}
     >
       {/* Cover */}
-      <div className="relative">
-        <CoverPhoto src={c.cover_photo} gradient={c.cover_color} h={120} />
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 text-white text-sm flex items-center justify-center hover:bg-black/60 transition-colors z-10"
-        >
+      <div className={`relative h-[120px] bg-gradient-to-br ${c.cover_color} overflow-hidden`}>
+        <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <button onClick={onClose}
+          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/40 text-white text-sm flex items-center justify-center hover:bg-black/60 transition-colors">
           ✕
         </button>
-        <div
-          className="absolute -bottom-3.5 left-4 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm"
-          style={{ backgroundColor: c.avatar_color }}
-        >
+        <div className="absolute -bottom-4 left-4 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm" style={{ backgroundColor: c.avatar_color }}>
           {c.name.charAt(0)}
         </div>
       </div>
 
       {/* Body */}
       <div className="pt-5 px-4 pb-4">
-        <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="flex items-start justify-between gap-2 mb-2">
           <div>
-            <p className="font-bold text-slate-800 text-sm">{c.name}</p>
+            <p className="font-bold text-slate-800 text-sm leading-tight">{c.name}</p>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
           </div>
-          <div className="text-right">
-            <div className="flex items-center gap-1 justify-end">
+          <div className="text-right flex-shrink-0">
+            <div className="flex items-center gap-0.5 justify-end">
               <span className="text-yellow-400 text-xs">★</span>
-              <span className="text-xs font-bold text-slate-800">{c.rating_google.toFixed(1)}</span>
+              <span className="text-xs font-bold">{c.rating_google.toFixed(1)}</span>
             </div>
-            <p className="text-[9px] text-gray-400">({c.reviews_google} reviews)</p>
+            <p className="text-[9px] text-gray-400">Google ({c.reviews_google})</p>
+            {c.verified && (
+              <>
+                <div className="flex items-center gap-0.5 justify-end mt-0.5">
+                  <span className="text-blue-500 text-xs">★</span>
+                  <span className="text-xs font-bold">{c.rating_tb.toFixed(1)}</span>
+                </div>
+                <p className="text-[9px] text-gray-400">TB ({c.verified_projects} projects)</p>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="flex gap-1 flex-wrap my-2">
+        <div className="flex gap-1 flex-wrap mb-2.5">
           {c.verified && <TrustBadge icon="✓" label="TB Verified" color="bg-blue-50 text-blue-700" />}
           {c.licensed && <TrustBadge icon="🏛" label="Licensed" color="bg-green-50 text-green-700" />}
           {c.insured && <TrustBadge icon="🛡" label="Insured" color="bg-emerald-50 text-emerald-700" />}
@@ -303,122 +499,18 @@ function MapFloatingCard({
           {c.emergency && <TrustBadge icon="⚡" label="24/7" color="bg-red-50 text-red-600" />}
         </div>
 
-        <p className="text-[11px] text-gray-500 line-clamp-2 mb-3">{c.description}</p>
-
-        <p className="text-[10px] text-gray-400 mb-3">📍 {c.location} · 🕐 {c.response_time}</p>
+        <p className="text-[11px] text-gray-500 line-clamp-2 mb-2">{c.description}</p>
+        <p className="text-[10px] text-gray-400 mb-3">📍 {c.location} · 🕐 Responds {c.response_time}</p>
 
         <div className="flex gap-2">
-          <Link
-            href={`/pro/${c.slug}`}
-            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors"
-          >
+          <Link href={`/pro/${c.slug}`}
+            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors">
             View Profile
           </Link>
-          <button
-            className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "#1B3A6B" }}
-          >
+          <button className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
             Request Quote
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Header ──────────────────────────────────────────────────────────────────
-
-function Header() {
-  return (
-    <header style={{ backgroundColor: "#1B3A6B" }} className="sticky top-0 z-40 shadow-md flex-shrink-0">
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-white font-bold text-lg tracking-tight">🏠 TradeBase</span>
-        </Link>
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/find-contractors" className="text-white text-sm font-semibold border-b-2 border-white pb-0.5">
-            Find Contractors
-          </Link>
-          <Link href="/find-contractors" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">
-            Projects Near You
-          </Link>
-          <Link href="/auth/login" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">
-            For Contractors
-          </Link>
-        </nav>
-        <Link
-          href="/auth/signup"
-          className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white border-2 border-white/40 hover:bg-white/10 transition-colors"
-        >
-          Join TradeBase
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-// ─── Search Bar ───────────────────────────────────────────────────────────────
-
-function SearchBar({
-  query, setQuery, service, setService, city, setCity, distance, setDistance,
-  onSurpriseMe, onShowFilters, activeFilterCount,
-}: {
-  query: string; setQuery: (v: string) => void;
-  service: string; setService: (v: string) => void;
-  city: string; setCity: (v: string) => void;
-  distance: string; setDistance: (v: string) => void;
-  onSurpriseMe: () => void;
-  onShowFilters: () => void;
-  activeFilterCount: number;
-}) {
-  const selCls = "h-9 bg-white border border-gray-200 rounded-lg px-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 text-slate-700";
-  return (
-    <div className="bg-white border-b border-gray-100 shadow-sm flex-shrink-0">
-      <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[180px]">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="What service do you need?"
-            className="w-full h-9 rounded-lg border border-gray-200 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
-          />
-        </div>
-        <select value={service} onChange={(e) => setService(e.target.value)} className={`${selCls} min-w-[130px]`}>
-          {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={city} onChange={(e) => setCity(e.target.value)} className={`${selCls} min-w-[140px]`}>
-          <option value="">All Locations</option>
-          {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={distance} onChange={(e) => setDistance(e.target.value)} className={`${selCls} w-28`}>
-          <option value="50">Any distance</option>
-          <option value="5">Within 5 mi</option>
-          <option value="10">Within 10 mi</option>
-          <option value="25">Within 25 mi</option>
-        </select>
-        <button
-          onClick={onShowFilters}
-          className="h-9 flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-slate-700 bg-white hover:bg-gray-50 transition-colors relative flex-shrink-0"
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M7 8h10M10 12h4" />
-          </svg>
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={onSurpriseMe}
-          className="h-9 flex items-center gap-1 rounded-lg border border-purple-200 px-3 text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors flex-shrink-0"
-        >
-          🎲 Surprise Me
-        </button>
       </div>
     </div>
   );
@@ -427,14 +519,9 @@ function SearchBar({
 // ─── Filter Sheet ─────────────────────────────────────────────────────────────
 
 function FilterSheet({
-  open, onClose,
-  verifiedOnly, setVerifiedOnly,
-  licensedOnly, setLicensedOnly,
-  insuredOnly, setInsuredOnly,
-  emergencyOnly, setEmergencyOnly,
-  veteranOnly, setVeteranOnly,
-  minRating, setMinRating,
-  onClear,
+  open, onClose, verifiedOnly, setVerifiedOnly, licensedOnly, setLicensedOnly,
+  insuredOnly, setInsuredOnly, emergencyOnly, setEmergencyOnly,
+  veteranOnly, setVeteranOnly, minRating, setMinRating, onClear,
 }: {
   open: boolean; onClose: () => void;
   verifiedOnly: boolean; setVerifiedOnly: (v: boolean) => void;
@@ -452,10 +539,7 @@ function FilterSheet({
         <span className="text-sm font-medium text-slate-700">{label}</span>
         {sub && <p className="text-[10px] text-gray-400">{sub}</p>}
       </div>
-      <div
-        onClick={onChange}
-        className={`w-10 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? "bg-blue-600" : "bg-gray-200"}`}
-      >
+      <div onClick={onChange} className={`w-10 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? "bg-blue-600" : "bg-gray-200"}`}>
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${checked ? "translate-x-4" : ""}`} />
       </div>
     </label>
@@ -471,7 +555,6 @@ function FilterSheet({
             <button onClick={onClose} className="text-gray-400 text-xl leading-none">✕</button>
           </div>
         </div>
-
         <div className="mb-4">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Minimum Rating</p>
           <div className="flex gap-2">
@@ -483,19 +566,13 @@ function FilterSheet({
             ))}
           </div>
         </div>
-
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Trust & Credentials</p>
         <Toggle label="TradeBase Verified" sub="Background checked + reviewed by TB" checked={verifiedOnly} onChange={() => setVerifiedOnly(!verifiedOnly)} />
         <Toggle label="Licensed" sub="State contractor license on file" checked={licensedOnly} onChange={() => setLicensedOnly(!licensedOnly)} />
         <Toggle label="Insured" sub="General liability + workers comp" checked={insuredOnly} onChange={() => setInsuredOnly(!insuredOnly)} />
         <Toggle label="Veteran Owned" checked={veteranOnly} onChange={() => setVeteranOnly(!veteranOnly)} />
-        <Toggle label="Emergency Service Available" sub="Available nights and weekends" checked={emergencyOnly} onChange={() => setEmergencyOnly(!emergencyOnly)} />
-
-        <button
-          onClick={onClose}
-          className="mt-5 w-full rounded-xl py-3 text-sm font-bold text-white"
-          style={{ backgroundColor: "#1B3A6B" }}
-        >
+        <Toggle label="Emergency Service" sub="Available nights and weekends" checked={emergencyOnly} onChange={() => setEmergencyOnly(!emergencyOnly)} />
+        <button onClick={onClose} className="mt-5 w-full rounded-xl py-3 text-sm font-bold text-white" style={{ backgroundColor: "#1B3A6B" }}>
           Show Results
         </button>
       </div>
@@ -503,7 +580,7 @@ function FilterSheet({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function FindContractorsClient() {
   const [query, setQuery] = useState("");
@@ -522,71 +599,41 @@ export default function FindContractorsClient() {
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
 
-  function handleSurpriseMe() {
-    const randomService = SERVICES[Math.floor(Math.random() * (SERVICES.length - 1)) + 1];
-    setService(randomService);
-    setQuery("");
-  }
-
-  function clearFilters() {
-    setVerifiedOnly(false);
-    setLicensedOnly(false);
-    setInsuredOnly(false);
-    setEmergencyOnly(false);
-    setVeteranOnly(false);
-    setMinRating(0);
-  }
-
   const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
 
   const filtered = useMemo(() => {
     let list = [...CONTRACTORS];
     const q = query.toLowerCase().trim();
-    if (q) {
-      list = list.filter((c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.trade.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.services.some((s) => s.toLowerCase().includes(q))
-      );
-    }
-    if (service !== "All Services") {
-      list = list.filter((c) => c.trade === service || c.services.some((s) => s.includes(service)));
-    }
-    if (city) {
-      list = list.filter((c) => c.location.includes(city.split(",")[0]));
-    }
+    if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || c.trade.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.services.some((s) => s.toLowerCase().includes(q)));
+    if (service !== "All Services") list = list.filter((c) => c.trade === service || c.services.some((s) => s.includes(service)));
+    if (city) list = list.filter((c) => c.location.includes(city.split(",")[0]));
     const maxDist = Number(distance);
-    if (maxDist < 50) {
-      list = list.filter((c) => c.distance <= maxDist);
-    }
+    if (maxDist < 50) list = list.filter((c) => c.distance <= maxDist);
     if (verifiedOnly) list = list.filter((c) => c.verified);
     if (licensedOnly) list = list.filter((c) => c.licensed);
     if (insuredOnly) list = list.filter((c) => c.insured);
     if (emergencyOnly) list = list.filter((c) => c.emergency);
     if (veteranOnly) list = list.filter((c) => c.veteran_owned);
     if (minRating > 0) list = list.filter((c) => c.rating_google >= minRating);
-
     if (sort === "distance") list.sort((a, b) => a.distance - b.distance);
     else if (sort === "rating") list.sort((a, b) => b.rating_google - a.rating_google);
     else if (sort === "reviews") list.sort((a, b) => b.reviews_google - a.reviews_google);
     else if (sort === "featured") list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-
     return list;
   }, [query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
 
   const selectedContractor = selectedPinId ? filtered.find((c) => c.id === selectedPinId) ?? null : null;
-
-  const activeContractorIds = new Set(filtered.map((c) => c.id));
-  const visibleProjects = PROJECTS.filter((p) => activeContractorIds.has(p.contractor_id));
+  const activeIds = new Set(filtered.map((c) => c.id));
+  const visibleProjects = PROJECTS.filter((p) => activeIds.has(p.contractor_id));
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+        @keyframes floatUp {
+          from { opacity: 0; transform: translateX(-50%) translateY(14px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+        .scrollbar-none { scrollbar-width: none; }
         .scrollbar-none::-webkit-scrollbar { display: none; }
       `}</style>
 
@@ -596,7 +643,7 @@ export default function FindContractorsClient() {
         service={service} setService={setService}
         city={city} setCity={setCity}
         distance={distance} setDistance={setDistance}
-        onSurpriseMe={handleSurpriseMe}
+        onSurpriseMe={() => { const r = SERVICES[Math.floor(Math.random() * (SERVICES.length - 1)) + 1]; setService(r); setQuery(""); }}
         onShowFilters={() => setShowFilters(true)}
         activeFilterCount={activeFilterCount}
       />
@@ -614,28 +661,26 @@ export default function FindContractorsClient() {
       {/* Body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-        {/* LEFT: card list */}
-        <div style={{ width: 388, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+        {/* LEFT */}
+        <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f0f0f0", minHeight: 0 }}>
 
-          {/* Recent Projects Strip */}
           {visibleProjects.length > 0 && (
-            <RecentProjectsStrip
+            <RecentProjectsCarousel
               projects={visibleProjects}
               onHoverContractor={(id) => setHoveredId(id)}
               onLeaveContractor={() => setHoveredId(null)}
             />
           )}
 
+          {filtered.length > 0 && <TrendingStatsRow contractors={filtered} />}
+
           {/* Sort bar */}
-          <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
+          <div className="px-4 py-2.5 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0 sticky top-0 z-10 shadow-sm">
             <p className="text-xs text-gray-500">
               <span className="font-bold text-slate-800">{filtered.length}</span> contractors found
             </p>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium"
-            >
+            <select value={sort} onChange={(e) => setSort(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none bg-white text-slate-700 font-medium">
               <option value="distance">Nearest first</option>
               <option value="rating">Highest rated</option>
               <option value="reviews">Most reviewed</option>
@@ -650,7 +695,8 @@ export default function FindContractorsClient() {
                 <p className="text-2xl mb-2">🔍</p>
                 <p className="font-bold text-slate-700 text-sm mb-1">No contractors found</p>
                 <p className="text-xs text-gray-400 mb-3">Try broadening your search or filters.</p>
-                <button onClick={clearFilters} className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
+                <button onClick={() => { setQuery(""); setService("All Services"); setVerifiedOnly(false); setLicensedOnly(false); setInsuredOnly(false); setEmergencyOnly(false); setVeteranOnly(false); setMinRating(0); }}
+                  className="text-xs font-semibold text-blue-600 hover:underline">Clear all filters</button>
               </div>
             ) : (
               filtered.map((c) => (
@@ -678,33 +724,27 @@ export default function FindContractorsClient() {
             onHover={setHoveredId}
           />
 
-          {/* Floating card on pin click */}
           {selectedContractor && (
-            <MapFloatingCard
-              contractor={selectedContractor}
-              onClose={() => setSelectedPinId(null)}
-            />
+            <MapFloatingCard contractor={selectedContractor} onClose={() => setSelectedPinId(null)} />
           )}
 
-          {/* Map attribution overlay hint */}
           {!selectedContractor && (
             <div className="absolute top-3 right-3 z-[400] bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow-sm border border-gray-100">
-              <p className="text-[10px] font-semibold text-slate-600">Click a pin to see details</p>
+              <p className="text-[10px] font-semibold text-slate-600">Click a pin to preview</p>
             </div>
           )}
         </div>
       </div>
 
       <FilterSheet
-        open={showFilters}
-        onClose={() => setShowFilters(false)}
+        open={showFilters} onClose={() => setShowFilters(false)}
         verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
         licensedOnly={licensedOnly} setLicensedOnly={setLicensedOnly}
         insuredOnly={insuredOnly} setInsuredOnly={setInsuredOnly}
         emergencyOnly={emergencyOnly} setEmergencyOnly={setEmergencyOnly}
         veteranOnly={veteranOnly} setVeteranOnly={setVeteranOnly}
         minRating={minRating} setMinRating={setMinRating}
-        onClear={clearFilters}
+        onClear={() => { setVerifiedOnly(false); setLicensedOnly(false); setInsuredOnly(false); setEmergencyOnly(false); setVeteranOnly(false); setMinRating(0); }}
       />
     </div>
   );
