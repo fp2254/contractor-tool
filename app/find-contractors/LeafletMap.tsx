@@ -24,24 +24,34 @@ interface Props {
   contractors: Contractor[];
   hoveredId: string | null;
   selectedId: string | null;
+  hasSelection: boolean;
   onSelect: (id: string | null) => void;
   onHover: (id: string | null) => void;
 }
 
-function makeIcon(c: Contractor, active: boolean, selected: boolean) {
-  const color = selected ? "#1B3A6B" : active ? c.avatar_color : c.avatar_color;
-  const size = selected ? 46 : active ? 42 : 36;
-  const border = selected ? "3px solid #F59E0B" : active ? "3px solid white" : "2.5px solid white";
-  const shadow = selected
-    ? "0 4px 16px rgba(27,58,107,0.5), 0 0 0 4px rgba(245,158,11,0.25)"
+function makeIcon(c: Contractor, active: boolean, selected: boolean, dimmed: boolean) {
+  const color = selected ? "#1B3A6B" : c.avatar_color;
+  const size = selected ? 48 : active ? 43 : 36;
+  const border = selected
+    ? "3.5px solid #F59E0B"
     : active
-    ? "0 4px 12px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.4)"
+    ? "3px solid white"
+    : "2.5px solid white";
+  const shadow = selected
+    ? "0 6px 20px rgba(27,58,107,0.55), 0 0 0 6px rgba(245,158,11,0.22)"
+    : active
+    ? "0 4px 14px rgba(0,0,0,0.45), 0 0 0 3px rgba(255,255,255,0.45)"
+    : dimmed
+    ? "0 1px 4px rgba(0,0,0,0.15)"
     : "0 2px 8px rgba(0,0,0,0.3)";
+  const opacity = dimmed ? "0.32" : "1";
   const emoji = TRADE_EMOJI[c.trade] ?? "🔨";
+  const bounce = selected ? "animation:pinBounce 0.38s cubic-bezier(.36,.07,.19,.97) both;" : "";
+  const fs = selected ? 16 : active ? 14 : 11;
 
   return L.divIcon({
     html: `
-      <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all 0.15s ease">
+      <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:${opacity};transition:opacity 0.2s ease;${bounce}">
         <div style="
           width:${size}px;height:${size}px;
           background:${color};
@@ -50,9 +60,9 @@ function makeIcon(c: Contractor, active: boolean, selected: boolean) {
           display:flex;align-items:center;justify-content:center;
           border:${border};
           box-shadow:${shadow};
-          transition:all 0.15s ease;
+          transition:width 0.15s ease,height 0.15s ease,box-shadow 0.15s ease;
         ">
-          <span style="transform:rotate(45deg);font-size:${selected ? 15 : active ? 13 : 11}px;line-height:1">${emoji}</span>
+          <span style="transform:rotate(45deg);font-size:${fs}px;line-height:1">${emoji}</span>
         </div>
       </div>`,
     className: "",
@@ -62,13 +72,33 @@ function makeIcon(c: Contractor, active: boolean, selected: boolean) {
   });
 }
 
-export default function LeafletMap({ contractors, hoveredId, selectedId, onSelect, onHover }: Props) {
+export default function LeafletMap({ contractors, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const rafRef = useRef<number | null>(null);
 
-  // ── Init map once ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "leaflet-pin-anim";
+    style.textContent = `
+      @keyframes pinBounce {
+        0%   { transform: scale(1) translateY(0); }
+        25%  { transform: scale(1.25) translateY(-8px); }
+        55%  { transform: scale(0.94) translateY(2px); }
+        75%  { transform: scale(1.07) translateY(-3px); }
+        100% { transform: scale(1) translateY(0); }
+      }
+    `;
+    if (!document.getElementById("leaflet-pin-anim")) {
+      document.head.appendChild(style);
+    }
+    return () => {
+      const existing = document.getElementById("leaflet-pin-anim");
+      if (existing) existing.remove();
+    };
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -102,7 +132,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Sync markers ──────────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -119,7 +148,8 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
     contractors.forEach((c) => {
       const active = hoveredId === c.id;
       const selected = selectedId === c.id;
-      const icon = makeIcon(c, active, selected);
+      const dimmed = hasSelection && !selected && !active;
+      const icon = makeIcon(c, active, selected, dimmed);
 
       if (markersRef.current.has(c.id)) {
         markersRef.current.get(c.id)!.setIcon(icon);
@@ -133,7 +163,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractors, hoveredId, selectedId]);
+  }, [contractors, hoveredId, selectedId, hasSelection]);
 
   return (
     <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import type { ProjectDetail } from "@/app/find-contractors/mockData";
 
@@ -23,9 +23,94 @@ function Img({ src, alt = "", className = "" }: { src: string; alt?: string; cla
   );
 }
 
+function BeforeAfterSlider({ beforeSrc, afterSrc }: { beforeSrc: string; afterSrc: string }) {
+  const [position, setPosition] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  function getPos(clientX: number) {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    setPosition(Math.round(x * 100));
+  }
+
+  useEffect(() => {
+    function onMove(e: PointerEvent) { if (dragging.current) getPos(e.clientX); }
+    function onUp() { dragging.current = false; }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative rounded-xl overflow-hidden cursor-col-resize select-none touch-none"
+      style={{ height: 260 }}
+      onPointerDown={(e) => {
+        dragging.current = true;
+        getPos(e.clientX);
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+    >
+      {/* After photo — visible on right */}
+      <img
+        src={afterSrc}
+        alt="After"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
+      />
+      {/* Before photo — clipped to left of slider */}
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${position}%` }}>
+        <img
+          src={beforeSrc}
+          alt="Before"
+          className="absolute inset-0 h-full object-cover pointer-events-none"
+          style={{ width: containerRef.current?.offsetWidth ?? 600 }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
+        />
+      </div>
+      {/* Divider line */}
+      <div
+        className="absolute inset-y-0 w-0.5 bg-white pointer-events-none"
+        style={{ left: `${position}%`, transform: "translateX(-50%)", boxShadow: "0 0 10px rgba(0,0,0,0.4)" }}
+      />
+      {/* Handle knob */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white border-2 border-gray-200 shadow-2xl flex items-center justify-center pointer-events-none z-10"
+        style={{ left: `${position}%` }}
+      >
+        <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l-3 3 3 3M16 9l3 3-3 3" />
+        </svg>
+      </div>
+      {/* Labels */}
+      <div className="absolute top-3 left-3 pointer-events-none">
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-black/50 text-white backdrop-blur-sm">Before</span>
+      </div>
+      <div className="absolute top-3 right-3 pointer-events-none">
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-black/50 text-white backdrop-blur-sm">After</span>
+      </div>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
+        <span className="text-[10px] font-semibold px-3 py-1 rounded-full bg-black/40 text-white/90 backdrop-blur-sm whitespace-nowrap">
+          ← Drag to compare →
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectPageClient({ project: p }: { project: ProjectDetail }) {
   const [activePhoto, setActivePhoto] = useState(0);
   const [quoteOpen, setQuoteOpen] = useState(false);
+
+  const afterPhoto = p.after_photo ?? p.photos[0];
+  const beforePhoto = p.before_photo ?? p.photos[p.photos.length - 1];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -54,7 +139,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
         <Img src={p.photos[activePhoto]} alt={p.title} className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* Thumbnail strip */}
         {p.photos.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
             {p.photos.map((photo, i) => (
@@ -69,7 +153,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
           </div>
         )}
 
-        {/* Title overlay */}
         <div className="absolute bottom-16 left-0 right-0 px-6 md:px-10">
           <div className="max-w-5xl mx-auto">
             <span className="inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-white/20 text-white backdrop-blur-sm mb-2">{p.trade}</span>
@@ -106,6 +189,20 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
             <p className="text-sm text-gray-600 leading-relaxed">{p.description}</p>
           </div>
 
+          {/* Before / After Slider */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-bold text-slate-800 text-base">Before / After</h2>
+                <p className="text-[10px] text-gray-400 mt-0.5">Drag the slider to reveal the transformation</p>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
+                ✓ Real project photos
+              </span>
+            </div>
+            <BeforeAfterSlider beforeSrc={beforePhoto} afterSrc={afterPhoto} />
+          </div>
+
           {/* Scope of work */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <h2 className="font-bold text-slate-800 text-base mb-3">Scope of Work</h2>
@@ -131,22 +228,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
             </div>
           </div>
 
-          {/* Before/After — coming soon */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-slate-800 text-base">Before / After</h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">Coming soon</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {["Before", "After"].map((label) => (
-                <div key={label} className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 h-32 flex flex-col items-center justify-center">
-                  <p className="text-xs font-bold text-gray-400">{label}</p>
-                  <p className="text-[10px] text-gray-300 mt-1">Photo coming soon</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Customer Review */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
@@ -168,11 +249,10 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
         {/* Right column — contractor card */}
         <div className="lg:w-80 flex-shrink-0 space-y-4">
 
-          {/* Contractor card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-20">
             <div className={`relative h-28 bg-gradient-to-br ${p.cover_color}`}>
               <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute -bottom-4 left-4 w-12 h-12 rounded-xl border-3 border-white shadow-lg flex items-center justify-center text-white font-black text-lg" style={{ backgroundColor: p.avatar_color, border: "3px solid white" }}>
+              <div className="absolute -bottom-4 left-4 w-12 h-12 rounded-xl shadow-lg flex items-center justify-center text-white font-black text-lg" style={{ backgroundColor: p.avatar_color, border: "3px solid white" }}>
                 {p.contractor_name.charAt(0)}
               </div>
             </div>
@@ -180,7 +260,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
               <p className="font-black text-slate-800 text-base">{p.contractor_name}</p>
               <p className="text-xs text-gray-400 mb-3">{p.contractor_tagline}</p>
 
-              {/* Ratings */}
               <div className="bg-gray-50 rounded-xl px-3 py-2.5 mb-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1">
@@ -200,7 +279,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
                 )}
               </div>
 
-              {/* Trust badges */}
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {p.verified && <TrustBadge icon="✓" label="TB Verified" color="bg-blue-50 text-blue-700" />}
                 {p.licensed && <TrustBadge icon="🏛" label="Licensed" color="bg-green-50 text-green-700" />}
@@ -224,7 +302,6 @@ export default function ProjectPageClient({ project: p }: { project: ProjectDeta
             </div>
           </div>
 
-          {/* Similar projects hint */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <p className="text-xs font-bold text-slate-700 mb-2">Similar Projects</p>
             <p className="text-[11px] text-gray-400 leading-relaxed">Browse more {p.trade} projects completed by verified contractors in the Portland area.</p>

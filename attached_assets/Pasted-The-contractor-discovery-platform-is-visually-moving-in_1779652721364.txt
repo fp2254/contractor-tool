@@ -1,0 +1,142 @@
+The contractor discovery platform is visually moving in the correct direction.
+
+Now I want to focus on making the map and project interaction feel dynamic, premium, and addictive.
+
+Do NOT redesign the current structure.
+
+Focus on interaction quality and engagement.
+
+--------------------------------------------------
+1. ENHANCE MAP INTERACTION
+--------------------------------------------------
+
+Improve the map experience significantly.
+
+Features:
+- smooth animated pin hover states
+- selected pin glow/ring
+- subtle bounce animation when selected
+- cluster grouping when zoomed out
+- smoother map transitions
+- dim non-selected pins slightly when a contractor/project is selected
+
+Goal:
+Make the map feel premium and interactive like Airbnb or Zillow.
+
+--------------------------------------------------
+2. ADD FLOATING PROJECT PREVIEW CARDS
+--------------------------------------------------
+
+When clicking a project card OR map pin:
+show a floating preview card over the map.
+
+The preview should include:
+- large project image
+- contractor logo
+- project title
+- service type
+- location
+- Google rating
+- TradeBase rating
+- trust badges
+- short description
+- CTA buttons:
+  - View Project
+  - View Contractor
+  - Request Quote
+
+Behavior:
+- animate smoothly
+- card layers above map cleanly
+- dismiss easily
+- responsive on mobile
+
+--------------------------------------------------
+3. PROJECT-FIRST DISCOVERY
+--------------------------------------------------
+
+The platform should prioritize discovering projects, not just companies.
+
+Add support for:
+- trending projects
+- most viewed projects
+- recently completed nearby
+- before/after showcases
+- project categories
+
+Goal:
+Make users browse contractor work naturally.
+
+--------------------------------------------------
+4. BEFORE/AFTER FEATURE SUPPORT
+--------------------------------------------------
+
+Prepare support for before/after comparison sliders.
+
+Future project pages should support:
+- drag comparison slider
+- before photo
+- after photo
+
+This should become a major signature feature of the platform.
+
+--------------------------------------------------
+5. ADD VISUAL DEPTH
+--------------------------------------------------
+
+Improve overall UI polish:
+- shadows
+- gradients
+- card layering
+- hover transitions
+- smooth animations
+- image scaling on hover
+- soft glassmorphism where appropriate
+
+Make the UI feel modern but not corporate.
+
+--------------------------------------------------
+6. MAKE CONTRACTOR CARDS MORE PREMIUM
+--------------------------------------------------
+
+Improve card hierarchy:
+- larger images
+- better spacing
+- stronger typography
+- cleaner metadata organization
+
+Add:
+- completed projects count
+- repeat customer %
+- years active
+- response speed
+- veteran-owned badge
+
+--------------------------------------------------
+7. MOBILE EXPERIENCE
+--------------------------------------------------
+
+The mobile experience must feel app-quality.
+
+On mobile:
+- allow map toggle
+- swipeable project cards
+- sticky search/filter bar
+- smooth touch gestures
+
+Goal:
+Feel like a native contractor discovery app.
+
+--------------------------------------------------
+8. LONG-TERM DIRECTION
+--------------------------------------------------
+
+The platform should evolve into:
+a contractor ecosystem where:
+- completed jobs become marketing
+- projects become searchable content
+- contractors gain trust through verified work
+- customers discover local craftsmanship visually
+
+Keep the identity:
+authentic, blue-collar, trustworthy, modern.

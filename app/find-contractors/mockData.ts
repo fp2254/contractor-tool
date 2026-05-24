@@ -61,6 +61,8 @@ export type ProjectDetail = {
   title: string;
   location: string;
   photos: string[];
+  before_photo?: string;
+  after_photo?: string;
   description: string;
   scope: string[];
   materials: string[];
@@ -534,6 +536,8 @@ export const PROJECT_DETAILS: ProjectDetail[] = [
     insured: true,
     veteran_owned: true,
     verified_projects: 47,
+    before_photo: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&h=600&q=80",
+    after_photo: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=1200&h=600&q=80",
     customer_quote: "Mike and his crew were incredible. They showed up on time both days, cleaned up immaculately, and the new roof looks amazing. Finished 3 hours early on day two. Highly recommend Sullivan Roofing to anyone in Portland.",
     customer_name: "Sarah T. — Woodstock, Portland",
   },
@@ -584,6 +588,8 @@ export const PROJECT_DETAILS: ProjectDetail[] = [
     insured: true,
     veteran_owned: false,
     verified_projects: 11,
+    before_photo: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&h=600&q=80",
+    after_photo: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=1200&h=600&q=80",
     customer_quote: "Absolutely stunning work. The herringbone floor exceeded my expectations. Cascade Tile's attention to detail is unlike anything I've experienced before — every tile is perfectly level and the grout lines are immaculate.",
     customer_name: "James M. — NW Portland",
   },
@@ -633,6 +639,8 @@ export const PROJECT_DETAILS: ProjectDetail[] = [
     insured: true,
     veteran_owned: false,
     verified_projects: 31,
+    before_photo: "https://images.unsplash.com/photo-1581094288338-2314dddb0f7b?auto=format&fit=crop&w=1200&h=600&q=80",
+    after_photo: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1200&h=600&q=80",
     customer_quote: "Portland Electric was phenomenal. They handled everything — from the PGE coordination to pulling the permit to the final inspection. The crew was knowledgeable, efficient, and cleaned up perfectly. Our new panel and EV charger work flawlessly.",
     customer_name: "Renee K. — Alberta Arts District, Portland",
   },

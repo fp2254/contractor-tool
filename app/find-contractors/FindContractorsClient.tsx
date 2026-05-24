@@ -190,11 +190,12 @@ function SearchBar({
 // ─── Recent Projects Carousel ─────────────────────────────────────────────────
 
 function RecentProjectsCarousel({
-  projects, onHoverContractor, onLeaveContractor,
+  projects, onHoverContractor, onLeaveContractor, onSelectProject,
 }: {
   projects: Project[];
   onHoverContractor: (id: string) => void;
   onLeaveContractor: () => void;
+  onSelectProject: (p: Project) => void;
 }) {
   return (
     <div className="bg-white border-b-2 border-gray-100 flex-shrink-0">
@@ -216,16 +217,17 @@ function RecentProjectsCarousel({
             key={p.id}
             onMouseEnter={() => onHoverContractor(p.contractor_id)}
             onMouseLeave={onLeaveContractor}
-            className="flex-shrink-0 w-[210px] rounded-2xl overflow-hidden border border-gray-100 bg-white hover:border-blue-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+            onClick={() => onSelectProject(p)}
+            className="flex-shrink-0 w-[210px] rounded-2xl overflow-hidden border border-gray-100 bg-white hover:border-blue-200 hover:shadow-xl transition-all duration-200 cursor-pointer group"
           >
             {/* Photo */}
-            <div className="relative w-full bg-gray-200 overflow-hidden" style={{ height: 136 }}>
+            <div className="relative w-full bg-gray-200 overflow-hidden" style={{ height: 140 }}>
               <Img
                 src={p.photo}
                 alt={p.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-[1.07] transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
               {/* Trade tag */}
               <span className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-700 shadow-sm">
                 {p.trade}
@@ -234,6 +236,12 @@ function RecentProjectsCarousel({
               <span className="absolute top-2 right-2 text-[9px] font-semibold px-2 py-0.5 rounded-full bg-black/40 text-white">
                 {p.time_ago}
               </span>
+              {/* Preview hint on hover */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-white/90 text-slate-700 shadow-md">
+                  👆 Preview on map
+                </span>
+              </div>
               {/* Title overlay */}
               <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
                 <p className="text-white font-bold text-xs leading-tight line-clamp-1 drop-shadow">{p.title}</p>
@@ -446,47 +454,81 @@ function ContractorCard({
 
 // ─── Map Floating Card ─────────────────────────────────────────────────────────
 
-function MapFloatingCard({ contractor, onClose }: { contractor: Contractor; onClose: () => void }) {
+function MapFloatingCard({
+  contractor, project, onClose,
+}: {
+  contractor: Contractor;
+  project: Project | null;
+  onClose: () => void;
+}) {
   const c = contractor;
+  const heroSrc = project ? project.photo : c.cover_photo;
+  const heroBg = c.cover_color;
+
   return (
     <div
-      className="absolute bottom-6 left-1/2 z-[500] w-[360px] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
-      style={{ transform: "translateX(-50%)", animation: "floatUp 0.18s ease-out" }}
+      className="absolute bottom-6 left-1/2 z-[500] w-[380px] rounded-2xl overflow-hidden border border-white/60"
+      style={{
+        transform: "translateX(-50%)",
+        animation: "floatUp 0.22s cubic-bezier(0.16,1,0.3,1) both",
+        background: "rgba(255,255,255,0.97)",
+        backdropFilter: "blur(16px)",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.26), 0 4px 16px rgba(0,0,0,0.1)",
+      }}
     >
-      {/* Cover */}
-      <div className={`relative h-[120px] bg-gradient-to-br ${c.cover_color} overflow-hidden`}>
-        <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {/* Hero image */}
+      <div className={`relative overflow-hidden bg-gradient-to-br ${heroBg}`} style={{ height: project ? 130 : 110 }}>
+        <img
+          src={heroSrc}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+
+        {/* Close */}
         <button onClick={onClose}
-          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/40 text-white text-sm flex items-center justify-center hover:bg-black/60 transition-colors">
+          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm text-white text-sm flex items-center justify-center hover:bg-black/65 transition-colors z-10">
           ✕
         </button>
-        <div className="absolute -bottom-4 left-4 w-9 h-9 rounded-xl border-2 border-white shadow-md flex items-center justify-center text-white font-black text-sm" style={{ backgroundColor: c.avatar_color }}>
+
+        {/* Project label */}
+        {project && (
+          <div className="absolute bottom-0 left-0 right-0 px-3 pb-2">
+            <p className="text-white text-xs font-bold drop-shadow leading-tight line-clamp-1">{project.title}</p>
+            <p className="text-white/75 text-[9px]">📍 {project.location}</p>
+          </div>
+        )}
+
+        {/* Contractor avatar */}
+        <div className="absolute top-2.5 left-3 w-8 h-8 rounded-lg border-2 border-white shadow-md flex items-center justify-center text-white font-black text-xs"
+          style={{ backgroundColor: c.avatar_color }}>
           {c.name.charAt(0)}
         </div>
       </div>
 
       {/* Body */}
-      <div className="pt-5 px-4 pb-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="px-4 pt-3 pb-4">
+        <div className="flex items-start justify-between gap-2 mb-2.5">
           <div>
             <p className="font-bold text-slate-800 text-sm leading-tight">{c.name}</p>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{c.trade}</span>
+              <span className="text-[9px] text-gray-400">📍 {c.location}</span>
+            </div>
           </div>
           <div className="text-right flex-shrink-0">
             <div className="flex items-center gap-0.5 justify-end">
               <span className="text-yellow-400 text-xs">★</span>
-              <span className="text-xs font-bold">{c.rating_google.toFixed(1)}</span>
+              <span className="text-xs font-bold text-slate-800">{c.rating_google.toFixed(1)}</span>
+              <span className="text-[9px] text-gray-400 ml-0.5">({c.reviews_google})</span>
             </div>
-            <p className="text-[9px] text-gray-400">Google ({c.reviews_google})</p>
             {c.verified && (
-              <>
-                <div className="flex items-center gap-0.5 justify-end mt-0.5">
-                  <span className="text-blue-500 text-xs">★</span>
-                  <span className="text-xs font-bold">{c.rating_tb.toFixed(1)}</span>
-                </div>
-                <p className="text-[9px] text-gray-400">TB ({c.verified_projects} projects)</p>
-              </>
+              <div className="flex items-center gap-0.5 justify-end mt-0.5">
+                <span className="text-blue-500 text-xs">★</span>
+                <span className="text-xs font-bold text-slate-800">{c.rating_tb.toFixed(1)}</span>
+                <span className="text-[9px] text-gray-400 ml-0.5">TB</span>
+              </div>
             )}
           </div>
         </div>
@@ -499,13 +541,19 @@ function MapFloatingCard({ contractor, onClose }: { contractor: Contractor; onCl
           {c.emergency && <TrustBadge icon="⚡" label="24/7" color="bg-red-50 text-red-600" />}
         </div>
 
-        <p className="text-[11px] text-gray-500 line-clamp-2 mb-2">{c.description}</p>
-        <p className="text-[10px] text-gray-400 mb-3">📍 {c.location} · 🕐 Responds {c.response_time}</p>
+        <p className="text-[11px] text-gray-500 line-clamp-2 mb-1 leading-relaxed">{c.description}</p>
+        <p className="text-[10px] text-gray-400 mb-3">🕐 Responds {c.response_time} · {c.jobs_completed.toLocaleString()} jobs completed</p>
 
         <div className="flex gap-2">
+          {project && (
+            <Link href={`/project/${project.slug}`}
+              className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors">
+              View Project
+            </Link>
+          )}
           <Link href={`/pro/${c.slug}`}
-            className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors">
-            View Profile
+            className={`${project ? "" : "flex-1 "}rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors px-3`}>
+            Profile
           </Link>
           <button className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
             Request Quote
@@ -598,6 +646,7 @@ export default function FindContractorsClient() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
 
@@ -630,8 +679,8 @@ export default function FindContractorsClient() {
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <style>{`
         @keyframes floatUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(14px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; transform: translateX(-50%) translateY(22px) scale(0.95); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
         .scrollbar-none { scrollbar-width: none; }
         .scrollbar-none::-webkit-scrollbar { display: none; }
@@ -669,6 +718,10 @@ export default function FindContractorsClient() {
               projects={visibleProjects}
               onHoverContractor={(id) => setHoveredId(id)}
               onLeaveContractor={() => setHoveredId(null)}
+              onSelectProject={(p) => {
+                setSelectedPinId(p.contractor_id);
+                setSelectedProject(p);
+              }}
             />
           )}
 
@@ -720,12 +773,20 @@ export default function FindContractorsClient() {
             contractors={filtered}
             hoveredId={hoveredId}
             selectedId={selectedPinId}
-            onSelect={(id) => setSelectedPinId((prev) => prev === id ? null : id)}
+            hasSelection={selectedPinId !== null}
+            onSelect={(id) => {
+              setSelectedPinId((prev) => prev === id ? null : id);
+              setSelectedProject(null);
+            }}
             onHover={setHoveredId}
           />
 
           {selectedContractor && (
-            <MapFloatingCard contractor={selectedContractor} onClose={() => setSelectedPinId(null)} />
+            <MapFloatingCard
+              contractor={selectedContractor}
+              project={selectedProject}
+              onClose={() => { setSelectedPinId(null); setSelectedProject(null); }}
+            />
           )}
 
           {!selectedContractor && (
