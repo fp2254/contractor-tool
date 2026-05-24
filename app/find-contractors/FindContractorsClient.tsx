@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { CONTRACTORS, SERVICES, CITIES, type Contractor } from "./mockData";
@@ -360,15 +360,6 @@ export default function FindContractorsClient() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
-  const [isDesktop, setIsDesktop] = useState(true);
-
-  useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
   function handleSurpriseMe() {
     const randomService = SERVICES[Math.floor(Math.random() * (SERVICES.length - 1)) + 1];
     setService(randomService);
@@ -451,17 +442,10 @@ export default function FindContractorsClient() {
       </div>
 
       {/* Body: fills all remaining height */}
-      {/* Mobile visibility is CSS-driven so the map is never unmounted (Leaflet needs a stable DOM node) */}
-      <style>{`
-        @media (max-width: 767px) {
-          .fc-list-panel { display: ${mobileView === "list" ? "flex" : "none"} !important; }
-          .fc-map-panel  { display: ${mobileView === "map"  ? "flex" : "none"} !important; }
-        }
-      `}</style>
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-        {/* LEFT: scrollable card list — always in DOM, hidden on mobile map view */}
-        <div className="fc-list-panel" style={{ width: 400, maxWidth: "100%", flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
+        {/* LEFT: scrollable card list */}
+        <div style={{ width: 380, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f3f4f6", minHeight: 0 }}>
           <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0">
             <p className="text-xs text-gray-500">
               <span className="font-bold text-slate-800">{filtered.length}</span> contractors
@@ -499,8 +483,8 @@ export default function FindContractorsClient() {
           </div>
         </div>
 
-        {/* RIGHT: map — always in DOM so Leaflet never loses its container */}
-        <div className="fc-map-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* RIGHT: map — always visible */}
+        <div style={{ flex: 1, minWidth: 0, minHeight: "400px", display: "flex", flexDirection: "column" }}>
           <LeafletMap
             contractors={filtered}
             hoveredId={hoveredId}
