@@ -38,14 +38,14 @@ const SAMPLE_PROFILE: ContractorProfile = {
     location: "Highlands Ranch, CO",
   },
   services: [
-    "Furnace Repair & Installation",
-    "AC Tune-Up & Replacement",
-    "Water Heater Service",
-    "Drain Cleaning",
-    "Leak Detection",
-    "Duct Cleaning",
-    "Thermostat Installation",
-    "Emergency Plumbing",
+    { name: "Furnace Repair & Installation", description: "", photo_url: "" },
+    { name: "AC Tune-Up & Replacement", description: "", photo_url: "" },
+    { name: "Water Heater Service", description: "", photo_url: "" },
+    { name: "Drain Cleaning", description: "", photo_url: "" },
+    { name: "Leak Detection", description: "", photo_url: "" },
+    { name: "Duct Cleaning", description: "", photo_url: "" },
+    { name: "Thermostat Installation", description: "", photo_url: "" },
+    { name: "Emergency Plumbing", description: "", photo_url: "" },
   ],
   reviews: [
     {
