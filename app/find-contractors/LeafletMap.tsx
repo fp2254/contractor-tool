@@ -1,9 +1,20 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import { useEffect } from "react";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import type { Contractor } from "./mockData";
+
+// Fits the map to the continental US on first render
+function FitUS() {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds([[24.5, -124.8], [49.4, -66.9]]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
 
 interface Props {
   contractors: Contractor[];
@@ -55,12 +66,16 @@ function makeIcon(c: Contractor, active: boolean, selected: boolean) {
 export default function LeafletMap({ contractors, hoveredId, selectedId, onSelect, onHover }: Props) {
   return (
     <MapContainer
-      center={[39.5, -98.35]}
-      zoom={4}
+      center={[38.5, -96]}
+      zoom={5}
+      minZoom={4}
+      maxBounds={[[24, -128], [50, -62]]}
+      maxBoundsViscosity={1.0}
       style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       zoomControl
       attributionControl
     >
+      <FitUS />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
