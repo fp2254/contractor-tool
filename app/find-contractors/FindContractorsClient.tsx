@@ -19,6 +19,34 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Tailwind's content scanner can't detect dynamic class names like
+// `bg-gradient-to-br ${c.cover_color}`. Convert them to real CSS instead.
+const TW: Record<string, string> = {
+  "slate-500":"#64748b","slate-600":"#475569","slate-700":"#334155","slate-800":"#1e293b","slate-900":"#0f172a",
+  "gray-500":"#6b7280","gray-800":"#1f2937","gray-900":"#111827",
+  "stone-500":"#78716c","stone-600":"#57534e","stone-700":"#44403c","stone-800":"#292524","zinc-800":"#27272a",
+  "red-700":"#b91c1c","red-800":"#991b1b",
+  "rose-700":"#be123c","rose-900":"#881337",
+  "orange-600":"#ea580c","orange-700":"#c2410c","orange-900":"#7c2d12",
+  "amber-600":"#d97706","amber-700":"#b45309","amber-900":"#78350f",
+  "yellow-500":"#eab308","yellow-600":"#ca8a04","yellow-700":"#a16207","yellow-800":"#854d0e","yellow-900":"#713f12",
+  "lime-700":"#4d7c0f",
+  "green-600":"#16a34a","green-700":"#15803d","green-800":"#166534","green-900":"#14532d",
+  "emerald-900":"#064e3b","emerald-950":"#022c22",
+  "teal-800":"#115e59","teal-900":"#134e4a",
+  "cyan-600":"#0891b2","cyan-700":"#0e7490",
+  "sky-600":"#0284c7",
+  "blue-600":"#2563eb","blue-700":"#1d4ed8","blue-900":"#1e3a8a","indigo-900":"#312e81",
+  "violet-700":"#6d28d9",
+  "purple-700":"#7e22ce","purple-900":"#581c87",
+};
+function coverGradient(cover_color: string): string {
+  const parts = cover_color.split(" ");
+  const from = TW[parts.find(p => p.startsWith("from-"))?.slice(5) ?? ""] ?? "#334155";
+  const to   = TW[parts.find(p => p.startsWith("to-"))?.slice(3) ?? ""]   ?? "#0f172a";
+  return `linear-gradient(135deg, ${from}, ${to})`;
+}
+
 function Img({ src, alt = "", className = "", h }: { src: string; alt?: string; className?: string; h?: number }) {
   return (
     <img
@@ -363,7 +391,7 @@ function ContractorCard({
     >
       {/* Cover */}
       <div className="relative">
-        <div className={`relative h-40 w-full overflow-hidden bg-gradient-to-br ${c.cover_color}`}>
+        <div style={{ position: "relative", height: 160, width: "100%", overflow: "hidden", background: coverGradient(c.cover_color) }}>
           <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
         </div>
@@ -438,7 +466,7 @@ function ContractorCard({
         {c.project_photos.length > 0 && (
           <div className="flex gap-1.5 mb-3">
             {c.project_photos.map((photo, i) => (
-              <div key={i} className={`flex-1 rounded-lg overflow-hidden bg-gradient-to-br ${c.cover_color}`} style={{ height: 52 }}>
+              <div key={i} className="flex-1 rounded-lg overflow-hidden" style={{ height: 52, background: coverGradient(c.cover_color) }}>
                 <img src={photo} alt="" className="w-full h-full object-cover"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }} />
               </div>
@@ -483,7 +511,7 @@ function MapFloatingCard({
 }) {
   const c = contractor;
   const heroSrc = project ? project.photo : c.cover_photo;
-  const heroBg = c.cover_color;
+  const heroBg = coverGradient(c.cover_color);
 
   return (
     <div
@@ -497,7 +525,7 @@ function MapFloatingCard({
       }}
     >
       {/* Hero image */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${heroBg}`} style={{ height: project ? 130 : 110 }}>
+      <div className="relative overflow-hidden" style={{ height: project ? 130 : 110, background: heroBg }}>
         <img
           src={heroSrc}
           alt=""
@@ -652,12 +680,9 @@ function FilterSheet({
 
 export default function FindContractorsClient({ liveContractors = [] }: { liveContractors?: Contractor[] }) {
   // Merge: live contractors first (real data), then mock fill-ins for the map demo.
-  // Live contractors are identified by UUID ids; mock by short numeric strings — no collisions.
-  const CONTRACTORS = useMemo(() => {
-    const liveIds = new Set(liveContractors.map((c) => c.id));
-    const mockFill = MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id));
-    return [...liveContractors, ...mockFill];
-  }, [liveContractors]);
+  // Computed once — liveContractors only changes when the server sends different data.
+  const liveIds = new Set(liveContractors.map((c) => c.id));
+  const CONTRACTORS = [...liveContractors, ...MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id))];
 
   const [query, setQuery] = useState("");
   const [service, setService] = useState("All Services");
@@ -697,7 +722,8 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
     else if (sort === "reviews") list.sort((a, b) => b.reviews_google - a.reviews_google);
     else if (sort === "featured") list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return list;
-  }, [query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CONTRACTORS, query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
 
   const selectedContractor = selectedPinId ? filtered.find((c) => c.id === selectedPinId) ?? null : null;
   const activeIds = new Set(filtered.map((c) => c.id));
@@ -739,7 +765,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT */}
-        <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", overflowY: "auto", background: "#f9fafb", borderRight: "1px solid #f0f0f0", minHeight: 0 }}>
+        <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
 
           {visibleProjects.length > 0 && (
             <RecentProjectsCarousel
@@ -770,7 +796,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
           </div>
 
           {/* Cards */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             {filtered.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
                 <p className="text-2xl mb-2">🔍</p>
@@ -781,15 +807,16 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
               </div>
             ) : (
               filtered.map((c) => (
-                <ContractorCard
-                  key={c.id}
-                  c={c}
-                  hovered={hoveredId === c.id}
-                  selected={selectedPinId === c.id}
-                  onHover={() => setHoveredId(c.id)}
-                  onLeave={() => setHoveredId(null)}
-                  onSelect={() => setSelectedPinId((prev) => prev === c.id ? null : c.id)}
-                />
+                <div key={c.id} style={{ marginBottom: 12 }}>
+                  <ContractorCard
+                    c={c}
+                    hovered={hoveredId === c.id}
+                    selected={selectedPinId === c.id}
+                    onHover={() => setHoveredId(c.id)}
+                    onLeave={() => setHoveredId(null)}
+                    onSelect={() => setSelectedPinId((prev) => prev === c.id ? null : c.id)}
+                  />
+                </div>
               ))
             )}
           </div>

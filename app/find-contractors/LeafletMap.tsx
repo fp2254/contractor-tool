@@ -72,10 +72,44 @@ function makeIcon(c: Contractor, active: boolean, selected: boolean, dimmed: boo
   });
 }
 
+function makeTooltipHtml(c: Contractor): string {
+  const emoji = TRADE_EMOJI[c.trade] ?? "🔨";
+  const stars = "★".repeat(Math.round(c.rating_google));
+  const badges = [
+    c.verified ? `<span style="background:#EFF6FF;color:#1D4ED8;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;">✓ Verified</span>` : "",
+    c.licensed ? `<span style="background:#F0FDF4;color:#15803D;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;">🏛 Licensed</span>` : "",
+    c.insured ? `<span style="background:#ECFDF5;color:#047857;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;">🛡 Insured</span>` : "",
+    c.emergency ? `<span style="background:#FEF2F2;color:#DC2626;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;">⚡ 24/7</span>` : "",
+  ].filter(Boolean).join(" ");
+
+  return `
+    <div style="font-family:system-ui,-apple-system,sans-serif;width:220px;pointer-events:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:${c.avatar_color};display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:13px;flex-shrink:0;">
+          ${c.name.charAt(0)}
+        </div>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:12px;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+          <div style="font-size:10px;color:#64748B;">${emoji} ${c.trade} · 📍 ${c.distance} mi</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">
+        <span style="color:#FBBF24;font-size:11px;">${stars}</span>
+        <span style="font-weight:700;font-size:11px;color:#1E293B;">${c.rating_google.toFixed(1)}</span>
+        <span style="font-size:10px;color:#94A3B8;">(${c.reviews_google} reviews)</span>
+      </div>
+      ${badges ? `<div style="display:flex;gap:3px;flex-wrap:wrap;">${badges}</div>` : ""}
+      ${c.tagline ? `<div style="font-size:10px;color:#64748B;margin-top:5px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.tagline}</div>` : ""}
+      <div style="margin-top:6px;font-size:9px;color:#94A3B8;text-align:center;">Click pin to see full profile</div>
+    </div>
+  `;
+}
+
 export default function LeafletMap({ contractors, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const tooltipsRef = useRef<Map<string, L.Tooltip>>(new Map());
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -88,6 +122,18 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
         55%  { transform: scale(0.94) translateY(2px); }
         75%  { transform: scale(1.07) translateY(-3px); }
         100% { transform: scale(1) translateY(0); }
+      }
+      .leaflet-tooltip.pin-tooltip {
+        background: white;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+        padding: 10px 12px;
+        pointer-events: none;
+      }
+      .leaflet-tooltip.pin-tooltip::before {
+        border-top-color: white;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
       }
     `;
     if (!document.getElementById("leaflet-pin-anim")) {
@@ -128,6 +174,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
       map.remove();
       mapRef.current = null;
       markersRef.current.clear();
+      tooltipsRef.current.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -142,6 +189,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
       if (!currentIds.has(id)) {
         marker.remove();
         markersRef.current.delete(id);
+        tooltipsRef.current.delete(id);
       }
     });
 
@@ -153,13 +201,27 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
 
       if (markersRef.current.has(c.id)) {
         markersRef.current.get(c.id)!.setIcon(icon);
+        // Update tooltip content in case rating etc changed
+        const tt = tooltipsRef.current.get(c.id);
+        if (tt) tt.setContent(makeTooltipHtml(c));
       } else {
+        const tooltip = L.tooltip({
+          permanent: false,
+          direction: "top",
+          offset: [0, -4],
+          className: "pin-tooltip",
+          opacity: 1,
+        }).setContent(makeTooltipHtml(c));
+
         const marker = L.marker([c.lat, c.lng], { icon })
           .addTo(map)
+          .bindTooltip(tooltip)
           .on("click", () => onSelect(selectedId === c.id ? null : c.id))
           .on("mouseover", () => onHover(c.id))
           .on("mouseout", () => onHover(null));
+
         markersRef.current.set(c.id, marker);
+        tooltipsRef.current.set(c.id, tooltip);
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
