@@ -57,7 +57,7 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
     <MapContainer
       center={[39.5, -98.35]}
       zoom={4}
-      style={{ flex: 1, minHeight: 0 }}
+      style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       zoomControl
       attributionControl
     >

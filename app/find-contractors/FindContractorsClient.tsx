@@ -484,7 +484,7 @@ export default function FindContractorsClient() {
         </div>
 
         {/* RIGHT: map — always visible */}
-        <div style={{ flex: 1, minWidth: 0, minHeight: "400px", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
           <LeafletMap
             contractors={filtered}
             hoveredId={hoveredId}
