@@ -20,7 +20,7 @@ type EditorProfile = {
   selected_template: string;
   services: ServiceItem[];
   about_text: string; // UI-only: textarea → saved as about_bullets
-  photos: Array<{ url: string; title: string }>;
+  photos: Array<{ url: string; title: string; description: string }>;
   // Preserved from old editor — not shown in UI
   revenue_display: string;
   stat_label: string;
@@ -134,6 +134,7 @@ export function PublicProfileEditor() {
           photos: (p.photos ?? []).map((ph: any) => ({
             url: ph.url ?? "",
             title: ph.title ?? "",
+            description: ph.description ?? "",
           })).filter((ph: any) => ph.url),
           revenue_display: p.revenue_display ?? "",
           stat_label: p.stat_label ?? "",
@@ -161,7 +162,7 @@ export function PublicProfileEditor() {
     const payload = {
       ...profile,
       about_bullets,
-      photos: profile.photos.map((p) => ({ url: p.url, title: p.title })),
+      photos: profile.photos.map((p) => ({ url: p.url, title: p.title, description: p.description })),
       revenue_display: profile.revenue_display,
       stat_label: profile.stat_label,
     };
@@ -606,13 +607,44 @@ export function PublicProfileEditor() {
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Gallery</p>
             {profile.photos.length > 0 && (
-              <div className="flex flex-row gap-2 overflow-x-auto pb-1 mb-3">
+              <div className="space-y-2 mb-3">
                 {profile.photos.map((ph, i) => (
-                  <div key={i} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                    <img src={ph.url} alt={ph.title} className="w-full h-full object-cover" />
+                  <div key={i} className="flex gap-3 bg-gray-50 border border-gray-100 rounded-xl p-2">
+                    {/* Thumbnail */}
+                    <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
+                      <img src={ph.url} alt={ph.title} className="w-full h-full object-cover" />
+                    </div>
+                    {/* Fields */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <input
+                        value={ph.title}
+                        onChange={(e) => {
+                          const next = profile.photos.map((p, idx) =>
+                            idx === i ? { ...p, title: e.target.value } : p
+                          );
+                          update("photos", next);
+                        }}
+                        placeholder="Title (e.g. Roof replacement — Oak St)"
+                        className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-100 bg-white"
+                      />
+                      <textarea
+                        rows={2}
+                        value={ph.description}
+                        onChange={(e) => {
+                          const next = profile.photos.map((p, idx) =>
+                            idx === i ? { ...p, description: e.target.value } : p
+                          );
+                          update("photos", next);
+                        }}
+                        placeholder="Short description (optional)"
+                        className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-100 bg-white resize-none"
+                      />
+                    </div>
+                    {/* Remove */}
                     <button
+                      type="button"
                       onClick={() => update("photos", profile.photos.filter((_, idx) => idx !== i))}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-red-500 text-[9px] font-bold flex items-center justify-center shadow-sm"
+                      className="flex-shrink-0 text-red-400 text-sm leading-none self-start mt-0.5"
                     >
                       ✕
                     </button>
@@ -630,7 +662,7 @@ export function PublicProfileEditor() {
                 if (!file) return;
                 const idx = profile.photos.length;
                 const local = URL.createObjectURL(file);
-                update("photos", [...profile.photos, { url: local, title: "" }]);
+                update("photos", [...profile.photos, { url: local, title: "", description: "" }]);
                 setUploadingGalleryIdx(idx);
                 try {
                   const fd = new FormData();
@@ -639,7 +671,7 @@ export function PublicProfileEditor() {
                   const j = await res.json() as { url?: string; error?: string };
                   if (j.url) {
                     const next = [...profile.photos];
-                    next[idx] = { url: j.url, title: "" };
+                    next[idx] = { url: j.url, title: "", description: "" };
                     update("photos", next);
                   } else throw new Error(j.error ?? "Upload failed");
                 } catch (err: any) {
