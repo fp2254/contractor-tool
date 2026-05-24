@@ -5,9 +5,10 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Contractor } from "./mockData";
 
-// Continental US bounds
-const US_BOUNDS: L.LatLngBoundsLiteral = [[24.5, -124.8], [49.4, -66.9]];
-const MAX_BOUNDS: L.LatLngBoundsLiteral = [[22, -130], [52, -60]];
+// Portland, OR — where the mock contractors are (city-level default)
+const DEFAULT_CENTER: L.LatLngExpression = [45.52, -122.68];
+const DEFAULT_ZOOM = 10;
+const MAX_BOUNDS: L.LatLngBoundsLiteral = [[24, -130], [52, -60]];
 
 interface Props {
   contractors: Contractor[];
@@ -43,6 +44,8 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
       zoomControl: true,
       attributionControl: true,
     });
@@ -54,11 +57,9 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, onSelec
 
     mapRef.current = map;
 
-    // requestAnimationFrame guarantees the browser has painted the flex layout
-    // before we measure — so invalidateSize + fitBounds get real pixel dimensions
     rafRef.current = requestAnimationFrame(() => {
       map.invalidateSize();
-      map.fitBounds(US_BOUNDS);
+      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       map.setMaxBounds(MAX_BOUNDS);
       map.setMinZoom(4);
     });
