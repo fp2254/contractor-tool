@@ -25,21 +25,50 @@ function int(v: FormDataEntryValue | null): number | null {
   return isNaN(n) ? null : n;
 }
 
+async function geocodeAddress(
+  address: string,
+  city: string,
+  state: string,
+  zip: string,
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const q = [address, city, state, zip, "USA"].filter(Boolean).join(", ");
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "TradeBase/1.0 (tradebase.contractors)" },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as Array<{ lat: string; lon: string }>;
+    if (data[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function saveBusinessIdentity(formData: FormData) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
+  const address = str(formData.get("address"));
+  const city    = str(formData.get("city"));
+  const state   = str(formData.get("state"));
+  const zip     = str(formData.get("zip"));
+
   await admin.from("orgs").update({ name: String(formData.get("business_name") ?? "").trim() || undefined }).eq("id", orgId!);
 
-  await upsertSettings(orgId!, {
+  const settingsData: Record<string, unknown> = {
     dba_name: str(formData.get("dba_name")),
     primary_phone: str(formData.get("primary_phone")),
     business_email: str(formData.get("business_email")),
     website: str(formData.get("website")),
-    address: str(formData.get("address")),
-    city: str(formData.get("city")),
-    state: str(formData.get("state")),
-    zip: str(formData.get("zip")),
+    address,
+    city,
+    state,
+    zip,
     license_number: str(formData.get("license_number")),
     insurance_number: str(formData.get("insurance_number")),
     epa_cert_number: str(formData.get("epa_cert_number")),
@@ -47,7 +76,19 @@ export async function saveBusinessIdentity(formData: FormData) {
     owner_name: str(formData.get("owner_name")),
     owner_title: str(formData.get("owner_title")),
     signature_footer: str(formData.get("signature_footer")),
-  });
+  };
+
+  // Auto-geocode whenever address + city are present. Best-effort — never fails the save.
+  if (address && city) {
+    const geo = await geocodeAddress(address, city ?? "", state ?? "", zip ?? "");
+    if (geo) {
+      settingsData.lat = geo.lat;
+      settingsData.lng = geo.lng;
+      settingsData.geocoded_at = new Date().toISOString();
+    }
+  }
+
+  await upsertSettings(orgId!, settingsData);
 }
 
 export async function saveQuoteDefaults(formData: FormData) {

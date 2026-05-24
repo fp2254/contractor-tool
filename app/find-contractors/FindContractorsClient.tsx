@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  CONTRACTORS, PROJECTS, TRENDING_SEARCHES, SERVICES, CITIES,
+  CONTRACTORS as MOCK_CONTRACTORS, PROJECTS, TRENDING_SEARCHES, SERVICES, CITIES,
   type Contractor, type Project,
 } from "./mockData";
 
@@ -650,7 +650,15 @@ function FilterSheet({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function FindContractorsClient() {
+export default function FindContractorsClient({ liveContractors = [] }: { liveContractors?: Contractor[] }) {
+  // Merge: live contractors first (real data), then mock fill-ins for the map demo.
+  // Live contractors are identified by UUID ids; mock by short numeric strings — no collisions.
+  const CONTRACTORS = useMemo(() => {
+    const liveIds = new Set(liveContractors.map((c) => c.id));
+    const mockFill = MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id));
+    return [...liveContractors, ...mockFill];
+  }, [liveContractors]);
+
   const [query, setQuery] = useState("");
   const [service, setService] = useState("All Services");
   const [city, setCity] = useState("");

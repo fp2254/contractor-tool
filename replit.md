@@ -85,6 +85,7 @@ supabase/
   migration_ai_attachments.sql     ⚠️ PENDING — ai_runs + ai_attachments tables
   migration_inventory.sql          ⚠️ PENDING — inventory_items table
   migration_trade_contacts.sql     ⚠️ PENDING — trade_contacts table
+  migration_geocoding.sql          ⚠️ PENDING — adds lat/lng/geocoded_at to org_settings (enables live map pins)
 ```
 
 ## Environment Variables
