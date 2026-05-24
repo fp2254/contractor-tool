@@ -95,7 +95,15 @@ export function PublicProfileEditor() {
   const [saveError, setSaveError] = useState("");
   const [copied, setCopied] = useState(false);
   const [serviceInput, setServiceInput] = useState("");
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  function templatePreviewSlug(id: string) {
+    if (id === "classic") return "classic";
+    if (id === "modern") return "modern";
+    if (id === "trust") return "trust";
+    return "default";
+  }
 
   // Load existing profile + prefilled data from Business Identity
   useEffect(() => {
@@ -303,24 +311,36 @@ export function PublicProfileEditor() {
             {TEMPLATES.map((t) => {
               const selected = profile.selected_template === t.id;
               return (
-                <button
+                <div
                   key={t.id}
-                  type="button"
-                  onClick={() => update("selected_template", t.id)}
-                  className="rounded-xl border-2 p-3 text-left transition-all active:scale-[0.98]"
+                  className="rounded-xl border-2 overflow-hidden transition-all"
                   style={{
                     borderColor: selected ? "#1B3A6B" : "#E5E7EB",
                     background: selected ? "#EFF6FF" : "#FAFAFA",
                   }}
                 >
-                  <div className="flex gap-1.5 mb-2">
-                    {t.colors.map((c, i) => (
-                      <div key={i} className="w-5 h-5 rounded" style={{ background: c }} />
-                    ))}
-                  </div>
-                  <p className="text-xs font-bold text-slate-800">{t.name}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{t.description}</p>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => update("selected_template", t.id)}
+                    className="w-full p-3 text-left active:scale-[0.98]"
+                  >
+                    <div className="flex gap-1.5 mb-2">
+                      {t.colors.map((c, i) => (
+                        <div key={i} className="w-5 h-5 rounded" style={{ background: c }} />
+                      ))}
+                    </div>
+                    <p className="text-xs font-bold text-slate-800">{t.name}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{t.description}</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTemplateId(t.id)}
+                    className="w-full border-t py-1.5 text-[10px] font-semibold text-[#1B3A6B] active:bg-blue-100 transition-colors"
+                    style={{ borderColor: selected ? "#BFDBFE" : "#F3F4F6", background: selected ? "#DBEAFE" : "#F9FAFB" }}
+                  >
+                    Preview →
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -694,6 +714,45 @@ export function PublicProfileEditor() {
       </button>
 
       <div className="h-4" />
+
+      {/* ── Template Preview Bottom Sheet ── */}
+      {previewTemplateId !== null && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "rgba(0,0,0,0.55)" }}>
+          {/* Header bar */}
+          <div className="flex items-center justify-between px-4 py-3 bg-white shadow-sm flex-shrink-0">
+            <p className="text-sm font-bold text-slate-800">
+              {TEMPLATES.find(t => t.id === previewTemplateId)?.name ?? "Template"} Preview
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  update("selected_template", previewTemplateId);
+                  setPreviewTemplateId(null);
+                }}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg text-white"
+                style={{ backgroundColor: "#1B3A6B" }}
+              >
+                Use This
+              </button>
+              <button
+                onClick={() => setPreviewTemplateId(null)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          {/* Scrollable iframe */}
+          <div className="flex-1 overflow-hidden bg-white">
+            <iframe
+              key={previewTemplateId}
+              src={`/pro/preview/${templatePreviewSlug(previewTemplateId)}`}
+              className="w-full h-full border-0"
+              title="Template preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
