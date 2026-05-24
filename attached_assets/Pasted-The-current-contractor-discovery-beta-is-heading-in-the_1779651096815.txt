@@ -1,0 +1,179 @@
+The current contractor discovery beta is heading in the correct direction.
+
+Now I want to evolve this from a simple contractor directory into a modern contractor ecosystem centered around real projects, trust, and local discovery.
+
+DO NOT redesign the layout completely.
+Keep the current left-panel + right-map structure.
+
+Focus on the following improvements:
+
+--------------------------------------------------
+1. MAKE PROJECTS THE HERO
+--------------------------------------------------
+
+Shift the experience from:
+“find contractors”
+
+toward:
+“discover real work near you.”
+
+The “Recent Projects Near You” section should become more visually prominent.
+
+Improvements:
+- larger project thumbnails
+- horizontal scrolling carousel
+- project category tags
+- location tags
+- contractor attribution
+- time posted
+- subtle hover animation
+
+Add buttons:
+- View Project
+- View Contractor
+
+--------------------------------------------------
+2. ADD FLOATING MAP PREVIEW CARDS
+--------------------------------------------------
+
+When clicking a map pin:
+show a floating preview card directly over the map.
+
+The preview card should contain:
+- contractor logo
+- project image
+- company name
+- service type
+- Google rating
+- TradeBase verified rating
+- trust badges
+- short description
+- buttons:
+  - View Profile
+  - Request Quote
+
+Behavior:
+- smooth animation
+- dismiss when clicking elsewhere
+- selected map pin glows slightly
+
+Goal:
+Make the map feel interactive and premium like Airbnb/Zillow.
+
+--------------------------------------------------
+3. IMPROVE CONTRACTOR CARDS
+--------------------------------------------------
+
+Current cards still feel compressed.
+
+Make them more visual and premium:
+- larger photos
+- cleaner spacing
+- stronger typography hierarchy
+- better trust badge layout
+- subtle hover effects
+
+Add support for:
+- verified completed projects count
+- repeat customer count
+- years active
+- veteran owned badge
+- emergency service badge
+
+Keep the design modern and clean.
+
+--------------------------------------------------
+4. ADD PROJECT PAGES
+--------------------------------------------------
+
+Create future-ready support for dedicated project pages.
+
+Example route:
+- /project/full-roof-replacement-portland
+
+Project pages should eventually support:
+- before/after photos
+- timeline
+- customer review
+- materials used
+- project description
+- contractor attribution
+- request quote CTA
+
+For now:
+build mock frontend structure only.
+
+--------------------------------------------------
+5. IMPROVE SEARCH EXPERIENCE
+--------------------------------------------------
+
+Add:
+- live search suggestions
+- trade/service autocomplete
+- recent searches
+- trending searches
+
+Examples:
+- Radon Mitigation
+- Roofing
+- Crawlspace Encapsulation
+- HVAC
+- Concrete
+
+--------------------------------------------------
+6. MAKE THE PLATFORM FEEL LOCAL
+--------------------------------------------------
+
+Add sections like:
+- Trending Near You
+- Recently Completed Nearby
+- Fastest Responding Contractors
+- Most Reviewed This Month
+
+The goal is to make the platform feel alive and community-driven.
+
+--------------------------------------------------
+7. TRUST INFRASTRUCTURE
+--------------------------------------------------
+
+Add support for:
+- Google Reviews
+- TradeBase Reviews
+- Verified Completed Projects
+
+Display them separately.
+
+Example:
+⭐ Google Rating: 4.9 (214)
+⭐ TradeBase Rating: 5.0 (48 Verified Projects)
+
+Add trust badges:
+- Verified Business
+- Licensed
+- Insured
+- Veteran Owned
+- Emergency Service
+
+--------------------------------------------------
+8. UI POLISH
+--------------------------------------------------
+
+Improve:
+- map pin animations
+- hover states
+- transitions
+- shadows
+- card layering
+- mobile responsiveness
+
+Goal:
+The platform should feel modern, fast, trustworthy, and visually engaging.
+
+Design inspiration:
+- Airbnb
+- Zillow
+- Houzz
+- Instagram project showcases
+
+But maintain the TradeBase identity:
+blue-collar, contractor-focused, real-world work.
