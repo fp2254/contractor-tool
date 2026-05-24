@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public_profiles (
   about_bullets    jsonb       NOT NULL DEFAULT '[]'::jsonb,
   license_text     text        NOT NULL DEFAULT '',
   photo_url        text        NOT NULL DEFAULT '',
+  photos           jsonb       NOT NULL DEFAULT '[]'::jsonb,
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 

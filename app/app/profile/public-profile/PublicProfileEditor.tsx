@@ -1,13 +1,78 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-type ServiceItem = {
-  name: string;
-  description: string;
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type ServiceItem = { name: string; description: string; photo_url: string };
+
+type EditorProfile = {
+  slug: string;
+  is_published: boolean;
+  trade: string;
+  tagline: string;
+  phone: string;
+  service_area: string;
+  urgency_line: string;
+  years_experience: number;
+  license_text: string;
   photo_url: string;
+  selected_template: string;
+  services: ServiceItem[];
+  about_text: string; // UI-only: textarea → saved as about_bullets
+  photos: Array<{ url: string; title: string }>;
+  // Preserved from old editor — not shown in UI
+  revenue_display: string;
+  stat_label: string;
 };
+
+const EMPTY: EditorProfile = {
+  slug: "",
+  is_published: false,
+  trade: "",
+  tagline: "",
+  phone: "",
+  service_area: "",
+  urgency_line: "",
+  years_experience: 0,
+  license_text: "",
+  photo_url: "",
+  selected_template: "classic",
+  services: [],
+  about_text: "",
+  photos: [],
+  revenue_display: "",
+  stat_label: "",
+};
+
+const TEMPLATES = [
+  {
+    id: "classic",
+    name: "Classic",
+    description: "Trust-focused, traditional",
+    colors: ["#0f1f3d", "#f5a623"],
+  },
+  {
+    id: "modern",
+    name: "Modern Pro",
+    description: "Sleek dark + bold stats",
+    colors: ["#0d1117", "#58a6ff"],
+  },
+  {
+    id: "trust",
+    name: "Trust Builder",
+    description: "Services, reviews, gallery",
+    colors: ["#0f172a", "#f59e0b"],
+  },
+  {
+    id: "",
+    name: "Default",
+    description: "Mobile-first dark",
+    colors: ["#0a0a0a", "#ff5b1f"],
+  },
+] as const;
+
+const BASE_URL = "https://tradebase.contractors/pro";
 
 function normalizeServices(raw: unknown[]): ServiceItem[] {
   return raw.map((s) => {
@@ -17,143 +82,97 @@ function normalizeServices(raw: unknown[]): ServiceItem[] {
   });
 }
 
-const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
-const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
-const sectionCls = "bg-white rounded-2xl shadow-sm overflow-hidden";
-
-type Profile = {
-  slug: string;
-  is_published: boolean;
-  trade: string;
-  tagline: string;
-  phone: string;
-  service_area: string;
-  urgency_line: string;
-  years_experience: number;
-  revenue_display: string;
-  stat_label: string;
-  services: ServiceItem[];
-  about_bullets: string[];
-  license_text: string;
-  photo_url: string;
-  selected_template: string;
-};
-
-const EMPTY: Profile = {
-  slug: "",
-  is_published: false,
-  trade: "",
-  tagline: "",
-  phone: "",
-  service_area: "",
-  urgency_line: "",
-  years_experience: 0,
-  revenue_display: "",
-  stat_label: "",
-  services: [],
-  about_bullets: ["", "", "", ""],
-  license_text: "",
-  photo_url: "",
-  selected_template: "",
-};
-
-const TEMPLATES = [
-  {
-    id: "",
-    name: "Default",
-    description: "Mobile-first dark design — hi-vis orange + navy",
-    preview: [{ bg: "#0a0a0a", accent: "#ff5b1f" }, { bg: "#1B3A6B", accent: "#ff5b1f" }],
-  },
-  {
-    id: "classic",
-    name: "Classic",
-    description: "Trust-focused, traditional layout — navy + gold",
-    preview: [{ bg: "#0f1f3d", accent: "#f5a623" }, { bg: "#ffffff", accent: "#f5a623" }],
-  },
-  {
-    id: "modern",
-    name: "Modern Pro",
-    description: "Sleek dark design with bold stats — dark + electric blue",
-    preview: [{ bg: "#0d1117", accent: "#58a6ff" }, { bg: "#161b22", accent: "#58a6ff" }],
-  },
-  {
-    id: "trust",
-    name: "Trust Builder",
-    description: "Services, reviews, service areas & gallery — stone + red",
-    preview: [{ bg: "#0f172a", accent: "#f59e0b" }, { bg: "#fafaf9", accent: "#b91c1c" }],
-  },
-] as const;
-
-const BASE_URL = "https://tradebase.contractors/pro";
-
-function SectionHead({ emoji, title }: { emoji: string; title: string }) {
-  return (
-    <div className="flex items-center gap-2 px-4 py-3.5 border-b border-gray-100">
-      <span className="text-lg">{emoji}</span>
-      <span className="font-semibold text-slate-800 text-sm">{title}</span>
-    </div>
-  );
-}
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function PublicProfileEditor() {
-  const [profile, setProfile] = useState<Profile>(EMPTY);
-  const [uploadingServiceIdx, setUploadingServiceIdx] = useState<number | null>(null);
+  const [profile, setProfile] = useState<EditorProfile>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingGalleryIdx, setUploadingGalleryIdx] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const [saveError, setSaveError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [serviceInput, setServiceInput] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // Load existing profile + prefilled data from Business Identity
   useEffect(() => {
     fetch("/api/profile/public-profile")
       .then((r) => r.json())
       .then((j) => {
-        if (j.profile) {
-          setProfile({
-            ...EMPTY,
-            ...j.profile,
-            services: normalizeServices(j.profile.services ?? []),
-          });
-        }
+        const p = j.profile ?? {};
+        const bizName = j.businessName || j.orgName || "";
+        const phone = p.phone || j.primaryPhone || "";
+        const area =
+          p.service_area || [j.city, j.state].filter(Boolean).join(", ") || "";
+
+        setProfile({
+          ...EMPTY,
+          ...p,
+          trade: p.trade || "",
+          tagline: p.tagline || "",
+          phone,
+          service_area: area,
+          urgency_line: p.urgency_line || "",
+          license_text: p.license_text || "",
+          photo_url: p.photo_url || "",
+          selected_template: p.selected_template ?? "classic",
+          slug: p.slug || "",
+          // UI simplifications
+          about_text: (p.about_bullets ?? []).join("\n"),
+          services: normalizeServices(p.services ?? []),
+          photos: (p.photos ?? []).map((ph: any) => ({
+            url: ph.url ?? "",
+            title: ph.title ?? "",
+          })).filter((ph: any) => ph.url),
+          revenue_display: p.revenue_display ?? "",
+          stat_label: p.stat_label ?? "",
+        });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  function set<K extends keyof Profile>(key: K, value: Profile[K]) {
-    setProfile((p) => ({ ...p, [key]: value }));
+  const update = useCallback(<K extends keyof EditorProfile>(key: K, value: EditorProfile[K]) => {
+    setProfile((prev) => ({ ...prev, [key]: value }));
     setSaveStatus("idle");
-  }
-
-  function setBullet(i: number, text: string) {
-    const next = [...(profile.about_bullets ?? ["", "", "", ""])];
-    next[i] = text;
-    set("about_bullets", next);
-  }
+  }, []);
 
   async function handleSave() {
     setSaving(true);
     setSaveStatus("idle");
     setSaveError("");
+
+    const about_bullets = profile.about_text
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const payload = {
+      ...profile,
+      about_bullets,
+      photos: profile.photos.map((p) => ({ url: p.url, title: p.title })),
+      revenue_display: profile.revenue_display,
+      stat_label: profile.stat_label,
+    };
+
     try {
       const res = await fetch("/api/profile/public-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
+        body: JSON.stringify(payload),
       });
       const j = await res.json();
       if (!res.ok) {
         setSaveError(j.error ?? "Failed to save");
         setSaveStatus("error");
       } else {
-        setProfile({
-          ...EMPTY,
-          ...j.profile,
-          services: normalizeServices(j.profile.services ?? []),
-        });
+        setProfile((prev) => ({
+          ...prev,
+          slug: j.profile?.slug ?? prev.slug,
+        }));
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
@@ -166,6 +185,7 @@ export function PublicProfileEditor() {
   }
 
   async function handlePublishToggle() {
+    if (!profile.slug) return;
     setPublishing(true);
     try {
       const res = await fetch("/api/profile/public-profile/publish", {
@@ -175,86 +195,28 @@ export function PublicProfileEditor() {
       });
       const j = await res.json();
       if (res.ok) {
-        setProfile((p) => ({ ...p, is_published: j.is_published }));
-      } else {
-        alert(j.error ?? "Failed to toggle. Save your profile first.");
+        update("is_published", j.is_published);
       }
     } catch {
-      alert("Network error — please try again");
+      /* nothing */
     } finally {
       setPublishing(false);
     }
   }
 
-  function copyLink() {
-    const url = `${BASE_URL}/${profile.slug}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function setService(idx: number, field: keyof ServiceItem, value: string) {
-    const next = [...profile.services];
-    next[idx] = { ...next[idx], [field]: value };
-    set("services", next);
-  }
-
   function addService() {
-    set("services", [...profile.services, { name: "", description: "", photo_url: "" }]);
-  }
-
-  function removeService(idx: number) {
-    set("services", profile.services.filter((_, i) => i !== idx));
-  }
-
-  async function handleServicePhotoChange(e: React.ChangeEvent<HTMLInputElement>, idx: number) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const localPreview = URL.createObjectURL(file);
-    setService(idx, "photo_url", localPreview);
-    setUploadingServiceIdx(idx);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("index", String(idx));
-      const res = await fetch("/api/upload/service-image", { method: "POST", body: fd });
-      const json = await res.json() as { url?: string; error?: string };
-      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      setService(idx, "photo_url", json.url!);
-    } catch (err: any) {
-      setService(idx, "photo_url", "");
-      alert(err.message ?? "Image upload failed");
-    } finally {
-      setUploadingServiceIdx(null);
-      if (e.target) e.target.value = "";
+    const name = serviceInput.trim().replace(/,+$/, "");
+    if (!name) return;
+    if (profile.services.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+      setServiceInput("");
+      return;
     }
-  }
-
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const localPreview = URL.createObjectURL(file);
-    set("photo_url", localPreview);
-    setUploadingPhoto(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload/profile-photo", { method: "POST", body: fd });
-      const json = await res.json() as { url?: string; error?: string };
-      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      set("photo_url", json.url!);
-    } catch (err: any) {
-      set("photo_url", profile.photo_url);
-      alert(err.message ?? "Photo upload failed");
-    } finally {
-      setUploadingPhoto(false);
-      if (photoInputRef.current) photoInputRef.current.value = "";
-    }
+    update("services", [...profile.services, { name, description: "", photo_url: "" }]);
+    setServiceInput("");
   }
 
   const publicUrl = profile.slug ? `${BASE_URL}/${profile.slug}` : null;
-  const bullets = profile.about_bullets?.length ? profile.about_bullets : ["", "", "", ""];
+  const previewUrl = profile.slug ? `/pro/${profile.slug}` : null;
 
   if (loading) {
     return (
@@ -265,23 +227,33 @@ export function PublicProfileEditor() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
 
-      {/* ── Status Card ── */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${profile.is_published ? "bg-green-500" : "bg-gray-300"}`}
-            />
-            <span className={`text-sm font-bold ${profile.is_published ? "text-green-700" : "text-gray-500"}`}>
-              {profile.is_published ? "Live" : "Unpublished"}
-            </span>
-          </div>
+      {/* ── Status Bar ── */}
+      <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className={`inline-block w-2 h-2 rounded-full ${profile.is_published ? "bg-green-500" : "bg-gray-300"}`} />
+          <span className={`text-sm font-bold ${profile.is_published ? "text-green-700" : "text-gray-500"}`}>
+            {profile.is_published ? "Live" : "Draft"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {publicUrl && (
+            <button
+              onClick={() => { navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              className="text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors"
+              style={copied
+                ? { borderColor: "#22C55E", color: "#16A34A", background: "#F0FDF4" }
+                : { borderColor: "#E5E7EB", color: "#374151", background: "#F9FAFB" }
+              }
+            >
+              {copied ? "✓ Copied!" : "Copy Link"}
+            </button>
+          )}
           <button
             onClick={handlePublishToggle}
             disabled={publishing || !profile.slug}
-            className="text-xs font-bold px-4 py-1.5 rounded-lg border transition-colors"
+            className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
             style={
               profile.is_published
                 ? { borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }
@@ -291,420 +263,391 @@ export function PublicProfileEditor() {
             {publishing ? "…" : profile.is_published ? "Unpublish" : "Publish"}
           </button>
         </div>
-
-        {publicUrl ? (
-          <>
-            <p className="text-xs text-gray-400 break-all">{publicUrl}</p>
-            <div className="flex gap-2">
-              <a
-                href={`/pro/${profile.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-center text-xs font-semibold rounded-xl py-2.5 border border-gray-200 text-slate-700 bg-gray-50"
-              >
-                View Page ↗
-              </a>
-              <button
-                onClick={copyLink}
-                className="flex-1 text-xs font-semibold rounded-xl py-2.5 border transition-colors"
-                style={
-                  copied
-                    ? { borderColor: "#22C55E", color: "#16A34A", background: "#F0FDF4" }
-                    : { borderColor: "#E5E7EB", color: "#374151", background: "#F9FAFB" }
-                }
-              >
-                {copied ? "✓ Copied!" : "Copy Link"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-gray-400">Fill in the fields below and save to get your public URL.</p>
-        )}
-
-        {!profile.slug && (
-          <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-            Save your profile first to generate a public URL.
-          </p>
-        )}
       </div>
 
-      {/* ── Photo / Logo ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="📷" title="Photo or Logo" />
-        <div className="px-4 pb-4 pt-3">
-          <p className="text-xs text-gray-400 mb-3">
-            Upload a photo of yourself or your business logo. It appears as a circular avatar on your public page.
-          </p>
-          <div className="flex items-center gap-4">
-            <div
-              className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100 flex-shrink-0"
+      {/* ── Live Preview ── */}
+      {previewUrl && (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase">Live Preview</p>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-[#1B3A6B]"
             >
-              {profile.photo_url ? (
-                <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-3xl text-gray-300">👤</span>
-              )}
-            </div>
-            <div className="flex-1 space-y-2">
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                disabled={uploadingPhoto}
-                className="w-full rounded-xl py-2.5 text-sm font-semibold border border-gray-200 text-slate-700 bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
-              >
-                {uploadingPhoto ? "Uploading…" : profile.photo_url ? "Change Photo / Logo" : "Upload Photo or Logo"}
-              </button>
-              {profile.photo_url && !uploadingPhoto && (
-                <button
-                  type="button"
-                  onClick={() => set("photo_url", "")}
-                  className="w-full rounded-xl py-2 text-xs font-semibold text-red-500 border border-red-100 bg-red-50"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+              Open in new tab ↗
+            </a>
           </div>
-        </div>
-      </div>
-
-      {/* ── Profile Identity ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="✏️" title="Profile Basics" />
-        <div className="px-4 pb-4 pt-3 space-y-3">
-          <div>
-            <label className={labelCls}>Trade / Specialty</label>
-            <input
-              value={profile.trade}
-              onChange={(e) => set("trade", e.target.value)}
-              placeholder="e.g. Roofing & Exteriors"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Tagline</label>
-            <input
-              value={profile.tagline}
-              onChange={(e) => set("tagline", e.target.value)}
-              placeholder="e.g. Fast, reliable roofing — free quotes same day"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Public Contact Phone</label>
-            <input
-              type="tel"
-              value={profile.phone}
-              onChange={(e) => set("phone", e.target.value)}
-              placeholder="(503) 555-0192"
-              className={inputCls}
-            />
-            <p className="text-[11px] text-gray-400 mt-1">Shown on your public page — tap-to-call for visitors.</p>
-          </div>
-          <div>
-            <label className={labelCls}>Service Area</label>
-            <input
-              value={profile.service_area}
-              onChange={(e) => set("service_area", e.target.value)}
-              placeholder="e.g. Portland metro & surrounding areas"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Urgency / Availability Line</label>
-            <input
-              value={profile.urgency_line}
-              onChange={(e) => set("urgency_line", e.target.value)}
-              placeholder="e.g. Booking 2–3 days out — limited availability"
-              className={inputCls}
-            />
-            <p className="text-[11px] text-gray-400 mt-1">Shown under the quote button to drive action.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Services ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="⚡" title="Services" />
-        <div className="px-4 pb-4 pt-3 space-y-4">
-          {profile.services.length === 0 && (
-            <p className="text-xs text-gray-400 text-center py-2">No services yet. Tap below to add one.</p>
-          )}
-          {profile.services.map((svc, idx) => {
-            const fileRef = { current: null as HTMLInputElement | null };
-            return (
-              <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden">
-                {/* Image area */}
-                <div className="relative aspect-video bg-gray-100">
-                  {svc.photo_url ? (
-                    <img src={svc.photo_url} alt={svc.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">🔧</div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    ref={(el) => { fileRef.current = el; }}
-                    onChange={(e) => handleServicePhotoChange(e, idx)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    disabled={uploadingServiceIdx === idx}
-                    className="absolute bottom-2 right-2 bg-white/90 border border-gray-200 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm active:bg-gray-100 disabled:opacity-50"
-                  >
-                    {uploadingServiceIdx === idx ? "Uploading…" : svc.photo_url ? "Change Photo" : "Add Photo"}
-                  </button>
-                  {svc.photo_url && uploadingServiceIdx !== idx && (
-                    <button
-                      type="button"
-                      onClick={() => setService(idx, "photo_url", "")}
-                      className="absolute top-2 right-2 bg-white/90 border border-red-100 text-red-500 text-xs font-semibold px-2 py-1 rounded-lg shadow-sm"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                {/* Fields */}
-                <div className="p-3 space-y-2">
-                  <input
-                    value={svc.name}
-                    onChange={(e) => setService(idx, "name", e.target.value)}
-                    placeholder="Service name (e.g. Radon Mitigation)"
-                    className={inputCls}
-                  />
-                  <textarea
-                    value={svc.description}
-                    onChange={(e) => setService(idx, "description", e.target.value)}
-                    placeholder="Short description (optional)"
-                    rows={2}
-                    className={inputCls}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeService(idx)}
-                    className="text-xs text-red-500 font-semibold"
-                  >
-                    Remove service
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          <button
-            type="button"
-            onClick={addService}
-            className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-400 active:border-blue-200 active:text-blue-500 transition-colors"
-          >
-            + Add Service
-          </button>
-        </div>
-      </div>
-
-      {/* ── About ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="👤" title="Your Story" />
-        <div className="px-4 pb-4 pt-3 space-y-2">
-          <p className="text-xs text-gray-400 mb-2">
-            Up to 4 bullet points. Lead with an emoji for best results — e.g. &ldquo;🔨 8 years experience in residential roofing&rdquo;
-          </p>
-          {[0, 1, 2, 3].map((i) => (
-            <input
-              key={i}
-              value={bullets[i] ?? ""}
-              onChange={(e) => setBullet(i, e.target.value)}
-              placeholder={
-                [
-                  "🔨 Years of experience...",
-                  "👤 Owner-operated — I'm on every job",
-                  "🛡️ Licensed & insured · License #",
-                  "📍 Serving [your area]",
-                ][i]
-              }
-              className={inputCls}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Credentials & Stats ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="🛡️" title="Credentials & Stats" />
-        <div className="px-4 pb-4 pt-3 space-y-3">
-          <div>
-            <label className={labelCls}>License / Cert Text</label>
-            <input
-              value={profile.license_text}
-              onChange={(e) => set("license_text", e.target.value)}
-              placeholder="e.g. Licensed & insured · OR #CCB-187432"
-              className={inputCls}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Years in Business</label>
-              <input
-                type="number"
-                min={0}
-                value={profile.years_experience || ""}
-                onChange={(e) => set("years_experience", Number(e.target.value))}
-                placeholder="8"
-                className={inputCls}
+          <div className="p-3">
+            <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 320 }}>
+              <iframe
+                src={previewUrl}
+                className="w-full h-full"
+                style={{ border: "none" }}
+                title="Profile Preview"
               />
             </div>
-            <div>
-              <label className={labelCls}>Stat Value</label>
-              <input
-                value={profile.revenue_display}
-                onChange={(e) => set("revenue_display", e.target.value)}
-                placeholder="e.g. 500+"
-                className={inputCls}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">The number shown on your stats bar.</p>
-            </div>
-            <div>
-              <label className={labelCls}>Stat Label</label>
-              <input
-                value={profile.stat_label}
-                onChange={(e) => set("stat_label", e.target.value)}
-                placeholder="e.g. Systems Installed"
-                className={inputCls}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">The word under the stat (e.g. "Systems Installed", "Jobs Done").</p>
-            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Page Template ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="🎨" title="Page Template" />
-        <div className="px-4 pb-4 pt-3">
-          <p className="text-xs text-gray-400 mb-3">
-            Choose how your public profile looks to customers.
-          </p>
-          <div className="space-y-2">
+      {/* ── Step 1: Template ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">1</span>
+          <p className="font-semibold text-slate-800 text-sm">Pick Your Look</p>
+        </div>
+        <div className="px-4 py-3">
+          <div className="grid grid-cols-2 gap-2">
             {TEMPLATES.map((t) => {
               const selected = profile.selected_template === t.id;
-              const previewHref = `/pro/preview/${t.id || "default"}`;
               return (
-                <div
+                <button
                   key={t.id}
-                  className="rounded-xl border transition-colors overflow-hidden"
+                  type="button"
+                  onClick={() => update("selected_template", t.id)}
+                  className="rounded-xl border-2 p-3 text-left transition-all active:scale-[0.98]"
                   style={{
                     borderColor: selected ? "#1B3A6B" : "#E5E7EB",
                     background: selected ? "#EFF6FF" : "#FAFAFA",
                   }}
                 >
-                  {/* Selectable area */}
-                  <button
-                    type="button"
-                    onClick={() => set("selected_template", t.id)}
-                    className="w-full flex items-center gap-3 px-3 pt-3 pb-2 text-left"
-                  >
-                    {/* Mini colour swatches */}
-                    <div className="flex gap-1 flex-shrink-0">
-                      {t.preview.map((swatch, si) => (
-                        <div
-                          key={si}
-                          className="w-7 h-10 rounded-md flex items-end justify-center pb-1"
-                          style={{ background: swatch.bg }}
-                        >
-                          <div
-                            className="w-4 h-1.5 rounded-full"
-                            style={{ background: swatch.accent }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 leading-tight">{t.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 leading-snug">{t.description}</p>
-                    </div>
-                    {selected && (
-                      <div
-                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "#1B3A6B" }}
-                      >
-                        <span className="text-white text-xs font-bold">✓</span>
-                      </div>
-                    )}
-                  </button>
-
-                  {/* View preview link */}
-                  <div className="px-3 pb-2.5">
-                    <a
-                      href={previewHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors"
-                      style={{
-                        background: selected ? "rgba(27,58,107,0.10)" : "rgba(0,0,0,0.05)",
-                        color: selected ? "#1B3A6B" : "#64748B",
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span>👁</span> Preview
-                    </a>
+                  <div className="flex gap-1.5 mb-2">
+                    {t.colors.map((c, i) => (
+                      <div key={i} className="w-5 h-5 rounded" style={{ background: c }} />
+                    ))}
                   </div>
-                </div>
+                  <p className="text-xs font-bold text-slate-800">{t.name}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{t.description}</p>
+                </button>
               );
             })}
           </div>
         </div>
       </div>
 
-      {/* ── URL Slug ── */}
-      <div className={sectionCls}>
-        <SectionHead emoji="🔗" title="Your Public URL" />
-        <div className="px-4 pb-4 pt-3">
-          <label className={labelCls}>URL Slug</label>
+      {/* ── Step 2: About You ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">2</span>
+          <p className="font-semibold text-slate-800 text-sm">Tell People Who You Are</p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <Field label="Trade / Specialty">
+            <input
+              value={profile.trade}
+              onChange={(e) => update("trade", e.target.value)}
+              placeholder="e.g. Roofing & Exteriors"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+          </Field>
+
+          <Field label="Tagline">
+            <input
+              value={profile.tagline}
+              onChange={(e) => update("tagline", e.target.value)}
+              placeholder="e.g. Fast, reliable roofing — free quotes same day"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Phone">
+              <input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => update("phone", e.target.value)}
+                placeholder="(503) 555-0192"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+              />
+            </Field>
+            <Field label="Service Area">
+              <input
+                value={profile.service_area}
+                onChange={(e) => update("service_area", e.target.value)}
+                placeholder="Portland metro"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+              />
+            </Field>
+          </div>
+
+          <Field label="Availability (optional)">
+            <input
+              value={profile.urgency_line}
+              onChange={(e) => update("urgency_line", e.target.value)}
+              placeholder="e.g. Booking 2–3 days out"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+          </Field>
+
+          <Field label="About You">
+            <textarea
+              value={profile.about_text}
+              onChange={(e) => update("about_text", e.target.value)}
+              placeholder="Tell customers your story. What makes you different? How long have you been in business?"
+              rows={4}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none"
+            />
+            <p className="text-[11px] text-gray-400 mt-1">Each line becomes a bullet point on your page.</p>
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Years in Business">
+              <input
+                type="number"
+                min={0}
+                value={profile.years_experience || ""}
+                onChange={(e) => update("years_experience", Number(e.target.value))}
+                placeholder="8"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+              />
+            </Field>
+            <Field label="License # (optional)">
+              <input
+                value={profile.license_text}
+                onChange={(e) => update("license_text", e.target.value)}
+                placeholder="e.g. OR #CCB-187432"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+              />
+            </Field>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Step 3: Services ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">3</span>
+          <p className="font-semibold text-slate-800 text-sm">What Do You Do?</p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          {/* Tag chips */}
+          {profile.services.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {profile.services.map((svc, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 bg-blue-50 text-[#1B3A6B] rounded-full px-3 py-1 text-xs font-semibold border border-blue-100"
+                >
+                  {svc.name}
+                  <button
+                    onClick={() => update("services", profile.services.filter((_, idx) => idx !== i))}
+                    className="ml-0.5 text-blue-400 hover:text-red-500 leading-none"
+                    aria-label={`Remove ${svc.name}`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <input
+            value={serviceInput}
+            onChange={(e) => setServiceInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                addService();
+              }
+            }}
+            placeholder="Type a service and hit Enter"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+          />
+          <p className="text-[11px] text-gray-400">Examples: Roofing, Siding, Gutters, Radon Mitigation</p>
+        </div>
+      </div>
+
+      {/* ── Step 4: Photos ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">4</span>
+          <p className="font-semibold text-slate-800 text-sm">Photos</p>
+        </div>
+        <div className="px-4 py-3 space-y-4">
+          {/* Logo / Headshot */}
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200 flex items-center justify-center bg-gray-100 flex-shrink-0">
+              {profile.photo_url ? (
+                <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl text-gray-300">👤</span>
+              )}
+            </div>
+            <div className="flex-1">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const local = URL.createObjectURL(file);
+                  update("photo_url", local);
+                  setUploadingPhoto(true);
+                  try {
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    const res = await fetch("/api/upload/profile-photo", { method: "POST", body: fd });
+                    const j = await res.json() as { url?: string; error?: string };
+                    if (j.url) update("photo_url", j.url);
+                    else throw new Error(j.error ?? "Upload failed");
+                  } catch (err: any) {
+                    update("photo_url", "");
+                    alert(err.message ?? "Photo upload failed");
+                  } finally {
+                    setUploadingPhoto(false);
+                    if (photoInputRef.current) photoInputRef.current.value = "";
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="w-full rounded-xl py-2 text-sm font-semibold border border-gray-200 text-slate-700 bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                {uploadingPhoto ? "Uploading…" : profile.photo_url ? "Change Logo / Photo" : "Upload Logo or Photo"}
+              </button>
+              {profile.photo_url && !uploadingPhoto && (
+                <button
+                  type="button"
+                  onClick={() => update("photo_url", "")}
+                  className="w-full mt-1.5 rounded-xl py-1.5 text-xs font-semibold text-red-500 border border-red-100 bg-red-50"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100" />
+
+          {/* Project Gallery */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Gallery</p>
+            {profile.photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {profile.photos.map((ph, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                    <img src={ph.url} alt={ph.title} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => update("photos", profile.photos.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 text-red-500 text-[10px] font-bold flex items-center justify-center shadow-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              id="gallery-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const idx = profile.photos.length;
+                const local = URL.createObjectURL(file);
+                update("photos", [...profile.photos, { url: local, title: "" }]);
+                setUploadingGalleryIdx(idx);
+                try {
+                  const fd = new FormData();
+                  fd.append("file", file);
+                  const res = await fetch("/api/upload/gallery-photo", { method: "POST", body: fd });
+                  const j = await res.json() as { url?: string; error?: string };
+                  if (j.url) {
+                    const next = [...profile.photos];
+                    next[idx] = { url: j.url, title: "" };
+                    update("photos", next);
+                  } else throw new Error(j.error ?? "Upload failed");
+                } catch (err: any) {
+                  update("photos", profile.photos.slice(0, -1));
+                  alert(err.message ?? "Photo upload failed");
+                } finally {
+                  setUploadingGalleryIdx(null);
+                  (e.target as HTMLInputElement).value = "";
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById("gallery-upload")?.click()}
+              disabled={uploadingGalleryIdx !== null}
+              className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-400 active:border-blue-200 active:text-blue-500 transition-colors disabled:opacity-50"
+            >
+              {uploadingGalleryIdx !== null ? "Uploading…" : "+ Add Project Photo"}
+            </button>
+            <p className="text-[11px] text-gray-400 mt-1">Before & after shots, completed jobs, team photos.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Step 5: URL ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
+          <p className="font-semibold text-slate-800 text-sm">Your Public URL</p>
+        </div>
+        <div className="px-4 py-3">
           <div className="flex items-center gap-1">
             <span className="text-xs text-gray-400 shrink-0">/pro/</span>
             <input
               value={profile.slug}
-              onChange={(e) => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-"))}
+              onChange={(e) =>
+                update(
+                  "slug",
+                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-")
+                )
+              }
               placeholder="mike-sullivan-roofing"
-              className={inputCls}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white flex-1"
             />
           </div>
           <p className="text-[11px] text-gray-400 mt-1">
-            Auto-generated on first save. Only lowercase letters, numbers, and dashes.
+            Auto-generated from your business name on first save.
           </p>
         </div>
       </div>
 
-      {/* ── Save ── */}
+      {/* ── Save Feedback ── */}
       {saveStatus === "error" && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
           {saveError}
         </div>
       )}
-
       {saveStatus === "saved" && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-semibold">
           ✓ Profile saved
         </div>
       )}
 
+      {/* ── Save Button ── */}
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full rounded-xl py-3 text-white text-sm font-bold shadow-sm active:opacity-80 transition-opacity"
+        className="w-full rounded-xl py-3 text-white text-sm font-bold shadow-sm active:opacity-80 transition-opacity disabled:opacity-60"
         style={{ backgroundColor: "#1B3A6B" }}
       >
         {saving ? "Saving…" : "Save Profile"}
       </button>
 
       <div className="h-4" />
+    </div>
+  );
+}
+
+// ─── Small helpers ──────────────────────────────────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</label>
+      {children}
     </div>
   );
 }

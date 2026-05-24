@@ -118,6 +118,13 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       licenseNumber: pub.license_text ?? undefined,
       serviceArea: pub.service_area ?? "",
       photoUrl: pub.photo_url || undefined,
+      photos: (pub.photos ?? []).map((p: any) => ({
+        url: p.url ?? "",
+        title: p.title ?? "",
+        location: p.location ?? "",
+        timeAgo: p.timeAgo ?? "",
+        cost: p.cost ?? "",
+      })).filter((p: any) => p.url),
       selectedTemplate: pub.selected_template ?? "",
       statLabel: pub.stat_label ?? "",
     };

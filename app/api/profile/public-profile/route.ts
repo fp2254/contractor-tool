@@ -19,12 +19,26 @@ export async function GET() {
   const admin = createAdminClient();
 
   try {
-    const { data } = await (admin as any)
-      .from("public_profiles")
-      .select("*")
-      .eq("org_id", orgId!)
-      .maybeSingle();
-    return NextResponse.json({ profile: data ?? null });
+    const [{ data: profile }, { data: org }, { data: settings }] = await Promise.all([
+      (admin as any)
+        .from("public_profiles")
+        .select("*")
+        .eq("org_id", orgId!)
+        .maybeSingle(),
+      admin.from("orgs").select("name").eq("id", orgId!).single(),
+      admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+    ]);
+
+    return NextResponse.json({
+      profile: profile ?? null,
+      orgName: org?.name ?? "",
+      businessName: (settings as any)?.business_name ?? "",
+      primaryPhone: (settings as any)?.primary_phone ?? "",
+      address: (settings as any)?.address ?? "",
+      city: (settings as any)?.city ?? "",
+      state: (settings as any)?.state ?? "",
+      zip: (settings as any)?.zip ?? "",
+    });
   } catch {
     return NextResponse.json({ profile: null });
   }
@@ -72,16 +86,19 @@ export async function POST(req: Request) {
     revenue_display: body.revenue_display ?? "",
     stat_label: body.stat_label ?? "",
     services: body.services ?? [],
-    about_bullets: body.about_bullets ?? [],
+    about_bullets: body.about_text
+      ? String(body.about_text).split("\n").map((s) => s.trim()).filter(Boolean)
+      : body.about_bullets ?? [],
     license_text: body.license_text ?? "",
     photo_url: body.photo_url ?? "",
+    photos: body.photos ?? [],
     selected_template: selectedTemplate,
     updated_at: new Date().toISOString(),
   };
 
   // Attempt the full upsert. If optional new columns don't exist yet, retry
   // without them so the save never fails while the DB migration is pending.
-  const optionalCols = ["stat_label", "selected_template"] as const;
+  const optionalCols = ["stat_label", "selected_template", "photos"] as const;
 
   async function tryUpsert(r: Record<string, unknown>) {
     const { data, error } = await (admin as any)
