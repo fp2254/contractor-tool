@@ -381,18 +381,11 @@ function ContractorCard({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onClick={onSelect}
-      style={{ flexShrink: 0, minHeight: 360 }}
-      className={`bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all duration-150 cursor-pointer ${
-        selected
-          ? "border-blue-500 shadow-lg ring-2 ring-blue-100"
-          : hovered
-          ? "border-blue-200 shadow-md -translate-y-0.5"
-          : "border-transparent hover:border-gray-100 hover:shadow-md"
-      }`}
+      style={{ display: "block", width: "100%", minHeight: 360, background: "#fff", borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: selected ? "2px solid #3b82f6" : hovered ? "2px solid #bfdbfe" : "2px solid transparent", cursor: "pointer", transition: "border-color 0.15s, box-shadow 0.15s" }}
     >
       {/* Cover */}
       <div style={{ position: "relative" }}>
-        <div style={{ position: "relative", height: 160, width: "100%", overflow: "hidden", background: coverGradient(c.cover_color) }}>
+        <div style={{ position: "relative", height: 160, width: "100%", overflow: "hidden", borderRadius: "14px 14px 0 0", background: coverGradient(c.cover_color) }}>
           <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
         </div>
