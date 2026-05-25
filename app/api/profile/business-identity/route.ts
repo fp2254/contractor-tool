@@ -5,6 +5,32 @@ import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
+async function geocodeAddress(
+  address: string,
+  city: string,
+  state: string,
+  zip: string
+): Promise<{ lat: number; lng: number } | null> {
+  const parts = [address, city, state, zip].filter(Boolean);
+  if (parts.length < 2) return null;
+
+  const query = encodeURIComponent(parts.join(", ") + ", USA");
+  const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=us`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "TradeBase/1.0 (tradebase.contractors)" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as Array<{ lat: string; lon: string }>;
+    if (!data?.[0]?.lat || !data?.[0]?.lon) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
@@ -23,16 +49,21 @@ export async function POST(req: Request) {
     }
   }
 
-  const settingsPayload: Record<string, string | null> = {
+  const address = (body.address ?? "").trim();
+  const city = (body.city ?? "").trim();
+  const state = (body.state ?? "").trim();
+  const zip = (body.zip ?? "").trim();
+
+  const settingsPayload: Record<string, unknown> = {
     org_id: orgId!,
     dba_name: body.dba_name || null,
     primary_phone: body.primary_phone || null,
     business_email: body.business_email || null,
     website: body.website || null,
-    address: body.address || null,
-    city: body.city || null,
-    state: body.state || null,
-    zip: body.zip || null,
+    address: address || null,
+    city: city || null,
+    state: state || null,
+    zip: zip || null,
     license_number: body.license_number || null,
     insurance_number: body.insurance_number || null,
     epa_cert_number: body.epa_cert_number || null,
@@ -45,6 +76,26 @@ export async function POST(req: Request) {
     settingsPayload.logo_url = body.logo_url || null;
   }
 
+  // Geocode whenever we have at least city+state
+  let geocoded = false;
+  if (city && state) {
+    const coords = await geocodeAddress(address, city, state, zip);
+    if (coords) {
+      settingsPayload.lat = coords.lat;
+      settingsPayload.lng = coords.lng;
+      settingsPayload.geocoded_at = new Date().toISOString();
+      geocoded = true;
+      console.log(`[business-identity] geocoded ${city}, ${state} → ${coords.lat}, ${coords.lng}`);
+    } else {
+      console.warn(`[business-identity] geocoding failed for ${city}, ${state}`);
+    }
+  } else if (!city && !state) {
+    // Clear coords if address is wiped
+    settingsPayload.lat = null;
+    settingsPayload.lng = null;
+    settingsPayload.geocoded_at = null;
+  }
+
   const { error: settingsErr } = await admin
     .from("org_settings")
     .upsert(settingsPayload, { onConflict: "org_id" });
@@ -55,5 +106,5 @@ export async function POST(req: Request) {
   }
 
   revalidatePath("/app/profile");
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, geocoded });
 }

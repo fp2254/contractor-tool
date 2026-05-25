@@ -32,6 +32,7 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [geocoded, setGeocoded] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   function field(name: keyof BusinessIdentityData) {
@@ -78,10 +79,11 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const json = await res.json() as { success?: boolean; error?: string };
+      const json = await res.json() as { success?: boolean; error?: string; geocoded?: boolean };
       if (!res.ok || json.error) throw new Error(json.error ?? "Save failed");
+      setGeocoded(!!json.geocoded);
       setStatus("success");
-      setTimeout(() => setStatus("idle"), 3000);
+      setTimeout(() => setStatus("idle"), 4000);
     } catch (err: any) {
       setErrorMsg(err.message ?? "Could not save — please try again");
       setStatus("error");
@@ -241,8 +243,13 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
         </div>
       )}
       {status === "success" && (
-        <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700 font-semibold flex items-center gap-2">
-          <span>✓</span> Business info saved successfully.
+        <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700 font-semibold space-y-1">
+          <div className="flex items-center gap-2"><span>✓</span> Business info saved successfully.</div>
+          {geocoded && (
+            <div className="flex items-center gap-2 text-blue-700 font-semibold">
+              <span>📍</span> Address pinned on the Find Contractors map.
+            </div>
+          )}
         </div>
       )}
 
