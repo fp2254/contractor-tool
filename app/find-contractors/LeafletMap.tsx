@@ -112,6 +112,14 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
   const tooltipsRef = useRef<Map<string, L.Tooltip>>(new Map());
   const rafRef = useRef<number | null>(null);
 
+  // Pan to selected contractor whenever selection changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedId) return;
+    const c = contractors.find((x) => x.id === selectedId);
+    if (c) map.flyTo([c.lat, c.lng], Math.max(map.getZoom(), 12), { animate: true, duration: 0.8 });
+  }, [selectedId, contractors]);
+
   useEffect(() => {
     const style = document.createElement("style");
     style.id = "leaflet-pin-anim";

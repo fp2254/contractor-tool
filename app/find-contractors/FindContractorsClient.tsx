@@ -747,10 +747,10 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
 
         {/* LEFT */}
-        <div style={{ width: 400, flexShrink: 0, overflowY: "auto", overflowX: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 400, overflowY: "auto", overflowX: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
 
           {visibleProjects.length > 0 && (
             <RecentProjectsCarousel
@@ -808,7 +808,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
         </div>
 
         {/* RIGHT: map */}
-        <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 400, right: 0, bottom: 0 }}>
           <LeafletMap
             contractors={filtered}
             hoveredId={hoveredId}
