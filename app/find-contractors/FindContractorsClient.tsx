@@ -678,6 +678,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
   const liveIds = new Set(liveContractors.map((c) => c.id));
   const CONTRACTORS = [...liveContractors, ...MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id))];
 
+
   const [query, setQuery] = useState("");
   const [service, setService] = useState("All Services");
   const [city, setCity] = useState("");
@@ -814,6 +815,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
             hoveredId={hoveredId}
             selectedId={selectedPinId}
             hasSelection={selectedPinId !== null}
+            liveContractors={liveContractors}
             onSelect={(id) => {
               setSelectedPinId((prev) => prev === id ? null : id);
               setSelectedProject(null);

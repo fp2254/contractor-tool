@@ -22,6 +22,7 @@ const TRADE_EMOJI: Record<string, string> = {
 
 interface Props {
   contractors: Contractor[];
+  liveContractors?: Contractor[];
   hoveredId: string | null;
   selectedId: string | null;
   hasSelection: boolean;
@@ -105,12 +106,14 @@ function makeTooltipHtml(c: Contractor): string {
   `;
 }
 
-export default function LeafletMap({ contractors, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
+export default function LeafletMap({ contractors, liveContractors, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const tooltipsRef = useRef<Map<string, L.Tooltip>>(new Map());
   const rafRef = useRef<number | null>(null);
+  // Capture liveContractors at mount time so init effect can use the correct initial center.
+  const initialLiveRef = useRef<Contractor[] | undefined>(liveContractors);
 
   // Pan to selected contractor whenever selection changes
   useEffect(() => {
@@ -156,8 +159,16 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    const live = initialLiveRef.current;
+    const center: L.LatLngExpression = live?.length
+      ? [
+          live.reduce((s, c) => s + c.lat, 0) / live.length,
+          live.reduce((s, c) => s + c.lng, 0) / live.length,
+        ]
+      : DEFAULT_CENTER;
+
     const map = L.map(containerRef.current, {
-      center: DEFAULT_CENTER,
+      center,
       zoom: DEFAULT_ZOOM,
       zoomControl: true,
       attributionControl: true,
@@ -172,7 +183,6 @@ export default function LeafletMap({ contractors, hoveredId, selectedId, hasSele
 
     rafRef.current = requestAnimationFrame(() => {
       map.invalidateSize();
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       map.setMaxBounds(MAX_BOUNDS);
       map.setMinZoom(4);
     });

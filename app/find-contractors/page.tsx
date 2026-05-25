@@ -45,7 +45,7 @@ async function fetchLiveContractors(): Promise<Contractor[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profiles } = await (admin as any)
       .from("public_profiles")
-      .select("org_id, slug, trade, tagline, services, about_bullets, photo_url, photos, years_experience")
+      .select("org_id, slug, trade, tagline, services, about_bullets, photo_url, years_experience")
       .eq("is_published", true);
 
     if (!profiles?.length) return [];
