@@ -381,6 +381,7 @@ function ContractorCard({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onClick={onSelect}
+      style={{ flexShrink: 0, minHeight: 360 }}
       className={`bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all duration-150 cursor-pointer ${
         selected
           ? "border-blue-500 shadow-lg ring-2 ring-blue-100"
@@ -390,7 +391,7 @@ function ContractorCard({
       }`}
     >
       {/* Cover */}
-      <div className="relative">
+      <div style={{ position: "relative" }}>
         <div style={{ position: "relative", height: 160, width: "100%", overflow: "hidden", background: coverGradient(c.cover_color) }}>
           <Img src={c.cover_photo} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
@@ -416,7 +417,7 @@ function ContractorCard({
 
         {/* Stats pill */}
         <div className="absolute -bottom-3 right-3.5 bg-white rounded-full px-2.5 py-0.5 shadow-sm border border-gray-100 flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-gray-600">{c.jobs_completed.toLocaleString()} jobs</span>
+          <span className="text-[10px] font-bold text-gray-600">{c.jobs_completed.toLocaleString("en-US")} jobs</span>
           <span className="text-gray-200">·</span>
           <span className="text-[10px] font-bold text-gray-600">{c.years_in_business}y exp</span>
         </div>
@@ -590,7 +591,7 @@ function MapFloatingCard({
         </div>
 
         <p className="text-[11px] text-gray-500 line-clamp-2 mb-1 leading-relaxed">{c.description}</p>
-        <p className="text-[10px] text-gray-400 mb-3">🕐 Responds {c.response_time} · {c.jobs_completed.toLocaleString()} jobs completed</p>
+        <p className="text-[10px] text-gray-400 mb-3">🕐 Responds {c.response_time} · {c.jobs_completed.toLocaleString("en-US")} jobs completed</p>
 
         <div className="flex gap-2">
           {project && (
@@ -731,15 +732,6 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
-      <style>{`
-        @keyframes floatUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(22px) scale(0.95); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-        }
-        .scrollbar-none { scrollbar-width: none; }
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-      `}</style>
-
       <Header />
       <SearchBar
         query={query} setQuery={setQuery}
@@ -765,7 +757,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT */}
-        <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
+        <div style={{ width: 400, flexShrink: 0, overflowY: "auto", overflowX: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
 
           {visibleProjects.length > 0 && (
             <RecentProjectsCarousel
@@ -796,7 +788,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
           </div>
 
           {/* Cards */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+          <div style={{ padding: "12px" }}>
             {filtered.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center shadow-sm mt-4">
                 <p className="text-2xl mb-2">🔍</p>
