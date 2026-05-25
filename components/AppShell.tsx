@@ -85,11 +85,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </svg>
           <span className="text-xl font-bold text-white">TradeBase</span>
         </Link>
-        <button className="text-white p-1">
+        <Link href="/app/more" className="text-white p-1">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
             <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
           </svg>
-        </button>
+        </Link>
       </header>
 
       <main className="flex-1 pt-14 pb-20 overflow-y-auto">
