@@ -11,6 +11,7 @@ import { WarrantyCard } from "@/components/WarrantyCard";
 import { AiFollowUpButton } from "@/components/AiFollowUpButton";
 import { QuoteNotesEditor } from "./QuoteNotesEditor";
 import { QuoteEditor } from "./QuoteEditor";
+import { CustomerQuickEdit } from "@/components/CustomerQuickEdit";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -246,7 +247,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const { data: customer } = await admin
     .from("customers")
-    .select("first_name,last_name,company_name,phone,email,address_line1,city,state")
+    .select("first_name,last_name,company_name,phone,email,address_line1,city,state,zip")
     .eq("id", quote.customer_id ?? "")
     .maybeSingle();
 
@@ -307,6 +308,19 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           amount={Number(quote.total_amount)}
           customerPhone={customer?.phone ?? null}
           customerEmail={customer?.email ?? null}
+        />
+      )}
+
+      {quote.customer_id && (
+        <CustomerQuickEdit
+          customerId={quote.customer_id}
+          initialFirstName={customer?.first_name ?? ""}
+          initialLastName={customer?.last_name ?? ""}
+          initialPhone={customer?.phone ?? ""}
+          initialAddress={customer?.address_line1 ?? ""}
+          initialCity={customer?.city ?? ""}
+          initialState={customer?.state ?? ""}
+          initialZip={(customer as Record<string,unknown> | null)?.zip as string ?? ""}
         />
       )}
 
