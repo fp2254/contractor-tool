@@ -747,11 +747,24 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
         </button>
       </div>
 
+      {/* Responsive mobile layout via CSS — overrides inline styles below breakpoint */}
+      <style>{`
+        @media (max-width: 767px) {
+          .fc-left  { width: 100% !important; border-right: none !important; }
+          .fc-right { left: 0 !important; }
+          ${mobileView === "map"  ? ".fc-left  { display: none !important; }" : ""}
+          ${mobileView === "list" ? ".fc-right { display: none !important; }" : ""}
+        }
+      `}</style>
+
       {/* Body */}
       <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
 
         {/* LEFT */}
-        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 400, overflowY: "auto", overflowX: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}>
+        <div
+          className="fc-left"
+          style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 400, overflowY: "auto", overflowX: "hidden", background: "#f9fafb", borderRight: "1px solid #f0f0f0" }}
+        >
 
           {visibleProjects.length > 0 && (
             <RecentProjectsCarousel
@@ -809,7 +822,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
         </div>
 
         {/* RIGHT: map */}
-        <div style={{ position: "absolute", top: 0, left: 400, right: 0, bottom: 0 }}>
+        <div className="fc-right" style={{ position: "absolute", top: 0, left: 400, right: 0, bottom: 0 }}>
           <LeafletMap
             contractors={filtered}
             hoveredId={hoveredId}
