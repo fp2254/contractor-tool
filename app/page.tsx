@@ -179,6 +179,7 @@ export default async function HomePage() {
             {[
               { label: "Features", href: "#features" },
               { label: "Earn", href: "#earn" },
+              { label: "Find Contractors", href: "#find-contractors" },
               { label: "Pricing", href: "#pricing" },
               { label: "FAQ", href: "#faq" },
             ].map(({ label, href }) => (
@@ -1109,7 +1110,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── FIND CONTRACTORS ── */}
-      <section style={{ padding: "80px 0", background: BK, color: BN }}>
+      <section id="find-contractors" style={{ padding: "80px 0", background: BK, color: BN }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}>
           <SN n="SEC // 06B" label="FIND CONTRACTORS" />
           <div
