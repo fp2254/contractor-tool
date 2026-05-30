@@ -41,9 +41,6 @@ export async function POST(req: Request) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
 
-  // If a specific doc is being linked, always reissue so the URL contains the correct invoice/quote path
-  if (body.invoice_id || body.quote_id) body.reissue = true;
-
   if (body.reissue) {
     const { data: existing } = await admin
       .from("customer_portal_tokens")
@@ -74,13 +71,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (existing?.token) {
-      const origin = getOrigin(req);
-      const docPath = body.invoice_id
-        ? `/invoice/${body.invoice_id}`
-        : body.quote_id
-        ? `/quote/${body.quote_id}`
-        : "";
-      const portalUrl = `${origin}/portal/${existing.token}${docPath}`;
+      const portalUrl = `${getOrigin(req)}/portal/${existing.token}`;
       return NextResponse.json({ token: existing.token, portalUrl });
     }
   }
@@ -99,13 +90,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Could not create portal token" }, { status: 500 });
   }
 
-  const origin = getOrigin(req);
-  const docPath = body.invoice_id
-    ? `/invoice/${body.invoice_id}`
-    : body.quote_id
-    ? `/quote/${body.quote_id}`
-    : "";
-  const portalUrl = `${origin}/portal/${newToken.token}${docPath}`;
+  const portalUrl = `${getOrigin(req)}/portal/${newToken.token}`;
 
   return NextResponse.json({ token: newToken.token, portalUrl });
 }

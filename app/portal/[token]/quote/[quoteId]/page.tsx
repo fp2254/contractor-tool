@@ -177,6 +177,15 @@ export default async function PortalQuotePage({
           </div>
         </div>
 
+        <div className="mt-3">
+          <a
+            href={`/portal/${token}`}
+            className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-white shadow-sm"
+          >
+            ← View all your documents
+          </a>
+        </div>
+
         <div className="text-center pb-8 pt-4">
           <p className="text-xs text-gray-300">
             Powered by{" "}
