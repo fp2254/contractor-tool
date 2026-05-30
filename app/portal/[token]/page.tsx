@@ -117,8 +117,23 @@ export default async function PortalPage({
   const orgPhone = (orgSettings as Record<string, unknown> | null)?.primary_phone as string | undefined
     ?? (org as Record<string, unknown> | null)?.phone as string | undefined;
 
+  // Filter out declined quotes — nothing for the customer to do with them
+  const visibleQuotes = (quotes ?? []).filter(q =>
+    q.status !== "declined" && (!filterQuote || filterQuote === q.id)
+  );
+  const visibleInvoices = (invoices ?? []).filter(inv =>
+    !filterInvoice || filterInvoice === inv.id
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
+      <style>{`
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] .chevron { transform: rotate(180deg); }
+        .chevron { transition: transform 0.2s ease; }
+      `}</style>
+
       {/* Header */}
       <div style={{ backgroundColor: "#1B3A6B" }} className="px-5 py-4 flex items-center justify-between">
         <div>
@@ -132,121 +147,50 @@ export default async function PortalPage({
         )}
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-5 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-3">
 
-        {/* Quotes — hidden entirely when filtering to a specific invoice */}
-        {!filterInvoice && quotes && quotes.length > 0 && quotes.filter(q => !filterQuote || filterQuote === q.id).map((q) => {
-          const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
-          const canAct = q.status === "draft" || q.status === "sent";
-          const pdfUrl = `/api/portal/${token}/quote/${q.id}/pdf`;
-          const quoteNum = `Q-${q.id.slice(0, 8).toUpperCase()}`;
-          const dateStr = new Date(q.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        {/* Invoices — shown first, most actionable */}
+        {visibleInvoices.length > 0 && (
+          <>
+            {!filterInvoice && !filterQuote && (
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 pb-1">
+                Invoices
+              </p>
+            )}
+            {visibleInvoices.map((inv) => {
+              const st = INV_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-600" };
+              const dueDate = inv.due_date
+                ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : null;
+              const pdfUrl = `/api/portal/${token}/invoice/${inv.id}/pdf`;
+              const invNum = inv.invoice_number ?? `INV-${inv.id.slice(0, 8).toUpperCase()}`;
+              const dateStr = new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-          return (
-            <div key={q.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              {/* Quote meta row */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <p className="text-sm font-bold text-slate-800">{quoteNum}</p>
-                  <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${st.color}`}>{st.label}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-base font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">{dateStr}</p>
-                </div>
-              </div>
-
-              {/* PDF embedded inline */}
-              <iframe
-                src={pdfUrl}
-                className="w-full border-0"
-                style={{ height: "75vh", minHeight: 480 }}
-                title={`Quote ${quoteNum}`}
-              />
-
-              {/* Actions */}
-              <div className="px-5 py-4 space-y-3 border-t border-gray-100">
-                {canAct ? (
-                  <>
-                    <SignatureCapture
-                      token={token}
-                      quoteId={q.id}
-                      quoteNum={`#${q.id.slice(0, 8).toUpperCase()}`}
-                      large
-                    />
-                    <div className="flex gap-2">
-                      <a
-                        href={pdfUrl}
-                        download={`${quoteNum}.pdf`}
-                        className="flex-1 text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Download PDF
-                      </a>
-                      <form action={declineQuote} className="flex-1">
-                        <input type="hidden" name="token" value={token} />
-                        <input type="hidden" name="quote_id" value={q.id} />
-                        <button
-                          type="submit"
-                          className="w-full rounded-xl py-3 text-sm font-semibold text-red-500 border border-red-200 bg-red-50">
-                          Decline
-                        </button>
-                      </form>
+              return (
+                <details key={inv.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-sm font-bold text-slate-800 shrink-0">🧾 {invNum}</span>
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-semibold shrink-0 ${st.color}`}>{st.label}</span>
                     </div>
-                    <p className="text-xs text-gray-400 text-center">
-                      Accepting this quote authorizes work to proceed. Your signature is recorded.
-                    </p>
-                  </>
-                ) : (
-                  <a
-                    href={pdfUrl}
-                    download={`${quoteNum}.pdf`}
-                    className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Download PDF
-                  </a>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Invoices */}
-        {invoices && invoices.length > 0 && (
-          <div>
-            {!filterInvoice && !filterQuote && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Invoices</p>}
-            <div className="space-y-4">
-              {invoices.filter(inv => !filterInvoice || filterInvoice === inv.id).map((inv) => {
-                const st = INV_STATUS[inv.status] ?? { label: inv.status, color: "bg-gray-100 text-gray-600" };
-                const dueDate = inv.due_date
-                  ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                  : null;
-                const pdfUrl = `/api/portal/${token}/invoice/${inv.id}/pdf`;
-                const invNum = inv.invoice_number ?? `#${inv.id.slice(0, 8).toUpperCase()}`;
-
-                return (
-                  <div key={inv.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm font-bold text-slate-800">{invNum}</p>
-                        <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${st.color}`}>{st.label}</span>
-                      </div>
-                      <div className="text-right">
+                    <div className="flex items-center gap-3 ml-2">
+                      <div className="text-right shrink-0">
                         <p className="text-base font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</p>
-                        {dueDate && <p className="text-xs text-gray-400">Due {dueDate}</p>}
+                        <p className="text-xs text-gray-400">{dueDate ? `Due ${dueDate}` : dateStr}</p>
                       </div>
+                      <svg className="chevron h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
+                  </summary>
 
+                  <div className="border-t border-gray-100">
                     <iframe
                       src={pdfUrl}
                       className="w-full border-0"
                       style={{ height: "75vh", minHeight: 480 }}
                       title={`Invoice ${invNum}`}
                     />
-
                     <div className="px-5 py-4 border-t border-gray-100">
                       <a
                         href={pdfUrl}
@@ -255,23 +199,114 @@ export default async function PortalPage({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        Download PDF
+                        ⬇ Download PDF
                       </a>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </details>
+              );
+            })}
+          </>
         )}
 
-        {(!quotes?.length && !invoices?.length) && (
+        {/* Quotes — hidden entirely when filtering to a specific invoice */}
+        {!filterInvoice && visibleQuotes.length > 0 && (
+          <>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 pb-1 pt-2">
+              Quotes
+            </p>
+            {visibleQuotes.map((q) => {
+              const st = QUOTE_STATUS[q.status] ?? { label: q.status, color: "bg-gray-100 text-gray-600" };
+              const canAct = q.status === "draft" || q.status === "sent";
+              const pdfUrl = `/api/portal/${token}/quote/${q.id}/pdf`;
+              const quoteNum = `Q-${q.id.slice(0, 8).toUpperCase()}`;
+              const dateStr = new Date(q.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+              return (
+                <details key={q.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  <summary className="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-sm font-bold text-slate-800 shrink-0">📋 {quoteNum}</span>
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-semibold shrink-0 ${st.color}`}>{st.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3 ml-2">
+                      <div className="text-right shrink-0">
+                        <p className="text-base font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">{dateStr}</p>
+                      </div>
+                      <svg className="chevron h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </summary>
+
+                  <div className="border-t border-gray-100">
+                    <iframe
+                      src={pdfUrl}
+                      className="w-full border-0"
+                      style={{ height: "75vh", minHeight: 480 }}
+                      title={`Quote ${quoteNum}`}
+                    />
+
+                    <div className="px-5 py-4 space-y-3 border-t border-gray-100">
+                      {canAct ? (
+                        <>
+                          <SignatureCapture
+                            token={token}
+                            quoteId={q.id}
+                            quoteNum={`#${q.id.slice(0, 8).toUpperCase()}`}
+                            large
+                          />
+                          <div className="flex gap-2">
+                            <a
+                              href={pdfUrl}
+                              download={`${quoteNum}.pdf`}
+                              className="flex-1 text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              ⬇ Download PDF
+                            </a>
+                            <form action={declineQuote} className="flex-1">
+                              <input type="hidden" name="token" value={token} />
+                              <input type="hidden" name="quote_id" value={q.id} />
+                              <button
+                                type="submit"
+                                className="w-full rounded-xl py-3 text-sm font-semibold text-red-500 border border-red-200 bg-red-50">
+                                Decline
+                              </button>
+                            </form>
+                          </div>
+                          <p className="text-xs text-gray-400 text-center">
+                            Accepting this quote authorizes work to proceed. Your signature is recorded.
+                          </p>
+                        </>
+                      ) : (
+                        <a
+                          href={pdfUrl}
+                          download={`${quoteNum}.pdf`}
+                          className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          ⬇ Download PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
+          </>
+        )}
+
+        {(visibleQuotes.length === 0 && visibleInvoices.length === 0) && (
           <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
             <p className="text-gray-400 text-sm">No documents yet. Check back soon.</p>
           </div>
         )}
 
-        <div className="text-center pb-8 pt-2">
+        <div className="text-center pb-8 pt-4">
           <p className="text-xs text-gray-300">
             Powered by{" "}
             <a href="https://trade-base.biz" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500 underline underline-offset-2">
