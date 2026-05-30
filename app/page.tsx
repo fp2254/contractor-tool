@@ -1108,6 +1108,235 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── FIND CONTRACTORS ── */}
+      <section style={{ padding: "80px 0", background: BK, color: BN }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}>
+          <SN n="SEC // 06B" label="FIND CONTRACTORS" />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
+              gap: 48,
+              alignItems: "center",
+            }}
+          >
+            {/* Left: copy */}
+            <div>
+              <h2
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: "clamp(42px, 7vw, 82px)",
+                  lineHeight: 0.92,
+                  letterSpacing: "-0.005em",
+                  textTransform: "uppercase",
+                  marginBottom: 20,
+                }}
+              >
+                Find Verified
+                <br />
+                Contractors <span style={{ color: OR }}>Near You</span>.
+              </h2>
+              <p style={{ fontSize: 17, lineHeight: 1.6, color: "rgba(244,241,234,0.75)", maxWidth: 520, marginBottom: 28 }}>
+                Every TradeBase contractor has a live public profile. Browse verified tradespeople on the map,
+                read real reviews, and request a quote — right from their profile.
+              </p>
+              <ul style={{ listStyle: "none", display: "grid", gap: 12, marginBottom: 36, padding: 0 }}>
+                {[
+                  "Live map — pinned to real business addresses",
+                  "Verified contractor profiles with photos & reviews",
+                  "One-tap quote request direct to their inbox",
+                ].map((b) => (
+                  <li key={b} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15, color: "rgba(244,241,234,0.9)" }}>
+                    <span
+                      style={{
+                        width: 22,
+                        height: 22,
+                        flexShrink: 0,
+                        background: OR,
+                        color: BK,
+                        display: "grid",
+                        placeItems: "center",
+                        fontWeight: 900,
+                        fontSize: 13,
+                      }}
+                    >
+                      ◆
+                    </span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/find-contractors"
+                className="tb-btn-primary"
+                style={{
+                  background: OR,
+                  color: BK,
+                  padding: "18px 32px",
+                  fontFamily: "'Oswald', sans-serif",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  fontSize: 16,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  transition: "all 0.2s",
+                }}
+              >
+                Open the Map →
+              </Link>
+            </div>
+
+            {/* Right: map preview card */}
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  background: "#1a2332",
+                  border: `2px solid ${ST2}`,
+                  boxShadow: `12px 12px 0 ${OR}`,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                {/* Fake map header bar */}
+                <div
+                  style={{
+                    background: "#0f172a",
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    borderBottom: `1px solid ${ST2}`,
+                  }}
+                >
+                  <div style={{ flex: 1, background: ST, padding: "7px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#888", letterSpacing: "0.05em" }}>
+                    tradebase.contractors/find-contractors
+                  </div>
+                  <div style={{ background: GR, color: BK, padding: "4px 10px", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em" }}>
+                    ● LIVE
+                  </div>
+                </div>
+
+                {/* Fake map body */}
+                <div style={{ position: "relative", height: 300, background: "#1e2d3d", overflow: "hidden" }}>
+                  {/* Grid lines to suggest a map */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: `
+                        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)`,
+                      backgroundSize: "48px 48px",
+                    }}
+                  />
+                  {/* "Roads" */}
+                  <div style={{ position: "absolute", top: "40%", left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.08)" }} />
+                  <div style={{ position: "absolute", top: "65%", left: 0, right: 0, height: 1, background: "rgba(255,255,255,0.05)" }} />
+                  <div style={{ position: "absolute", top: 0, bottom: 0, left: "30%", width: 2, background: "rgba(255,255,255,0.07)" }} />
+                  <div style={{ position: "absolute", top: 0, bottom: 0, left: "60%", width: 1, background: "rgba(255,255,255,0.05)" }} />
+
+                  {/* Map pins */}
+                  {[
+                    { top: "28%", left: "24%", label: "Radon Pro", trade: "Radon" },
+                    { top: "52%", left: "55%", label: "Elite HVAC", trade: "HVAC" },
+                    { top: "38%", left: "70%", label: "ProPlumb", trade: "Plumbing" },
+                  ].map((pin) => (
+                    <div key={pin.label} style={{ position: "absolute", top: pin.top, left: pin.left, transform: "translate(-50%, -100%)" }}>
+                      <div
+                        style={{
+                          background: OR,
+                          color: BK,
+                          padding: "5px 9px",
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          whiteSpace: "nowrap",
+                          position: "relative",
+                          boxShadow: "0 3px 10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        📍 {pin.label}
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: -5,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            width: 0,
+                            height: 0,
+                            borderLeft: "5px solid transparent",
+                            borderRight: "5px solid transparent",
+                            borderTop: `5px solid ${OR}`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* CTA overlay */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(to top, rgba(10,10,10,0.85) 0%, transparent 50%)",
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "center",
+                      padding: 20,
+                    }}
+                  >
+                    <Link
+                      href="/find-contractors"
+                      style={{
+                        background: OR,
+                        color: BK,
+                        padding: "12px 24px",
+                        fontFamily: "'Oswald', sans-serif",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        fontSize: 14,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      View Live Map →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Badge */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: -14,
+                  right: -14,
+                  background: YE,
+                  color: BK,
+                  padding: "8px 14px",
+                  fontFamily: "'Oswald', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  transform: "rotate(3deg)",
+                  zIndex: 2,
+                }}
+              >
+                Free to Browse
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── PRICING ── */}
       <section style={{ padding: "80px 0", background: BK, color: BN }} id="pricing">
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}>
