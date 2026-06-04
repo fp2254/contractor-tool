@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Bebas_Neue, Oswald, JetBrains_Mono } from "next/font/google";
+import HomeMobileNav from "@/components/HomeMobileNav";
 
 const bebasNeue = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--font-bebas", display: "swap" });
 const oswald = Oswald({ weight: ["500", "600", "700"], subsets: ["latin"], variable: "--font-oswald", display: "swap" });
@@ -201,24 +202,27 @@ export default async function HomePage() {
               </a>
             ))}
           </div>
-          <Link
-            href="/waitlist"
-            className="tb-btn-primary"
-            style={{
-              background: OR,
-              color: BK,
-              padding: "10px 18px",
-              fontFamily: "'Oswald', sans-serif",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              fontSize: 13,
-              textDecoration: "none",
-              transition: "all 0.15s",
-            }}
-          >
-            Join Founders
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link
+              href="/waitlist"
+              className="tb-btn-primary hidden md:inline-flex"
+              style={{
+                background: OR,
+                color: BK,
+                padding: "10px 18px",
+                fontFamily: "'Oswald', sans-serif",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                fontSize: 13,
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
+            >
+              Join Founders
+            </Link>
+            <HomeMobileNav />
+          </div>
         </div>
       </nav>
 

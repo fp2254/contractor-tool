@@ -80,6 +80,7 @@ function StarRow({ rating, count, source, color = "text-yellow-400" }: { rating:
 // ─── Header ──────────────────────────────────────────────────────────────────
 
 function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <header style={{ backgroundColor: "#1B3A6B" }} className="sticky top-0 z-40 shadow-md flex-shrink-0">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
@@ -91,10 +92,40 @@ function Header() {
           <Link href="/find-contractors" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">Projects Near You</Link>
           <Link href="/auth/login" className="text-blue-200 text-sm font-medium hover:text-white transition-colors">For Contractors</Link>
         </nav>
-        <Link href="/auth/signup" className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white border-2 border-white/40 hover:bg-white/10 transition-colors">
-          Join TradeBase
-        </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/auth/signup" className="text-xs font-bold px-4 py-2 rounded-xl text-white border-2 border-white/40 hover:bg-white/10 transition-colors">
+            Join TradeBase
+          </Link>
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="md:hidden flex flex-col gap-1.5 p-2"
+            aria-label="Toggle menu"
+          >
+            <span className="block w-5 h-0.5 bg-white transition-all duration-200" style={{ transform: menuOpen ? "translateY(8px) rotate(45deg)" : "none" }} />
+            <span className="block w-5 h-0.5 bg-white transition-all duration-200" style={{ opacity: menuOpen ? 0 : 1 }} />
+            <span className="block w-5 h-0.5 bg-white transition-all duration-200" style={{ transform: menuOpen ? "translateY(-8px) rotate(-45deg)" : "none" }} />
+          </button>
+        </div>
       </div>
+      {menuOpen && (
+        <div className="md:hidden border-t border-white/10" style={{ backgroundColor: "#1B3A6B" }}>
+          {[
+            { label: "Find Contractors", href: "/find-contractors" },
+            { label: "Projects Near You", href: "/find-contractors" },
+            { label: "For Contractors", href: "/auth/login" },
+            { label: "Join TradeBase", href: "/auth/signup" },
+          ].map(({ label, href }) => (
+            <Link
+              key={label}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+              className="block px-5 py-3.5 text-sm font-semibold text-blue-100 border-b border-white/10 hover:bg-white/10 transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
