@@ -1,0 +1,1 @@
+- [Payment link feature](payment-link.md) — defer Stripe; add contractor-owned payment link field (Venmo/Zelle/Square) surfaced on invoices + portal
