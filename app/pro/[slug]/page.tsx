@@ -196,14 +196,35 @@ export default async function Page({ params }: Props) {
     );
   }
 
+  const reviewLink = (
+    <div style={{ background: "#f4f5f7", borderTop: "1px solid #e5e7eb", padding: "24px 16px", textAlign: "center" }}>
+      <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 10 }}>Happy with their work?</p>
+      <a
+        href={`/pro/${slug}/review`}
+        style={{
+          display: "inline-block",
+          background: "#1B3A6B",
+          color: "#fff",
+          fontWeight: 700,
+          fontSize: 14,
+          padding: "11px 28px",
+          borderRadius: 12,
+          textDecoration: "none",
+        }}
+      >
+        ✍️ Leave a Review
+      </a>
+    </div>
+  );
+
   if (profile.selectedTemplate === "classic") {
-    return <ClassicContractorTemplate profile={profile} />;
+    return <><ClassicContractorTemplate profile={profile} />{reviewLink}</>;
   }
   if (profile.selectedTemplate === "modern") {
-    return <ModernProTemplate profile={profile} />;
+    return <><ModernProTemplate profile={profile} />{reviewLink}</>;
   }
   if (profile.selectedTemplate === "trust") {
-    return <TrustContractorTemplate profile={profile} />;
+    return <><TrustContractorTemplate profile={profile} />{reviewLink}</>;
   }
-  return <ContractorProfilePage profile={profile} />;
+  return <><ContractorProfilePage profile={profile} />{reviewLink}</>;
 }
