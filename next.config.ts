@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "1mb",
     },
   },
+  async rewrites() {
+    return [
+      {
+        source: "/__mockup/:path*",
+        destination: "http://localhost:23636/__mockup/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {
