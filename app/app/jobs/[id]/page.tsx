@@ -30,6 +30,19 @@ const STATUS_LABELS: Record<string, string> = {
   submitted_for_review: "Awaiting Review",
 };
 
+function calcNextDate(fromDate: string, rule: string): string | null {
+  const d = new Date(fromDate + "T12:00:00");
+  switch (rule) {
+    case "daily":     d.setDate(d.getDate() + 1); break;
+    case "weekly":    d.setDate(d.getDate() + 7); break;
+    case "biweekly":  d.setDate(d.getDate() + 14); break;
+    case "monthly":   d.setMonth(d.getMonth() + 1); break;
+    case "quarterly": d.setMonth(d.getMonth() + 3); break;
+    default: return null;
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 async function updateStatus(formData: FormData) {
   "use server";
   const id = String(formData.get("id"));
@@ -40,6 +53,54 @@ async function updateStatus(formData: FormData) {
   if (status === "in_progress") update.started_at = new Date().toISOString();
   if (status === "completed") update.completed_at = new Date().toISOString();
   await admin.from("jobs").update(update).eq("id", id).eq("org_id", orgId!);
+
+  // Auto-create next occurrence for recurring jobs
+  if (status === "completed") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: job } = await (admin as any)
+      .from("jobs")
+      .select("is_recurring,recurrence_rule,recurrence_end_date,scheduled_date,job_title,customer_id,address,notes,template_id")
+      .eq("id", id)
+      .eq("org_id", orgId!)
+      .single();
+
+    if (job?.is_recurring && job.recurrence_rule && job.scheduled_date) {
+      const nextDate = calcNextDate(job.scheduled_date, job.recurrence_rule);
+      const withinRange = nextDate
+        ? !job.recurrence_end_date || nextDate <= job.recurrence_end_date
+        : false;
+
+      if (nextDate && withinRange) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any).from("jobs").insert({
+          org_id: orgId!,
+          customer_id: job.customer_id,
+          job_title: job.job_title,
+          status: "scheduled",
+          scheduled_date: nextDate,
+          address: job.address ?? null,
+          notes: job.notes ?? null,
+          template_id: job.template_id ?? null,
+          is_recurring: true,
+          recurrence_rule: job.recurrence_rule,
+          recurrence_end_date: job.recurrence_end_date ?? null,
+          recurrence_parent_id: id,
+        });
+      }
+    }
+  }
+
+  revalidatePath(`/app/jobs/${id}`);
+  revalidatePath("/app/jobs");
+  revalidatePath("/app/schedule");
+}
+
+async function stopRecurring(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+  await admin.from("jobs").update({ is_recurring: false, recurrence_rule: null, recurrence_end_date: null }).eq("id", id).eq("org_id", orgId!);
   revalidatePath(`/app/jobs/${id}`);
 }
 
@@ -253,6 +314,37 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         {customer?.phone && <a href={`tel:${customer.phone}`} className="text-sm text-slate-700">📞 {customer.phone}</a>}
         {job.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mt-2">{job.notes}</p>}
       </div>
+
+      {/* Recurring job info card */}
+      {(job as Record<string, unknown>).is_recurring && (
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔁</span>
+              <div>
+                <p className="text-sm font-semibold text-[#1B3A6B]">Recurring Job</p>
+                <p className="text-xs text-blue-600 capitalize">
+                  Repeats {
+                    (job as Record<string, unknown>).recurrence_rule === "biweekly" ? "every 2 weeks" :
+                    (job as Record<string, unknown>).recurrence_rule === "quarterly" ? "quarterly" :
+                    String((job as Record<string, unknown>).recurrence_rule ?? "")
+                  }
+                  {(job as Record<string, unknown>).recurrence_end_date
+                    ? ` · ends ${new Date(String((job as Record<string, unknown>).recurrence_end_date) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+            <form action={stopRecurring}>
+              <input type="hidden" name="id" value={job.id} />
+              <button type="submit" className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 bg-white font-medium">
+                Stop Repeating
+              </button>
+            </form>
+          </div>
+          <p className="text-xs text-blue-500">Next occurrence will be scheduled automatically when this job is marked complete.</p>
+        </div>
+      )}
 
       <JobBrain
         jobTitle={job.job_title}

@@ -13,6 +13,7 @@ type Job = {
   city: string | null;
   state: string | null;
   customer_name: string;
+  is_recurring?: boolean | null;
 };
 
 type View = "month" | "week" | "day";
@@ -92,7 +93,10 @@ function JobCard({ job, onReschedule }: { job: Job; onReschedule: (id: string, d
         <div className="flex-1 p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{job.job_title}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{job.job_title}</p>
+                {job.is_recurring && <span title="Recurring job" className="text-blue-500 shrink-0 text-xs">🔁</span>}
+              </div>
               <p className="text-xs text-gray-500 mt-0.5">{job.customer_name}</p>
               {(job.address || job.city) && (
                 <p className="text-xs text-gray-400 mt-0.5 truncate">

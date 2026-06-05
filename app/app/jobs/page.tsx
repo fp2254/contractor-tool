@@ -9,7 +9,7 @@ export default async function JobsPage() {
   const [{ data: jobs }, { data: customers }] = await Promise.all([
     admin
       .from("jobs")
-      .select("id,job_title,status,scheduled_date,address,city,state,customer_id")
+      .select("id,job_title,status,scheduled_date,address,city,state,customer_id,is_recurring")
       .eq("org_id", orgId!)
       .order("scheduled_date", { ascending: true }),
     admin

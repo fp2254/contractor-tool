@@ -13,6 +13,7 @@ type Job = {
   state: string | null;
   customer_id: string;
   customer_name: string;
+  is_recurring: boolean | null;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -102,7 +103,12 @@ export default function JobsClient({ jobs }: { jobs: Job[] }) {
           <Link key={job.id} href={`/app/jobs/${job.id}`} className="block bg-white rounded-2xl p-4 shadow-sm active:bg-gray-50 transition-colors">
             <div className="flex items-start justify-between mb-1 gap-2">
               <div className="min-w-0">
-                <p className="font-bold text-slate-800 truncate">{job.customer_name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-slate-800 truncate">{job.customer_name}</p>
+                  {job.is_recurring && (
+                    <span title="Recurring job" className="text-blue-500 shrink-0 text-xs">🔁</span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600 truncate">{job.job_title}</p>
                 {job.address && (
                   <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">

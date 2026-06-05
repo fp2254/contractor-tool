@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v68";
+const CACHE_VERSION = "v69";
 const SHELL_CACHE = `tradebase-shell-${CACHE_VERSION}`;
 const STATIC_CACHE = `tradebase-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `tradebase-pages-${CACHE_VERSION}`;
@@ -16,6 +16,8 @@ const PRECACHE_PAGES = [
   "/app/schedule",
   "/app/inventory",
   "/app/trade-contacts",
+  "/app/requests",
+  "/app/reviews",
 ];
 
 self.addEventListener("install", (event) => {

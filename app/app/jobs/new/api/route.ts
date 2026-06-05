@@ -16,6 +16,9 @@ export async function POST(req: Request) {
     address?: string;
     notes?: string;
     template_id?: string;
+    is_recurring?: boolean;
+    recurrence_rule?: string;
+    recurrence_end_date?: string;
     new_customer?: { first_name: string; last_name: string; phone: string; email: string };
   };
 
@@ -54,6 +57,9 @@ export async function POST(req: Request) {
       notes: body.notes || null,
       template_id: body.template_id || null,
       created_by_user: user?.id ?? null,
+      is_recurring: body.is_recurring ?? false,
+      recurrence_rule: body.is_recurring ? (body.recurrence_rule ?? null) : null,
+      recurrence_end_date: body.is_recurring ? (body.recurrence_end_date ?? null) : null,
     })
     .select("id")
     .single();

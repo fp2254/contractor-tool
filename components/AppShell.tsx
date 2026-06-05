@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { QuickCreate } from "@/components/QuickCreate";
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -63,12 +64,25 @@ const navItems = [
   { label: "Clients", href: "/app/customers",   Icon: LeadsIcon,  exact: false },
   { label: "Quotes",  href: "/app/quotes",      Icon: QuotesIcon, exact: false },
   { label: "Jobs",    href: "/app/jobs",         Icon: JobsIcon,   exact: false },
-  { label: "Invoices", href: "/app/invoices",     Icon: MoneyIcon,  exact: false },
+  { label: "Invoices", href: "/app/invoices",   Icon: MoneyIcon,  exact: false },
   { label: "More",    href: "/app/more",         Icon: MoreIcon,   exact: false },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   function isActive(href: string, exact: boolean) {
     if (exact) return pathname === href;
@@ -85,14 +99,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </svg>
           <span className="text-xl font-bold text-white">TradeBase</span>
         </Link>
-        <Link href="/app/more" className="text-white p-1">
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
-            <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-          </svg>
-        </Link>
+        <div className="flex items-center gap-2">
+          {!isOnline && (
+            <span className="flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-800 inline-block" />
+              Offline
+            </span>
+          )}
+          <Link href="/app/more" className="text-white p-1">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
+              <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+            </svg>
+          </Link>
+        </div>
       </header>
 
-      <main className="flex-1 pt-14 pb-20 overflow-y-auto">
+      {!isOnline && (
+        <div className="fixed top-[52px] left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
+          <span className="text-sm">📡</span>
+          <p className="text-xs font-medium text-amber-800">
+            You&apos;re offline — showing cached data. Changes will save when you reconnect.
+          </p>
+        </div>
+      )}
+
+      <main className={`flex-1 ${isOnline ? "pt-14" : "pt-[84px]"} pb-20 overflow-y-auto`}>
         {children}
       </main>
 

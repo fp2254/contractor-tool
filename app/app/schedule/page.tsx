@@ -10,7 +10,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   const [{ data: jobs }, { data: customers }] = await Promise.all([
     admin
       .from("jobs")
-      .select("id,job_title,status,scheduled_date,address,city,state,customer_id")
+      .select("id,job_title,status,scheduled_date,address,city,state,customer_id,is_recurring")
       .eq("org_id", orgId!)
       .not("scheduled_date", "is", null)
       .order("scheduled_date", { ascending: true }),
@@ -36,6 +36,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
     city: j.city,
     state: j.state,
     customer_name: customerMap[j.customer_id] ?? "Unknown",
+    is_recurring: (j as Record<string, unknown>).is_recurring as boolean | null ?? false,
   }));
 
   return <ScheduleClient jobs={enriched} initialDate={date} />;
