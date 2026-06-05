@@ -86,6 +86,7 @@ supabase/
   migration_inventory.sql          ✅ applied
   migration_trade_contacts.sql     ✅ applied
   migration_geocoding.sql          ✅ applied
+  migration_homeowner_requests.sql ✅ applied
 ```
 
 ## Environment Variables

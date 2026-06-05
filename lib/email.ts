@@ -286,3 +286,79 @@ export function invoiceEmailHtml(opts: {
   </div>
 </body></html>`;
 }
+
+export function homeownerLeadNotificationHtml(opts: {
+  businessName: string;
+  serviceType: string;
+  homeownerName: string;
+  phone: string | null;
+  email: string | null;
+  homeownerCity: string | null;
+  homeownerState: string | null;
+  description: string;
+  urgency: string;
+}): string {
+  const urgencyLabel: Record<string, string> = {
+    flexible: "Flexible",
+    within_month: "Within a month",
+    within_week: "Within a week",
+    asap: "ASAP 🚨",
+  };
+  const location = [opts.homeownerCity, opts.homeownerState].filter(Boolean).join(", ") || "Not specified";
+  const contact = [
+    opts.phone ? `📞 ${opts.phone}` : null,
+    opts.email ? `✉️ ${opts.email}` : null,
+  ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="background:#1B3A6B;padding:24px 32px">
+      <h1 style="margin:0;color:#fff;font-size:22px">TradeBase</h1>
+      <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">New lead for ${opts.businessName}</p>
+    </div>
+    <div style="padding:32px">
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:14px 16px;margin-bottom:24px">
+        <p style="margin:0;font-size:14px;font-weight:bold;color:#713f12">🔔 You have a new homeowner lead!</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#92400e">Reply quickly — contractors who respond within 1 hour win the job 80% of the time.</p>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <tr>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:12px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0;width:110px">Homeowner</td>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:14px;color:#334155;border-bottom:1px solid #e2e8f0;font-weight:bold">${opts.homeownerName}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;font-size:12px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0">Service</td>
+          <td style="padding:10px 12px;font-size:14px;color:#334155;border-bottom:1px solid #e2e8f0">${opts.serviceType}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:12px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0">Location</td>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:14px;color:#334155;border-bottom:1px solid #e2e8f0">${location}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;font-size:12px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e2e8f0">Timeline</td>
+          <td style="padding:10px 12px;font-size:14px;color:#334155;border-bottom:1px solid #e2e8f0">${urgencyLabel[opts.urgency] ?? opts.urgency}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:12px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">Contact</td>
+          <td style="padding:10px 12px;background:#f8fafc;font-size:14px;color:#1B3A6B;font-weight:bold">${contact}</td>
+        </tr>
+      </table>
+
+      <div style="background:#f0f9ff;border-radius:8px;padding:14px 16px;border-left:3px solid #1B3A6B;margin-bottom:24px">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#334155;text-transform:uppercase;letter-spacing:0.5px">Job Description</p>
+        <p style="margin:0;font-size:14px;color:#475569;white-space:pre-line">${opts.description}</p>
+      </div>
+
+      <a href="https://app.tradebase.contractors/app/leads"
+        style="display:block;background:#1B3A6B;color:#fff;text-decoration:none;text-align:center;padding:14px 24px;border-radius:10px;font-size:15px;font-weight:bold;margin-bottom:16px">
+        View Lead in TradeBase →
+      </a>
+      <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center">This lead was automatically added to your pipeline.</p>
+    </div>
+    <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
+      <p style="margin:0;font-size:12px;color:#94a3b8">TradeBase &middot; Built for contractors &middot; <a href="https://tradebase.contractors" style="color:#94a3b8">tradebase.contractors</a></p>
+    </div>
+  </div>
+</body></html>`;
+}

@@ -7,6 +7,7 @@ import {
   CONTRACTORS as MOCK_CONTRACTORS, PROJECTS, TRENDING_SEARCHES, SERVICES, CITIES,
   type Contractor, type Project,
 } from "./mockData";
+import GetQuotesModal from "@/components/GetQuotesModal";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
@@ -402,10 +403,11 @@ function StatChip({ icon, label, value, sub }: { icon: string; label: string; va
 // ─── Contractor Card ─────────────────────────────────────────────────────────
 
 function ContractorCard({
-  c, hovered, selected, onHover, onLeave, onSelect,
+  c, hovered, selected, onHover, onLeave, onSelect, onRequestQuote,
 }: {
   c: Contractor; hovered: boolean; selected: boolean;
   onHover: () => void; onLeave: () => void; onSelect: () => void;
+  onRequestQuote: (contractorName: string, trade: string) => void;
 }) {
   return (
     <div
@@ -514,7 +516,7 @@ function ContractorCard({
             className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors">
             View Profile
           </Link>
-          <button onClick={(e) => e.stopPropagation()}
+          <button onClick={(e) => { e.stopPropagation(); onRequestQuote(c.name, c.trade); }}
             className="flex-1 rounded-xl py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 shadow-sm"
             style={{ backgroundColor: "#1B3A6B" }}>
             Request Quote
@@ -528,11 +530,12 @@ function ContractorCard({
 // ─── Map Floating Card ─────────────────────────────────────────────────────────
 
 function MapFloatingCard({
-  contractor, project, onClose,
+  contractor, project, onClose, onRequestQuote,
 }: {
   contractor: Contractor;
   project: Project | null;
   onClose: () => void;
+  onRequestQuote: (contractorName: string, trade: string) => void;
 }) {
   const c = contractor;
   const heroSrc = project ? project.photo : c.cover_photo;
@@ -628,7 +631,7 @@ function MapFloatingCard({
             className={`${project ? "" : "flex-1 "}rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors px-3`}>
             Profile
           </Link>
-          <button className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
+          <button onClick={() => onRequestQuote(c.name, c.trade)} className="flex-1 rounded-xl py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: "#1B3A6B" }}>
             Request Quote
           </button>
         </div>
@@ -726,6 +729,15 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [sort, setSort] = useState("distance");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteModalContractor, setQuoteModalContractor] = useState<string | undefined>(undefined);
+  const [quoteModalService, setQuoteModalService] = useState<string | undefined>(undefined);
+
+  const openQuoteModal = (contractorName?: string, trade?: string) => {
+    setQuoteModalContractor(contractorName);
+    setQuoteModalService(trade);
+    setShowQuoteModal(true);
+  };
 
   const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
 
@@ -811,6 +823,21 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
 
           {filtered.length > 0 && <TrendingStatsRow contractors={filtered} />}
 
+          {/* Get Free Quotes CTA */}
+          <div className="mx-3 mt-3 mb-1 rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2a5298 100%)" }}>
+            <div className="px-4 py-4">
+              <p className="text-white font-bold text-sm mb-0.5">Not sure who to hire?</p>
+              <p className="text-blue-200 text-xs mb-3">Describe your job and get quotes from multiple local contractors — free.</p>
+              <button
+                onClick={() => openQuoteModal()}
+                className="w-full py-2.5 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
+                style={{ background: "#ff5b1f", color: "#fff" }}
+              >
+                Get Free Quotes →
+              </button>
+            </div>
+          </div>
+
           {/* Sort bar */}
           <div className="px-4 py-2.5 flex items-center justify-between border-b border-gray-100 bg-white flex-shrink-0 sticky top-0 z-10 shadow-sm">
             <p className="text-xs text-gray-500">
@@ -845,6 +872,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
                     onHover={() => setHoveredId(c.id)}
                     onLeave={() => setHoveredId(null)}
                     onSelect={() => setSelectedPinId((prev) => prev === c.id ? null : c.id)}
+                    onRequestQuote={openQuoteModal}
                   />
                 </div>
               ))
@@ -872,6 +900,7 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
               contractor={selectedContractor}
               project={selectedProject}
               onClose={() => { setSelectedPinId(null); setSelectedProject(null); }}
+              onRequestQuote={openQuoteModal}
             />
           )}
 
@@ -892,6 +921,13 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
         veteranOnly={veteranOnly} setVeteranOnly={setVeteranOnly}
         minRating={minRating} setMinRating={setMinRating}
         onClear={() => { setVerifiedOnly(false); setLicensedOnly(false); setInsuredOnly(false); setEmergencyOnly(false); setVeteranOnly(false); setMinRating(0); }}
+      />
+
+      <GetQuotesModal
+        open={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        prefilledService={quoteModalService}
+        prefilledContractor={quoteModalContractor}
       />
     </div>
   );
