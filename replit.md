@@ -130,10 +130,28 @@ supabase/
 - Leads pipeline (New/Contacted/Quoted/Scheduled/Won/Lost) with call/text/convert/note
 - Customers with full history (quotes, jobs, invoices, notes, photos)
 - Quote builder — line items, service preset chips, inline new client creation
-- Jobs — status, scheduling, Maps navigation, photos, notes
+- Jobs — status, scheduling, Maps navigation, photos, notes; Recurring Jobs with auto-next-occurrence
 - Invoices — mark paid with payment method, notes, photos
 - Global search across all records
 - Conversion flows: Lead→Customer, Lead→Quote, Quote→Job, Quote→Invoice, Job→Invoice
+
+### Expenses (`/app/expenses`)
+- Manual expense entry: vendor, amount, date, category (8 types), linked job, notes
+- Category chips: Materials, Labor, Fuel, Tools, Permits, Subcontractor, Equipment, Other
+- Summary cards: This Month total + All Time total
+- Filter tabs by category
+- Delete expense inline
+- Graceful fallback if `migration_expenses_v2.sql` not yet applied (stores category in notes prefix)
+- **Requires**: `supabase/migration_expenses_v2.sql` applied in Supabase Studio
+
+### Activity Log (`/app/activity`)
+- Full timeline of contractor actions across all entity types
+- Grouped by date (Today / Yesterday / date labels)
+- Filter tabs: All, Jobs, Quotes, Invoices, Leads, Expenses
+- Entity-type icons + color coding; tappable rows link to entity
+- Auto-logged events: job created, job status changed, invoice paid, expense logged
+- `lib/activity.ts` → `logActivity()` — admin client, fire-and-forget, never throws
+- **Requires**: `supabase/migration_expenses_v2.sql` applied in Supabase Studio
 
 ### Business Profile
 - 8 settings sections: identity, defaults, service presets, payment methods, automation, export

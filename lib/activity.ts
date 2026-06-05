@@ -1,26 +1,35 @@
-import { createClient } from "@/lib/supabase/server";
-import { ensureUserOrg } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function logActivity(params: {
-  entity_type: "job" | "quote" | "invoice" | "payment" | "lead";
-  entity_id: string;
+export type ActivityEntityType = "lead" | "customer" | "quote" | "job" | "invoice" | "expense" | "note";
+
+export interface LogActivityParams {
+  orgId: string;
+  entityType: ActivityEntityType;
+  entityId: string;
   action: string;
   description: string;
-}) {
-  const supabase = await createClient();
-  const orgId = await ensureUserOrg();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  userId?: string | null;
+  metadata?: Record<string, unknown>;
+}
 
-  if (!orgId || !user) return;
-
-  await supabase.from("activity_log").insert({
-    org_id: orgId,
-    user_id: user.id,
-    entity_type: params.entity_type,
-    entity_id: params.entity_id,
-    action: params.action,
-    description: params.description,
-  });
+/**
+ * Fire-and-forget activity log. Uses admin client so it works in server
+ * actions and API routes without needing cookie context. Never throws.
+ */
+export async function logActivity(params: LogActivityParams): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from("activity_log").insert({
+      org_id: params.orgId,
+      user_id: params.userId ?? null,
+      entity_type: params.entityType,
+      entity_id: params.entityId,
+      action: params.action,
+      description: params.description,
+      metadata_json: params.metadata ?? null,
+    });
+  } catch {
+    // intentionally silent — logging must never break the main action
+  }
 }

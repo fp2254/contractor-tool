@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(req: Request) {
   const orgId = await ensureUserOrg();
@@ -65,5 +66,15 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  void logActivity({
+    orgId: orgId!,
+    entityType: "job",
+    entityId: job.id,
+    action: "created",
+    description: `Job created: ${body.job_title}`,
+    userId: user?.id,
+  });
+
   return NextResponse.json({ id: job.id });
 }

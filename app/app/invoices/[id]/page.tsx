@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
@@ -42,6 +43,15 @@ async function markPaid(formData: FormData) {
       created_by_user: user.data.user?.id ?? null,
     }),
   ]);
+
+  void logActivity({
+    orgId: orgId!,
+    entityType: "invoice",
+    entityId: invoiceId,
+    action: "paid",
+    description: `Invoice marked paid via ${method} — $${Number(invoice.total_amount).toFixed(2)}`,
+    userId: user.data.user?.id,
+  });
 
   revalidatePath(`/app/invoices/${invoiceId}`);
 }

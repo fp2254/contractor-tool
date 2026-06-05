@@ -14,6 +14,7 @@ import { JobReviewPanel } from "@/components/JobReviewPanel";
 import { JobTemplateAssigner } from "@/components/JobTemplateAssigner";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 import { JobScheduleModal } from "@/components/JobScheduleModal";
+import { logActivity } from "@/lib/activity";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -53,6 +54,14 @@ async function updateStatus(formData: FormData) {
   if (status === "in_progress") update.started_at = new Date().toISOString();
   if (status === "completed") update.completed_at = new Date().toISOString();
   await admin.from("jobs").update(update).eq("id", id).eq("org_id", orgId!);
+
+  void logActivity({
+    orgId: orgId!,
+    entityType: "job",
+    entityId: id,
+    action: "status_changed",
+    description: `Job status changed to ${status.replace(/_/g, " ")}`,
+  });
 
   // Auto-create next occurrence for recurring jobs
   if (status === "completed") {

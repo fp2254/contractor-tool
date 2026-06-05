@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 const menuItems = [
   { label: "Quote Requests", href: "/app/requests", emoji: "📬", color: "#F97316" },
   { label: "My Reviews", href: "/app/reviews", emoji: "⭐", color: "#F59E0B" },
+  { label: "Expenses", href: "/app/expenses", emoji: "💸", color: "#16A34A" },
+  { label: "Activity Log", href: "/app/activity", emoji: "📋", color: "#1B3A6B" },
   { label: "Scan Receipt", href: "/app/receipts", emoji: "🧾", color: "#16A34A" },
   { label: "Completed Projects", href: "/app/projects", emoji: "🏗️", color: "#1B3A6B" },
   { label: "Leads", href: "/app/leads", emoji: "🎯", color: "#F97316" },
