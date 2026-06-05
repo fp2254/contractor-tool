@@ -66,6 +66,7 @@ const TABS = ["Overview", "Reviews", "Services", "Photos"] as const;
 type Tab = typeof TABS[number];
 
 const PRO_BASE = "https://tradebase.contractors/pro";
+const PROFILE_BASE = "https://tradebase.contractors/contractor";
 
 function StarRating({ rating, size = 13 }: { rating: number; size?: number }) {
   return (
@@ -110,6 +111,7 @@ export default function ContractorProfileDashboard({
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
   const publicUrl = publicProfile?.slug ? `${PRO_BASE}/${publicProfile.slug}` : null;
+  const profileUrl = publicProfile?.slug ? `${PROFILE_BASE}/${publicProfile.slug}` : null;
   const initials = business.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "CO";
 
   return (
@@ -281,9 +283,9 @@ export default function ContractorProfileDashboard({
                 <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Edit Public Profile",  href: "/app/profile/public-profile", icon: Edit3,        color: "#1B3A6B" },
-                    { label: "View Landing Page",    href: publicUrl ?? "/app/profile",   icon: ExternalLink,  color: "#2563EB", external: true },
-                    { label: "Business Settings",    href: "/app/profile",                icon: Wrench,        color: "#6B7280" },
+                    { label: "Edit Public Profile",  href: "/app/profile/public-profile",       icon: Edit3,         color: "#1B3A6B" },
+                    { label: "My Public Profile",    href: profileUrl ?? publicUrl ?? "/app/profile", icon: ExternalLink, color: "#2563EB", external: true },
+                    { label: "Marketing Page",       href: publicUrl ?? "/app/profile",         icon: Globe,         color: "#F97316", external: true },
                     { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : "/app/profile", icon: MessageSquare, color: "#F59E0B", external: true },
                   ].map(({ label, href, icon: Icon, color, external }) => (
                     external && href ? (
@@ -444,10 +446,16 @@ export default function ContractorProfileDashboard({
                     </a>
                   )}
                 </div>
+                {profileUrl && (
+                  <div className="bg-gray-50 rounded-xl p-2.5 mb-2">
+                    <p className="text-[10px] text-gray-400 mb-1">Rich Profile</p>
+                    <p className="text-xs font-mono text-gray-700 break-all">/contractor/{publicProfile!.slug}</p>
+                  </div>
+                )}
                 {publicUrl && (
                   <div className="bg-gray-50 rounded-xl p-2.5 mb-3">
-                    <p className="text-[10px] text-gray-400 mb-1">Your URL</p>
-                    <p className="text-xs font-mono text-gray-700 break-all">{publicUrl}</p>
+                    <p className="text-[10px] text-gray-400 mb-1">Marketing Page</p>
+                    <p className="text-xs font-mono text-gray-700 break-all">/pro/{publicProfile!.slug}</p>
                   </div>
                 )}
                 <Link href="/app/profile/public-profile" className="block w-full rounded-xl py-2 text-xs font-bold text-white text-center" style={{ backgroundColor: "#1B3A6B" }}>
