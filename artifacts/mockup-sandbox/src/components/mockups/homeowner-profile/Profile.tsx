@@ -307,24 +307,21 @@ export function Profile() {
                 </div>
               </div>
 
-              {/* Timeline */}
-              <div className="space-y-4">
-                {TIMELINE.map((item, idx) => (
-                  <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex gap-4">
-                      {/* Date + check */}
-                      <div className="flex flex-col items-center gap-1 shrink-0 w-16">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase text-center leading-tight">{item.date}</p>
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: item.color }}>
-                          <CheckCircle size={14} className="text-white" />
-                        </div>
-                        {idx < TIMELINE.length - 1 && <div className="w-0.5 bg-gray-200 flex-1 mt-1" style={{ minHeight: 20 }} />}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1">
+              {/* Tab content */}
+              {activeTab === "Timeline" && (
+                <>
+                  <div className="space-y-4">
+                    {TIMELINE.map((item, idx) => (
+                      <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm">
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center gap-1 shrink-0 w-16">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase text-center leading-tight">{item.date}</p>
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: item.color }}>
+                              <CheckCircle size={14} className="text-white" />
+                            </div>
+                            {idx < TIMELINE.length - 1 && <div className="w-0.5 bg-gray-200 flex-1 mt-1" style={{ minHeight: 20 }} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-gray-900 mb-0.5">{item.title}</h3>
                             <div className="flex items-center gap-1.5 mb-1">
                               <span className="text-xs text-gray-500">by</span>
@@ -337,8 +334,6 @@ export function Profile() {
                               <span className="text-xs text-gray-400">({item.reviewCount})</span>
                             </div>
                             <p className="text-xs text-gray-600 leading-relaxed mb-3">{item.description}</p>
-
-                            {/* Photos grid */}
                             <div className="flex gap-1.5 mb-3">
                               {item.photos.map((src, i) => (
                                 <div key={i} className="relative">
@@ -351,8 +346,6 @@ export function Profile() {
                                 </div>
                               ))}
                             </div>
-
-                            {/* Meta */}
                             <div className="flex items-center gap-3 text-[10px] text-gray-400">
                               <span className="flex items-center gap-1"><DollarSign size={10} />${item.cost.toLocaleString()}</span>
                               <span className="flex items-center gap-1"><Clock size={10} /> Completed on {item.completedDate}</span>
@@ -362,61 +355,219 @@ export function Profile() {
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                  <div className="text-center">
+                    <button className="text-xs font-semibold text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50">View All Projects</button>
+                  </div>
+                </>
+              )}
+
+              {activeTab === "Projects" && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-gray-900">Future Projects</h2>
+                    <button className="text-xs text-blue-600 font-semibold flex items-center gap-1"><Plus size={12} /> Add Future Project</button>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-4">Projects you're planning or considering.</p>
+                  <div className="grid grid-cols-5 gap-3">
+                    {FUTURE_PROJECTS.map(p => (
+                      <div key={p.label} className="text-center">
+                        <div className="rounded-xl overflow-hidden mb-2 aspect-[4/3]">
+                          <img src={p.img} alt={p.label} className="w-full h-full object-cover" />
+                        </div>
+                        <p className="text-[11px] font-bold text-gray-800 mb-0.5">{p.label}</p>
+                        <p className="text-[10px] text-gray-400 mb-1.5">{p.status}</p>
+                        <button className="text-[10px] font-bold px-2 py-1 rounded-lg text-white w-full" style={{ backgroundColor: "#1B3A6B" }}>Get Estimates</button>
+                      </div>
+                    ))}
+                    <div className="text-center flex flex-col items-center justify-center">
+                      <button className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center mb-2 hover:border-blue-300 transition-colors">
+                        <Plus size={20} className="text-gray-300" />
+                      </button>
+                      <p className="text-[11px] text-gray-400">Add Project</p>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* View All */}
-              <div className="text-center">
-                <button className="text-xs font-semibold text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50">View All Projects</button>
-              </div>
-
-              {/* Photo Gallery */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-bold text-gray-900">Photo Gallery</h2>
-                  <button className="text-xs text-blue-600 font-semibold">View all photos</button>
                 </div>
-                <div className="grid grid-cols-6 gap-2">
-                  {PHOTO_CATEGORIES.map(cat => (
-                    <div key={cat.label} className="text-center">
-                      <div className="rounded-xl overflow-hidden mb-1.5 aspect-[4/3]">
-                        <img src={cat.img} alt={cat.label} className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer" />
+              )}
+
+              {activeTab === "Photos" && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-gray-900">Photo Gallery</h2>
+                    <button className="text-xs text-blue-600 font-semibold">View all photos</button>
+                  </div>
+                  <div className="grid grid-cols-6 gap-2">
+                    {PHOTO_CATEGORIES.map(cat => (
+                      <div key={cat.label} className="text-center">
+                        <div className="rounded-xl overflow-hidden mb-1.5 aspect-[4/3]">
+                          <img src={cat.img} alt={cat.label} className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer" />
+                        </div>
+                        <p className="text-[11px] font-semibold text-gray-700">{cat.label}</p>
+                        <p className="text-[10px] text-gray-400">{cat.count} photos</p>
                       </div>
-                      <p className="text-[11px] font-semibold text-gray-700">{cat.label}</p>
-                      <p className="text-[10px] text-gray-400">{cat.count} photos</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Future Projects */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="font-bold text-gray-900">Future Projects</h2>
-                  <button className="text-xs text-blue-600 font-semibold flex items-center gap-1"><Plus size={12} /> Add Future Project</button>
-                </div>
-                <p className="text-xs text-gray-400 mb-4">Projects you're planning or considering.</p>
-                <div className="grid grid-cols-5 gap-3">
-                  {FUTURE_PROJECTS.map(p => (
-                    <div key={p.label} className="text-center">
-                      <div className="rounded-xl overflow-hidden mb-2 aspect-[4/3]">
-                        <img src={p.img} alt={p.label} className="w-full h-full object-cover" />
-                      </div>
-                      <p className="text-[11px] font-bold text-gray-800 mb-0.5">{p.label}</p>
-                      <p className="text-[10px] text-gray-400 mb-1.5">{p.status}</p>
-                      <button className="text-[10px] font-bold px-2 py-1 rounded-lg text-white w-full" style={{ backgroundColor: "#1B3A6B" }}>Get Estimates</button>
-                    </div>
-                  ))}
-                  <div className="text-center flex flex-col items-center justify-center">
-                    <button className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center mb-2 hover:border-blue-300 transition-colors">
-                      <Plus size={20} className="text-gray-300" />
-                    </button>
-                    <p className="text-[11px] text-gray-400">Add Project</p>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {activeTab === "Reviews" && (
+                <div className="space-y-4">
+                  <div className="bg-white rounded-2xl p-5 shadow-sm">
+                    <h2 className="font-bold text-gray-900 mb-4">Reviews You've Left</h2>
+                    <div className="space-y-4">
+                      {REVIEWS.map((r, i) => (
+                        <div key={i}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <img src={r.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1">
+                                <p className="text-xs font-bold text-gray-700">{r.contractor}</p>
+                                <CheckCircle size={10} fill="#1B3A6B" className="text-white" />
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <StarRating rating={r.rating} size={11} />
+                                <span className="text-[10px] text-gray-400">{r.date}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed italic">&ldquo;{r.text}&rdquo;</p>
+                          {i < REVIEWS.length - 1 && <div className="border-t border-gray-100 mt-3" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-2xl p-5 shadow-sm">
+                    <h2 className="font-bold text-gray-900 mb-4">Reviews From Contractors</h2>
+                    <div className="space-y-4">
+                      {CONTRACTOR_FEEDBACK.map((f, i) => (
+                        <div key={i}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <img src={f.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-gray-700">{f.contractor}</p>
+                              <div className="flex items-center gap-1.5">
+                                <StarRating rating={f.rating} size={11} />
+                                <span className="text-[10px] text-gray-400">{f.date}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed italic">&ldquo;{f.text}&rdquo;</p>
+                          {i < CONTRACTOR_FEEDBACK.length - 1 && <div className="border-t border-gray-100 mt-3" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "Documents" && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-gray-900">Documents</h2>
+                    <button className="flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}><Plus size={12} /> Upload</button>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { name: "Roof Warranty — Horizon Roofing.pdf", size: "1.2 MB", date: "Jun 14, 2026", color: "#EF4444" },
+                      { name: "Kitchen Remodel Contract.pdf", size: "845 KB", date: "Mar 1, 2026", color: "#EF4444" },
+                      { name: "Radon Test Results — Post-Mitigation.pdf", size: "320 KB", date: "Apr 22, 2026", color: "#EF4444" },
+                      { name: "Home Inspection Report 2022.pdf", size: "3.4 MB", date: "May 3, 2022", color: "#EF4444" },
+                      { name: "Property Survey.pdf", size: "2.1 MB", date: "Jan 12, 2021", color: "#EF4444" },
+                    ].map((doc, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FEF2F2" }}>
+                          <FileText size={14} style={{ color: doc.color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{doc.name}</p>
+                          <p className="text-[10px] text-gray-400">{doc.size} · Uploaded {doc.date}</p>
+                        </div>
+                        <ExternalLink size={13} className="text-gray-300 shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "Property Details" && (
+                <div className="space-y-4">
+                  {/* Map */}
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                    <div className="relative h-64">
+                      <img
+                        src="https://images.unsplash.com/photo-1524813686514-a57563d77965?w=900&h=400&fit=crop"
+                        alt="Aerial property view"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.35) 100%)" }} />
+                      {/* Map pin */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full">
+                        <div className="flex flex-col items-center">
+                          <div className="w-10 h-10 rounded-full border-4 border-white shadow-xl flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+                            <Home size={16} className="text-white" />
+                          </div>
+                          <div className="w-3 h-3 rounded-full bg-white shadow-md mt-[-6px]" style={{ clipPath: "polygon(50% 100%, 0 0, 100% 0)" }} />
+                        </div>
+                      </div>
+                      {/* Address overlay */}
+                      <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                        <div>
+                          <p className="text-white font-bold text-sm drop-shadow">14 Elm Ridge Road</p>
+                          <p className="text-white/80 text-xs drop-shadow">Westborough, MA 01581</p>
+                        </div>
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-semibold text-gray-700 shadow-md hover:bg-gray-50">
+                          <ExternalLink size={11} /> Open in Maps
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-4 grid grid-cols-3 gap-4 border-t border-gray-100">
+                      {[
+                        { label: "County", value: "Worcester County" },
+                        { label: "Parcel ID", value: "G07-0-0049-0000" },
+                        { label: "Zoning", value: "R-40 Residential" },
+                        { label: "Flood Zone", value: "Zone X (Low Risk)" },
+                        { label: "School District", value: "Westborough USD" },
+                        { label: "Walk Score", value: "38 — Car Dependent" },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
+                          <p className="text-xs font-semibold text-gray-700">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Property details form */}
+                  <div className="bg-white rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="font-bold text-gray-900">Property Information</h2>
+                      <button className="flex items-center gap-1 text-xs font-semibold text-gray-600 px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50"><Edit3 size={11} /> Edit</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                      {[
+                        { label: "Property Type", value: "Single Family Home" },
+                        { label: "Year Built", value: "1998" },
+                        { label: "Square Footage", value: "2,450 sq ft" },
+                        { label: "Lot Size", value: "0.46 acres" },
+                        { label: "Bedrooms", value: "4" },
+                        { label: "Bathrooms", value: "2.5" },
+                        { label: "Garage", value: "2-Car Attached" },
+                        { label: "Foundation", value: "Poured Concrete" },
+                        { label: "Exterior", value: "Vinyl Siding" },
+                        { label: "Roof Type", value: "Asphalt Shingle" },
+                        { label: "Heating", value: "Forced Air / Gas" },
+                        { label: "Cooling", value: "Central A/C" },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex justify-between items-center py-2 border-b border-gray-50">
+                          <span className="text-xs text-gray-400">{label}</span>
+                          <span className="text-xs font-semibold text-gray-700">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Footer stats bar */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">
