@@ -1,8 +1,18 @@
 import { notFound } from "next/navigation";
+import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import AdminDashboard from "./AdminDashboard";
+import AdminLogin from "./AdminLogin";
+
+const COOKIE_NAME = "admin_token";
+
+function makeAdminToken(password: string, adminEmail: string): string {
+  return createHash("sha256")
+    .update(`${password}:${adminEmail}:tradebase-admin-v1`)
+    .digest("hex");
+}
 
 async function getCurrentUserEmail(): Promise<string | null> {
   try {
@@ -26,7 +36,6 @@ async function fetchAdminData() {
   today.setHours(0, 0, 0, 0);
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [
     orgsRes,
@@ -126,7 +135,6 @@ async function fetchAdminData() {
   }
 
   const memberCountByOrg = countByOrg(members);
-
   const openTickets = tickets.filter((t: any) => t.status === "open" || !t.status);
   const ticketsByOrg: Record<string, any[]> = {};
   for (const t of tickets) {
@@ -234,6 +242,8 @@ async function fetchAdminData() {
 
 export default async function AdminPage() {
   const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
   if (!adminEmail || adminEmail === "REPLACE_WITH_YOUR_EMAIL") {
     notFound();
   }
@@ -244,7 +254,17 @@ export default async function AdminPage() {
     notFound();
   }
 
-  const data = await fetchAdminData();
+  // If no password is configured yet, skip the password gate
+  if (adminPassword) {
+    const cookieStore = await cookies();
+    const cookieToken = cookieStore.get(COOKIE_NAME)?.value;
+    const expectedToken = makeAdminToken(adminPassword, adminEmail);
 
+    if (cookieToken !== expectedToken) {
+      return <AdminLogin />;
+    }
+  }
+
+  const data = await fetchAdminData();
   return <AdminDashboard data={data} adminEmail={currentEmail} />;
 }

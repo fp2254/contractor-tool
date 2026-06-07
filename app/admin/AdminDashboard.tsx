@@ -262,12 +262,23 @@ export default function AdminDashboard({ data, adminEmail }: { data: AdminData; 
             <p className="text-xs text-gray-400">{adminEmail}</p>
           </div>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5"
-        >
-          <RefreshCw size={12} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5"
+          >
+            <RefreshCw size={12} /> Refresh
+          </button>
+          <button
+            onClick={async () => {
+              await fetch("/api/admin/auth", { method: "DELETE" });
+              window.location.reload();
+            }}
+            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-3 py-1.5"
+          >
+            <X size={12} /> Lock
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
