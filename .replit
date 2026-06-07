@@ -14,7 +14,7 @@ SUPABASE_URL = "https://lrtrbocvcqgfnklknlnu.supabase.co"
 FRONTEND_URL = "https://1fda3655-6328-4da8-b0bb-f4d6953dbf13-00-23p8hfagt4ral.janeway.replit.dev"
 PORT = "5000"
 NEXT_PUBLIC_SUPABASE_URL = "https://lrtrbocvcqgfnklknlnu.supabase.co"
-ADMIN_EMAIL = "Fp2254@gmail.com"
+ADMIN_EMAIL = "REPLACE_WITH_YOUR_EMAIL"
 NEXT_PUBLIC_SITE_URL = "https://tradebase.contractors"
 DEMO_PAUSED = "true"
 

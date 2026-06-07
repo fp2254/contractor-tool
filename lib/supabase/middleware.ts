@@ -28,6 +28,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!user) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
+
   if (!user && request.nextUrl.pathname.startsWith("/app")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
