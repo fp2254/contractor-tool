@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/email";
 import { homeownerLeadNotificationHtml } from "@/lib/email";
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Provide at least a phone number or email." }, { status: 400 });
     }
 
-    const admin = createClient();
+    const admin = createAdminClient();
 
     // ── 1. Save the homeowner request ──────────────────────────────────────────
     const { data: request, error: insertErr } = await admin
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function routeLeads(
-  admin: ReturnType<typeof createClient>,
+  admin: ReturnType<typeof createAdminClient>,
   requestId: string,
   orgs: { org_id: string; business_name: string | null; city: string | null; state: string | null }[],
   body: Record<string, string>,
