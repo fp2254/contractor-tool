@@ -130,7 +130,31 @@ export default function ContractorProfileDashboard({
         </Link>
       </div>
 
-      <div className="flex gap-4">
+      {/* Show me as a customer button */}
+      {publicProfile?.slug ? (
+        <a
+          href={`https://tradebase.contractors/pro/${publicProfile.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
+          style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}
+        >
+          <Globe size={15} />
+          Show me as a customer
+          <ExternalLink size={13} className="opacity-70" />
+        </a>
+      ) : (
+        <Link
+          href="/app/profile/public-profile"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
+          style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}
+        >
+          <Globe size={15} />
+          Set up your public page
+        </Link>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* ── Main column ── */}
         <div className="flex-1 min-w-0 space-y-4">
 
@@ -417,7 +441,7 @@ export default function ContractorProfileDashboard({
         </div>
 
         {/* ── Right sidebar ── */}
-        <div className="w-72 shrink-0 space-y-4">
+        <div className="w-full lg:w-72 shrink-0 space-y-4">
           {/* Public Profile Card */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
             <h3 className="font-bold text-gray-900 mb-3">Public Landing Page</h3>
