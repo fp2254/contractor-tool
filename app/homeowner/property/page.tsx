@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Home, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Home, Save, Check } from "lucide-react";
 
 export default function PropertyPage() {
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     property_type: "Single Family Home",
     sq_footage: "",
@@ -17,15 +19,48 @@ export default function PropertyPage() {
     state: "",
   });
 
+  useEffect(() => {
+    fetch("/api/homeowner/property")
+      .then(r => r.json())
+      .then(({ property }) => {
+        if (property) {
+          setForm({
+            property_type: property.property_type ?? "Single Family Home",
+            sq_footage: property.sq_footage?.toString() ?? "",
+            lot_size: property.lot_size ?? "",
+            year_built: property.year_built?.toString() ?? "",
+            bedrooms: property.bedrooms?.toString() ?? "",
+            bathrooms: property.bathrooms?.toString() ?? "",
+            address: property.address ?? "",
+            city: property.city ?? "",
+            state: property.state ?? "",
+          });
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   }
 
   async function handleSave() {
+    setSaving(true);
+    await fetch("/api/homeowner/property", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    // TODO: wire to /api/homeowner/property PUT endpoint
+    setTimeout(() => setSaved(false), 2500);
   }
+
+  if (loading) return (
+    <div className="max-w-2xl mx-auto p-6 flex items-center justify-center min-h-[40vh]">
+      <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+    </div>
+  );
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
@@ -109,11 +144,11 @@ export default function PropertyPage() {
           </div>
         </div>
 
-        <button onClick={handleSave}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition"
+        <button onClick={handleSave} disabled={saving}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition disabled:opacity-60"
           style={{ backgroundColor: saved ? "#16A34A" : "#1B3A6B" }}>
-          <Save size={15} />
-          {saved ? "Saved!" : "Save Property Details"}
+          {saved ? <Check size={15} /> : <Save size={15} />}
+          {saving ? "Saving…" : saved ? "Saved!" : "Save Property Details"}
         </button>
       </div>
     </div>
