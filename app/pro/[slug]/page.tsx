@@ -196,6 +196,35 @@ export default async function Page({ params }: Props) {
     );
   }
 
+  const portfolioLink = (
+    <div style={{ background: "#fff", borderTop: "1px solid #e8ecf2", borderBottom: "1px solid #e8ecf2", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div>
+        <p style={{ fontWeight: 700, fontSize: 13, color: "#0f1f3d", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.4px" }}>
+          Full Project Portfolio
+        </p>
+        <p style={{ fontSize: 11, color: "#8a9ab5", margin: "2px 0 0" }}>
+          See every project with photos, costs &amp; details
+        </p>
+      </div>
+      <a
+        href={`/showcase/${slug}`}
+        style={{
+          background: "#0f1f3d",
+          color: "white",
+          fontWeight: 700,
+          fontSize: 13,
+          padding: "9px 18px",
+          borderRadius: 8,
+          textDecoration: "none",
+          whiteSpace: "nowrap" as const,
+          flexShrink: 0,
+        }}
+      >
+        View Portfolio →
+      </a>
+    </div>
+  );
+
   const reviewLink = (
     <div style={{ background: "#f4f5f7", borderTop: "1px solid #e5e7eb", padding: "24px 16px", textAlign: "center" }}>
       <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 10 }}>Happy with their work?</p>
@@ -218,13 +247,13 @@ export default async function Page({ params }: Props) {
   );
 
   if (profile.selectedTemplate === "classic") {
-    return <><ClassicContractorTemplate profile={profile} />{reviewLink}</>;
+    return <><ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
   if (profile.selectedTemplate === "modern") {
-    return <><ModernProTemplate profile={profile} />{reviewLink}</>;
+    return <><ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
   if (profile.selectedTemplate === "trust") {
-    return <><TrustContractorTemplate profile={profile} />{reviewLink}</>;
+    return <><TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
-  return <><ContractorProfilePage profile={profile} />{reviewLink}</>;
+  return <><ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}</>;
 }

@@ -56,6 +56,47 @@ export function ContractorProfilePage({ profile }: Props) {
       {profile.featuredReview && <FeaturedReview review={profile.featuredReview} />}
       <ServicesSection services={profile.services} condensedFont={bc} />
       <ProjectsSection photos={profile.photos} condensedFont={bc} />
+
+      {/* Portfolio showcase link */}
+      <div
+        style={{
+          padding: "14px 24px",
+          background: "white",
+          borderBottom: `1px solid ${C.lightGray}`,
+          marginBottom: 8,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div>
+          <p className={bc} style={{ fontWeight: 700, fontSize: 13, color: C.navy, margin: 0, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+            Full Project Portfolio
+          </p>
+          <p style={{ fontSize: 11, color: C.gray, margin: "2px 0 0" }}>
+            See every project with photos, costs & details
+          </p>
+        </div>
+        <a
+          href={`/showcase/${profile.slug}`}
+          className={bc}
+          style={{
+            backgroundColor: C.navy,
+            color: "white",
+            fontWeight: 700,
+            fontSize: 13,
+            padding: "9px 18px",
+            borderRadius: 8,
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          View Portfolio →
+        </a>
+      </div>
+
       <ReviewsSection reviews={profile.reviews} condensedFont={bc} />
       <ReviewForm slug={profile.slug} condensedFont={bc} />
       <AboutSection about={profile.about} licenseNumber={profile.licenseNumber} condensedFont={bc} />
