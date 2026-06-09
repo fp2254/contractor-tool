@@ -11,7 +11,7 @@ async function loadShowcase(slug: string) {
 
   const { data: pub } = await a
     .from("public_profiles")
-    .select("org_id, slug, trade, photo_url, service_area")
+    .select("org_id, slug, trade, photo_url, service_area, tagline, years_experience, license_text")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
@@ -47,6 +47,10 @@ async function loadShowcase(slug: string) {
       trade: pub.trade ?? "",
       location: pub.service_area ?? hp?.location ?? "",
       photo_url: pub.photo_url ?? hp?.avatar_url ?? null,
+      tagline: pub.tagline ?? "",
+      years_experience: pub.years_experience ?? null,
+      license_text: pub.license_text ?? null,
+      jobs_completed: null,
     },
     stats: { projectCount: projects.length, totalInvested, avgRating },
     projects,
