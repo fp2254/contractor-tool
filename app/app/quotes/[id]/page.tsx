@@ -91,6 +91,21 @@ async function convertToInvoice(formData: FormData) {
     admin.from("quotes").update({ invoice_id: invoice.id }).eq("id", quoteId).eq("org_id", orgId!),
   ];
 
+  // Copy quote notes (plain text) to invoice notes
+  const plainNotes = (quote as any).notes?.trim();
+  if (plainNotes) {
+    insertOps.push(
+      admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "invoice",
+        entity_id: invoice.id,
+        body: plainNotes,
+        created_by: user.data.user?.id ?? null,
+      })
+    );
+  }
+
+  // Copy warranty note from quote to invoice
   if (quoteWarrantyNote?.body) {
     insertOps.push(
       admin.from("notes").insert({

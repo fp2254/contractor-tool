@@ -74,16 +74,34 @@ export async function POST(req: Request) {
     );
   }
 
-  await admin.from("quote_items").insert(
-    parsed.items.map((item) => ({
-      org_id: orgId!,
-      quote_id: quote.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      total_price: item.quantity * item.unit_price,
-    }))
-  );
+  const insertOps: Promise<unknown>[] = [
+    admin.from("quote_items").insert(
+      parsed.items.map((item) => ({
+        org_id: orgId!,
+        quote_id: quote.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.quantity * item.unit_price,
+      }))
+    ),
+  ];
+
+  // Save warranty as a separate notes-table entry (never mixed into quotes.notes)
+  const warrantyText = (body.warranty as string | undefined)?.trim();
+  if (warrantyText) {
+    insertOps.push(
+      admin.from("notes").insert({
+        org_id: orgId!,
+        entity_type: "quote",
+        entity_id: quote.id,
+        body: `__warranty__:${warrantyText}`,
+        created_by: userId,
+      })
+    );
+  }
+
+  await Promise.all(insertOps);
 
   return NextResponse.json({ id: quote.id });
 }

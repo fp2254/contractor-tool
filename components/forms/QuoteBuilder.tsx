@@ -41,6 +41,7 @@ export type NewCustomer = {
 export type QuotePayload = {
   customer_id: string;
   notes: string;
+  warranty?: string;
   items: Item[];
   scope_items?: string[];
   estimated_time?: string;
@@ -149,10 +150,10 @@ export function QuoteBuilder({
     setSubmitting(true);
     try {
       const cleanScope = scopeItems.filter(s => s.trim());
-      const combinedNotes = [notes.trim(), warrantyText.trim()].filter(Boolean).join("\n\n");
       await onSubmit({
         customer_id: isNew ? "" : customerId,
-        notes: combinedNotes,
+        notes: notes.trim(),
+        warranty: warrantyText.trim() || undefined,
         items,
         scope_items: cleanScope.length ? cleanScope : undefined,
         estimated_time: estimatedTime.trim() || undefined,
