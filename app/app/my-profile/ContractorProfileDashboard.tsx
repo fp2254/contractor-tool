@@ -130,29 +130,18 @@ export default function ContractorProfileDashboard({
         </Link>
       </div>
 
-      {/* Show me as a customer button */}
-      {publicProfile?.slug ? (
-        <a
-          href={`https://tradebase.contractors/pro/${publicProfile.slug}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
-          style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}
-        >
-          <Globe size={15} />
-          Show me as a customer
-          <ExternalLink size={13} className="opacity-70" />
-        </a>
-      ) : (
-        <Link
-          href="/app/profile/public-profile"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-white shadow-sm"
-          style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}
-        >
-          <Globe size={15} />
-          Set up your public page
+      {/* Public page status bar */}
+      <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${publicProfile?.isPublished ? "bg-green-500" : publicProfile ? "bg-amber-400" : "bg-gray-300"}`} />
+          <span className="text-sm font-semibold text-gray-700">
+            Public page: {publicProfile?.isPublished ? "Live" : publicProfile ? "Draft" : "Not set up"}
+          </span>
+        </div>
+        <Link href="/app/profile" className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
+          {publicProfile ? "Manage →" : "Set Up →"}
         </Link>
-      )}
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* ── Main column ── */}
@@ -308,12 +297,12 @@ export default function ContractorProfileDashboard({
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: "Edit Public Profile",  href: "/app/profile/public-profile",       icon: Edit3,         color: "#1B3A6B" },
-                    { label: "My Public Profile",    href: profileUrl ?? publicUrl ?? "/app/profile", icon: ExternalLink, color: "#2563EB", external: true },
-                    { label: "Marketing Page",       href: publicUrl ?? "/app/profile",         icon: Globe,         color: "#F97316", external: true },
-                    { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : "/app/profile", icon: MessageSquare, color: "#F59E0B", external: true },
-                  ].map(({ label, href, icon: Icon, color, external }) => (
+                    { label: "View Live Page",       href: publicUrl ?? null,                   icon: ExternalLink,  color: "#2563EB", external: true },
+                    { label: "Settings",             href: "/app/profile",                      icon: Wrench,        color: "#6B7280" },
+                    { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : null, icon: MessageSquare, color: "#F59E0B", external: true },
+                  ].filter(a => a.href).map(({ label, href, icon: Icon, color, external }) => (
                     external && href ? (
-                      <a key={label} href={href} target="_blank" rel="noreferrer"
+                      <a key={label} href={href!} target="_blank" rel="noreferrer"
                         className="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                         <Icon size={14} style={{ color }} />
                         <span className="text-xs font-semibold text-gray-700">{label}</span>
@@ -442,51 +431,23 @@ export default function ContractorProfileDashboard({
 
         {/* ── Right sidebar ── */}
         <div className="w-full lg:w-72 shrink-0 space-y-4">
-          {/* Public Profile Card */}
+          {/* Business Settings shortcut */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-3">Public Landing Page</h3>
-            {!publicProfile ? (
-              <div className="text-center py-4">
-                <p className="text-3xl mb-2">🌐</p>
-                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                  Create your free public profile to get quote requests from homeowners.
-                </p>
-                <Link href="/app/profile/public-profile" className="block w-full rounded-xl py-2.5 text-xs font-bold text-white text-center" style={{ backgroundColor: "#1B3A6B" }}>
-                  Set Up My Profile
+            <h3 className="font-bold text-gray-900 mb-3">Business Settings</h3>
+            <div className="space-y-2">
+              {[
+                { label: "Public Profile & Page", href: "/app/profile", note: publicProfile?.isPublished ? "● Live" : publicProfile ? "● Draft" : "Not set up", noteColor: publicProfile?.isPublished ? "text-green-600" : "text-amber-500" },
+                { label: "Business Identity", href: "/app/profile", note: "Logo, address, license" },
+                { label: "Quote & Invoice Defaults", href: "/app/profile", note: "Terms, pricing, tax" },
+                { label: "Service Presets", href: "/app/profile", note: "Pricing shortcuts" },
+              ].map(({ label, href, note, noteColor }) => (
+                <Link key={label} href={href}
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 border border-gray-100 hover:bg-gray-50 transition-colors">
+                  <span className="text-xs font-semibold text-gray-700">{label}</span>
+                  <span className={`text-[10px] font-medium ${noteColor ?? "text-gray-400"}`}>{note} ›</span>
                 </Link>
-              </div>
-            ) : (
-              <>
-                <div className={`flex items-center justify-between mb-3 p-2.5 rounded-xl ${publicProfile.isPublished ? "bg-green-50" : "bg-amber-50"}`}>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${publicProfile.isPublished ? "bg-green-500" : "bg-amber-400"}`} />
-                    <span className={`text-xs font-bold ${publicProfile.isPublished ? "text-green-700" : "text-amber-700"}`}>
-                      {publicProfile.isPublished ? "Live" : "Draft"}
-                    </span>
-                  </div>
-                  {publicUrl && (
-                    <a href={publicUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-semibold flex items-center gap-1">
-                      Visit <ExternalLink size={10} />
-                    </a>
-                  )}
-                </div>
-                {profileUrl && (
-                  <div className="bg-gray-50 rounded-xl p-2.5 mb-2">
-                    <p className="text-[10px] text-gray-400 mb-1">Rich Profile</p>
-                    <p className="text-xs font-mono text-gray-700 break-all">/contractor/{publicProfile!.slug}</p>
-                  </div>
-                )}
-                {publicUrl && (
-                  <div className="bg-gray-50 rounded-xl p-2.5 mb-3">
-                    <p className="text-[10px] text-gray-400 mb-1">Marketing Page</p>
-                    <p className="text-xs font-mono text-gray-700 break-all">/pro/{publicProfile!.slug}</p>
-                  </div>
-                )}
-                <Link href="/app/profile/public-profile" className="block w-full rounded-xl py-2 text-xs font-bold text-white text-center" style={{ backgroundColor: "#1B3A6B" }}>
-                  Edit Profile
-                </Link>
-              </>
-            )}
+              ))}
+            </div>
           </div>
 
           {/* Performance metrics */}

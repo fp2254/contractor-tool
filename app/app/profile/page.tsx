@@ -55,7 +55,7 @@ export default async function ProfilePage() {
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h1 className="text-xl font-bold text-slate-800">Business Profile</h1>
+        <h1 className="text-xl font-bold text-slate-800">Settings</h1>
       </div>
 
       {/* ── Public Profile ── */}

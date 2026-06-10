@@ -88,7 +88,7 @@ export default async function SettingsPage({
         </div>
         <Link href="/app/profile"
           className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-          <span className="text-sm font-medium text-slate-700">Business Profile</span>
+          <span className="text-sm font-medium text-slate-700">Settings</span>
           <span className="text-gray-300 text-lg">›</span>
         </Link>
         <Link href="/app/support"
