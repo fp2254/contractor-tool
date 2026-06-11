@@ -11,49 +11,50 @@ async function loadShowcase(slug: string) {
 
   const { data: pub } = await a
     .from("public_profiles")
-    .select("org_id, slug, trade, photo_url, service_area, tagline, years_experience, license_text")
+    .select("org_id, slug, trade, photo_url, service_area, tagline, years_experience, license_text, is_published")
     .eq("slug", slug)
-    .eq("is_published", true)
     .maybeSingle();
 
   if (!pub) return null;
 
-  const [{ data: org }, { data: member }] = await Promise.all([
+  const [{ data: org }, { data: settings }, { data: projects }] = await Promise.all([
     a.from("orgs").select("name").eq("id", pub.org_id).single(),
-    a.from("org_members").select("user_id").eq("org_id", pub.org_id).limit(1).single(),
+    a.from("org_settings").select("logo_url,address,city,state").eq("org_id", pub.org_id).maybeSingle(),
+    a.from("projects")
+      .select("id,title,description,status,location,completed_at,photos,tags,cost,created_at")
+      .eq("org_id", pub.org_id)
+      .order("completed_at", { ascending: false, nullsFirst: false }),
   ]);
 
-  if (!member?.user_id) return null;
+  const projectList = (projects ?? []).map((p: any) => ({
+    id: p.id,
+    title: p.title ?? "Untitled Project",
+    description: p.description ?? null,
+    status: p.status ?? "completed",
+    location: p.location ?? null,
+    completed_at: p.completed_at ?? null,
+    photos: (p.photos ?? []) as { url: string; caption: string }[],
+    tags: (p.tags ?? []) as string[],
+    cost: p.cost ? Number(p.cost) : null,
+  }));
 
-  const { data: hp } = await a
-    .from("homeowner_profiles")
-    .select("id, display_name, avatar_url, banner_url, location, is_profile_public")
-    .eq("user_id", member.user_id)
-    .maybeSingle();
-
-  const projects = hp?.is_profile_public
-    ? (await a.from("homeowner_projects").select("*").eq("homeowner_id", hp.id)
-        .order("project_date", { ascending: false, nullsFirst: false })).data ?? []
-    : [];
-
-  const totalInvested = projects.reduce((s: number, p: any) => s + (p.cost ?? 0), 0);
-  const rated = projects.filter((p: any) => p.rating);
-  const avgRating = rated.length > 0 ? rated.reduce((s: number, p: any) => s + p.rating, 0) / rated.length : null;
+  const totalInvested = projectList.reduce((s: number, p: any) => s + (p.cost ?? 0), 0);
+  const location = pub.service_area ?? [settings?.city, settings?.state].filter(Boolean).join(", ") ?? "";
 
   return {
-    contractor: {
-      name: org?.name ?? "Contractor",
+    profile: {
+      name: org?.name ?? "Portfolio",
       slug,
       trade: pub.trade ?? "",
-      location: pub.service_area ?? hp?.location ?? "",
-      photo_url: pub.photo_url ?? hp?.avatar_url ?? null,
+      location,
+      photo_url: pub.photo_url ?? settings?.logo_url ?? null,
       tagline: pub.tagline ?? "",
       years_experience: pub.years_experience ?? null,
       license_text: pub.license_text ?? null,
-      jobs_completed: null,
+      is_published: pub.is_published ?? false,
     },
-    stats: { projectCount: projects.length, totalInvested, avgRating },
-    projects,
+    stats: { projectCount: projectList.length, totalInvested },
+    projects: projectList,
   };
 }
 

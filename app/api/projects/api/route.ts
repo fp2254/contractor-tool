@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       completed_at: body.completed_at || null,
       photos: body.photos ?? [],
       tags: body.tags ?? [],
+      cost: body.cost ?? null,
     })
     .select("*")
     .single();

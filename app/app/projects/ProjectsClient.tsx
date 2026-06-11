@@ -13,6 +13,7 @@ export type Project = {
   completed_at: string | null;
   photos: ProjectPhoto[];
   tags: string[];
+  cost?: number | null;
   created_at: string;
 };
 
@@ -24,10 +25,11 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 const EMPTY_FORM = {
   title: "",
   description: "",
-  status: "completed" as const,
+  status: "completed" as "in_progress" | "completed",
   location: "",
   completed_at: "",
   tags: "",
+  cost: "",
 };
 
 export default function ProjectsClient({ initialProjects }: { initialProjects: Project[] }) {
@@ -58,6 +60,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
       location: p.location,
       completed_at: p.completed_at ?? "",
       tags: (p.tags ?? []).join(", "),
+      cost: p.cost ? String(p.cost) : "",
     });
     setFormPhotos(p.photos ?? []);
     setShowForm(true);
@@ -72,6 +75,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
         ...form,
         tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
         photos: formPhotos,
+        cost: form.cost ? parseFloat(form.cost) : null,
       };
       if (editingId) {
         const res = await fetch(`/api/projects/api/${editingId}`, {
@@ -222,14 +226,28 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
               />
             </div>
 
-            <div>
-              <label className={labelCls}>Tags (comma-separated)</label>
-              <input
-                value={form.tags}
-                onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-                placeholder="e.g. Roofing, Residential, Before & After"
-                className={inputCls}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Project Cost ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.cost}
+                  onChange={e => setForm(f => ({ ...f, cost: e.target.value }))}
+                  placeholder="e.g. 12500"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Tags (comma-separated)</label>
+                <input
+                  value={form.tags}
+                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  placeholder="e.g. Roofing, Residential"
+                  className={inputCls}
+                />
+              </div>
             </div>
 
             {/* Photos */}

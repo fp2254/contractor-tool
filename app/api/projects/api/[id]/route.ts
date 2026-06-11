@@ -19,6 +19,7 @@ export async function PATCH(req: Request, { params }: Params) {
       completed_at: body.completed_at || null,
       photos: body.photos ?? [],
       tags: body.tags ?? [],
+      cost: body.cost ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

@@ -296,10 +296,12 @@ export default function ContractorProfileDashboard({
                 <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Edit Public Profile",  href: "/app/profile/public-profile",       icon: Edit3,         color: "#1B3A6B" },
-                    { label: "View Live Page",       href: publicUrl ?? null,                   icon: ExternalLink,  color: "#2563EB", external: true },
-                    { label: "Settings",             href: "/app/profile",                      icon: Wrench,        color: "#6B7280" },
-                    { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : null, icon: MessageSquare, color: "#F59E0B", external: true },
+                    { label: "Edit Public Profile",  href: "/app/profile/public-profile",                                  icon: Edit3,         color: "#1B3A6B" },
+                    { label: "View Live Page",       href: publicUrl ?? null,                                              icon: ExternalLink,  color: "#2563EB", external: true },
+                    { label: "My Portfolio",         href: publicProfile?.slug ? `/showcase/${publicProfile.slug}` : null, icon: Briefcase,     color: "#8B5CF6", external: true },
+                    { label: "Completed Projects",   href: "/app/projects",                                                icon: Wrench,        color: "#16A34A" },
+                    { label: "Settings",             href: "/app/profile",                                                 icon: Wrench,        color: "#6B7280" },
+                    { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : null,                      icon: MessageSquare, color: "#F59E0B", external: true },
                   ].filter(a => a.href).map(({ label, href, icon: Icon, color, external }) => (
                     external && href ? (
                       <a key={label} href={href!} target="_blank" rel="noreferrer"
@@ -308,7 +310,7 @@ export default function ContractorProfileDashboard({
                         <span className="text-xs font-semibold text-gray-700">{label}</span>
                       </a>
                     ) : (
-                      <Link key={label} href={href}
+                      <Link key={label} href={href!}
                         className="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                         <Icon size={14} style={{ color }} />
                         <span className="text-xs font-semibold text-gray-700">{label}</span>
