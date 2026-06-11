@@ -39,6 +39,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function openNew() {
@@ -65,6 +66,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
   async function handleSave() {
     if (!form.title.trim()) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const payload = {
         ...form,
@@ -78,7 +80,12 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
           body: JSON.stringify(payload),
         });
         const j = await res.json();
-        if (res.ok) setProjects(ps => ps.map(p => p.id === editingId ? j.project : p));
+        if (res.ok) {
+          setProjects(ps => ps.map(p => p.id === editingId ? j.project : p));
+          setShowForm(false);
+        } else {
+          setSaveError(j.error ?? "Failed to save. Please try again.");
+        }
       } else {
         const res = await fetch("/api/projects/api", {
           method: "POST",
@@ -86,9 +93,15 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
           body: JSON.stringify(payload),
         });
         const j = await res.json();
-        if (res.ok) setProjects(ps => [j.project, ...ps]);
+        if (res.ok) {
+          setProjects(ps => [j.project, ...ps]);
+          setShowForm(false);
+        } else {
+          setSaveError(j.error ?? "Failed to save. Please try again.");
+        }
       }
-      setShowForm(false);
+    } catch {
+      setSaveError("Network error. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -147,8 +160,13 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
             <p className="font-semibold text-slate-800 text-sm">
               {editingId ? "Edit Project" : "New Project"}
             </p>
-            <button onClick={() => setShowForm(false)} className="text-gray-400 text-lg leading-none">✕</button>
+            <button onClick={() => { setShowForm(false); setSaveError(null); }} className="text-gray-400 text-lg leading-none">✕</button>
           </div>
+          {saveError && (
+            <div className="mx-4 mt-3 rounded-xl bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-700 font-medium">
+              ⚠️ {saveError}
+            </div>
+          )}
           <div className="px-4 py-4 space-y-3">
             <div>
               <label className={labelCls}>Project Title *</label>
