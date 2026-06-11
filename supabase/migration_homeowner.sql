@@ -119,7 +119,12 @@ CREATE POLICY "homeowner_public_projects_read" ON public.homeowner_projects
     homeowner_id IN (SELECT id FROM public.homeowner_profiles WHERE is_profile_public = true)
   );
 
+-- Slug for public showcase (/h/[slug])
+ALTER TABLE public.homeowner_profiles
+  ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+
 -- Indexes
-CREATE INDEX IF NOT EXISTS homeowner_profiles_user_idx ON public.homeowner_profiles (user_id);
+CREATE INDEX IF NOT EXISTS homeowner_profiles_user_idx  ON public.homeowner_profiles (user_id);
+CREATE INDEX IF NOT EXISTS homeowner_profiles_slug_idx  ON public.homeowner_profiles (slug) WHERE slug IS NOT NULL;
 CREATE INDEX IF NOT EXISTS homeowner_projects_owner_idx ON public.homeowner_projects (homeowner_id, project_date DESC);
-CREATE INDEX IF NOT EXISTS homeowner_future_owner_idx ON public.homeowner_future_projects (homeowner_id);
+CREATE INDEX IF NOT EXISTS homeowner_future_owner_idx   ON public.homeowner_future_projects (homeowner_id);

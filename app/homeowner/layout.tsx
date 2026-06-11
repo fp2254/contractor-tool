@@ -17,7 +17,7 @@ export default async function HomeownerLayout({ children }: { children: React.Re
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let { data: profile } = await (admin as any)
     .from("homeowner_profiles")
-    .select("id,display_name,avatar_url,profile_completion")
+    .select("id,display_name,avatar_url,profile_completion,slug")
     .eq("user_id", user.id)
     .single();
 
@@ -32,7 +32,7 @@ export default async function HomeownerLayout({ children }: { children: React.Re
     const { data: created } = await (admin as any)
       .from("homeowner_profiles")
       .insert({ user_id: user.id, display_name: displayName })
-      .select("id,display_name,avatar_url,profile_completion")
+      .select("id,display_name,avatar_url,profile_completion,slug")
       .single();
     profile = created;
   }
@@ -43,6 +43,7 @@ export default async function HomeownerLayout({ children }: { children: React.Re
       displayName={profile?.display_name ?? ""}
       avatarUrl={profile?.avatar_url ?? null}
       profileCompletion={profile?.profile_completion ?? 0}
+      slug={profile?.slug ?? null}
     >
       {children}
     </HomeownerShell>

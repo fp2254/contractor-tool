@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, FolderOpen, Home, Image, Star, MessageSquare,
   Bookmark, TrendingUp, DollarSign, FileText, Settings, Bell,
-  Search, HelpCircle, ChevronRight,
+  Search, HelpCircle, ChevronRight, Globe,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -28,12 +28,14 @@ export default function HomeownerShell({
   displayName,
   avatarUrl,
   profileCompletion,
+  slug,
 }: {
   children: React.ReactNode;
   profileId: string;
   displayName: string;
   avatarUrl: string | null;
   profileCompletion: number;
+  slug: string | null;
 }) {
   const pathname = usePathname();
 
@@ -76,6 +78,24 @@ export default function HomeownerShell({
             );
           })}
         </nav>
+
+        {/* My Showcase link */}
+        <div className="px-3 pb-2">
+          {slug ? (
+            <a href={`/h/${slug}`} target="_blank" rel="noreferrer"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors text-[13px] group">
+              <Globe size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+              <span className="flex-1">My Showcase</span>
+              <span className="text-[9px] text-gray-300">↗</span>
+            </a>
+          ) : (
+            <Link href="/homeowner/settings"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-[13px] hover:bg-blue-100 transition-colors">
+              <Globe size={16} />
+              <span className="flex-1 font-semibold">Set up showcase</span>
+            </Link>
+          )}
+        </div>
 
         {/* Profile completion widget */}
         {profileCompletion < 100 && (

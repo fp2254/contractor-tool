@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, Check, LogOut } from "lucide-react";
+import { Settings, Save, Check, LogOut, ExternalLink } from "lucide-react";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +11,7 @@ export default function SettingsPage() {
     display_name: "",
     location: "",
     is_profile_public: true,
+    slug: "",
   });
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function SettingsPage() {
           display_name: settings.display_name ?? "",
           location: settings.location ?? "",
           is_profile_public: settings.is_profile_public ?? true,
+          slug: settings.slug ?? "",
         });
       })
       .finally(() => setLoading(false));
@@ -42,6 +44,8 @@ export default function SettingsPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
+
+  const showcaseUrl = form.slug ? `/h/${form.slug}` : null;
 
   if (loading) return (
     <div className="max-w-2xl mx-auto p-6 flex items-center justify-center min-h-[40vh]">
@@ -82,7 +86,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between py-3 border-t border-gray-100">
           <div>
             <p className="text-sm font-semibold text-gray-700">Public Profile</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Allow contractors to see your property history and reviews</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Allow contractors to see your property history</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" name="is_profile_public" checked={form.is_profile_public} onChange={handleChange} className="sr-only peer" />
@@ -95,6 +99,42 @@ export default function SettingsPage() {
           style={{ backgroundColor: saved ? "#16A34A" : "#1B3A6B" }}>
           {saved ? <Check size={15} /> : <Save size={15} />}
           {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
+        </button>
+      </div>
+
+      {/* ── Public Portfolio URL ── */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+        <div>
+          <h2 className="font-bold text-gray-900 mb-1">My Portfolio URL</h2>
+          <p className="text-xs text-gray-400">Set a URL for your public showcase page</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Portfolio Slug</label>
+          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-200">
+            <span className="px-3 py-2.5 text-sm text-gray-400 bg-gray-50 border-r border-gray-200 whitespace-nowrap">
+              /h/
+            </span>
+            <input name="slug" value={form.slug} onChange={handleChange}
+              placeholder="your-name"
+              className="flex-1 px-3 py-2.5 text-sm text-gray-700 outline-none" />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1">Letters, numbers, and hyphens only — e.g. <code className="bg-gray-100 px-1 rounded">the-thompsons</code></p>
+        </div>
+
+        {showcaseUrl && (
+          <a href={showcaseUrl} target="_blank" rel="noreferrer"
+            className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+            <ExternalLink size={14} />
+            View my showcase → {showcaseUrl}
+          </a>
+        )}
+
+        <button onClick={handleSave} disabled={saving}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition disabled:opacity-60"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          <Save size={15} />
+          {saving ? "Saving…" : "Save Slug"}
         </button>
       </div>
 
