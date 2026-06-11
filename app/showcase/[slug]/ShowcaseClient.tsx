@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import {
-  MapPin, CheckCircle, Star, DollarSign,
-  Home, Wrench, Zap, Wind, Shield,
-  Briefcase, ChevronRight, ExternalLink, Camera, Tag,
+  MapPin, CheckCircle, DollarSign,
+  Briefcase, ExternalLink, Camera, Tag, Share2, Check,
+  ArrowLeftRight,
 } from "lucide-react";
+
+type Photo = { url: string; caption: string };
 
 type Project = {
   id: string;
@@ -14,7 +16,7 @@ type Project = {
   status: string;
   location: string | null;
   completed_at: string | null;
-  photos: { url: string; caption: string }[];
+  photos: Photo[];
   tags: string[];
   cost: number | null;
 };
@@ -65,11 +67,107 @@ function groupByMonth(projects: Project[]) {
   return groups;
 }
 
+/** Detect "before" photo index from captions, fall back to first photo */
+function detectBeforeAfter(photos: Photo[]): { before: Photo; after: Photo } | null {
+  if (photos.length < 2) return null;
+  const bIdx = photos.findIndex(p => /\bbefore\b/i.test(p.caption));
+  const aIdx = photos.findIndex(p => /\bafter\b/i.test(p.caption));
+  if (bIdx !== -1 && aIdx !== -1 && bIdx !== aIdx) {
+    return { before: photos[bIdx], after: photos[aIdx] };
+  }
+  // Default: first = before, last = after
+  return { before: photos[0], after: photos[photos.length - 1] };
+}
+
 const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }> = {
   completed:   { label: "Completed",   color: "#16A34A", bg: "#DCFCE7" },
   in_progress: { label: "In Progress", color: "#D97706", bg: "#FEF3C7" },
 };
 
+// ── Before/After slider component ──────────────────────────────────────────
+function BeforeAfterSlider({ before, after }: { before: Photo; after: Photo }) {
+  const [pos, setPos] = useState(50); // percent
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const update = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const pct = Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100));
+    setPos(pct);
+  }, []);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    dragging.current = true;
+    update(e.clientX);
+    const onMove = (ev: MouseEvent) => { if (dragging.current) update(ev.clientX); };
+    const onUp = () => { dragging.current = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    dragging.current = true;
+    update(e.touches[0].clientX);
+    const onMove = (ev: TouchEvent) => { if (dragging.current) update(ev.touches[0].clientX); };
+    const onEnd = () => { dragging.current = false; window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd); };
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onEnd);
+  };
+
+  return (
+    <div ref={containerRef} className="relative w-full select-none overflow-hidden rounded-t-2xl" style={{ height: 220 }}
+      onMouseDown={onMouseDown} onTouchStart={onTouchStart}>
+      {/* After (bottom, full width) */}
+      <img src={after.url} alt="After" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+      {/* Before (top, clipped) */}
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
+        <img src={before.url} alt="Before" className="absolute inset-0 w-full h-full object-cover" style={{ width: containerRef.current ? `${containerRef.current.offsetWidth}px` : "100%" }} draggable={false} />
+      </div>
+      {/* Divider line */}
+      <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+        {/* Handle */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center cursor-ew-resize">
+          <ArrowLeftRight size={14} className="text-gray-500" />
+        </div>
+      </div>
+      {/* Labels */}
+      <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/50 rounded-full px-2 py-0.5 backdrop-blur-sm">BEFORE</div>
+      <div className="absolute bottom-2 right-2 text-[10px] font-bold text-white bg-black/50 rounded-full px-2 py-0.5 backdrop-blur-sm">AFTER</div>
+    </div>
+  );
+}
+
+// ── Share button ────────────────────────────────────────────────────────────
+function ShareButton({ name, slug }: { name: string; slug: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = `${window.location.origin}/showcase/${slug}`;
+    const text = `Check out ${name}'s project portfolio on TradeBase`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: text, url });
+        return;
+      } catch {
+        // user cancelled or not supported — fall through
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button onClick={handleShare}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm transition-colors"
+      style={{ backgroundColor: copied ? "#16A34A" : "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
+      {copied ? <><Check size={11} /> Copied!</> : <><Share2 size={11} /> Share</>}
+    </button>
+  );
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 export default function ShowcaseClient({ profile, stats, projects }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("Timeline");
 
@@ -107,7 +205,9 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
               </div>
             )}
           </div>
+          {/* Action buttons */}
           <div className="absolute bottom-3 right-4 flex gap-2">
+            <ShareButton name={profile.name} slug={profile.slug} />
             <a href={`/pro/${profile.slug}`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm"
               style={{ backgroundColor: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
@@ -137,17 +237,17 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
           <div className="grid grid-cols-3 gap-3 mt-5">
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-gray-900">{stats.projectCount}</p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Completed Projects</p>
+              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Projects</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-gray-900">
                 {stats.totalInvested > 0 ? fmtMoney(stats.totalInvested) : "—"}
               </p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Total Project Value</p>
+              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Total Value</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-xl font-bold text-gray-900">{allPhotos.length}</p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Project Photos</p>
+              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Photos</p>
             </div>
           </div>
         </div>
@@ -190,28 +290,19 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                   <div className="space-y-4">
                     {items.map(p => {
                       const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                      const ba = detectBeforeAfter(p.photos);
                       return (
                         <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                          {/* Photos strip */}
-                          {p.photos.length > 0 && (
+                          {/* Before/After slider if ≥2 photos, else single photo */}
+                          {ba ? (
+                            <BeforeAfterSlider before={ba.before} after={ba.after} />
+                          ) : p.photos.length === 1 ? (
                             <div className="relative">
-                              <div className="flex gap-1 overflow-x-auto">
-                                {p.photos.slice(0, 4).map((ph, i) => (
-                                  <div key={i}
-                                    className={`shrink-0 bg-gray-100 overflow-hidden ${i === 0 ? "w-full h-52" : "w-24 h-24"}`}
-                                    style={i === 0 ? {} : { display: "none" }}>
-                                    <img src={ph.url} alt={ph.caption || p.title}
-                                      className="w-full h-full object-cover" />
-                                  </div>
-                                ))}
-                              </div>
-                              {p.photos.length > 1 && (
-                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                  <Camera size={9} /> {p.photos.length} photos
-                                </div>
-                              )}
+                              <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
+                                className="w-full h-52 object-cover" />
                             </div>
-                          )}
+                          ) : null}
+
                           <div className="p-4">
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
@@ -232,6 +323,19 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                               {p.cost && (
                                 <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full">
                                   <DollarSign size={10} />{fmtMoney(p.cost)}
+                                </span>
+                              )}
+                              {p.completed_at && (
+                                <span className="text-xs text-gray-400">{fmtDate(p.completed_at)}</span>
+                              )}
+                              {p.photos.length > 1 && !ba && (
+                                <span className="flex items-center gap-1 text-xs text-gray-400">
+                                  <Camera size={10} />{p.photos.length} photos
+                                </span>
+                              )}
+                              {ba && (
+                                <span className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                                  <ArrowLeftRight size={9} /> Before &amp; After
                                 </span>
                               )}
                               {p.tags.map((tag, i) => (
@@ -260,7 +364,6 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Tags filter row */}
               {tagCounts.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {tagCounts.map(([tag, count]) => (
@@ -273,9 +376,12 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {projects.map(p => {
                   const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                  const ba = detectBeforeAfter(p.photos);
                   return (
                     <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                      {p.photos[0] ? (
+                      {ba ? (
+                        <BeforeAfterSlider before={ba.before} after={ba.after} />
+                      ) : p.photos[0] ? (
                         <img src={p.photos[0].url} alt={p.title} className="w-full h-36 object-cover" />
                       ) : (
                         <div className="w-full h-36 flex items-center justify-center text-4xl bg-gray-50">🏗️</div>
@@ -290,6 +396,7 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                         <div className="flex items-center gap-2 flex-wrap mt-1">
                           {p.cost && <span className="text-[10px] font-bold text-green-700">{fmtMoney(p.cost)}</span>}
                           {p.completed_at && <span className="text-[10px] text-gray-400">{fmtDate(p.completed_at)}</span>}
+                          {ba && <span className="text-[10px] font-semibold text-purple-600">Before & After ✓</span>}
                         </div>
                         {p.tags.length > 0 && (
                           <div className="flex gap-1 mt-1.5 flex-wrap">
@@ -316,7 +423,9 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-xs text-gray-400 font-semibold">{allPhotos.length} photos across {projects.filter(p => p.photos.length > 0).length} projects</p>
+              <p className="text-xs text-gray-400 font-semibold">
+                {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""} across {projects.filter(p => p.photos.length > 0).length} project{projects.filter(p => p.photos.length > 0).length !== 1 ? "s" : ""}
+              </p>
               <div className="columns-2 sm:columns-3 gap-2 space-y-2">
                 {allPhotos.map((ph, i) => (
                   <div key={i} className="break-inside-avoid rounded-xl overflow-hidden bg-gray-100">
