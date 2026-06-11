@@ -34,6 +34,7 @@ type Project = {
   title: string;
   contractor_name: string | null;
   description: string | null;
+  review_text: string | null;
   cost: number | null;
   project_date: string | null;
   completed_date: string | null;
@@ -67,6 +68,7 @@ const DEMO_PROJECTS: Project[] = [
     project_date: "2026-06-14",
     completed_date: "2026-06-14",
     rating: 5,
+    review_text: "Frank showed up on time, explained everything clearly, and did excellent work. Highly recommend!",
     has_warranty: true,
     has_documentation: false,
     photos: [
@@ -84,6 +86,7 @@ const DEMO_PROJECTS: Project[] = [
     project_date: "2026-03-28",
     completed_date: "2026-03-28",
     rating: 4.9,
+    review_text: "Great communication, finished on time, and the work looks amazing. Crew was professional and respectful.",
     has_warranty: false,
     has_documentation: true,
     photos: [
@@ -302,67 +305,90 @@ export default function ProfileClient({
 
         {/* Tab content */}
         {activeTab === "Timeline" && (
-          <div className="space-y-4">
-            {projects.map((proj, idx) => (
-              <div key={proj.id} className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="flex gap-4">
-                  {/* Date + dot */}
-                  <div className="flex flex-col items-center gap-1 shrink-0 w-16">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase text-center leading-tight">
-                      {fmtMonth(proj.project_date ?? proj.completed_date)}
-                    </p>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+          <div className="space-y-1">
+            {/* Group projects by month */}
+            {(() => {
+              type Group = { monthLabel: string; items: Project[] };
+              const groups: Group[] = [];
+              for (const proj of projects) {
+                const label = fmtMonth(proj.project_date ?? proj.completed_date ?? null);
+                const last = groups[groups.length - 1];
+                if (last && last.monthLabel === label) last.items.push(proj);
+                else groups.push({ monthLabel: label, items: [proj] });
+              }
+              return groups.map((group, gi) => (
+                <div key={gi} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  {/* Month header row */}
+                  <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#1B3A6B" }}>
                       <CheckCircle size={14} className="text-white" />
                     </div>
-                    {idx < projects.length - 1 && (
-                      <div className="w-0.5 bg-gray-200 flex-1 mt-1" style={{ minHeight: 20 }} />
-                    )}
+                    <span className="text-sm font-bold text-gray-700">{group.monthLabel}</span>
+                    <div className="flex-1 h-px bg-gray-100" />
                   </div>
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 mb-0.5">{proj.title}</h3>
-                    {proj.contractor_name && (
-                      <p className="text-xs text-gray-500 mb-1">
-                        by <span className="font-semibold text-blue-600">{proj.contractor_name}</span>
-                      </p>
-                    )}
-                    {proj.rating && (
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <StarRating rating={proj.rating} />
-                        <span className="text-xs font-bold text-gray-700">{proj.rating.toFixed(1)}</span>
-                      </div>
-                    )}
-                    {proj.description && (
-                      <p className="text-xs text-gray-600 leading-relaxed mb-3">{proj.description}</p>
-                    )}
-                    {/* Photos */}
-                    {proj.photos && proj.photos.length > 0 && (
-                      <div className="flex gap-1.5 mb-3 flex-wrap">
-                        {(proj.photos as string[]).slice(0, 3).map((src, i) => (
-                          <div key={i} className="relative">
-                            <img src={src} alt="" className="w-20 h-16 rounded-lg object-cover" />
-                            {i === 2 && proj.photos.length > 3 && (
-                              <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">+{proj.photos.length - 3}</span>
+
+                  {/* Projects in this month */}
+                  <div className="divide-y divide-gray-50">
+                    {group.items.map(proj => (
+                      <div key={proj.id} className="px-5 py-4">
+                        <div className="flex gap-4">
+                          {/* Photo thumbnail or placeholder */}
+                          {proj.photos && (proj.photos as string[]).length > 0 ? (
+                            <div className="relative shrink-0">
+                              <img src={(proj.photos as string[])[0]} alt={proj.title}
+                                className="w-28 h-20 rounded-xl object-cover" />
+                              {(proj.photos as string[]).length > 1 && (
+                                <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                  +{(proj.photos as string[]).length - 1}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-gray-900 mb-0.5 leading-snug">{proj.title}</h3>
+                            {proj.contractor_name && (
+                              <p className="text-xs text-gray-500 mb-1.5">
+                                by <span className="font-semibold" style={{ color: "#1B3A6B" }}>{proj.contractor_name}</span>
+                              </p>
+                            )}
+                            {proj.rating != null && (
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <StarRating rating={proj.rating} />
+                                <span className="text-xs font-bold text-gray-700">{proj.rating.toFixed(1)}</span>
                               </div>
                             )}
+                            {proj.description && (
+                              <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{proj.description}</p>
+                            )}
+                            <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap">
+                              {proj.cost != null && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign size={10} />${proj.cost.toLocaleString()}
+                                </span>
+                              )}
+                              {(proj.completed_date ?? proj.project_date) && (
+                                <span className="flex items-center gap-1">
+                                  <Clock size={10} /> Completed {fmtDate(proj.completed_date ?? proj.project_date)}
+                                </span>
+                              )}
+                              {proj.has_warranty && (
+                                <span className="flex items-center gap-1 text-green-600"><Shield size={10} /> Warranty</span>
+                              )}
+                              {proj.has_documentation && (
+                                <span className="flex items-center gap-1 text-blue-600"><FileText size={10} /> Documentation</span>
+                              )}
+                            </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
-                    {/* Meta row */}
-                    <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap">
-                      {proj.cost && <span className="flex items-center gap-1"><DollarSign size={10} />${proj.cost.toLocaleString()}</span>}
-                      {proj.completed_date && <span className="flex items-center gap-1"><Clock size={10} /> Completed {fmtDate(proj.completed_date)}</span>}
-                      {proj.has_warranty && <span className="flex items-center gap-1 text-green-600"><Shield size={10} /> Warranty</span>}
-                      {proj.has_documentation && <span className="flex items-center gap-1 text-blue-600"><FileText size={10} /> Documentation</span>}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
             {projects.length > 0 && (
-              <div className="text-center">
+              <div className="text-center pt-2">
                 <Link href="/homeowner/projects" className="text-xs font-semibold text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 inline-block">
                   View All Projects
                 </Link>
@@ -605,30 +631,58 @@ export default function ProfileClient({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-gray-700 truncate">{p.contractor_name}</p>
-                      <StarRating rating={p.rating!} size={10} />
+                      <div className="flex items-center gap-1">
+                        <StarRating rating={p.rating!} size={10} />
+                        <span className="text-[10px] text-gray-400 ml-1">{fmtMonth(p.project_date)}</span>
+                      </div>
                     </div>
                   </div>
-                  {p.description && (
-                    <p className="text-xs text-gray-600 leading-relaxed italic line-clamp-2">&ldquo;{p.description}&rdquo;</p>
+                  {(p.review_text ?? p.description) && (
+                    <p className="text-xs text-gray-600 leading-relaxed italic line-clamp-3">
+                      &ldquo;{p.review_text ?? p.description}&rdquo;
+                    </p>
                   )}
+                  <p className="text-[10px] text-gray-400 mt-1">— {profile.displayName}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Find Contractors CTA */}
+        {/* Contractor Feedback */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h3 className="font-bold text-gray-900 mb-2">Find Contractors</h3>
-          <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-            Browse verified local contractors and get free estimates for your next project.
-          </p>
-          <Link
-            href="/pro"
-            className="block w-full text-center rounded-xl py-2.5 text-xs font-bold text-white"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            Browse Contractors →
-          </Link>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900">Contractor Feedback</h3>
+            <Link href="/homeowner/reviews" className="text-xs text-blue-600 font-semibold">See all</Link>
+          </div>
+          {isDemo ? (
+            <div className="space-y-4">
+              {[
+                { name: "Oak & Stone Builders", date: "Mar 2026", text: "Wonderful clients! Clear vision, great communication, and timely payments. Would love to work with them again." },
+                { name: "Horizon Roofing",      date: "Jun 2026", text: "Home was well prepared and accessible. Great experience all around." },
+              ].map(fb => (
+                <div key={fb.name}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-xs font-bold" style={{ color: "#1B3A6B" }}>
+                      {fb.name.slice(0, 1)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-700 truncate">{fb.name}</p>
+                      <p className="text-[10px] text-gray-400">Contractor Review · {fb.date}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed italic line-clamp-3">
+                    &ldquo;{fb.text}&rdquo;
+                  </p>
+                </div>
+              ))}
+              <p className="text-[10px] text-gray-300 text-center pt-1">Sample data — reviews from your contractors will appear here</p>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-xs text-gray-400">Feedback from contractors you&apos;ve worked with will appear here.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ export default async function HomeownerPage() {
 
   const [projectsRes, futureRes, scorecardRes, propertyRes] = await Promise.all([
     a.from("homeowner_projects")
-      .select("id,title,contractor_name,description,cost,project_date,completed_date,rating,has_warranty,has_documentation,photos,status")
+      .select("id,title,contractor_name,description,review_text,cost,project_date,completed_date,rating,has_warranty,has_documentation,photos,status")
       .eq("homeowner_id", profile.id)
       .order("project_date", { ascending: false })
       .limit(50),
