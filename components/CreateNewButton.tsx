@@ -42,7 +42,7 @@ export function CreateNewButton() {
 
       {/* Overlay */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
+        <div className="fixed inset-0 z-[60] flex items-end" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
           <div
             ref={sheetRef}
             className="w-full bg-white rounded-t-3xl shadow-2xl flex flex-col"
