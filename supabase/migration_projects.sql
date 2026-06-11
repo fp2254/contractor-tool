@@ -20,5 +20,5 @@ CREATE INDEX IF NOT EXISTS projects_org_id_idx ON projects(org_id);
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "org members manage projects" ON projects;
 CREATE POLICY "org members manage projects" ON projects
-  USING (org_id = ANY(user_org_ids()))
-  WITH CHECK (org_id = ANY(user_org_ids()));
+  USING  (org_id IN (SELECT org_id FROM public.org_members WHERE user_id = auth.uid()))
+  WITH CHECK (org_id IN (SELECT org_id FROM public.org_members WHERE user_id = auth.uid()));
