@@ -45,15 +45,17 @@ export function CreateNewButton() {
         <div className="fixed inset-0 z-50 flex items-end" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
           <div
             ref={sheetRef}
-            className="w-full bg-white rounded-t-3xl px-4 pt-4 pb-8 shadow-2xl"
-            style={{ animation: "slideUp 0.2s ease-out" }}
+            className="w-full bg-white rounded-t-3xl shadow-2xl flex flex-col"
+            style={{ animation: "slideUp 0.2s ease-out", maxHeight: "90vh" }}
           >
-            {/* Handle */}
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            {/* Sticky handle + title */}
+            <div className="px-4 pt-4 pb-3 shrink-0">
+              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+              <h2 className="text-base font-bold text-slate-800 text-center">What do you want to create?</h2>
+            </div>
 
-            <h2 className="text-base font-bold text-slate-800 mb-4 text-center">What do you want to create?</h2>
-
-            <div className="space-y-2">
+            {/* Scrollable options */}
+            <div className="overflow-y-auto px-4 space-y-2 pb-2">
               {OPTIONS.map(({ label, href, emoji, color }) => (
                 <Link
                   key={href}
@@ -76,12 +78,15 @@ export function CreateNewButton() {
               ))}
             </div>
 
-            <button
-              onClick={() => setOpen(false)}
-              className="mt-4 w-full py-3 rounded-2xl text-sm font-semibold text-gray-500 bg-gray-100 active:bg-gray-200"
-            >
-              Cancel
-            </button>
+            {/* Sticky cancel */}
+            <div className="px-4 pt-2 pb-8 shrink-0">
+              <button
+                onClick={() => setOpen(false)}
+                className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-500 bg-gray-100 active:bg-gray-200"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
