@@ -7,6 +7,7 @@ import { getOrgIsDemo } from "@/lib/demo";
 import { AiCaptureModal } from "@/components/AiCaptureModal";
 import SetupChecklist from "@/components/SetupChecklist";
 import { HomeFloatingActions } from "@/components/HomeFloatingActions";
+import { CreateNewButton } from "@/components/CreateNewButton";
 
 const ENTITY_META: Record<string, { emoji: string; label: string; href: (id: string) => string }> = {
   job:      { emoji: "🔧", label: "Job",     href: id => `/app/jobs/${id}` },
@@ -132,13 +133,7 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">Here&apos;s what&apos;s happening today.</p>
         </div>
-        <Link
-          href="/app/quotes/new"
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm shrink-0 mt-0.5"
-          style={{ backgroundColor: "#2563EB" }}
-        >
-          <span className="text-base leading-none">+</span> Create New
-        </Link>
+        <CreateNewButton />
       </div>
 
       <div className="px-4 space-y-4 pb-32">
