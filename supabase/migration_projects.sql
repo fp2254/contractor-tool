@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS projects (
   completed_at DATE,
   photos      JSONB NOT NULL DEFAULT '[]'::jsonb, -- [{url, caption}]
   tags        TEXT[] NOT NULL DEFAULT '{}',
+  cost        NUMERIC(12,2),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
