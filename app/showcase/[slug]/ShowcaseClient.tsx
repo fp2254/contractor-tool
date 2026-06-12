@@ -273,198 +273,285 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
         </div>
       </div>
 
-      {/* ── Tab content ── */}
-      <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+      {/* ── Content + Sidebar ── */}
+      <div className="max-w-6xl mx-auto px-4 py-5">
+        <div className="lg:flex lg:gap-6 items-start">
 
-        {/* TIMELINE */}
-        {activeTab === "Timeline" && (
-          projects.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-              <p className="text-5xl mb-3">🏗️</p>
-              <p className="font-semibold text-gray-700 mb-1">Portfolio coming soon</p>
-              <p className="text-sm text-gray-400">Projects will appear here as they&apos;re added.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {months.map(({ label, items }) => (
-                <div key={label}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{label}</p>
-                    <div className="flex-1 h-px bg-gray-200" />
-                  </div>
-                  <div className="space-y-4">
-                    {items.map(p => {
-                      const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
-                      return (
-                        <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                          <div className="p-4 flex gap-4">
-                            {/* Left: text */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
-                                <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
-                                  style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
-                              </div>
-                              {p.location && (
-                                <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
-                                  <MapPin size={10} />{p.location}
-                                </p>
-                              )}
-                              {p.description && (
-                                <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
-                              )}
-                              <div className="flex items-center gap-2 text-[10px] text-gray-400 flex-wrap mb-2">
-                                {p.cost && (
-                                  <span className="flex items-center gap-1">
-                                    <DollarSign size={10} />{fmtMoney(p.cost)}
-                                  </span>
-                                )}
-                                {p.completed_at && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock size={10} />Completed {fmtDate(p.completed_at)}
-                                  </span>
-                                )}
-                                {p.tags.map((tag, i) => (
-                                  <span key={i} className="flex items-center gap-1">
-                                    <Tag size={9} />{tag}
-                                  </span>
-                                ))}
-                              </div>
-                              {/* Thumbnail strip for extra photos */}
-                              {p.photos.length > 1 && (
-                                <div className="flex gap-1.5">
-                                  {p.photos.slice(1, 4).map((ph, i) => (
-                                    <img key={i} src={ph.url} alt={ph.caption || p.title}
-                                      className="w-12 h-9 rounded-lg object-cover" />
-                                  ))}
-                                  {p.photos.length > 4 && (
-                                    <div className="w-12 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                      +{p.photos.length - 4}
+          {/* ── Main column ── */}
+          <div className="flex-1 min-w-0 space-y-4">
+
+            {/* TIMELINE */}
+            {activeTab === "Timeline" && (
+              projects.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
+                  <p className="text-5xl mb-3">🏗️</p>
+                  <p className="font-semibold text-gray-700 mb-1">Portfolio coming soon</p>
+                  <p className="text-sm text-gray-400">Projects will appear here as they&apos;re added.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {months.map(({ label, items }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                      {/* Month header */}
+                      <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: "#1B3A6B" }}>
+                          <CheckCircle size={14} className="text-white" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">{label}</span>
+                        <div className="flex-1 h-px bg-gray-100" />
+                      </div>
+                      {/* Projects in this month */}
+                      <div className="divide-y divide-gray-50">
+                        {items.map(p => {
+                          const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                          return (
+                            <div key={p.id} className="px-5 py-4">
+                              <div className="flex gap-4">
+                                {/* Left: text */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
+                                    <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
+                                      style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
+                                  </div>
+                                  {p.location && (
+                                    <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
+                                      <MapPin size={10} />{p.location}
+                                    </p>
+                                  )}
+                                  {p.description && (
+                                    <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap mb-2">
+                                    {p.cost && (
+                                      <span className="flex items-center gap-1">
+                                        <DollarSign size={10} />{fmtMoney(p.cost)}
+                                      </span>
+                                    )}
+                                    {p.completed_at && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock size={10} />Completed {fmtDate(p.completed_at)}
+                                      </span>
+                                    )}
+                                    {p.tags.map((tag, i) => (
+                                      <span key={i} className="flex items-center gap-1 text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+                                        <Tag size={9} />{tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                  {p.photos.length > 1 && (
+                                    <div className="flex gap-1.5">
+                                      {p.photos.slice(1, 4).map((ph, i) => (
+                                        <img key={i} src={ph.url} alt={ph.caption || p.title}
+                                          className="w-12 h-9 rounded-lg object-cover" />
+                                      ))}
+                                      {p.photos.length > 4 && (
+                                        <div className="w-12 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                          +{p.photos.length - 4}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                            {/* Right: main photo */}
-                            {p.photos[0] && (
-                              <div className="relative shrink-0">
-                                <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
-                                  className="w-28 h-20 rounded-xl object-cover" />
-                                {p.photos.length > 1 && (
-                                  <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
-                                    +{p.photos.length - 1}
+                                {/* Right: main photo */}
+                                {p.photos[0] && (
+                                  <div className="relative shrink-0">
+                                    <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
+                                      className="w-32 h-24 rounded-xl object-cover" />
+                                    {p.photos.length > 1 && (
+                                      <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                        +{p.photos.length - 1}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* PROJECTS GRID */}
-        {activeTab === "Projects" && (
-          projects.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-              <p className="text-5xl mb-3">📁</p>
-              <p className="font-semibold text-gray-700">No projects yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {tagCounts.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {tagCounts.map(([tag, count]) => (
-                    <span key={tag} className="shrink-0 text-xs font-semibold bg-white border border-gray-200 rounded-full px-3 py-1.5 text-gray-600 shadow-sm">
-                      {tag} <span className="text-gray-400">({count})</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {projects.map(p => {
-                  const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
-                  const ba = detectBeforeAfter(p.photos);
-                  return (
-                    <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                      {ba ? (
-                        <BeforeAfterSlider before={ba.before} after={ba.after} />
-                      ) : p.photos[0] ? (
-                        <img src={p.photos[0].url} alt={p.title} className="w-full h-36 object-cover" />
-                      ) : (
-                        <div className="w-full h-36 flex items-center justify-center text-4xl bg-gray-50">🏗️</div>
-                      )}
-                      <div className="p-3">
-                        <div className="flex items-start justify-between gap-1 mb-1">
-                          <p className="text-sm font-bold text-gray-900 leading-snug flex-1">{p.title}</p>
-                          <span className="text-[9px] font-bold rounded-full px-2 py-0.5 shrink-0"
-                            style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
-                        </div>
-                        {p.location && <p className="text-[11px] text-gray-400 mb-1">{p.location}</p>}
-                        <div className="flex items-center gap-2 flex-wrap mt-1">
-                          {p.cost && <span className="text-[10px] font-bold text-green-700">{fmtMoney(p.cost)}</span>}
-                          {p.completed_at && <span className="text-[10px] text-gray-400">{fmtDate(p.completed_at)}</span>}
-                          {ba && <span className="text-[10px] font-semibold text-purple-600">Before & After ✓</span>}
-                        </div>
-                        {p.tags.length > 0 && (
-                          <div className="flex gap-1 mt-1.5 flex-wrap">
-                            {p.tags.slice(0, 3).map((t, i) => (
-                              <span key={i} className="text-[9px] bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5">{t}</span>
-                            ))}
-                          </div>
-                        )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )
-        )}
+                  ))}
+                </div>
+              )
+            )}
 
-        {/* PHOTOS */}
-        {activeTab === "Photos" && (
-          allPhotos.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-              <p className="text-5xl mb-3">📷</p>
-              <p className="font-semibold text-gray-700">No photos yet</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-xs text-gray-400 font-semibold">
-                {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""} across {projects.filter(p => p.photos.length > 0).length} project{projects.filter(p => p.photos.length > 0).length !== 1 ? "s" : ""}
-              </p>
-              <div className="columns-2 sm:columns-3 gap-2 space-y-2">
-                {allPhotos.map((ph, i) => (
-                  <div key={i} className="break-inside-avoid rounded-xl overflow-hidden bg-gray-100">
-                    <img src={ph.url} alt={ph.caption || ph.project}
-                      className="w-full object-cover" />
-                    {ph.caption && (
-                      <p className="text-[10px] text-gray-500 px-2 py-1 truncate">{ph.caption}</p>
-                    )}
+            {/* PROJECTS — same card style as timeline */}
+            {activeTab === "Projects" && (
+              projects.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
+                  <p className="text-5xl mb-3">📁</p>
+                  <p className="font-semibold text-gray-700">No projects yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tagCounts.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {tagCounts.map(([tag, count]) => (
+                        <span key={tag} className="shrink-0 text-xs font-semibold bg-white border border-gray-200 rounded-full px-3 py-1.5 text-gray-600 shadow-sm">
+                          {tag} <span className="text-gray-400">({count})</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {projects.map(p => {
+                    const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                    const ba = detectBeforeAfter(p.photos);
+                    return (
+                      <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 flex gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
+                              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
+                                style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
+                            </div>
+                            {p.location && (
+                              <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
+                                <MapPin size={10} />{p.location}
+                              </p>
+                            )}
+                            {p.description && (
+                              <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
+                            )}
+                            <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap">
+                              {p.cost && <span className="flex items-center gap-1"><DollarSign size={10} />{fmtMoney(p.cost)}</span>}
+                              {p.completed_at && <span className="flex items-center gap-1"><Clock size={10} />{fmtDate(p.completed_at)}</span>}
+                              {ba && <span className="font-semibold text-purple-600">Before &amp; After ✓</span>}
+                              {p.tags.map((tag, i) => (
+                                <span key={i} className="text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{tag}</span>
+                              ))}
+                            </div>
+                          </div>
+                          {p.photos[0] && (
+                            <div className="relative shrink-0">
+                              <img src={p.photos[0].url} alt={p.title}
+                                className="w-32 h-24 rounded-xl object-cover" />
+                              {p.photos.length > 1 && (
+                                <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                  +{p.photos.length - 1}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+
+            {/* PHOTOS */}
+            {activeTab === "Photos" && (
+              allPhotos.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
+                  <p className="text-5xl mb-3">📷</p>
+                  <p className="font-semibold text-gray-700">No photos yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400 font-semibold">
+                    {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""} across {projects.filter(p => p.photos.length > 0).length} project{projects.filter(p => p.photos.length > 0).length !== 1 ? "s" : ""}
+                  </p>
+                  <div className="columns-2 sm:columns-3 gap-2 space-y-2">
+                    {allPhotos.map((ph, i) => (
+                      <div key={i} className="break-inside-avoid rounded-xl overflow-hidden bg-gray-100">
+                        <img src={ph.url} alt={ph.caption || ph.project} className="w-full object-cover" />
+                        {ph.caption && <p className="text-[10px] text-gray-500 px-2 py-1 truncate">{ph.caption}</p>}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )
-        )}
+                </div>
+              )
+            )}
 
-        {/* CTA */}
-        {profile.is_published && (
-          <div className="bg-[#1B3A6B] rounded-2xl p-5 text-center shadow-sm">
-            <p className="text-white font-bold mb-1">Work with {profile.name.split(" ")[0]}</p>
-            <p className="text-blue-200 text-xs mb-4">Get a free quote for your next project</p>
-            <a href={`/pro/${profile.slug}`}
-              className="inline-block bg-white text-[#1B3A6B] font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
-              Get a Free Quote →
-            </a>
+            {/* Mobile CTA (hidden on desktop — desktop has sidebar CTA) */}
+            {profile.is_published && (
+              <div className="lg:hidden bg-[#1B3A6B] rounded-2xl p-5 text-center shadow-sm">
+                <p className="text-white font-bold mb-1">Work with {profile.name.split(" ")[0]}</p>
+                <p className="text-blue-200 text-xs mb-4">Get a free quote for your next project</p>
+                <a href={`/pro/${profile.slug}`}
+                  className="inline-block bg-white text-[#1B3A6B] font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
+                  Get a Free Quote →
+                </a>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* ── Right sidebar (desktop only) ── */}
+          <div className="hidden lg:block w-72 shrink-0 space-y-4">
+
+            {/* Business Overview */}
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <h3 className="font-bold text-gray-900 mb-4">Business Overview</h3>
+              <div className="space-y-3">
+                {profile.trade && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs text-gray-400">Trade</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.trade}</span>
+                  </div>
+                )}
+                {profile.location && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs text-gray-400">Service Area</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.location}</span>
+                  </div>
+                )}
+                {profile.years_experience != null && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs text-gray-400">Experience</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.years_experience} years</span>
+                  </div>
+                )}
+                {profile.license_text && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs text-gray-400">License</span>
+                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.license_text}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-start">
+                  <span className="text-xs text-gray-400">Projects</span>
+                  <span className="text-xs font-semibold text-gray-700">{stats.projectCount} completed</span>
+                </div>
+                {stats.totalInvested > 0 && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs text-gray-400">Total Value</span>
+                    <span className="text-xs font-semibold text-gray-700">{fmtMoney(stats.totalInvested)}</span>
+                  </div>
+                )}
+              </div>
+              {profile.is_published && (
+                <a href={`/pro/${profile.slug}`}
+                  className="mt-5 block w-full text-center text-white font-bold text-sm py-3 rounded-xl shadow-sm"
+                  style={{ backgroundColor: "#1B3A6B" }}>
+                  Get a Free Quote →
+                </a>
+              )}
+            </div>
+
+            {/* Photos preview */}
+            {allPhotos.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-gray-900">Photos</h3>
+                  <button onClick={() => setActiveTab("Photos")}
+                    className="text-xs font-semibold" style={{ color: "#1B3A6B" }}>
+                    View all {allPhotos.length}
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {allPhotos.slice(0, 6).map((ph, i) => (
+                    <img key={i} src={ph.url} alt={ph.caption || ph.project}
+                      className="w-full aspect-square object-cover rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );
