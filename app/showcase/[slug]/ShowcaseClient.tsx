@@ -289,30 +289,29 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                   <p className="text-sm text-gray-400">Projects will appear here as they&apos;re added.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {months.map(({ label, items }) => (
-                    <div key={label} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                      {/* Month header */}
-                      <div className="flex items-center gap-3 px-5 pt-5 pb-3">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: "#1B3A6B" }}>
-                          <CheckCircle size={14} className="text-white" />
+                    <div key={label}>
+                      {/* Month header — OUTSIDE cards, green checkmark like mockup */}
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                          <CheckCircle size={13} className="text-white" strokeWidth={2.5} />
                         </div>
-                        <span className="text-sm font-bold text-gray-700">{label}</span>
-                        <div className="flex-1 h-px bg-gray-100" />
+                        <span className="text-sm font-semibold text-gray-600">{label}</span>
+                        <div className="flex-1 h-px bg-gray-200" />
                       </div>
-                      {/* Projects in this month */}
-                      <div className="divide-y divide-gray-50">
+                      {/* Individual project cards */}
+                      <div className="space-y-3">
                         {items.map(p => {
                           const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
                           return (
-                            <div key={p.id} className="px-5 py-4">
-                              <div className="flex gap-4">
-                                {/* Left: text */}
+                            <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                              {/* Card body: text LEFT + large portrait photo RIGHT */}
+                              <div className="p-4 flex gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
-                                    <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
+                                  <div className="flex items-start gap-2 mb-1.5">
+                                    <h3 className="font-bold text-[15px] text-gray-900 leading-snug flex-1">{p.title}</h3>
+                                    <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 mt-0.5"
                                       style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
                                   </div>
                                   {p.location && (
@@ -321,52 +320,49 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                                     </p>
                                   )}
                                   {p.description && (
-                                    <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
+                                    <p className="text-[13px] text-gray-600 leading-relaxed mb-2.5 line-clamp-3">{p.description}</p>
                                   )}
-                                  <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap mb-2">
+                                  <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
                                     {p.cost && (
-                                      <span className="flex items-center gap-1">
-                                        <DollarSign size={10} />{fmtMoney(p.cost)}
+                                      <span className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
+                                        <DollarSign size={10} className="text-gray-400" />{fmtMoney(p.cost)}
                                       </span>
                                     )}
                                     {p.completed_at && (
-                                      <span className="flex items-center gap-1">
+                                      <span className="flex items-center gap-1 text-[11px] text-gray-400">
                                         <Clock size={10} />Completed {fmtDate(p.completed_at)}
                                       </span>
                                     )}
                                     {p.tags.map((tag, i) => (
-                                      <span key={i} className="flex items-center gap-1 text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
-                                        <Tag size={9} />{tag}
-                                      </span>
+                                      <span key={i} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{tag}</span>
                                     ))}
                                   </div>
-                                  {p.photos.length > 1 && (
-                                    <div className="flex gap-1.5">
-                                      {p.photos.slice(1, 4).map((ph, i) => (
-                                        <img key={i} src={ph.url} alt={ph.caption || p.title}
-                                          className="w-12 h-9 rounded-lg object-cover" />
-                                      ))}
-                                      {p.photos.length > 4 && (
-                                        <div className="w-12 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                          +{p.photos.length - 4}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
                                 </div>
-                                {/* Right: main photo */}
+                                {/* Right: large photo fills card height */}
                                 {p.photos[0] && (
-                                  <div className="relative shrink-0">
+                                  <div className="relative shrink-0 w-28">
                                     <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
-                                      className="w-32 h-24 rounded-xl object-cover" />
-                                    {p.photos.length > 1 && (
-                                      <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
-                                        +{p.photos.length - 1}
-                                      </div>
-                                    )}
+                                      className="w-28 rounded-xl object-cover"
+                                      style={{ height: "100%", minHeight: "130px", maxHeight: "200px" }} />
                                   </div>
                                 )}
                               </div>
+                              {/* Thumbnail strip — below main content */}
+                              {p.photos.length > 1 && (
+                                <div className="px-4 pb-4 flex gap-2">
+                                  {p.photos.slice(1, 5).map((ph, i) => (
+                                    <div key={i} className="flex-1 max-w-[72px]">
+                                      <img src={ph.url} alt={ph.caption || p.title}
+                                        className="w-full h-14 rounded-xl object-cover" />
+                                    </div>
+                                  ))}
+                                  {p.photos.length > 5 && (
+                                    <div className="flex-1 max-w-[72px] h-14 rounded-xl bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500">
+                                      +{p.photos.length - 5}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -400,11 +396,11 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                     const ba = detectBeforeAfter(p.photos);
                     return (
                       <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 flex gap-4">
+                        <div className="p-4 flex gap-3">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
-                              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
+                            <div className="flex items-start gap-2 mb-1.5">
+                              <h3 className="font-bold text-[15px] text-gray-900 leading-snug flex-1">{p.title}</h3>
+                              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 mt-0.5"
                                 style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
                             </div>
                             {p.location && (
@@ -413,29 +409,49 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                               </p>
                             )}
                             {p.description && (
-                              <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
+                              <p className="text-[13px] text-gray-600 leading-relaxed mb-2.5 line-clamp-3">{p.description}</p>
                             )}
-                            <div className="flex items-center gap-3 text-[10px] text-gray-400 flex-wrap">
-                              {p.cost && <span className="flex items-center gap-1"><DollarSign size={10} />{fmtMoney(p.cost)}</span>}
-                              {p.completed_at && <span className="flex items-center gap-1"><Clock size={10} />{fmtDate(p.completed_at)}</span>}
-                              {ba && <span className="font-semibold text-purple-600">Before &amp; After ✓</span>}
+                            <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
+                              {p.cost && (
+                                <span className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
+                                  <DollarSign size={10} className="text-gray-400" />{fmtMoney(p.cost)}
+                                </span>
+                              )}
+                              {p.completed_at && (
+                                <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                                  <Clock size={10} />{fmtDate(p.completed_at)}
+                                </span>
+                              )}
+                              {ba && <span className="text-[10px] font-semibold text-purple-600">Before &amp; After ✓</span>}
                               {p.tags.map((tag, i) => (
-                                <span key={i} className="text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{tag}</span>
+                                <span key={i} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{tag}</span>
                               ))}
                             </div>
                           </div>
                           {p.photos[0] && (
-                            <div className="relative shrink-0">
+                            <div className="relative shrink-0 w-28">
                               <img src={p.photos[0].url} alt={p.title}
-                                className="w-32 h-24 rounded-xl object-cover" />
-                              {p.photos.length > 1 && (
-                                <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
-                                  +{p.photos.length - 1}
-                                </div>
-                              )}
+                                className="w-28 rounded-xl object-cover"
+                                style={{ height: "100%", minHeight: "130px", maxHeight: "200px" }} />
                             </div>
                           )}
                         </div>
+                        {ba && <div className="px-4 pb-4"><BeforeAfterSlider before={ba.before} after={ba.after} /></div>}
+                        {p.photos.length > 1 && !ba && (
+                          <div className="px-4 pb-4 flex gap-2">
+                            {p.photos.slice(1, 5).map((ph, i) => (
+                              <div key={i} className="flex-1 max-w-[72px]">
+                                <img src={ph.url} alt={p.title}
+                                  className="w-full h-14 rounded-xl object-cover" />
+                              </div>
+                            ))}
+                            {p.photos.length > 5 && (
+                              <div className="flex-1 max-w-[72px] h-14 rounded-xl bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500">
+                                +{p.photos.length - 5}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
