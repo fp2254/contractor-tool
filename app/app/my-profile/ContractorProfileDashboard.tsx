@@ -150,10 +150,11 @@ export default function ContractorProfileDashboard({
           {/* Profile header card */}
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
             {/* Banner */}
-            <div className="h-32 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #0f2347 100%)" }}>
-              {publicProfile?.photoUrl && (
-                <img src={publicProfile.photoUrl} alt="banner" className="w-full h-full object-cover opacity-30" />
-              )}
+            <div className="h-56 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #0f2347 100%)" }}>
+              <img
+                src={publicProfile?.photoUrl || "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop"}
+                alt="banner" className="w-full h-full object-cover opacity-60"
+              />
               {/* Avatar */}
               <div className="absolute -bottom-8 left-5">
                 {business.logoUrl ? (

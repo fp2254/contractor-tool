@@ -177,7 +177,7 @@ export default function HomeownerShowcaseClient({ profile, property, projects, f
             {/* Profile header */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
               {/* Banner */}
-              <div className="relative h-40 overflow-hidden">
+              <div className="relative h-56 overflow-hidden">
                 {profile.bannerUrl ? (
                   <img src={profile.bannerUrl} alt="banner" className="w-full h-full object-cover" />
                 ) : (

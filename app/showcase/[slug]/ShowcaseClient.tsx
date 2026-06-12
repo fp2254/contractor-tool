@@ -191,9 +191,9 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
       {/* ── Profile header ── */}
       <div className="bg-white shadow-sm">
         {/* Banner */}
-        <div className="h-32 md:h-44 bg-gradient-to-br from-[#1B3A6B] to-[#0f2347] relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=300&fit=crop')", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="h-56 bg-gradient-to-br from-[#1B3A6B] to-[#0f2347] relative overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop"
+            alt="banner" className="absolute inset-0 w-full h-full object-cover opacity-60" />
           <div className="absolute -bottom-10 left-6">
             {profile.photo_url ? (
               <img src={profile.photo_url} alt={profile.name}

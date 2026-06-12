@@ -221,17 +221,12 @@ export default function ProfileClient({
         {/* Profile header card */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           {/* Banner */}
-          <div className="relative h-36 bg-gradient-to-br from-slate-600 to-slate-800 overflow-hidden">
-            {profile.bannerUrl && (
-              <img src={profile.bannerUrl} alt="banner" className="w-full h-full object-cover" />
-            )}
-            {!profile.bannerUrl && (
-              <img
-                src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&h=200&fit=crop"
-                alt="house banner"
-                className="w-full h-full object-cover opacity-80"
-              />
-            )}
+          <div className="relative h-56 bg-gradient-to-br from-slate-600 to-slate-800 overflow-hidden">
+            <img
+              src={profile.bannerUrl || "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&h=400&fit=crop"}
+              alt="banner"
+              className="w-full h-full object-cover"
+            />
             {/* Avatar */}
             <div className="absolute -bottom-8 left-6">
               {profile.avatarUrl ? (
