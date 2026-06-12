@@ -327,19 +327,7 @@ export default function ProfileClient({
                     {group.items.map(proj => (
                       <div key={proj.id} className="px-5 py-4">
                         <div className="flex gap-4">
-                          {/* Photo thumbnail or placeholder */}
-                          {proj.photos && (proj.photos as string[]).length > 0 ? (
-                            <div className="relative shrink-0">
-                              <img src={(proj.photos as string[])[0]} alt={proj.title}
-                                className="w-28 h-20 rounded-xl object-cover" />
-                              {(proj.photos as string[]).length > 1 && (
-                                <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
-                                  +{(proj.photos as string[]).length - 1}
-                                </div>
-                              )}
-                            </div>
-                          ) : null}
-
+                          {/* Text on LEFT */}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-gray-900 mb-0.5 leading-snug">{proj.title}</h3>
                             {proj.contractor_name && (
@@ -375,6 +363,18 @@ export default function ProfileClient({
                               )}
                             </div>
                           </div>
+                          {/* Photo on RIGHT */}
+                          {proj.photos && (proj.photos as string[]).length > 0 ? (
+                            <div className="relative shrink-0">
+                              <img src={(proj.photos as string[])[0]} alt={proj.title}
+                                className="w-28 h-20 rounded-xl object-cover" />
+                              {(proj.photos as string[]).length > 1 && (
+                                <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                  +{(proj.photos as string[]).length - 1}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ))}

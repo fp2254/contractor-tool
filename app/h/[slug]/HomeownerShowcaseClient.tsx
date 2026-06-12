@@ -267,16 +267,7 @@ export default function HomeownerShowcaseClient({ profile, property, projects, f
                       {group.items.map(proj => (
                         <div key={proj.id} className="px-5 py-4">
                           <div className="flex gap-4">
-                            {proj.photos.length > 0 && (
-                              <div className="relative shrink-0">
-                                <img src={proj.photos[0]} alt={proj.title} className="w-28 h-20 rounded-xl object-cover" />
-                                {proj.photos.length > 1 && (
-                                  <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
-                                    +{proj.photos.length - 1}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            {/* Text on LEFT */}
                             <div className="flex-1 min-w-0">
                               <h3 className="font-bold text-gray-900 mb-0.5 leading-snug">{proj.title}</h3>
                               {proj.contractor_name && (
@@ -304,6 +295,17 @@ export default function HomeownerShowcaseClient({ profile, property, projects, f
                                 {proj.has_documentation && <span className="flex items-center gap-1 text-blue-600"><FileText size={10} /> Documentation</span>}
                               </div>
                             </div>
+                            {/* Photo on RIGHT */}
+                            {proj.photos.length > 0 && (
+                              <div className="relative shrink-0">
+                                <img src={proj.photos[0]} alt={proj.title} className="w-28 h-20 rounded-xl object-cover" />
+                                {proj.photos.length > 1 && (
+                                  <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                    +{proj.photos.length - 1}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

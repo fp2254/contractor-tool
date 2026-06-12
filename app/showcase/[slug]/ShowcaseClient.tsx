@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   MapPin, CheckCircle, DollarSign,
   Briefcase, ExternalLink, Camera, Tag, Share2, Check,
-  ArrowLeftRight,
+  ArrowLeftRight, Clock,
 } from "lucide-react";
 
 type Photo = { url: string; caption: string };
@@ -176,6 +176,9 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
     [projects]
   );
 
+  // Use first real project photo as banner (no external Unsplash dependency)
+  const bannerUrl = useMemo(() => allPhotos[0]?.url ?? null, [allPhotos]);
+
   const tagCounts = useMemo(() => {
     const m = new Map<string, number>();
     projects.forEach(p => p.tags.forEach(t => m.set(t, (m.get(t) ?? 0) + 1)));
@@ -192,8 +195,10 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
       <div className="bg-white shadow-sm">
         {/* Banner */}
         <div className="h-56 bg-gradient-to-br from-[#1B3A6B] to-[#0f2347] relative overflow-hidden">
-          <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&h=400&fit=crop"
-            alt="banner" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+          {bannerUrl && (
+            <img src={bannerUrl} alt="banner"
+              className="absolute inset-0 w-full h-full object-cover opacity-60" />
+          )}
           <div className="absolute -bottom-10 left-6">
             {profile.photo_url ? (
               <img src={profile.photo_url} alt={profile.name}
@@ -234,20 +239,20 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mt-5">
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+          <div className="grid grid-cols-3 gap-2 mt-5 border-t border-gray-100 pt-5">
+            <div className="text-center">
               <p className="text-xl font-bold text-gray-900">{stats.projectCount}</p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Projects</p>
+              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Completed Projects</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="text-center border-x border-gray-100">
               <p className="text-xl font-bold text-gray-900">
                 {stats.totalInvested > 0 ? fmtMoney(stats.totalInvested) : "—"}
               </p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Total Value</p>
+              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Total Value</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="text-center">
               <p className="text-xl font-bold text-gray-900">{allPhotos.length}</p>
-              <p className="text-[10px] text-gray-400 leading-tight mt-0.5">Photos</p>
+              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Photos</p>
             </div>
           </div>
         </div>
@@ -290,60 +295,68 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                   <div className="space-y-4">
                     {items.map(p => {
                       const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
-                      const ba = detectBeforeAfter(p.photos);
                       return (
                         <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                          {/* Before/After slider if ≥2 photos, else single photo */}
-                          {ba ? (
-                            <BeforeAfterSlider before={ba.before} after={ba.after} />
-                          ) : p.photos.length === 1 ? (
-                            <div className="relative">
-                              <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
-                                className="w-full h-52 object-cover" />
+                          <div className="p-4 flex gap-4">
+                            {/* Left: text */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
+                                <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
+                                  style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
+                              </div>
+                              {p.location && (
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
+                                  <MapPin size={10} />{p.location}
+                                </p>
+                              )}
+                              {p.description && (
+                                <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{p.description}</p>
+                              )}
+                              <div className="flex items-center gap-2 text-[10px] text-gray-400 flex-wrap mb-2">
+                                {p.cost && (
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign size={10} />{fmtMoney(p.cost)}
+                                  </span>
+                                )}
+                                {p.completed_at && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock size={10} />Completed {fmtDate(p.completed_at)}
+                                  </span>
+                                )}
+                                {p.tags.map((tag, i) => (
+                                  <span key={i} className="flex items-center gap-1">
+                                    <Tag size={9} />{tag}
+                                  </span>
+                                ))}
+                              </div>
+                              {/* Thumbnail strip for extra photos */}
+                              {p.photos.length > 1 && (
+                                <div className="flex gap-1.5">
+                                  {p.photos.slice(1, 4).map((ph, i) => (
+                                    <img key={i} src={ph.url} alt={ph.caption || p.title}
+                                      className="w-12 h-9 rounded-lg object-cover" />
+                                  ))}
+                                  {p.photos.length > 4 && (
+                                    <div className="w-12 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                      +{p.photos.length - 4}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          ) : null}
-
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h3 className="font-bold text-gray-900 leading-snug flex-1">{p.title}</h3>
-                              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0"
-                                style={{ color: ss.color, background: ss.bg }}>
-                                {ss.label}
-                              </span>
-                            </div>
-                            {p.location && (
-                              <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
-                                <MapPin size={10} />{p.location}
-                              </p>
+                            {/* Right: main photo */}
+                            {p.photos[0] && (
+                              <div className="relative shrink-0">
+                                <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
+                                  className="w-28 h-20 rounded-xl object-cover" />
+                                {p.photos.length > 1 && (
+                                  <div className="absolute bottom-1 right-1 bg-black/60 rounded-md px-1.5 py-0.5 text-[9px] text-white font-bold">
+                                    +{p.photos.length - 1}
+                                  </div>
+                                )}
+                              </div>
                             )}
-                            {p.description && (
-                              <p className="text-sm text-gray-600 leading-relaxed mb-3">{p.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 flex-wrap">
-                              {p.cost && (
-                                <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full">
-                                  <DollarSign size={10} />{fmtMoney(p.cost)}
-                                </span>
-                              )}
-                              {p.completed_at && (
-                                <span className="text-xs text-gray-400">{fmtDate(p.completed_at)}</span>
-                              )}
-                              {p.photos.length > 1 && !ba && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400">
-                                  <Camera size={10} />{p.photos.length} photos
-                                </span>
-                              )}
-                              {ba && (
-                                <span className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
-                                  <ArrowLeftRight size={9} /> Before &amp; After
-                                </span>
-                              )}
-                              {p.tags.map((tag, i) => (
-                                <span key={i} className="flex items-center gap-1 text-[11px] text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                  <Tag size={9} />{tag}
-                                </span>
-                              ))}
-                            </div>
                           </div>
                         </div>
                       );
