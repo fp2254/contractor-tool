@@ -79,20 +79,20 @@ export default function HomeownerShell({
           })}
         </nav>
 
-        {/* My Showcase link */}
-        <div className="px-3 pb-2">
+        {/* My Profile button */}
+        <div className="px-3 pb-3 border-t border-gray-100 pt-3">
           {slug ? (
             <a href={`/h/${slug}`} target="_blank" rel="noreferrer"
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors text-[13px] group">
-              <Globe size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-              <span className="flex-1">My Showcase</span>
-              <span className="text-[9px] text-gray-300">↗</span>
+              className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#1B3A6B" }}>
+              <Globe size={14} />
+              View My Profile ↗
             </a>
           ) : (
             <Link href="/homeowner/settings"
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-[13px] hover:bg-blue-100 transition-colors">
-              <Globe size={16} />
-              <span className="flex-1 font-semibold">Set up showcase</span>
+              className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-[13px] font-semibold border-2 border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors">
+              <Globe size={14} />
+              Set Up Profile URL
             </Link>
           )}
         </div>
