@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
@@ -44,6 +46,26 @@ export default async function DashboardPage() {
   const admin = createAdminClient();
 
   const isDemo = await getOrgIsDemo(orgId!);
+
+  // Redirect brand-new accounts to setup wizard
+  if (!isDemo) {
+    try {
+      const cookieStore = await cookies();
+      const wizardSkipped = cookieStore.get("tb_wizard_skipped")?.value === "1";
+      if (!wizardSkipped) {
+        const { data: quickSettings } = await admin
+          .from("org_settings")
+          .select("primary_phone,city,owner_name")
+          .eq("org_id", orgId!)
+          .maybeSingle();
+        const s = quickSettings as any;
+        const isNewAccount = !s?.primary_phone && !s?.city && !s?.owner_name;
+        if (isNewAccount) redirect("/app/onboarding");
+      }
+    } catch {
+      // Ignore — never block dashboard load over wizard check
+    }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
