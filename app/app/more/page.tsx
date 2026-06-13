@@ -77,49 +77,47 @@ export default async function MorePage() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
+      <div className="grid grid-cols-2 gap-3">
         {MENU_ITEMS.map((item) => (
           <Link key={item.href} href={item.href}
-            className="flex items-center gap-4 px-4 py-4">
-            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg"
-              style={{ backgroundColor: item.color + "20" }}>
+            className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3.5 shadow-sm">
+            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg shrink-0"
+              style={{ backgroundColor: item.color + "18" }}>
               {item.emoji}
             </div>
-            <span className="flex-1 font-medium text-slate-700">{item.label}</span>
-            <span className="text-gray-300 text-lg">›</span>
+            <span className="text-[13px] font-semibold text-slate-700 leading-tight">{item.label}</span>
           </Link>
         ))}
 
         <Link href="/app/templates"
-          className="flex items-center gap-4 px-4 py-4">
-          <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg"
-            style={{ backgroundColor: "#1B3A6B20" }}>
+          className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3.5 shadow-sm">
+          <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg shrink-0"
+            style={{ backgroundColor: "#1B3A6B18" }}>
             🗂️
           </div>
-          <span className="flex-1 font-medium text-slate-700">Job Templates</span>
-          <span className="text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 mr-1">Soon</span>
-          <span className="text-gray-300 text-lg">›</span>
+          <div className="min-w-0">
+            <span className="text-[13px] font-semibold text-slate-700 leading-tight">Job Templates</span>
+            <span className="block text-[10px] font-bold text-amber-600 mt-0.5">Coming soon</span>
+          </div>
         </Link>
 
         {isAdmin && (
           <Link href="/app/admin"
-            className="flex items-center gap-4 px-4 py-4">
-            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg bg-amber-50">
+            className="flex items-center gap-3 bg-amber-50 rounded-2xl px-3 py-3.5 shadow-sm">
+            <div className="h-9 w-9 rounded-full flex items-center justify-center text-lg shrink-0 bg-amber-100">
               🛡️
             </div>
-            <div className="flex-1">
-              <span className="font-medium text-amber-700">Platform Admin</span>
-              <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5 font-bold uppercase">Internal</span>
+            <div className="min-w-0">
+              <span className="text-[13px] font-semibold text-amber-700 leading-tight">Platform Admin</span>
+              <span className="block text-[10px] font-bold text-amber-500 mt-0.5 uppercase">Internal</span>
             </div>
-            <span className="text-gray-300 text-lg">›</span>
           </Link>
         )}
 
-        <form action={signOut}>
-          <button type="submit" className="flex items-center gap-4 px-4 py-4 w-full text-left">
-            <div className="h-9 w-9 rounded-full flex items-center justify-center bg-red-50 text-lg">🔴</div>
-            <span className="flex-1 font-medium text-red-500">Log Out</span>
-            <span className="text-gray-300 text-lg">›</span>
+        <form action={signOut} className="contents">
+          <button type="submit" className="flex items-center gap-3 bg-white rounded-2xl px-3 py-3.5 shadow-sm text-left w-full">
+            <div className="h-9 w-9 rounded-full flex items-center justify-center bg-red-50 text-lg shrink-0">🔴</div>
+            <span className="text-[13px] font-semibold text-red-500">Log Out</span>
           </button>
         </form>
       </div>
