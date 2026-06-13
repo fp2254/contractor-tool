@@ -152,12 +152,7 @@ export default function OnboardingWizard({
     }
   }
 
-  const canNext = useCallback(() => {
-    if (step === 1) return form.business_name.trim().length > 0;
-    if (step === 2) return form.trade.length > 0;
-    if (step === 3) return form.phone.trim().length > 0 || form.city.trim().length > 0;
-    return true;
-  }, [step, form]);
+  const canNext = useCallback(() => true, []);
 
   if (step === 6) {
     return (
