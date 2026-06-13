@@ -22,9 +22,40 @@ export interface BusinessIdentityData {
   logo_url: string;
 }
 
+type CardScanResult = {
+  name: string;
+  company: string;
+  phone: string;
+  email: string;
+  website: string;
+  address: string;
+  trade: string;
+};
+
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
 const gridCls = "grid grid-cols-2 gap-3";
+
+/** Parse "123 Main St, Portland, ME 04101" into parts */
+function parseAddress(raw: string): { address: string; city: string; state: string; zip: string } {
+  const m = raw.match(/^(.+),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i);
+  if (m) return { address: m[1].trim(), city: m[2].trim(), state: m[3].toUpperCase(), zip: m[4].trim() };
+  // Fallback: try just "street, city, state zip"
+  const parts = raw.split(",").map(s => s.trim());
+  if (parts.length >= 3) {
+    const last = parts[parts.length - 1];
+    const stateZip = last.match(/([A-Z]{2})\s+(\d{5})/i);
+    if (stateZip) {
+      return {
+        address: parts[0],
+        city: parts[parts.length - 2],
+        state: stateZip[1].toUpperCase(),
+        zip: stateZip[2],
+      };
+    }
+  }
+  return { address: raw, city: "", state: "", zip: "" };
+}
 
 export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityData }) {
   const [data, setData] = useState<BusinessIdentityData>(initial);
@@ -34,6 +65,12 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
   const [errorMsg, setErrorMsg] = useState("");
   const [geocoded, setGeocoded] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── Card scan state ── */
+  const cardInputRef = useRef<HTMLInputElement>(null);
+  const [cardPhase, setCardPhase] = useState<"idle" | "scanning" | "preview" | "error">("idle");
+  const [cardResult, setCardResult] = useState<CardScanResult | null>(null);
+  const [cardError, setCardError] = useState("");
 
   function field(name: keyof BusinessIdentityData) {
     return {
@@ -58,13 +95,62 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
       const json = await res.json() as { url?: string; error?: string };
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       setData((prev) => ({ ...prev, logo_url: json.url! }));
-    } catch (err: any) {
-      setErrorMsg(err.message ?? "Logo upload failed");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Logo upload failed");
       setStatus("error");
       setData((prev) => ({ ...prev, logo_url: initial.logo_url }));
     } finally {
       setUploadingLogo(false);
     }
+  }
+
+  async function handleCardFile(file: File) {
+    setCardPhase("scanning");
+    setCardError("");
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target!.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    try {
+      const res = await fetch("/api/ai/card-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_data_url: dataUrl }),
+      });
+      const json = await res.json() as CardScanResult & { error?: string };
+      if (!res.ok || json.error) throw new Error(json.error ?? "Scan failed");
+      setCardResult(json);
+      setCardPhase("preview");
+    } catch (e: unknown) {
+      setCardError(e instanceof Error ? e.message : "Card scan failed");
+      setCardPhase("error");
+    }
+  }
+
+  function applyCardResult() {
+    if (!cardResult) return;
+    setData(prev => {
+      const next = { ...prev };
+      if (cardResult.company) next.business_name = cardResult.company;
+      if (cardResult.name)    next.owner_name    = cardResult.name;
+      if (cardResult.phone)   next.primary_phone = cardResult.phone;
+      if (cardResult.email)   next.business_email = cardResult.email;
+      if (cardResult.website) next.website = cardResult.website;
+      if (cardResult.address) {
+        const parsed = parseAddress(cardResult.address);
+        if (parsed.address) next.address = parsed.address;
+        if (parsed.city)    next.city    = parsed.city;
+        if (parsed.state)   next.state   = parsed.state;
+        if (parsed.zip)     next.zip     = parsed.zip;
+      }
+      return next;
+    });
+    setCardPhase("idle");
+    setCardResult(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -84,16 +170,115 @@ export function BusinessIdentityForm({ initial }: { initial: BusinessIdentityDat
       setGeocoded(!!json.geocoded);
       setStatus("success");
       setTimeout(() => setStatus("idle"), 4000);
-    } catch (err: any) {
-      setErrorMsg(err.message ?? "Could not save — please try again");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Could not save — please try again");
       setStatus("error");
     } finally {
       setSaving(false);
     }
   }
 
+  /* Summarise what the card found (only non-empty fields) */
+  const cardFields = cardResult
+    ? [
+        cardResult.company && { label: "Business", value: cardResult.company },
+        cardResult.name    && { label: "Owner",    value: cardResult.name },
+        cardResult.phone   && { label: "Phone",    value: cardResult.phone },
+        cardResult.email   && { label: "Email",    value: cardResult.email },
+        cardResult.website && { label: "Website",  value: cardResult.website },
+        cardResult.address && { label: "Address",  value: cardResult.address },
+        cardResult.trade   && { label: "Trade",    value: cardResult.trade },
+      ].filter(Boolean) as { label: string; value: string }[]
+    : [];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+
+      {/* ── Business card scanner ── */}
+      <div>
+        <input
+          ref={cardInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={e => {
+            const f = e.target.files?.[0];
+            if (f) handleCardFile(f);
+            (e.target as HTMLInputElement).value = "";
+          }}
+        />
+
+        {cardPhase === "idle" && (
+          <button
+            type="button"
+            onClick={() => cardInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border-2 border-dashed border-blue-200 text-sm font-semibold text-blue-600 bg-blue-50 active:bg-blue-100 transition-colors"
+          >
+            <span className="text-base">🪪</span>
+            Autofill from Business Card
+          </button>
+        )}
+
+        {cardPhase === "scanning" && (
+          <div className="flex items-center justify-center gap-3 py-3 rounded-xl bg-blue-50 border border-blue-100">
+            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-blue-700">Reading your card…</p>
+          </div>
+        )}
+
+        {cardPhase === "error" && (
+          <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 flex items-start gap-3">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">{cardError || "Scan failed"}</p>
+              <button type="button" onClick={() => { setCardPhase("idle"); cardInputRef.current?.click(); }} className="text-xs text-red-500 underline mt-1">Try again</button>
+            </div>
+            <button type="button" onClick={() => setCardPhase("idle")} className="text-gray-400 text-lg leading-none">×</button>
+          </div>
+        )}
+
+        {cardPhase === "preview" && cardResult && (
+          <div className="rounded-2xl bg-white border-2 border-blue-200 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 bg-blue-50 border-b border-blue-100">
+              <span className="text-base">🪪</span>
+              <p className="text-sm font-semibold text-blue-800 flex-1">Card scanned — review fields to apply</p>
+              <button type="button" onClick={() => setCardPhase("idle")} className="text-blue-400 text-lg leading-none hover:text-blue-600">×</button>
+            </div>
+            <div className="px-4 py-3 space-y-1.5">
+              {cardFields.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">No fields could be read — try a clearer photo.</p>
+              ) : (
+                cardFields.map(f => (
+                  <div key={f.label} className="flex gap-2 text-sm">
+                    <span className="text-gray-400 w-16 shrink-0 text-xs font-semibold uppercase pt-0.5">{f.label}</span>
+                    <span className="text-gray-800 truncate">{f.value}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {cardFields.length > 0 && (
+              <div className="flex gap-2 px-4 pb-4">
+                <button
+                  type="button"
+                  onClick={applyCardResult}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold"
+                  style={{ backgroundColor: "#1B3A6B" }}
+                >
+                  Apply to Form →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setCardPhase("idle"); cardInputRef.current?.click(); }}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 active:bg-gray-200"
+                >
+                  Rescan
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Logo */}
       <div>
