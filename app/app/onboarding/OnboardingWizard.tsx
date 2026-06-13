@@ -53,7 +53,7 @@ const PAYMENT_METHODS = [
   { id: "ach",     label: "Bank Transfer" },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const TEMPLATES = [
   { id: "classic", name: "Classic",       desc: "Trust-focused, traditional",  colors: ["#0f1f3d", "#f5a623"] as const },
@@ -232,7 +232,7 @@ export default function OnboardingWizard({
           service_area: form.service_area,
         }),
       });
-      setStep(6);
+      setStep(7);
     } finally {
       setSaving(false);
     }
@@ -240,22 +240,68 @@ export default function OnboardingWizard({
 
   const canNext = useCallback(() => true, []);
 
-  if (step === 6) {
+  /* ── Step 6: Try Your Form ── */
+  const [testName, setTestName] = useState("");
+  const [testPhone, setTestPhone] = useState("");
+  const [testDesc, setTestDesc] = useState("");
+  const [testPhase, setTestPhase] = useState<"idle" | "submitting" | "done" | "error">("idle");
+  const [testLeadId, setTestLeadId] = useState<string | null>(null);
+
+  async function handleTestSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!testName.trim()) return;
+    setTestPhase("submitting");
+    try {
+      const res = await fetch("/api/leads/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: testName, phone: testPhone, description: testDesc }),
+      });
+      const json = await res.json() as { ok?: boolean; lead_id?: string; error?: string };
+      if (!res.ok || json.error) throw new Error(json.error ?? "Failed");
+      setTestLeadId(json.lead_id ?? null);
+      setTestPhase("done");
+    } catch {
+      setTestPhase("error");
+    }
+  }
+
+  if (step === 7) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-sm max-w-sm w-full p-8 text-center">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5 text-4xl">
             🎉
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re all set!</h2>
-          <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-            Your account is ready to go. Start by adding a customer or creating your first quote.
-          </p>
+          {testLeadId ? (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">First lead in! 🎉</h2>
+              <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+                Your test request just landed in your Leads pipeline. That&apos;s exactly how it works when a real customer fills out your page.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re all set!</h2>
+              <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+                Your account is ready to go. Start by adding a customer or creating your first quote.
+              </p>
+            </>
+          )}
           <div className="space-y-3">
+            {testLeadId && (
+              <button
+                onClick={() => router.push("/app/leads")}
+                className="w-full py-3 rounded-xl text-white text-sm font-bold"
+                style={{ backgroundColor: "#1B3A6B" }}
+              >
+                See My Lead →
+              </button>
+            )}
             <button
               onClick={() => router.push("/app/customers")}
-              className="w-full py-3 rounded-xl text-white text-sm font-bold"
-              style={{ backgroundColor: "#1B3A6B" }}
+              className={`w-full py-3 rounded-xl text-sm font-bold ${testLeadId ? "text-gray-700 bg-gray-50 border border-gray-200" : "text-white"}`}
+              style={testLeadId ? undefined : { backgroundColor: "#1B3A6B" }}
             >
               Add Your First Customer →
             </button>
@@ -673,6 +719,100 @@ export default function OnboardingWizard({
               />
               <p className="text-[11px] text-gray-400 mt-1.5">Printed at the bottom of every invoice you send.</p>
             </div>
+          </div>
+        )}
+
+        {/* Step 6: Try Your Form */}
+        {step === 6 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Try your form</h2>
+              <p className="text-sm text-gray-500">
+                This is what customers see on your page. Fill it out as a test — it creates a real lead in your pipeline so you can see the whole flow.
+              </p>
+            </div>
+
+            {/* Phone-frame form preview */}
+            <div className="rounded-3xl border-4 border-gray-800 bg-gray-800 p-1 shadow-xl mx-auto max-w-xs">
+              {/* Phone speaker */}
+              <div className="flex justify-center mb-1">
+                <div className="w-16 h-1 bg-gray-600 rounded-full" />
+              </div>
+              <div className="bg-white rounded-2xl overflow-hidden">
+                {/* Mini header */}
+                <div className="px-4 py-3" style={{ backgroundColor: "#1B3A6B" }}>
+                  <p className="text-white font-bold text-sm truncate">
+                    {form.business_name || "Your Business"}
+                  </p>
+                  <p className="text-blue-200 text-xs mt-0.5">
+                    {form.tagline || "Get a free quote today"}
+                  </p>
+                </div>
+
+                {testPhase === "done" ? (
+                  <div className="px-4 py-8 text-center">
+                    <div className="text-3xl mb-2">✅</div>
+                    <p className="font-bold text-gray-900 text-sm mb-1">Request sent!</p>
+                    <p className="text-xs text-gray-500">We&apos;ll be in touch shortly.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleTestSubmit} className="p-4 space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Your Name *</label>
+                      <input
+                        required
+                        value={testName}
+                        onChange={e => setTestName(e.target.value)}
+                        placeholder="Jane Smith"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        value={testPhone}
+                        onChange={e => setTestPhone(e.target.value)}
+                        placeholder="(207) 555-0100"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">What do you need?</label>
+                      <textarea
+                        rows={2}
+                        value={testDesc}
+                        onChange={e => setTestDesc(e.target.value)}
+                        placeholder="e.g. Roof is leaking above the kitchen…"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+                      />
+                    </div>
+                    {testPhase === "error" && (
+                      <p className="text-xs text-red-500 font-medium">Something went wrong — try again.</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={testPhase === "submitting" || !testName.trim()}
+                      className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50"
+                      style={{ backgroundColor: "#1B3A6B" }}
+                    >
+                      {testPhase === "submitting" ? "Sending…" : "Request a Quote →"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {testPhase === "done" ? (
+              <div className="rounded-2xl bg-green-50 border border-green-100 px-4 py-4 text-center">
+                <p className="font-bold text-green-800 text-sm mb-1">🎉 Your first lead just landed!</p>
+                <p className="text-xs text-green-700">Check your Leads pipeline to see it — and that&apos;s exactly how it works when a real customer submits this form.</p>
+              </div>
+            ) : (
+              <p className="text-[11px] text-gray-400 text-center">
+                Tip: try pre-filling your own name and a fake job description — it only takes 10 seconds.
+              </p>
+            )}
           </div>
         )}
       </div>
