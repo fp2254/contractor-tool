@@ -53,7 +53,7 @@ const PAYMENT_METHODS = [
   { id: "ach",     label: "Bank Transfer" },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -275,7 +275,7 @@ export default function OnboardingWizard({
       {/* Content */}
       <div className="flex-1 px-4 py-6 overflow-y-auto">
 
-        {/* Step 1: Business Name & Owner */}
+        {/* Step 1: About Your Business (combined business info + contact) */}
         {step === 1 && (
           <div className="space-y-5">
             <div>
@@ -389,49 +389,6 @@ export default function OnboardingWizard({
                   className={inputCls}
                 />
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Trade */}
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Your Trade</h2>
-              <p className="text-sm text-gray-500">What kind of work do you do? This personalizes your service presets.</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {TRADES.map(t => {
-                const active = form.trade === t.label;
-                return (
-                  <button
-                    key={t.label}
-                    onClick={() => selectTrade(t.label)}
-                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border-2 text-center transition-all"
-                    style={{
-                      borderColor: active ? "#1B3A6B" : "#E5E7EB",
-                      backgroundColor: active ? "#EFF3FA" : "white",
-                    }}
-                  >
-                    <span className="text-2xl">{t.emoji}</span>
-                    <span className="text-[11px] font-semibold leading-tight" style={{ color: active ? "#1B3A6B" : "#374151" }}>
-                      {t.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Contact & Location */}
-        {step === 3 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Your Details</h2>
-              <p className="text-sm text-gray-500">This shows on your quotes, invoices, and PDFs.</p>
-            </div>
-            <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
               <div>
                 <label className={labelCls}>Phone Number</label>
                 <input
@@ -476,8 +433,39 @@ export default function OnboardingWizard({
           </div>
         )}
 
-        {/* Step 4: Service Presets */}
-        {step === 4 && (
+        {/* Step 2: Trade */}
+        {step === 2 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Your Trade</h2>
+              <p className="text-sm text-gray-500">What kind of work do you do? This personalizes your service presets.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {TRADES.map(t => {
+                const active = form.trade === t.label;
+                return (
+                  <button
+                    key={t.label}
+                    onClick={() => selectTrade(t.label)}
+                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-2xl border-2 text-center transition-all"
+                    style={{
+                      borderColor: active ? "#1B3A6B" : "#E5E7EB",
+                      backgroundColor: active ? "#EFF3FA" : "white",
+                    }}
+                  >
+                    <span className="text-2xl">{t.emoji}</span>
+                    <span className="text-[11px] font-semibold leading-tight" style={{ color: active ? "#1B3A6B" : "#374151" }}>
+                      {t.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Service Presets */}
+        {step === 3 && (
           <div className="space-y-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Service Presets</h2>
@@ -551,8 +539,8 @@ export default function OnboardingWizard({
           </div>
         )}
 
-        {/* Step 5: Payment Methods */}
-        {step === 5 && (
+        {/* Step 4: Payment Methods */}
+        {step === 4 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">How You Get Paid</h2>
