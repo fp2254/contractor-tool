@@ -7,24 +7,28 @@ import { ensureUserOrg } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 const MENU_ITEMS = [
-  { label: "Quote Requests",     href: "/app/requests",       emoji: "📬", color: "#F97316" },
-  { label: "My Reviews",         href: "/app/reviews",         emoji: "⭐", color: "#F59E0B" },
-  { label: "Expenses",           href: "/app/expenses",        emoji: "💸", color: "#16A34A" },
-  { label: "Activity Log",       href: "/app/activity",        emoji: "📋", color: "#1B3A6B" },
-  { label: "Scan Receipt",       href: "/app/receipts",        emoji: "🧾", color: "#16A34A" },
-  { label: "Completed Projects", href: "/app/projects",        emoji: "🏗️", color: "#1B3A6B" },
-  { label: "Leads",              href: "/app/leads",           emoji: "🎯", color: "#F97316" },
-  { label: "Schedule",           href: "/app/schedule",        emoji: "📅", color: "#1B3A6B" },
-  { label: "Trade Contacts",     href: "/app/trade-contacts",  emoji: "👥", color: "#1B3A6B" },
-  { label: "Inventory",          href: "/app/inventory",       emoji: "📦", color: "#8B4513" },
-  { label: "Accounting Export",  href: "/app/export",          emoji: "📤", color: "#16A34A" },
-  { label: "Earn With TradeBase",href: "/app/referral",        emoji: "💰", color: "#16A34A" },
-  { label: "Reports",            href: "/app/reports",         emoji: "📊", color: "#1B3A6B" },
+  // Daily work
+  { label: "Leads",              href: "/app/leads",             emoji: "🎯", color: "#F97316" },
+  { label: "Quote Requests",     href: "/app/requests",          emoji: "📬", color: "#F97316" },
+  { label: "Schedule",           href: "/app/schedule",          emoji: "📅", color: "#1B3A6B" },
+  { label: "Expenses",           href: "/app/expenses",          emoji: "💸", color: "#16A34A" },
+  { label: "Scan Receipt",       href: "/app/receipts",          emoji: "🧾", color: "#16A34A" },
+  { label: "Activity Log",       href: "/app/activity",          emoji: "📋", color: "#1B3A6B" },
+  // Business growth
   { label: "My Profile",         href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
+  { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
+  { label: "Earn With TradeBase",href: "/app/referral",          emoji: "💰", color: "#16A34A" },
+  // Management
+  { label: "Trade Contacts",     href: "/app/trade-contacts",    emoji: "👥", color: "#1B3A6B" },
+  { label: "Inventory",          href: "/app/inventory",         emoji: "📦", color: "#8B4513" },
+  { label: "Completed Projects", href: "/app/projects",          emoji: "🏗️", color: "#1B3A6B" },
+  // Admin & settings
+  { label: "Reports",            href: "/app/reports",           emoji: "📊", color: "#1B3A6B" },
+  { label: "Accounting Export",  href: "/app/export",            emoji: "📤", color: "#16A34A" },
   { label: "Setup Wizard",       href: "/app/onboarding?redo=1", emoji: "🧭", color: "#1B3A6B" },
   { label: "Settings",           href: "/app/profile",           emoji: "⚙️", color: "#6B7280" },
   { label: "App Settings",       href: "/app/settings",          emoji: "🔧", color: "#6B7280" },
-  { label: "Support",            href: "/app/support",         emoji: "❓", color: "#6B7280" },
+  { label: "Support",            href: "/app/support",           emoji: "❓", color: "#6B7280" },
 ];
 
 async function signOut() {
