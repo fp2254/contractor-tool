@@ -21,8 +21,9 @@ const MENU_ITEMS = [
   { label: "Earn With TradeBase",href: "/app/referral",        emoji: "💰", color: "#16A34A" },
   { label: "Reports",            href: "/app/reports",         emoji: "📊", color: "#1B3A6B" },
   { label: "My Profile",         href: "/app/my-profile",      emoji: "🌐", color: "#1B3A6B" },
-  { label: "Settings",           href: "/app/profile",         emoji: "⚙️", color: "#6B7280" },
-  { label: "App Settings",       href: "/app/settings",        emoji: "🔧", color: "#6B7280" },
+  { label: "Setup Wizard",        href: "/app/onboarding?redo=1", emoji: "🧭", color: "#1B3A6B" },
+  { label: "Settings",           href: "/app/profile",           emoji: "⚙️", color: "#6B7280" },
+  { label: "App Settings",       href: "/app/settings",          emoji: "🔧", color: "#6B7280" },
   { label: "Support",            href: "/app/support",         emoji: "❓", color: "#6B7280" },
 ];
 

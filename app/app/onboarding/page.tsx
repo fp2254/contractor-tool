@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import OnboardingWizard from "./OnboardingWizard";
 
 export const dynamic = "force-dynamic";
 
-export default async function OnboardingPage() {
+type Props = { searchParams: Promise<{ redo?: string }> };
+
+export default async function OnboardingPage({ searchParams }: Props) {
+  const { redo } = await searchParams;
   const orgId = await ensureUserOrg();
   const admin = createAdminClient() as any;
 
@@ -15,8 +17,11 @@ export default async function OnboardingPage() {
     admin.from("org_settings").select("owner_name,primary_phone,city").eq("org_id", orgId!).maybeSingle(),
   ]);
 
-  const alreadySetUp = !!(settings?.primary_phone || settings?.city);
-  if (alreadySetUp) redirect("/app");
+  // Skip redirect when user explicitly chose to redo onboarding
+  if (!redo) {
+    const alreadySetUp = !!(settings?.primary_phone || settings?.city);
+    if (alreadySetUp) redirect("/app");
+  }
 
   return (
     <OnboardingWizard
