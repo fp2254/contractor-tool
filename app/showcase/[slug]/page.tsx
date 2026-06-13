@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { ensureUserOrg } from "@/lib/auth";
 import ShowcaseClient from "./ShowcaseClient";
 
 export const dynamic = "force-dynamic";
@@ -62,5 +64,23 @@ export default async function Page({ params }: Props) {
   const { slug } = await params;
   const data = await loadShowcase(slug);
   if (!data) notFound();
-  return <ShowcaseClient {...data} />;
+
+  // Detect if the logged-in contractor owns this showcase
+  let isOwner = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const orgId = await ensureUserOrg();
+      const a = createAdminClient() as any;
+      const { data: pub } = await a
+        .from("public_profiles")
+        .select("org_id")
+        .eq("slug", slug)
+        .maybeSingle();
+      isOwner = pub?.org_id === orgId;
+    }
+  } catch { /* not logged in or no org — remain false */ }
+
+  return <ShowcaseClient {...data} isOwner={isOwner} />;
 }

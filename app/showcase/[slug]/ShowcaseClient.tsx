@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   MapPin, CheckCircle, DollarSign,
   Briefcase, ExternalLink, Camera, Tag, Share2, Check,
-  ArrowLeftRight, Clock,
+  ArrowLeftRight, Clock, Pencil, Trash2, X,
 } from "lucide-react";
 
 type Photo = { url: string; caption: string };
@@ -38,6 +38,7 @@ type Props = {
     totalInvested: number;
   };
   projects: Project[];
+  isOwner?: boolean;
 };
 
 const TABS = ["Timeline", "Projects", "Photos"] as const;
@@ -168,8 +169,22 @@ function ShareButton({ name, slug }: { name: string; slug: string }) {
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
-export default function ShowcaseClient({ profile, stats, projects }: Props) {
+export default function ShowcaseClient({ profile, stats, projects: initialProjects, isOwner = false }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("Timeline");
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [managing, setManaging] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    if (!confirm("Remove this project from your showcase?")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/projects/api/${id}`, { method: "DELETE" });
+      if (res.ok) setProjects(ps => ps.filter(p => p.id !== id));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const allPhotos = useMemo(() =>
     projects.flatMap(p => p.photos.map(ph => ({ ...ph, project: p.title }))),
@@ -212,6 +227,18 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
           </div>
           {/* Action buttons */}
           <div className="absolute bottom-3 right-4 flex gap-2">
+            {isOwner && (
+              <button
+                onClick={() => setManaging(m => !m)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors"
+                style={{
+                  backgroundColor: managing ? "#DC2626" : "rgba(255,255,255,0.2)",
+                  color: "white",
+                  backdropFilter: managing ? undefined : "blur(4px)",
+                }}>
+                {managing ? <><X size={11} /> Done</> : <><Pencil size={11} /> Manage</>}
+              </button>
+            )}
             <ShareButton name={profile.name} slug={profile.slug} />
             <a href={`/pro/${profile.slug}`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm"
@@ -305,7 +332,18 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                         {items.map(p => {
                           const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
                           return (
-                            <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                            <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden relative">
+                              {/* Delete overlay (manage mode) */}
+                              {managing && (
+                                <button
+                                  onClick={() => handleDelete(p.id)}
+                                  disabled={deletingId === p.id}
+                                  className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-1 shadow-lg active:bg-red-600 disabled:opacity-60"
+                                >
+                                  <Trash2 size={11} />
+                                  {deletingId === p.id ? "Removing…" : "Remove"}
+                                </button>
+                              )}
                               {/* Card body: text LEFT + large portrait photo RIGHT */}
                               <div className="p-4 flex gap-3">
                                 <div className="flex-1 min-w-0">
@@ -395,7 +433,18 @@ export default function ShowcaseClient({ profile, stats, projects }: Props) {
                     const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
                     const ba = detectBeforeAfter(p.photos);
                     return (
-                      <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                      <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden relative">
+                        {/* Delete overlay (manage mode) */}
+                        {managing && (
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            disabled={deletingId === p.id}
+                            className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-1 shadow-lg active:bg-red-600 disabled:opacity-60"
+                          >
+                            <Trash2 size={11} />
+                            {deletingId === p.id ? "Removing…" : "Remove"}
+                          </button>
+                        )}
                         <div className="p-4 flex gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2 mb-1.5">
