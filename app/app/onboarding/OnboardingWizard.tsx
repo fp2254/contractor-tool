@@ -53,7 +53,14 @@ const PAYMENT_METHODS = [
   { id: "ach",     label: "Bank Transfer" },
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
+
+const TEMPLATES = [
+  { id: "classic", name: "Classic",       desc: "Trust-focused, traditional",  colors: ["#0f1f3d", "#f5a623"] as const },
+  { id: "modern",  name: "Modern Pro",    desc: "Sleek dark + bold stats",      colors: ["#0d1117", "#58a6ff"] as const },
+  { id: "trust",   name: "Trust Builder", desc: "Services, reviews, gallery",   colors: ["#0f172a", "#f59e0b"] as const },
+  { id: "",        name: "Default",       desc: "Mobile-first dark",            colors: ["#0a0a0a", "#ff5b1f"] as const },
+];
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
@@ -145,6 +152,9 @@ export default function OnboardingWizard({
     service_area: "",
     payment_methods: ["cash", "check"],
     payment_instructions: "",
+    selected_template: "classic",
+    tagline: "",
+    urgency_line: "",
   });
 
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -211,6 +221,17 @@ export default function OnboardingWizard({
           payment_instructions: form.payment_instructions,
         }),
       });
+      await fetch("/api/profile/public-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selected_template: form.selected_template,
+          tagline: form.tagline,
+          urgency_line: form.urgency_line,
+          phone: form.phone,
+          service_area: form.service_area,
+        }),
+      });
       setStep(6);
     } finally {
       setSaving(false);
@@ -239,8 +260,14 @@ export default function OnboardingWizard({
               Add Your First Customer →
             </button>
             <button
+              onClick={() => router.push("/app/profile-wizard")}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-50 border border-gray-200"
+            >
+              🌐 Finish My Lead Page
+            </button>
+            <button
               onClick={() => router.push("/app")}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-50"
+              className="w-full py-2 text-sm font-medium text-gray-400"
             >
               Go to Dashboard
             </button>
@@ -539,7 +566,77 @@ export default function OnboardingWizard({
           </div>
         )}
 
-        {/* Step 4: Payment Methods */}
+        {/* Step 5: Lead Page */}
+        {step === 5 && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Your Lead Page</h2>
+              <p className="text-sm text-gray-500">Set up your public page so customers can find and contact you online.</p>
+            </div>
+
+            {/* Template picker */}
+            <div>
+              <p className={labelCls}>Pick a style</p>
+              <div className="grid grid-cols-2 gap-3">
+                {TEMPLATES.map(t => {
+                  const active = form.selected_template === t.id;
+                  return (
+                    <button
+                      key={t.id || "default"}
+                      onClick={() => set("selected_template", t.id)}
+                      className="rounded-2xl overflow-hidden border-2 text-left transition-all"
+                      style={{ borderColor: active ? "#1B3A6B" : "#E5E7EB" }}
+                    >
+                      <div
+                        className="h-14 flex items-center justify-center gap-2"
+                        style={{ background: `linear-gradient(135deg, ${t.colors[0]} 0%, ${t.colors[1]} 100%)` }}
+                      >
+                        <div className="w-5 h-5 rounded-full bg-white/20" />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.colors[1] }} />
+                      </div>
+                      <div className="bg-white px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-gray-800">{t.name}</p>
+                          {active && (
+                            <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+                              <svg viewBox="0 0 12 10" className="w-2.5 h-2" fill="none"><path d="M1 5l3 3 7-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{t.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+              <div>
+                <label className={labelCls}>Headline <span className="font-normal normal-case text-gray-400">(optional)</span></label>
+                <input
+                  value={form.tagline}
+                  onChange={e => set("tagline", e.target.value)}
+                  placeholder="e.g. Maine's most trusted roofer — 20 yrs, fully licensed"
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-gray-400 mt-1">The first line customers see — make it your best pitch.</p>
+              </div>
+              <div>
+                <label className={labelCls}>Availability <span className="font-normal normal-case text-gray-400">(optional)</span></label>
+                <input
+                  value={form.urgency_line}
+                  onChange={e => set("urgency_line", e.target.value)}
+                  placeholder="e.g. Booking 2–3 days out — call to claim your spot"
+                  className={inputCls}
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Sets expectations and creates urgency to call you now.</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 text-center">You can add more detail (services, photos, reviews) in the Profile editor anytime.</p>
+          </div>
+        )}
+
         {step === 4 && (
           <div className="space-y-5">
             <div>
