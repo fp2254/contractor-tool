@@ -1,5 +1,5 @@
-import ProfileWizard from "./ProfileWizard";
+import { redirect } from "next/navigation";
 
 export default function ProfileWizardPage() {
-  return <ProfileWizard />;
+  redirect("/app/onboarding?redo=1");
 }

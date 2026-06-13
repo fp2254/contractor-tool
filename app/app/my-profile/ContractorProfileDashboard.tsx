@@ -478,18 +478,20 @@ export default function ContractorProfileDashboard({
 
           {/* Profile strength */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-3">Profile Strength</h3>
+            <h3 className="font-bold text-gray-900 mb-3">Profile Completeness</h3>
             {(() => {
-              const checks = [
-                { label: "Profile published",  done: !!publicProfile?.isPublished },
-                { label: "Trade set",          done: !!(publicProfile?.trade) },
-                { label: "Tagline added",      done: !!(publicProfile?.tagline) },
-                { label: "Services listed",    done: (publicProfile?.services?.length ?? 0) > 0 },
-                { label: "Photos uploaded",    done: (publicProfile?.photos?.length ?? 0) > 0 },
-                { label: "Has reviews",        done: stats.reviewCount > 0 },
-                { label: "License on profile", done: !!(publicProfile?.licenseText || business.licenseNumber) },
+              const checks: { label: string; done: boolean; hint: string }[] = [
+                { label: "Template chosen",   done: publicProfile?.selectedTemplate !== undefined && publicProfile?.selectedTemplate !== null, hint: "Pick a style in the Setup Wizard." },
+                { label: "Headline/tagline",  done: !!(publicProfile?.tagline?.trim()), hint: "One-line pitch customers see first." },
+                { label: "Phone on page",     done: !!(business.phone?.trim()), hint: "So customers can call from your page." },
+                { label: "Trade/service set", done: !!(publicProfile?.trade?.trim()), hint: "Tell customers what you do." },
+                { label: "Services listed",   done: (publicProfile?.services?.length ?? 0) > 0, hint: "Add at least one service offering." },
+                { label: "About section",     done: (publicProfile?.aboutBullets?.length ?? 0) > 0, hint: "A few bullet points about your work." },
+                { label: "Page URL set",      done: !!(publicProfile?.slug?.trim()), hint: "Your custom /pro/your-name URL." },
+                { label: "Page published",    done: !!publicProfile?.isPublished, hint: "Go live so customers can find you." },
               ];
-              const score = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
+              const done = checks.filter(c => c.done).length;
+              const score = Math.round((done / checks.length) * 100);
               const color = score >= 80 ? "#16A34A" : score >= 50 ? "#F59E0B" : "#DC2626";
               return (
                 <>
@@ -502,21 +504,31 @@ export default function ContractorProfileDashboard({
                   <div className="h-2 bg-gray-100 rounded-full mb-3 overflow-hidden">
                     <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: color }} />
                   </div>
-                  <div className="space-y-1.5">
-                    {checks.map(({ label, done }) => (
-                      <div key={label} className="flex items-center gap-2">
-                        {done ? <CheckCircle size={12} fill="#16A34A" className="text-white shrink-0" />
-                              : <div className="w-3 h-3 rounded-full border-2 border-gray-200 shrink-0" />}
-                        <span className={`text-[11px] ${done ? "text-gray-600" : "text-gray-400"}`}>{label}</span>
+                  <div className="space-y-2">
+                    {checks.map(({ label, done, hint }) => (
+                      <div key={label} className="flex items-start gap-2">
+                        {done
+                          ? <CheckCircle size={13} fill="#16A34A" className="text-white shrink-0 mt-0.5" />
+                          : <div className="w-3 h-3 rounded-full border-2 border-gray-200 shrink-0 mt-1" />}
+                        <div className="min-w-0">
+                          <span className={`text-[11px] font-semibold ${done ? "text-gray-700" : "text-gray-400"}`}>{label}</span>
+                          {!done && <p className="text-[10px] text-gray-300 leading-tight mt-0.5">{hint}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
                   {score < 100 && (
-                    <Link href="/app/profile/public-profile"
-                      className="mt-3 block w-full text-center rounded-xl py-2 text-xs font-bold text-white"
-                      style={{ backgroundColor: "#1B3A6B" }}>
-                      Improve Profile
-                    </Link>
+                    <div className="mt-3 space-y-2">
+                      <Link href="/app/onboarding?redo=1"
+                        className="block w-full text-center rounded-xl py-2 text-xs font-bold text-white"
+                        style={{ backgroundColor: "#1B3A6B" }}>
+                        Complete in Setup Wizard →
+                      </Link>
+                      <Link href="/app/profile/public-profile"
+                        className="block w-full text-center rounded-xl py-1.5 text-[11px] font-semibold text-gray-500 border border-gray-200">
+                        Open Full Editor
+                      </Link>
+                    </div>
                   )}
                 </>
               );
