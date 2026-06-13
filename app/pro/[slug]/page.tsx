@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { ensureUserOrg } from "@/lib/auth";
 import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
@@ -152,9 +154,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+async function detectOwner(slug: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const orgId = await ensureUserOrg();
+    const admin = createAdminClient() as any;
+    const { data: pub } = await admin
+      .from("public_profiles")
+      .select("org_id")
+      .eq("slug", slug)
+      .maybeSingle();
+    return pub?.org_id === orgId;
+  } catch { return false; }
+}
+
+function BackBar() {
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
+      background: "rgba(27,58,107,0.92)", backdropFilter: "blur(6px)",
+      padding: "10px 16px", display: "flex", alignItems: "center",
+    }}>
+      <a href="/app/more" style={{
+        display: "flex", alignItems: "center", gap: 6,
+        color: "white", fontWeight: 700, fontSize: 13, textDecoration: "none",
+      }}>
+        ← Back to App
+      </a>
+    </div>
+  );
+}
+
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  const profile = await loadProfile(slug);
+  const [profile, isOwner] = await Promise.all([loadProfile(slug), detectOwner(slug)]);
 
   if (!profile) {
     return (
@@ -247,13 +282,13 @@ export default async function Page({ params }: Props) {
   );
 
   if (profile.selectedTemplate === "classic") {
-    return <><ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
   if (profile.selectedTemplate === "modern") {
-    return <><ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
   if (profile.selectedTemplate === "trust") {
-    return <><TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
   }
-  return <><ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}</>;
+  return <>{isOwner && <BackBar />}<ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}</>;
 }

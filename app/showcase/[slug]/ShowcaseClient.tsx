@@ -214,6 +214,13 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
             <img src={bannerUrl} alt="banner"
               className="absolute inset-0 w-full h-full object-cover opacity-60" />
           )}
+          {isOwner && (
+            <a href="/app/more"
+              className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm z-10"
+              style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}>
+              ← Back
+            </a>
+          )}
           <div className="absolute -bottom-10 left-6">
             {profile.photo_url ? (
               <img src={profile.photo_url} alt={profile.name}
