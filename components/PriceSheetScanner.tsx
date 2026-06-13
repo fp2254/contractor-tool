@@ -238,7 +238,7 @@ export default function PriceSheetScanner({ onScanned }: Props) {
         className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border-2 border-dashed border-blue-200 text-sm font-semibold text-blue-600 bg-blue-50 active:bg-blue-100 transition-colors"
       >
         <span className="text-lg">📸</span>
-        Scan Price Sheet with AI
+        Scan Price Sheet
       </button>
       <p className="text-[11px] text-gray-400 text-center mt-2 leading-relaxed">
         Take a photo or upload an image of your price list — AI extracts every service and price automatically.

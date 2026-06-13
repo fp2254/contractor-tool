@@ -23,7 +23,7 @@ export type AiAttachment = {
 
 const FEATURE_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
   permit_assistant: { label: "Permit Assistant", emoji: "📋", color: "bg-blue-100 text-blue-700" },
-  job_capture:      { label: "AI Job Capture",   emoji: "⚡", color: "bg-purple-100 text-purple-700" },
+  job_capture:      { label: "Job Capture",       emoji: "⚡", color: "bg-purple-100 text-purple-700" },
   voice_job:        { label: "Voice Capture",    emoji: "🎙️", color: "bg-indigo-100 text-indigo-700" },
   followup_draft:   { label: "Follow-up Draft",  emoji: "✉️", color: "bg-amber-100 text-amber-700" },
 };

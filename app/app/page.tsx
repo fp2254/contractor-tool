@@ -310,11 +310,11 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* ── AI Job Capture ── */}
+        {/* ── Job Capture ── */}
         <div className="bg-white rounded-2xl px-4 pt-4 pb-5 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg leading-none">✨</span>
-            <h2 className="text-sm font-bold text-slate-800">AI Job Capture</h2>
+            <h2 className="text-sm font-bold text-slate-800">Job Capture</h2>
           </div>
           <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
           <Suspense fallback={null}>
@@ -338,7 +338,7 @@ export default async function DashboardPage() {
                 { label: "Check the jobs board", href: "/app/jobs", icon: "🔨" },
                 { label: "View the calendar", href: "/app/jobs?view=calendar", icon: "📅" },
                 { label: "Mark an invoice paid", href: "/app/invoices", icon: "💵" },
-                { label: "Try AI Job Capture", href: null, icon: "🤖" },
+                { label: "Try Job Capture", href: null, icon: "🤖" },
               ].map(step =>
                 step.href ? (
                   <Link key={step.label} href={step.href}

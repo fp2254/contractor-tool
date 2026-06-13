@@ -498,7 +498,7 @@ export function ServicePresetsManager({ initialPresets }: { initialPresets: Pres
         <div className="rounded-xl bg-blue-50 p-4 text-sm text-blue-700 space-y-1">
           <p className="font-semibold">No services yet</p>
           <p>
-            Add your services and prices here. The AI Job Capture uses this price sheet to build
+            Add your services and prices here. Job Capture uses this price sheet to build
             accurate drafts — no guessing.
           </p>
         </div>

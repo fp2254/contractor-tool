@@ -206,7 +206,7 @@ export default async function ProfilePage() {
       {/* ── Service Presets ── */}
       <Section title="Service Pricing Presets" emoji="⚡">
         <div className="bg-blue-50 rounded-xl p-3 mb-4 text-xs text-blue-700">
-          <span className="font-semibold">AI Job Capture uses this price sheet.</span> Active services are matched to job descriptions — no guessing.
+          <span className="font-semibold">Job Capture uses this price sheet.</span> Active services are matched to job descriptions — no guessing.
         </div>
         <div className="mb-5">
           <PriceSheetScanner />

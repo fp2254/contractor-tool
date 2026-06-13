@@ -342,7 +342,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
         className="w-full flex flex-col items-center justify-center rounded-xl py-3 text-white"
         style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}>
         <span className="flex items-center gap-2 font-semibold text-sm">
-          <span className="text-lg">✨</span> AI Job Capture
+          <span className="text-lg">✨</span> Job Capture
         </span>
         <span className="text-[11px] opacity-75 mt-0.5">Describe the job. We&apos;ll build it fast.</span>
       </button>
@@ -357,7 +357,7 @@ export function AiCaptureModal({ defaultWarrantyText = "" }: { defaultWarrantyTe
         <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
           style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2563EB 100%)" }}>
           <div>
-            <p className="text-white font-bold text-base">✨ AI Job Capture</p>
+            <p className="text-white font-bold text-base">✨ Job Capture</p>
             <p className="text-blue-200 text-xs">
               {step === "input" && "Type or speak the job details"}
               {step === "loading" && "AI is building your draft…"}
