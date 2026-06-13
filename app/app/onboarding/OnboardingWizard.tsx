@@ -199,9 +199,30 @@ export default function OnboardingWizard({
 
   async function handleNext() {
     if (step < TOTAL_STEPS) {
+      // Save profile data when leaving step 5 (Lead Page step)
+      if (step === 5) {
+        setSaving(true);
+        try {
+          await fetch("/api/profile/public-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trade: form.trade,
+              selected_template: form.selected_template,
+              tagline: form.tagline,
+              urgency_line: form.urgency_line,
+              phone: form.phone,
+              service_area: form.service_area,
+            }),
+          });
+        } finally {
+          setSaving(false);
+        }
+      }
       setStep(s => s + 1);
       return;
     }
+    // Final step — save business settings
     setSaving(true);
     try {
       await fetch("/api/setup-wizard", {
@@ -219,17 +240,6 @@ export default function OnboardingWizard({
           presets: presets.filter(p => p.selected).map(p => ({ name: p.name, price: parseFloat(p.price) || 0 })),
           payment_methods: form.payment_methods,
           payment_instructions: form.payment_instructions,
-        }),
-      });
-      await fetch("/api/profile/public-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          selected_template: form.selected_template,
-          tagline: form.tagline,
-          urgency_line: form.urgency_line,
-          phone: form.phone,
-          service_area: form.service_area,
         }),
       });
       setStep(7);

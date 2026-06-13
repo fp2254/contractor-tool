@@ -72,29 +72,34 @@ export async function POST(req: Request) {
     }
   } catch { /* table may not exist — let upsert fail naturally */ }
 
-  const selectedTemplate = body.selected_template ?? "";
-
+  // Build the row: only include fields that were explicitly provided in the
+  // request body so a partial save (e.g. from the setup wizard) never
+  // overwrites fields managed by the full profile editor.
   const row: Record<string, unknown> = {
     org_id: orgId!,
     slug,
-    trade: body.trade ?? "",
-    tagline: body.tagline ?? "",
-    phone: body.phone ?? "",
-    service_area: body.service_area ?? "",
-    urgency_line: body.urgency_line ?? "",
-    years_experience: Number(body.years_experience) || 0,
-    revenue_display: body.revenue_display ?? "",
-    stat_label: body.stat_label ?? "",
-    services: body.services ?? [],
-    about_bullets: body.about_text
-      ? String(body.about_text).split("\n").map((s) => s.trim()).filter(Boolean)
-      : body.about_bullets ?? [],
-    license_text: body.license_text ?? "",
-    photo_url: body.photo_url ?? "",
-    photos: body.photos ?? [],
-    selected_template: selectedTemplate,
     updated_at: new Date().toISOString(),
   };
+
+  if (body.trade !== undefined)            row.trade            = body.trade ?? "";
+  if (body.tagline !== undefined)          row.tagline          = body.tagline ?? "";
+  if (body.phone !== undefined)            row.phone            = body.phone ?? "";
+  if (body.service_area !== undefined)     row.service_area     = body.service_area ?? "";
+  if (body.urgency_line !== undefined)     row.urgency_line     = body.urgency_line ?? "";
+  if (body.selected_template !== undefined) row.selected_template = body.selected_template ?? "";
+  if (body.years_experience !== undefined) row.years_experience = Number(body.years_experience) || 0;
+  if (body.revenue_display !== undefined)  row.revenue_display  = body.revenue_display ?? "";
+  if (body.stat_label !== undefined)       row.stat_label       = body.stat_label ?? "";
+  if (body.license_text !== undefined)     row.license_text     = body.license_text ?? "";
+  if (body.photo_url !== undefined)        row.photo_url        = body.photo_url ?? "";
+  if (body.photos !== undefined)           row.photos           = body.photos ?? [];
+  if (body.is_published !== undefined)     row.is_published     = !!body.is_published;
+  if (body.about_text !== undefined) {
+    row.about_bullets = String(body.about_text).split("\n").map((s) => s.trim()).filter(Boolean);
+  } else if (body.about_bullets !== undefined) {
+    row.about_bullets = body.about_bullets ?? [];
+  }
+  if (body.services !== undefined)         row.services         = body.services ?? [];
 
   // Attempt the full upsert. If optional new columns don't exist yet, retry
   // without them so the save never fails while the DB migration is pending.

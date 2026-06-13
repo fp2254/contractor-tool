@@ -4,7 +4,7 @@ import { ensureUserOrg } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { orgId } = await ensureUserOrg();
+    const orgId = await ensureUserOrg();
     const body = await req.json() as { name: string; phone?: string; description?: string };
     const { name, phone, description } = body;
 
