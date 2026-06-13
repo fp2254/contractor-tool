@@ -11,6 +11,7 @@ import { ServicePresetsManager } from "@/components/ServicePresetsManager";
 import { BusinessIdentityForm, type BusinessIdentityData } from "@/components/BusinessIdentityForm";
 import { DefaultWarrantyForm } from "@/components/DefaultWarrantyForm";
 import { PublicProfileCard } from "./PublicProfileCard";
+import PriceSheetScanner from "@/components/PriceSheetScanner";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -206,6 +207,9 @@ export default async function ProfilePage() {
       <Section title="Service Pricing Presets" emoji="⚡">
         <div className="bg-blue-50 rounded-xl p-3 mb-4 text-xs text-blue-700">
           <span className="font-semibold">AI Job Capture uses this price sheet.</span> Active services are matched to job descriptions — no guessing.
+        </div>
+        <div className="mb-5">
+          <PriceSheetScanner />
         </div>
         <ServicePresetsManager initialPresets={presets ?? []} />
       </Section>

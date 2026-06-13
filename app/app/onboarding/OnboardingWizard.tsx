@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import PriceSheetScanner from "@/components/PriceSheetScanner";
 
 type Preset = { name: string; price: string; selected: boolean };
 
@@ -333,6 +334,20 @@ export default function OnboardingWizard({
                 These show as quick-add chips when building quotes. Select the ones you offer and set your prices.
               </p>
             </div>
+
+            {/* Price sheet scanner */}
+            <PriceSheetScanner
+              onScanned={scanned => {
+                setPresets(ps => {
+                  const existing = new Set(ps.map(p => p.name.toLowerCase()));
+                  const newOnes = scanned
+                    .filter(s => !existing.has(s.name.toLowerCase()))
+                    .map(s => ({ name: s.name, price: String(s.price || ""), selected: true }));
+                  return [...ps, ...newOnes];
+                });
+              }}
+            />
+
             <div className="space-y-2">
               {presets.map((p, i) => (
                 <div
