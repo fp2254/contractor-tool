@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import PriceSheetScanner from "@/components/PriceSheetScanner";
 
@@ -247,7 +247,7 @@ export default function OnboardingWizard({
   const [testPhase, setTestPhase] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [testLeadId, setTestLeadId] = useState<string | null>(null);
 
-  async function handleTestSubmit(e: React.FormEvent) {
+  async function handleTestSubmit(e: FormEvent) {
     e.preventDefault();
     if (!testName.trim()) return;
     setTestPhase("submitting");
