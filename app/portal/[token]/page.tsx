@@ -193,11 +193,9 @@ export default async function PortalPage({
                     />
                     <div className="px-5 py-4 border-t border-gray-100">
                       <a
-                        href={pdfUrl}
-                        download={`${invNum}.pdf`}
-                        className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`${pdfUrl}?dl=1`}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-sm font-bold text-white"
+                        style={{ backgroundColor: "#1B3A6B" }}
                       >
                         ⬇ Download PDF
                       </a>
@@ -259,11 +257,9 @@ export default async function PortalPage({
                           />
                           <div className="flex gap-2">
                             <a
-                              href={pdfUrl}
-                              download={`${quoteNum}.pdf`}
-                              className="flex-1 text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              href={`${pdfUrl}?dl=1`}
+                              className="flex-1 text-center rounded-xl py-3 text-sm font-bold text-white"
+                              style={{ backgroundColor: "#1B3A6B" }}
                             >
                               ⬇ Download PDF
                             </a>
@@ -283,11 +279,9 @@ export default async function PortalPage({
                         </>
                       ) : (
                         <a
-                          href={pdfUrl}
-                          download={`${quoteNum}.pdf`}
-                          className="block text-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-slate-600 bg-gray-50"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={`${pdfUrl}?dl=1`}
+                          className="block text-center rounded-xl py-3 text-sm font-bold text-white"
+                          style={{ backgroundColor: "#1B3A6B" }}
                         >
                           ⬇ Download PDF
                         </a>

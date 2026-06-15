@@ -7,10 +7,11 @@ import { QuotePDF } from "@/lib/pdf/QuotePDF";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ token: string; quoteId: string }> }
 ) {
   const { token, quoteId } = await params;
+  const forceDownload = new URL(req.url).searchParams.get("dl") === "1";
   const admin = createAdminClient();
 
   const { data: pt } = await admin
@@ -50,10 +51,13 @@ export async function GET(
   );
 
   const quoteNum = `Q-${quoteId.slice(0, 8).toUpperCase()}`;
+  const disposition = forceDownload
+    ? `attachment; filename="${quoteNum}.pdf"`
+    : `inline; filename="${quoteNum}.pdf"`;
   return new Response(buffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${quoteNum}.pdf"`,
+      "Content-Disposition": disposition,
     },
   });
 }

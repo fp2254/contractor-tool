@@ -8,10 +8,11 @@ import { loadPhotosForPdf } from "@/lib/pdf/loadPhotos";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ token: string; invoiceId: string }> }
 ) {
   const { token, invoiceId } = await params;
+  const forceDownload = new URL(req.url).searchParams.get("dl") === "1";
   const admin = createAdminClient();
 
   const { data: pt } = await admin
@@ -101,10 +102,13 @@ export async function GET(
   );
 
   const invoiceNum = invoice.invoice_number ?? `INV-${invoiceId.slice(0, 8).toUpperCase()}`;
+  const disposition = forceDownload
+    ? `attachment; filename="${invoiceNum}.pdf"`
+    : `inline; filename="${invoiceNum}.pdf"`;
   return new Response(buffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${invoiceNum}.pdf"`,
+      "Content-Disposition": disposition,
     },
   });
 }
