@@ -30,9 +30,20 @@ async function createLead(formData: FormData) {
 }
 
 const LEAD_SOURCES = ["Referral", "Google", "Facebook", "Door Hanger", "Yard Sign", "Website", "Word of Mouth", "Other"];
-const JOB_TYPES = ["Radon Mitigation", "Basement Waterproofing", "Mold Remediation", "Radon Testing", "Sump Pump", "Other"];
 
-export default function NewLeadPage() {
+export default async function NewLeadPage() {
+  const orgId = await ensureUserOrg();
+  const admin = createAdminClient();
+
+  const { data: presets } = await admin
+    .from("service_presets")
+    .select("service_name")
+    .eq("org_id", orgId!)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  const serviceNames = (presets ?? []).map(p => p.service_name).filter(Boolean);
+
   return (
     <div className="p-4">
       <div className="flex items-center gap-3 mb-4">
@@ -89,12 +100,25 @@ export default function NewLeadPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Job Type</label>
-            <select name="job_type"
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-100">
-              <option value="">Select job type…</option>
-              {JOB_TYPES.map(j => <option key={j} value={j}>{j}</option>)}
-            </select>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+              Service Type
+              {serviceNames.length === 0 && (
+                <span className="ml-2 normal-case font-normal text-gray-400">
+                  — <a href="/app/profile" className="text-blue-500 underline">add your services</a> to see them here
+                </span>
+              )}
+            </label>
+            {serviceNames.length > 0 ? (
+              <select name="job_type"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-100">
+                <option value="">Select service…</option>
+                {serviceNames.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="Other">Other</option>
+              </select>
+            ) : (
+              <input name="job_type" placeholder="e.g. Roof repair, Plumbing, HVAC…"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
+            )}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Notes</label>

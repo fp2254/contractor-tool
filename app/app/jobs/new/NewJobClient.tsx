@@ -127,7 +127,7 @@ export default function NewJobClient({
         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Job Title *</label>
         <input
           required
-          placeholder="e.g. Radon Mitigation"
+          placeholder="e.g. Roof repair, HVAC install, Plumbing…"
           value={jobTitle}
           onChange={e => setJobTitle(e.target.value)}
           className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100"
