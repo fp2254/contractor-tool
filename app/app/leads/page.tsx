@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import LeadsImportModal from "./LeadsImportModal";
 
 const STATUS_TABS = [
   { label: "All", key: "all" },
@@ -75,11 +76,14 @@ export default async function LeadsPage({
         })}
       </div>
 
-      <Link href="/app/leads/new"
-        className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-white font-semibold"
-        style={{ backgroundColor: "#1B3A6B" }}>
-        <span className="text-lg">+</span> Add Lead
-      </Link>
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/app/leads/new"
+          className="flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold"
+          style={{ backgroundColor: "#1B3A6B" }}>
+          <span className="text-lg">+</span> Add Lead
+        </Link>
+        <LeadsImportModal />
+      </div>
 
       <div className="space-y-3">
         {!leads?.length && (
