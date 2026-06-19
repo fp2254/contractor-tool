@@ -87,6 +87,7 @@ const SAMPLE_PROFILE: ContractorProfile = {
     { url: "", title: "Full Duct Replacement",    location: "Aurora, CO", timeAgo: "6 weeks ago", cost: "$3,100" },
   ],
   selectedTemplate: "",
+  sectionsConfig: {},
 };
 
 // URL slug → { display name, internal template id }

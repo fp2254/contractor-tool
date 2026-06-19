@@ -7,7 +7,7 @@ import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
-import type { ContractorProfile, ServiceEntry } from "./types";
+import type { ContractorProfile, ServiceEntry, SectionsConfig } from "./types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -90,6 +90,19 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       verified: r.verified ?? false,
     }));
 
+    const rawHighlights: string[] = Array.isArray(pub.trust_highlights) ? pub.trust_highlights : [];
+    const trustItems = rawHighlights
+      .filter((t) => typeof t === "string" && t.trim())
+      .map((t) => {
+        const match = t.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u);
+        if (match) return { icon: match[0].trim(), text: t.slice(match[0].length).trim() };
+        return { icon: "✓", text: t.trim() };
+      });
+
+    const sectionsConfig: SectionsConfig = (pub.sections_config && typeof pub.sections_config === "object")
+      ? pub.sections_config as SectionsConfig
+      : {};
+
     const profile: ContractorProfile = {
       slug: pub.slug,
       isPublished: true,
@@ -107,14 +120,8 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
         revenue: pub.revenue_display ?? "",
         yearsExperience: pub.years_experience ?? 0,
       },
-      trustItems: [
-        { icon: "⚡", text: "Same-Day Response" },
-        { icon: "💬", text: "Transparent Pricing" },
-        { icon: "🛡️", text: "Licensed & Insured" },
-        { icon: "📍", text: "Local Contractor" },
-      ],
+      trustItems,
       services: normalizeServices(pub.services ?? []),
-      photos: [],
       reviews: mappedReviews,
       about,
       licenseNumber: pub.license_text ?? undefined,
@@ -129,6 +136,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       })).filter((p: any) => p.url),
       selectedTemplate: pub.selected_template ?? "",
       statLabel: pub.stat_label ?? "",
+      sectionsConfig,
     };
 
     return profile;

@@ -87,6 +87,7 @@ supabase/
   migration_trade_contacts.sql     ✅ applied
   migration_geocoding.sql          ✅ applied
   migration_homeowner_requests.sql ✅ applied
+  migration_sections_config.sql        ⬜ pending — adds sections_config + trust_highlights columns
 ```
 
 ## Environment Variables

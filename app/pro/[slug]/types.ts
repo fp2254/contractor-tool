@@ -22,6 +22,17 @@ export type ServiceEntry = {
   photo_url: string;
 };
 
+export type SectionsConfig = {
+  services?: boolean;
+  about?: boolean;
+  stats?: boolean;
+  certifications?: boolean;
+  reviews?: boolean;
+  gallery?: boolean;
+  serviceAreas?: boolean;
+  trustBar?: boolean;
+};
+
 export type ContractorProfile = {
   slug: string;
   isPublished: boolean;
@@ -55,4 +66,5 @@ export type ContractorProfile = {
   photoUrl?: string;
   selectedTemplate?: string;
   statLabel?: string;
+  sectionsConfig: SectionsConfig;
 };

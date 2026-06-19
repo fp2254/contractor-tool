@@ -6,6 +6,17 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 type ServiceItem = { name: string; description: string; photo_url: string };
 
+type SectionsConfig = {
+  services?: boolean;
+  about?: boolean;
+  stats?: boolean;
+  certifications?: boolean;
+  reviews?: boolean;
+  gallery?: boolean;
+  serviceAreas?: boolean;
+  trustBar?: boolean;
+};
+
 type EditorProfile = {
   slug: string;
   is_published: boolean;
@@ -21,10 +32,23 @@ type EditorProfile = {
   services: ServiceItem[];
   about_text: string; // UI-only: textarea → saved as about_bullets
   photos: Array<{ url: string; title: string; description: string }>;
+  trust_highlights: string[];  // hero bullet points + trust bar
+  sections_config: SectionsConfig;
   // Preserved from old editor — not shown in UI
   revenue_display: string;
   stat_label: string;
 };
+
+const SECTION_LABELS: Array<{ key: keyof SectionsConfig; label: string; desc: string }> = [
+  { key: "services",      label: "Services",           desc: "Your list of services offered" },
+  { key: "about",         label: "About section",      desc: "Your story + owner photo/quote" },
+  { key: "stats",         label: "Stats",              desc: "Years, jobs completed, rating" },
+  { key: "certifications",label: "Certifications",     desc: "License number + trust items" },
+  { key: "reviews",       label: "Reviews",            desc: "Customer reviews (when you have them)" },
+  { key: "gallery",       label: "Photo gallery",      desc: "Project photos grid" },
+  { key: "serviceAreas",  label: "Service areas",      desc: "List of cities/areas you cover" },
+  { key: "trustBar",      label: "Trust bar",          desc: "Icon strip under the hero" },
+];
 
 const EMPTY: EditorProfile = {
   slug: "",
@@ -41,6 +65,8 @@ const EMPTY: EditorProfile = {
   services: [],
   about_text: "",
   photos: [],
+  trust_highlights: [],
+  sections_config: {},
   revenue_display: "",
   stat_label: "",
 };
@@ -95,6 +121,7 @@ export function PublicProfileEditor() {
   const [saveError, setSaveError] = useState("");
   const [copied, setCopied] = useState(false);
   const [serviceInput, setServiceInput] = useState("");
+  const [trustInput, setTrustInput] = useState("");
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +163,8 @@ export function PublicProfileEditor() {
             title: ph.title ?? "",
             description: ph.description ?? "",
           })).filter((ph: any) => ph.url),
+          trust_highlights: Array.isArray(p.trust_highlights) ? p.trust_highlights.filter(Boolean) : [],
+          sections_config: (p.sections_config && typeof p.sections_config === "object") ? p.sections_config : {},
           revenue_display: p.revenue_display ?? "",
           stat_label: p.stat_label ?? "",
         });
@@ -163,6 +192,8 @@ export function PublicProfileEditor() {
       ...profile,
       about_bullets,
       photos: profile.photos.map((p) => ({ url: p.url, title: p.title, description: p.description })),
+      trust_highlights: profile.trust_highlights.filter(Boolean),
+      sections_config: profile.sections_config,
       revenue_display: profile.revenue_display,
       stat_label: profile.stat_label,
     };
@@ -537,10 +568,56 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 4: Photos ── */}
+      {/* ── Step 4: Trust Highlights ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">4</span>
+          <p className="font-semibold text-slate-800 text-sm">Trust Highlights</p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <p className="text-xs text-gray-500">These appear as bullet points in your hero and as the trust bar strip. Leave empty to skip both.</p>
+          {profile.trust_highlights.length > 0 && (
+            <div className="space-y-2">
+              {profile.trust_highlights.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                  <span className="text-base flex-shrink-0">✓</span>
+                  <span className="flex-1 text-xs font-semibold text-[#1B3A6B] truncate">{item}</span>
+                  <button
+                    type="button"
+                    onClick={() => update("trust_highlights", profile.trust_highlights.filter((_, idx) => idx !== i))}
+                    className="text-blue-300 hover:text-red-500 leading-none flex-shrink-0 text-sm"
+                    aria-label={`Remove ${item}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <input
+            value={trustInput}
+            onChange={(e) => setTrustInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const val = trustInput.trim();
+                if (val && !profile.trust_highlights.includes(val)) {
+                  update("trust_highlights", [...profile.trust_highlights, val]);
+                }
+                setTrustInput("");
+              }
+            }}
+            placeholder="Type a highlight and press Enter"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+          />
+          <p className="text-[11px] text-gray-400">Examples: Licensed & Insured since 2015 · Free estimates · 5★ rated on Google</p>
+        </div>
+      </div>
+
+      {/* ── Step 5: Photos ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
           <p className="font-semibold text-slate-800 text-sm">Photos</p>
         </div>
         <div className="px-4 py-3 space-y-4">
@@ -696,10 +773,52 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 5: URL ── */}
+      {/* ── Step 6: Sections ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
+          <p className="font-semibold text-slate-800 text-sm">Sections on Your Page</p>
+        </div>
+        <div className="px-4 py-3 space-y-1">
+          <p className="text-xs text-gray-500 mb-3">Turn off any section you don't want on your public profile. Sections with no content are always hidden automatically.</p>
+          {SECTION_LABELS.map(({ key, label, desc }) => {
+            const isOn = profile.sections_config[key] !== false;
+            return (
+              <div
+                key={key}
+                className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0"
+              >
+                <div className="flex-1 min-w-0 pr-3">
+                  <p className="text-sm font-semibold text-slate-800">{label}</p>
+                  <p className="text-[11px] text-gray-400">{desc}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    update("sections_config", {
+                      ...profile.sections_config,
+                      [key]: !isOn,
+                    });
+                  }}
+                  className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                  style={{ backgroundColor: isOn ? "#1B3A6B" : "#D1D5DB" }}
+                  aria-label={`Toggle ${label}`}
+                >
+                  <span
+                    className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                    style={{ transform: isOn ? "translateX(20px)" : "translateX(0)" }}
+                  />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Step 7: URL ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
           <p className="font-semibold text-slate-800 text-sm">Your Public URL</p>
         </div>
         <div className="px-4 py-3">
