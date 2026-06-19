@@ -365,6 +365,23 @@ export function TrustContractorTemplate({ profile }: { profile: ContractorProfil
         </section>
       )}
 
+      {/* CUSTOM BLOCKS */}
+      {profile.customBlocks.length > 0 && (
+        <section className="py-12 sm:py-16 bg-stone-50">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {profile.customBlocks.map((block) => (
+                <div key={block.id} className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+                  {block.icon && <div className="text-4xl mb-3 leading-none">{block.icon}</div>}
+                  <h3 className="font-bold text-slate-800 text-lg mb-2">{block.title}</h3>
+                  {block.body && <p className="text-slate-600 text-sm leading-relaxed">{block.body}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* REVIEWS — only real reviews */}
       {data.show.reviews && (
         <section className="py-16 sm:py-24 bg-slate-900 text-stone-100">

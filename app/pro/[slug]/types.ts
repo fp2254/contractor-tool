@@ -22,6 +22,13 @@ export type ServiceEntry = {
   photo_url: string;
 };
 
+export type CustomBlock = {
+  id: string;
+  icon: string;
+  title: string;
+  body: string;
+};
+
 export type SectionsConfig = {
   services?: boolean;
   about?: boolean;
@@ -67,4 +74,5 @@ export type ContractorProfile = {
   selectedTemplate?: string;
   statLabel?: string;
   sectionsConfig: SectionsConfig;
+  customBlocks: CustomBlock[];
 };

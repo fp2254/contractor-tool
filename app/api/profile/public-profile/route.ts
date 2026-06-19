@@ -98,6 +98,7 @@ export async function POST(req: Request) {
   if (body.is_published !== undefined)       row.is_published       = !!body.is_published;
   if (body.trust_highlights !== undefined)   row.trust_highlights   = body.trust_highlights ?? [];
   if (body.sections_config !== undefined)    row.sections_config    = body.sections_config ?? {};
+  if (body.custom_blocks !== undefined)      row.custom_blocks      = body.custom_blocks ?? [];
   if (body.about_text !== undefined) {
     row.about_bullets = String(body.about_text).split("\n").map((s) => s.trim()).filter(Boolean);
   } else if (body.about_bullets !== undefined) {
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
   if (body.services !== undefined)           row.services           = body.services ?? [];
 
   // Optional columns — if DB doesn't have them yet, retry without them
-  const optionalCols = ["stat_label", "selected_template", "photos", "trust_highlights", "sections_config"] as const;
+  const optionalCols = ["stat_label", "selected_template", "photos", "trust_highlights", "sections_config", "custom_blocks"] as const;
 
   async function tryUpsert(r: Record<string, unknown>) {
     const { data, error } = await (admin as any)

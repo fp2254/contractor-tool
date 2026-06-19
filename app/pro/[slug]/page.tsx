@@ -7,7 +7,7 @@ import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
-import type { ContractorProfile, ServiceEntry, SectionsConfig } from "./types";
+import type { ContractorProfile, ServiceEntry, SectionsConfig, CustomBlock } from "./types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -137,6 +137,9 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       selectedTemplate: pub.selected_template ?? "",
       statLabel: pub.stat_label ?? "",
       sectionsConfig,
+      customBlocks: Array.isArray(pub.custom_blocks)
+        ? (pub.custom_blocks as CustomBlock[]).filter((b) => b?.title)
+        : [],
     };
 
     return profile;

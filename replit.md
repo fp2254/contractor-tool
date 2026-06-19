@@ -88,6 +88,7 @@ supabase/
   migration_geocoding.sql          ✅ applied
   migration_homeowner_requests.sql ✅ applied
   migration_sections_config.sql        ⬜ pending — adds sections_config + trust_highlights columns
+  migration_custom_blocks.sql          ⬜ pending — adds custom_blocks JSONB column
 ```
 
 ## Environment Variables

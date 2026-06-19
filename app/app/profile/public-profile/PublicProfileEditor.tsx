@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type ServiceItem = { name: string; description: string; photo_url: string };
+type CustomBlock = { id: string; icon: string; title: string; body: string };
 
 type SectionsConfig = {
   services?: boolean;
@@ -34,6 +35,7 @@ type EditorProfile = {
   photos: Array<{ url: string; title: string; description: string }>;
   trust_highlights: string[];  // hero bullet points + trust bar
   sections_config: SectionsConfig;
+  custom_blocks: CustomBlock[];
   // Preserved from old editor — not shown in UI
   revenue_display: string;
   stat_label: string;
@@ -67,6 +69,7 @@ const EMPTY: EditorProfile = {
   photos: [],
   trust_highlights: [],
   sections_config: {},
+  custom_blocks: [],
   revenue_display: "",
   stat_label: "",
 };
@@ -124,6 +127,8 @@ export function PublicProfileEditor() {
   const [trustInput, setTrustInput] = useState("");
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [websiteLeadsCount, setWebsiteLeadsCount] = useState(0);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [blockDraft, setBlockDraft] = useState({ icon: "", title: "", body: "" });
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   function templatePreviewSlug(id: string) {
@@ -170,6 +175,7 @@ export function PublicProfileEditor() {
           })).filter((ph: any) => ph.url),
           trust_highlights: Array.isArray(p.trust_highlights) ? p.trust_highlights.filter(Boolean) : [],
           sections_config: (p.sections_config && typeof p.sections_config === "object") ? p.sections_config : {},
+          custom_blocks: Array.isArray(p.custom_blocks) ? p.custom_blocks : [],
           revenue_display: p.revenue_display ?? "",
           stat_label: p.stat_label ?? "",
         });
@@ -199,6 +205,7 @@ export function PublicProfileEditor() {
       photos: profile.photos.map((p) => ({ url: p.url, title: p.title, description: p.description })),
       trust_highlights: profile.trust_highlights.filter(Boolean),
       sections_config: profile.sections_config,
+      custom_blocks: profile.custom_blocks,
       revenue_display: profile.revenue_display,
       stat_label: profile.stat_label,
     };
@@ -661,10 +668,175 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 5: Photos ── */}
+      {/* ── Step 5: Custom Blocks ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
+          <p className="font-semibold text-slate-800 text-sm">Custom Sections</p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <p className="text-xs text-gray-500">Add your own cards — warranty info, financing, your process, promos, anything. They appear on your site after the About section.</p>
+
+          {/* Existing blocks */}
+          {profile.custom_blocks.length > 0 && (
+            <div className="space-y-2">
+              {profile.custom_blocks.map((block) => (
+                <div key={block.id}>
+                  {editingBlockId === block.id ? (
+                    /* ── Edit form ── */
+                    <div className="border border-blue-200 rounded-xl bg-blue-50 p-3 space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          value={blockDraft.icon}
+                          onChange={(e) => setBlockDraft((d) => ({ ...d, icon: e.target.value }))}
+                          placeholder="🔨"
+                          className="w-14 rounded-lg border border-gray-200 px-2 py-2 text-center text-lg outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+                          maxLength={4}
+                        />
+                        <input
+                          value={blockDraft.title}
+                          onChange={(e) => setBlockDraft((d) => ({ ...d, title: e.target.value }))}
+                          placeholder="Block title"
+                          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white font-semibold"
+                        />
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={blockDraft.body}
+                        onChange={(e) => setBlockDraft((d) => ({ ...d, body: e.target.value }))}
+                        placeholder="Description (optional)"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!blockDraft.title.trim()) return;
+                            update("custom_blocks", profile.custom_blocks.map((b) =>
+                              b.id === block.id ? { ...b, ...blockDraft } : b
+                            ));
+                            setEditingBlockId(null);
+                          }}
+                          className="flex-1 rounded-lg py-1.5 text-xs font-bold text-white"
+                          style={{ backgroundColor: "#1B3A6B" }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingBlockId(null)}
+                          className="flex-1 rounded-lg py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Display row ── */
+                    <div className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
+                      {block.icon && <span className="text-2xl leading-none mt-0.5 shrink-0">{block.icon}</span>}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{block.title}</p>
+                        {block.body && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{block.body}</p>}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { setBlockDraft({ icon: block.icon, title: block.title, body: block.body }); setEditingBlockId(block.id); }}
+                          className="text-xs font-semibold text-[#1B3A6B] px-2 py-1 rounded-lg bg-blue-50 border border-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => update("custom_blocks", profile.custom_blocks.filter((b) => b.id !== block.id))}
+                          className="text-xs font-semibold text-red-500 px-2 py-1 rounded-lg bg-red-50 border border-red-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new block form */}
+          {editingBlockId === "new" ? (
+            <div className="border border-blue-200 rounded-xl bg-blue-50 p-3 space-y-2">
+              <div className="flex gap-2">
+                <input
+                  value={blockDraft.icon}
+                  onChange={(e) => setBlockDraft((d) => ({ ...d, icon: e.target.value }))}
+                  placeholder="🔨"
+                  className="w-14 rounded-lg border border-gray-200 px-2 py-2 text-center text-lg outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+                  maxLength={4}
+                  autoFocus
+                />
+                <input
+                  value={blockDraft.title}
+                  onChange={(e) => setBlockDraft((d) => ({ ...d, title: e.target.value }))}
+                  placeholder="Section title (e.g. Financing Available)"
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white font-semibold"
+                />
+              </div>
+              <textarea
+                rows={3}
+                value={blockDraft.body}
+                onChange={(e) => setBlockDraft((d) => ({ ...d, body: e.target.value }))}
+                placeholder="Details (e.g. We offer 0% financing on jobs over $1,000...)"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!blockDraft.title.trim()) return;
+                    const newBlock: CustomBlock = {
+                      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                      icon: blockDraft.icon,
+                      title: blockDraft.title.trim(),
+                      body: blockDraft.body.trim(),
+                    };
+                    update("custom_blocks", [...profile.custom_blocks, newBlock]);
+                    setBlockDraft({ icon: "", title: "", body: "" });
+                    setEditingBlockId(null);
+                  }}
+                  className="flex-1 rounded-lg py-1.5 text-xs font-bold text-white"
+                  style={{ backgroundColor: "#1B3A6B" }}
+                >
+                  Add Block
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditingBlockId(null); setBlockDraft({ icon: "", title: "", body: "" }); }}
+                  className="flex-1 rounded-lg py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { setBlockDraft({ icon: "", title: "", body: "" }); setEditingBlockId("new"); }}
+              className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-semibold text-gray-400 hover:border-blue-200 hover:text-blue-500 transition-colors"
+            >
+              + Add a Section
+            </button>
+          )}
+
+          {profile.custom_blocks.length > 0 && (
+            <p className="text-[11px] text-gray-400">Examples: Financing Available · Our Process · Warranty Info · Current Promotions</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Step 6: Photos ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
           <p className="font-semibold text-slate-800 text-sm">Photos</p>
         </div>
         <div className="px-4 py-3 space-y-4">
@@ -820,10 +992,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 6: Sections ── */}
+      {/* ── Step 7: Sections ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
           <p className="font-semibold text-slate-800 text-sm">Sections on Your Page</p>
         </div>
         <div className="px-4 py-3 space-y-1">
@@ -862,10 +1034,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 7: URL ── */}
+      {/* ── Step 8: URL ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">8</span>
           <p className="font-semibold text-slate-800 text-sm">Your Public URL</p>
         </div>
         <div className="px-4 py-3">

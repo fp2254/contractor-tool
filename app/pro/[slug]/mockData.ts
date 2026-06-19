@@ -67,6 +67,7 @@ export const MOCK_PROFILES: Record<string, ContractorProfile> = {
     licenseNumber: "CCB-187432",
     serviceArea: "Portland metro & surrounding areas",
     sectionsConfig: {},
+    customBlocks: [],
   },
 };
 
