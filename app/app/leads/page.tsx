@@ -107,7 +107,17 @@ export default async function LeadsPage({
               </div>
               <span className="text-xs text-gray-400 shrink-0">{timeAgo(lead.created_at)}</span>
             </div>
-            <div className="flex items-center gap-2 mt-2 ml-13">
+            {lead.lead_source === "Website" && lead.notes && (
+              <p className="text-xs text-gray-500 mt-1.5 ml-13 line-clamp-1">
+                {lead.notes.replace(/^\[Website Quote Request\]\n\n/, "")}
+              </p>
+            )}
+            <div className="flex items-center gap-2 mt-2 ml-13 flex-wrap">
+              {lead.lead_source === "Website" && (
+                <span className="text-xs bg-blue-50 text-blue-600 rounded-full px-2 py-0.5 font-semibold">
+                  🌐 Website
+                </span>
+              )}
               {lead.job_type && <span className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5">{lead.job_type}</span>}
               <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-600"}`}>
                 {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}

@@ -19,7 +19,7 @@ export async function GET() {
   const admin = createAdminClient();
 
   try {
-    const [{ data: profile }, { data: org }, { data: settings }] = await Promise.all([
+    const [{ data: profile }, { data: org }, { data: settings }, { count: websiteLeadsCount }] = await Promise.all([
       (admin as any)
         .from("public_profiles")
         .select("*")
@@ -27,6 +27,10 @@ export async function GET() {
         .maybeSingle(),
       admin.from("orgs").select("name").eq("id", orgId!).single(),
       admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+      admin.from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("org_id", orgId!)
+        .eq("lead_source", "Website"),
     ]);
 
     return NextResponse.json({
@@ -38,6 +42,7 @@ export async function GET() {
       city: (settings as any)?.city ?? "",
       state: (settings as any)?.state ?? "",
       zip: (settings as any)?.zip ?? "",
+      website_leads_count: websiteLeadsCount ?? 0,
     });
   } catch {
     return NextResponse.json({ profile: null });

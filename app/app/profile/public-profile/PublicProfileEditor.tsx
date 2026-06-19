@@ -123,6 +123,7 @@ export function PublicProfileEditor() {
   const [serviceInput, setServiceInput] = useState("");
   const [trustInput, setTrustInput] = useState("");
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [websiteLeadsCount, setWebsiteLeadsCount] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   function templatePreviewSlug(id: string) {
@@ -142,6 +143,10 @@ export function PublicProfileEditor() {
         const phone = p.phone || j.primaryPhone || "";
         const area =
           p.service_area || [j.city, j.state].filter(Boolean).join(", ") || "";
+
+        if (typeof j.website_leads_count === "number") {
+          setWebsiteLeadsCount(j.website_leads_count);
+        }
 
         setProfile({
           ...EMPTY,
@@ -269,41 +274,83 @@ export function PublicProfileEditor() {
   return (
     <div className="space-y-4">
 
-      {/* ── Status Bar ── */}
-      <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className={`inline-block w-2 h-2 rounded-full ${profile.is_published ? "bg-green-500" : "bg-gray-300"}`} />
-          <span className={`text-sm font-bold ${profile.is_published ? "text-green-700" : "text-gray-500"}`}>
-            {profile.is_published ? "Live" : "Draft"}
-          </span>
+      {/* ── Your Website Card ── */}
+      {profile.is_published && publicUrl ? (
+        <div className="rounded-2xl shadow-sm overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2d5aa0 100%)" }}>
+          <div className="px-4 pt-4 pb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 shadow-sm" />
+                <span className="text-sm font-bold text-white">Your site is live</span>
+              </div>
+              <button
+                onClick={handlePublishToggle}
+                disabled={publishing}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/20 text-white/70 hover:text-white transition-colors"
+              >
+                {publishing ? "…" : "Unpublish"}
+              </button>
+            </div>
+
+            {/* URL row */}
+            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2.5 mb-3">
+              <span className="text-white/60 text-xs truncate flex-1">{publicUrl.replace("https://", "")}</span>
+              <button
+                onClick={() => { navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 2500); }}
+                className="shrink-0 text-xs font-bold px-3 py-1 rounded-lg transition-all"
+                style={copied
+                  ? { background: "#22C55E", color: "white" }
+                  : { background: "white", color: "#1B3A6B" }
+                }
+              >
+                {copied ? "✓ Copied" : "Copy"}
+              </button>
+            </div>
+
+            {/* Actions row */}
+            <div className="flex items-center gap-2">
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl py-2 transition-colors"
+              >
+                🌐 View My Site
+              </a>
+              {websiteLeadsCount > 0 ? (
+                <a
+                  href="/app/leads"
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/90 hover:bg-green-500 text-white text-xs font-bold rounded-xl py-2 transition-colors"
+                >
+                  🔔 {websiteLeadsCount} lead{websiteLeadsCount !== 1 ? "s" : ""} so far
+                </a>
+              ) : (
+                <div className="flex-1 flex items-center justify-center gap-1.5 bg-white/5 text-white/50 text-xs rounded-xl py-2">
+                  🔔 Waiting for leads
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {publicUrl && (
-            <button
-              onClick={() => { navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-              className="text-xs font-semibold rounded-lg px-3 py-1.5 border transition-colors"
-              style={copied
-                ? { borderColor: "#22C55E", color: "#16A34A", background: "#F0FDF4" }
-                : { borderColor: "#E5E7EB", color: "#374151", background: "#F9FAFB" }
-              }
-            >
-              {copied ? "✓ Copied!" : "Copy Link"}
-            </button>
-          )}
+      ) : (
+        <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-gray-300" />
+            <div>
+              <span className="text-sm font-bold text-gray-500">Draft</span>
+              <p className="text-xs text-gray-400">Not visible to the public yet</p>
+            </div>
+          </div>
           <button
             onClick={handlePublishToggle}
             disabled={publishing || !profile.slug}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors"
-            style={
-              profile.is_published
-                ? { borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }
-                : { borderColor: "#1B3A6B", color: "#1B3A6B", background: "#EFF6FF" }
-            }
+            className="text-sm font-bold px-4 py-2 rounded-xl text-white transition-colors"
+            style={{ backgroundColor: profile.slug ? "#1B3A6B" : "#9CA3AF" }}
           >
-            {publishing ? "…" : profile.is_published ? "Unpublish" : "Publish"}
+            {publishing ? "…" : profile.slug ? "Go Live" : "Save first"}
           </button>
         </div>
-      </div>
+      )}
 
       {/* ── Live Preview ── */}
       {previewUrl && (
