@@ -82,7 +82,7 @@ export default async function PortalPage({
     admin.from("quotes").select("id,status,total_amount,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("invoices").select("id,status,total_amount,invoice_number,due_date,created_at").eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).order("created_at", { ascending: false }),
     admin.from("orgs").select("name,phone").eq("id", pt.org_id).single(),
-    admin.from("org_settings").select("primary_phone,business_name").eq("org_id", pt.org_id).maybeSingle(),
+    admin.from("org_settings").select("primary_phone,business_name,payment_links").eq("org_id", pt.org_id).maybeSingle(),
   ]);
 
   // Track first open: insert __opened__ notes for any quote/invoice not yet tracked
@@ -116,6 +116,7 @@ export default async function PortalPage({
     || "Your Contractor";
   const orgPhone = (orgSettings as Record<string, unknown> | null)?.primary_phone as string | undefined
     ?? (org as Record<string, unknown> | null)?.phone as string | undefined;
+  const payLinks = ((orgSettings as Record<string, unknown> | null)?.payment_links ?? {}) as Record<string, string>;
 
   // Filter out declined quotes — nothing for the customer to do with them
   const visibleQuotes = (quotes ?? []).filter(q =>
@@ -191,6 +192,48 @@ export default async function PortalPage({
                       style={{ height: "75vh", minHeight: 480 }}
                       title={`Invoice ${invNum}`}
                     />
+
+                    {/* Pay this invoice */}
+                    {inv.status !== "paid" && Object.keys(payLinks).length > 0 && (
+                      <div className="px-5 py-4 border-t border-gray-100 space-y-2">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Pay This Invoice</p>
+                        {payLinks.venmo && (
+                          <a href={`https://venmo.com/u/${payLinks.venmo.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-between w-full rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-700 active:bg-purple-100">
+                            <span>💜 Pay via Venmo</span>
+                            <span className="text-purple-400 text-xs">{payLinks.venmo} →</span>
+                          </a>
+                        )}
+                        {payLinks.cashapp && (
+                          <a href={`https://cash.app/${payLinks.cashapp.startsWith("$") ? payLinks.cashapp : "$" + payLinks.cashapp}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-between w-full rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 active:bg-green-100">
+                            <span>💚 Pay via Cash App</span>
+                            <span className="text-green-500 text-xs">{payLinks.cashapp} →</span>
+                          </a>
+                        )}
+                        {payLinks.paypal && (
+                          <a href={`https://paypal.me/${payLinks.paypal}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-between w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 active:bg-blue-100">
+                            <span>🔵 Pay via PayPal</span>
+                            <span className="text-blue-400 text-xs">paypal.me/{payLinks.paypal} →</span>
+                          </a>
+                        )}
+                        {payLinks.zelle && (
+                          <div className="flex items-center justify-between w-full rounded-xl border border-purple-100 bg-purple-50 px-4 py-3 text-sm font-semibold text-purple-700">
+                            <span>🟣 Pay via Zelle</span>
+                            <span className="text-purple-400 text-xs">{payLinks.zelle}</span>
+                          </div>
+                        )}
+                        {payLinks.custom_label && payLinks.custom_url && (
+                          <a href={payLinks.custom_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-between w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-slate-700 active:bg-gray-100">
+                            <span>💳 {payLinks.custom_label}</span>
+                            <span className="text-gray-400 text-xs">→</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
                     <div className="px-5 py-4 border-t border-gray-100">
                       <a
                         href={`${pdfUrl}?dl=1`}

@@ -48,6 +48,7 @@ type Props = {
     default_tax_rate?: number | null;
     tax_applied_auto?: boolean | null;
     logo_url?: string | null;
+    payment_links?: Record<string, string> | null;
   } | null;
   warrantyText?: string | null;
   notes?: string[];
@@ -181,6 +182,25 @@ export function InvoicePDF({ invoice, items, customer, org, settings, warrantyTe
             </View>
           </View>
         )}
+
+        {/* Contractor payment links (Venmo, Zelle, Cash App, etc.) */}
+        {!isPaid && s.payment_links && Object.keys(s.payment_links).length > 0 && (() => {
+          const pl = s.payment_links!;
+          const lines: string[] = [];
+          if (pl.venmo)   lines.push(`Venmo: ${pl.venmo}`);
+          if (pl.cashapp) lines.push(`Cash App: ${pl.cashapp}`);
+          if (pl.paypal)  lines.push(`PayPal: paypal.me/${pl.paypal}`);
+          if (pl.zelle)   lines.push(`Zelle: ${pl.zelle}`);
+          if (pl.custom_label && pl.custom_url) lines.push(`${pl.custom_label}: ${pl.custom_url}`);
+          else if (pl.custom_label) lines.push(pl.custom_label);
+          if (lines.length === 0) return null;
+          return (
+            <View style={[base.notesBox, { marginTop: 10, borderLeft: `3px solid #7C3AED` }]}>
+              <Text style={base.notesLabel}>Payment Options</Text>
+              <Text style={base.notesText}>{lines.join("  ·  ")}</Text>
+            </View>
+          );
+        })()}
 
         {/* Job Notes */}
         {notes && notes.length > 0 ? (

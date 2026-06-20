@@ -123,7 +123,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     aiAttachmentsPromise,
     admin.from("orgs").select("name").eq("id", orgId!).single(),
     admin.from("notes").select("created_at").eq("entity_type", "invoice").eq("entity_id", id).eq("org_id", orgId!).eq("body", "__opened__").order("created_at", { ascending: true }).limit(1),
-    (admin as any).from("org_settings").select("square_access_token").eq("org_id", orgId!).maybeSingle(),
+    (admin as any).from("org_settings").select("square_access_token,payment_links").eq("org_id", orgId!).maybeSingle(),
   ]);
   const aiAttachments: AiAttachment[] = aiAttachmentsRaw ?? [];
 
@@ -167,6 +167,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const dueLabel = dueDays === null ? null : dueDays < 0 ? `${Math.abs(dueDays)}d overdue` : dueDays === 0 ? "Due today" : `Due in ${dueDays}d`;
 
   const squareConnected = !!(orgSettings as any)?.square_access_token;
+  const paymentLinks = ((orgSettings as any)?.payment_links ?? {}) as Record<string, string>;
   const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
   return (
@@ -263,6 +264,49 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </p>
         )}
       </div>
+
+      {/* Payment options preview */}
+      {Object.keys(paymentLinks).length > 0 ? (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Payment Options Customers See</p>
+          <div className="space-y-1.5">
+            {paymentLinks.venmo && (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <span>💜</span><span className="font-medium">Venmo</span><span className="text-gray-400">{paymentLinks.venmo}</span>
+              </div>
+            )}
+            {paymentLinks.cashapp && (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <span>💚</span><span className="font-medium">Cash App</span><span className="text-gray-400">{paymentLinks.cashapp}</span>
+              </div>
+            )}
+            {paymentLinks.paypal && (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <span>🔵</span><span className="font-medium">PayPal</span><span className="text-gray-400">paypal.me/{paymentLinks.paypal}</span>
+              </div>
+            )}
+            {paymentLinks.zelle && (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <span>🟣</span><span className="font-medium">Zelle</span><span className="text-gray-400">{paymentLinks.zelle}</span>
+              </div>
+            )}
+            {paymentLinks.custom_label && (
+              <div className="flex items-center gap-2 text-sm text-slate-700">
+                <span>💳</span><span className="font-medium">{paymentLinks.custom_label}</span>
+              </div>
+            )}
+          </div>
+          <Link href="/app/settings" className="text-xs text-blue-600 mt-2 block">Edit payment options →</Link>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-700">Payment options</p>
+            <p className="text-xs text-gray-400 mt-0.5">Customers don&apos;t see how to pay yet</p>
+          </div>
+          <Link href="/app/settings" className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-3 py-1.5 rounded-xl">Set up →</Link>
+        </div>
+      )}
 
       <PortalLinkCard
         customerId={invoice.customer_id ?? ""}

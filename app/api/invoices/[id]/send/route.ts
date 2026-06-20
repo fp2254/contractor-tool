@@ -94,6 +94,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const businessName = org.business_name ?? "Your Contractor";
   const customerFirstName = customer.first_name || customer.company_name || "there";
   const paymentMethods = (settings as any)?.payment_methods ?? null;
+  const paymentLinks = ((settings as any)?.payment_links ?? null) as Record<string, string> | null;
 
   const { client, fromEmail } = await getResendClient();
 
@@ -113,6 +114,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         total_price: Number(i.total_price),
       })),
       paymentMethods,
+      paymentLinks,
       photos: photos.map(p => ({ url: p.url, filename: p.filename ?? "Photo" })),
       warrantyText,
     }),

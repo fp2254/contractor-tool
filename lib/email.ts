@@ -220,6 +220,7 @@ export function invoiceEmailHtml(opts: {
   dueDate: string | null;
   lineItems: { description: string; quantity: number; total_price: number }[];
   paymentMethods?: string | null;
+  paymentLinks?: Record<string, string> | null;
   photos?: { url: string; filename: string }[];
   warrantyText?: string | null;
 }): string {
@@ -276,6 +277,18 @@ export function invoiceEmailHtml(opts: {
         <p style="margin:0;font-size:13px;font-weight:bold;color:#166534">Accepted Payment Methods</p>
         <p style="margin:4px 0 0;font-size:13px;color:#15803d">${methods}</p>
       </div>
+      ${(() => {
+        if (!opts.paymentLinks || Object.keys(opts.paymentLinks).length === 0) return "";
+        const pl = opts.paymentLinks;
+        const btns: string[] = [];
+        if (pl.venmo) btns.push(`<a href="https://venmo.com/u/${pl.venmo.replace(/^@/, '')}" target="_blank" style="display:block;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:10px 14px;margin-bottom:8px;text-decoration:none;color:#5b21b6;font-size:13px;font-weight:bold">💜 Pay via Venmo &nbsp;<span style="font-weight:normal;color:#7c3aed">${pl.venmo}</span> →</a>`);
+        if (pl.cashapp) btns.push(`<a href="https://cash.app/${pl.cashapp.startsWith('$') ? pl.cashapp : '$'+pl.cashapp}" target="_blank" style="display:block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:8px;text-decoration:none;color:#166534;font-size:13px;font-weight:bold">💚 Pay via Cash App &nbsp;<span style="font-weight:normal;color:#16a34a">${pl.cashapp}</span> →</a>`);
+        if (pl.paypal) btns.push(`<a href="https://paypal.me/${pl.paypal}" target="_blank" style="display:block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:8px;text-decoration:none;color:#1d4ed8;font-size:13px;font-weight:bold">🔵 Pay via PayPal &nbsp;<span style="font-weight:normal;color:#2563eb">paypal.me/${pl.paypal}</span> →</a>`);
+        if (pl.zelle) btns.push(`<div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;font-weight:bold;color:#6b21a8">🟣 Pay via Zelle &nbsp;<span style="font-weight:normal;color:#7e22ce">${pl.zelle}</span></div>`);
+        if (pl.custom_label && pl.custom_url) btns.push(`<a href="${pl.custom_url}" target="_blank" style="display:block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:8px;text-decoration:none;color:#334155;font-size:13px;font-weight:bold">💳 ${pl.custom_label} →</a>`);
+        if (btns.length === 0) return "";
+        return `<div style="margin-top:16px"><p style="margin:0 0 10px;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8">Pay Now</p>${btns.join("")}</div>`;
+      })()}
       ${opts.warrantyText ? `<div style="margin-top:20px;background:#f8fafc;border-radius:8px;padding:12px 16px;border-left:3px solid #1B3A6B"><p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#334155">Terms &amp; Warranty</p><p style="margin:0;font-size:13px;color:#64748b;white-space:pre-line">${opts.warrantyText}</p></div>` : ""}
       ${photoGrid}
       <p style="margin:24px 0 0;font-size:15px;color:#64748b">Thank you,<br><strong>${opts.businessName}</strong></p>
