@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import Link from "next/link";
 import { SquareConnectSection } from "./SquareConnectSection";
+import { PaymentLinksCard } from "./PaymentLinksCard";
 
 async function changePassword(formData: FormData) {
   "use server";
@@ -29,12 +30,13 @@ export default async function SettingsPage({
 
   const { data: settings } = await (admin as any)
     .from("org_settings")
-    .select("square_access_token, square_merchant_id, square_location_id")
+    .select("square_access_token, square_merchant_id, square_location_id, payment_links")
     .eq("org_id", orgId!)
     .maybeSingle();
 
   const squareConnected = !!settings?.square_access_token;
   const squareAlert = params.square ?? null;
+  const paymentLinks = (settings?.payment_links as Record<string, string>) ?? {};
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -80,6 +82,9 @@ export default async function SettingsPage({
 
       {/* INTEGRATIONS */}
       <SquareConnectSection connected={squareConnected} alert={squareAlert} merchantId={settings?.square_merchant_id ?? null} />
+
+      {/* PAYMENT LINKS */}
+      <PaymentLinksCard squareConnected={squareConnected} initial={paymentLinks} />
 
       {/* APP */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
