@@ -54,3 +54,7 @@ externalPort = 3001
 deploymentTarget = "autoscale"
 build = ["bash", "scripts/build.sh"]
 run = ["npm", "run", "start"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
