@@ -86,6 +86,11 @@ export default async function SettingsPage({
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">App</p>
         </div>
+        <Link href="/app/profile/public-profile"
+          className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          <span className="text-sm font-medium text-slate-700">My Public Profile</span>
+          <span className="text-gray-300 text-lg">›</span>
+        </Link>
         <Link href="/app/profile"
           className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
           <span className="text-sm font-medium text-slate-700">Settings</span>
