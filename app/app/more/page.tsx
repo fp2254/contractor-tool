@@ -64,6 +64,20 @@ export default async function MorePage() {
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">More</h1>
 
+      {/* Nudge: no public page set up yet */}
+      {!showcaseSlug && (
+        <Link href="/app/profile/public-profile"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 text-white shadow-sm"
+          style={{ background: "linear-gradient(135deg, #1B3A6B 0%, #2d5aa0 100%)" }}>
+          <span className="text-2xl shrink-0">🌐</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold leading-tight">You don&apos;t have a public page yet</p>
+            <p className="text-[11px] opacity-70 mt-0.5">Set up your free contractor profile — get found by homeowners</p>
+          </div>
+          <span className="text-white/60 text-lg shrink-0">›</span>
+        </Link>
+      )}
+
       {/* My Pages — two prominent buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <Link href={businessHref}

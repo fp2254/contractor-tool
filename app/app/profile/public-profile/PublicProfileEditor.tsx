@@ -129,7 +129,9 @@ export function PublicProfileEditor() {
   const [websiteLeadsCount, setWebsiteLeadsCount] = useState(0);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [blockDraft, setBlockDraft] = useState({ icon: "", title: "", body: "" });
+  const [slugCheck, setSlugCheck] = useState<"idle" | "checking" | "available" | "taken" | "error">("idle");
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const slugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function templatePreviewSlug(id: string) {
     if (id === "classic") return "classic";
@@ -137,6 +139,22 @@ export function PublicProfileEditor() {
     if (id === "trust") return "trust";
     return "default";
   }
+
+  // Debounced slug availability check
+  useEffect(() => {
+    const slug = profile.slug?.trim();
+    if (!slug || slug.length < 3) { setSlugCheck("idle"); return; }
+    setSlugCheck("checking");
+    if (slugTimerRef.current) clearTimeout(slugTimerRef.current);
+    slugTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/profile/check-slug?slug=${encodeURIComponent(slug)}`);
+        const j = await res.json();
+        setSlugCheck(j.available ? "available" : "taken");
+      } catch { setSlugCheck("error"); }
+    }, 500);
+    return () => { if (slugTimerRef.current) clearTimeout(slugTimerRef.current); };
+  }, [profile.slug]);
 
   // Load existing profile + prefilled data from Business Identity
   useEffect(() => {
@@ -532,6 +550,36 @@ export function PublicProfileEditor() {
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
               />
             </Field>
+          </div>
+
+          {/* ── Your URL slug ── */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Your Profile URL</label>
+            <div className={`flex items-center rounded-xl border overflow-hidden transition-colors ${
+              slugCheck === "available" ? "border-green-400" :
+              slugCheck === "taken" ? "border-red-400" :
+              "border-gray-200"
+            }`}>
+              <span className="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
+                /contractor/
+              </span>
+              <input
+                value={profile.slug}
+                onChange={(e) => { update("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")); setSlugCheck("checking"); }}
+                placeholder="your-business-name"
+                className="flex-1 px-3 py-2.5 text-sm outline-none bg-white min-w-0"
+              />
+              <span className="px-3 shrink-0 text-base">
+                {slugCheck === "checking" && <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin align-middle" />}
+                {slugCheck === "available" && <span className="text-green-500">✓</span>}
+                {slugCheck === "taken" && <span className="text-red-500">✗</span>}
+              </span>
+            </div>
+            <p className="text-[11px] mt-1 leading-tight">
+              {slugCheck === "taken" && <span className="text-red-500">That URL is taken — try adding your city or a word.</span>}
+              {slugCheck === "available" && <span className="text-green-600">Available! Save to claim it.</span>}
+              {(slugCheck === "idle" || slugCheck === "checking") && <span className="text-gray-400">This is the link you share with customers. Keep it short and memorable.</span>}
+            </p>
           </div>
         </div>
       </div>
