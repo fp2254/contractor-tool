@@ -158,5 +158,54 @@ export async function ensureUserOrg() {
   if (memberError) throw memberError;
 
   await ensureDefaultTemplates(org.id, userId);
+
+  // Auto-create a public_profiles row so the contractor has a URL from day one
+  ensurePublicProfile(org.id, orgName).catch(() => {});
+
   return org.id;
+}
+
+function slugifyName(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80);
+}
+
+async function ensurePublicProfile(orgId: string, orgName: string) {
+  const admin = getAdminClient();
+
+  // Skip if a profile already exists
+  const { data: existing } = await (admin as any)
+    .from("public_profiles")
+    .select("id")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (existing) return;
+
+  const base = slugifyName(orgName) || "contractor";
+
+  // Find a unique slug
+  let slug = base;
+  let attempt = 0;
+  while (true) {
+    const { data: taken } = await (admin as any)
+      .from("public_profiles")
+      .select("org_id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!taken) break;
+    attempt++;
+    slug = `${base}-${attempt}`;
+    if (attempt > 20) { slug = `${base}-${Math.random().toString(36).slice(2, 6)}`; break; }
+  }
+
+  await (admin as any)
+    .from("public_profiles")
+    .insert({ org_id: orgId, slug, is_published: false })
+    .select()
+    .maybeSingle();
 }

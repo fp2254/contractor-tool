@@ -13,12 +13,15 @@ type Review = {
   reviewerName: string; rating: number; text: string;
   jobType: string; location: string; verified: boolean; createdAt: string;
 };
+type CustomBlock = { id: string; icon: string; title: string; body: string };
 type Contractor = {
   slug: string; orgId: string; businessName: string; trade: string;
   tagline: string; phone: string; serviceArea: string; urgencyLine: string;
   yearsExperience: number; licenseText: string; photoUrl: string | null;
   services: Service[]; aboutBullets: { icon: string; text: string }[];
   photos: Photo[]; reviews: Review[];
+  trustHighlights: string[];
+  customBlocks: CustomBlock[];
   stats: { completedJobs: number; yearsExperience: number; avgRating: number | null; reviewCount: number };
 };
 
@@ -193,6 +196,17 @@ export default function ContractorPublicProfile({ contractor: c }: { contractor:
                 </div>
               )}
 
+              {/* Trust highlights strip */}
+              {c.trustHighlights.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {c.trustHighlights.map((h, i) => (
+                    <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-100 rounded-full text-[11px] font-semibold text-green-800">
+                      <span className="text-green-500 text-xs">✓</span>{h}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Stats row */}
               <div className="grid grid-cols-4 gap-2">
                 {[
@@ -272,6 +286,25 @@ export default function ContractorPublicProfile({ contractor: c }: { contractor:
                               {fmtDate(r.createdAt)}
                             </p>
                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom blocks */}
+              {c.customBlocks.length > 0 && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <div className="grid grid-cols-1 gap-3">
+                    {c.customBlocks.map((block) => (
+                      <div key={block.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        {block.icon && (
+                          <span className="text-2xl shrink-0 leading-none mt-0.5">{block.icon}</span>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          {block.title && <p className="font-semibold text-gray-800 text-sm mb-0.5">{block.title}</p>}
+                          {block.body && <p className="text-xs text-gray-500 leading-relaxed">{block.body}</p>}
                         </div>
                       </div>
                     ))}
@@ -427,7 +460,7 @@ export default function ContractorPublicProfile({ contractor: c }: { contractor:
               {/* Leave a review CTA */}
               <div className="bg-white rounded-2xl p-5 shadow-sm text-center">
                 <p className="text-xs text-gray-500 mb-3">Worked with {c.businessName}?</p>
-                <a href={`/pro/${c.slug}/review`}
+                <a href={`/contractor/${c.slug}/review`}
                   className="inline-block px-6 py-2.5 rounded-xl text-sm font-bold text-white"
                   style={{ backgroundColor: "#1B3A6B" }}>
                   ✍️ Leave a Review

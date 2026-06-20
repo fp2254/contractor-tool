@@ -13,7 +13,7 @@ async function loadContractor(slug: string) {
 
   const { data: pub } = await a
     .from("public_profiles")
-    .select("org_id,slug,trade,tagline,phone,service_area,urgency_line,years_experience,license_text,photo_url,services,about_bullets,photos,is_published,selected_template")
+    .select("org_id,slug,trade,tagline,phone,service_area,urgency_line,years_experience,license_text,photo_url,services,about_bullets,photos,is_published,selected_template,trust_highlights,custom_blocks")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
@@ -72,6 +72,8 @@ async function loadContractor(slug: string) {
     services: normalizeServices(pub.services ?? []),
     aboutBullets: parseAbout(pub.about_bullets ?? []),
     photos: (pub.photos ?? []).filter((p: { url?: string }) => p?.url) as { url: string; title?: string; location?: string; cost?: string }[],
+    trustHighlights: Array.isArray(pub.trust_highlights) ? (pub.trust_highlights as string[]).filter(Boolean) : [],
+    customBlocks: Array.isArray(pub.custom_blocks) ? pub.custom_blocks as { id: string; icon: string; title: string; body: string }[] : [],
     reviews: reviews.map((r: { reviewer_name: string; rating: number; text: string; job_type: string; location: string; verified: boolean; created_at: string }) => ({
       reviewerName: r.reviewer_name,
       rating: r.rating,

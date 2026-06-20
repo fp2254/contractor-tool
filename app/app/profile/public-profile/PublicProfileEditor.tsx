@@ -337,6 +337,21 @@ export function PublicProfileEditor() {
                 </div>
               )}
             </div>
+
+            {/* Secondary: contractor profile link */}
+            {profile.slug && (
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+                <span className="text-[11px] text-white/50">Public profile page</span>
+                <a
+                  href={`/contractor/${profile.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-white/80 hover:text-white underline underline-offset-2"
+                >
+                  /contractor/{profile.slug} ↗
+                </a>
+              </div>
+            )}
           </div>
         </div>
       ) : (
