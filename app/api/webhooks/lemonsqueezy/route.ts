@@ -41,8 +41,9 @@ export async function POST(req: NextRequest) {
     case "subscription_created":
     case "subscription_updated":
     case "subscription_resumed": {
-      const status = attributes?.status;
-      if (status === "active" || status === "on_trial") {
+      const lsStatus = attributes?.status;
+
+      if (lsStatus === "active" || lsStatus === "on_trial") {
         await activateAddon(orgId, addonType, { priceMonthly: 29 });
 
         const periodEnd = attributes.renews_at ?? attributes.ends_at ?? null;
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
           .update({
             external_subscription_id: subscriptionId ?? null,
             current_period_end: periodEnd,
-            status: status === "on_trial" ? "trialing" : "active",
+            status: lsStatus === "on_trial" ? "trialing" : "active",
           })
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
@@ -59,17 +60,24 @@ export async function POST(req: NextRequest) {
         await autoProvisionIfNeeded(orgId).catch((e: Error) =>
           console.error("[LemonSqueezy webhook] Auto-provision failed:", e.message)
         );
-      } else if (
-        status === "cancelled" ||
-        status === "expired" ||
-        status === "paused" ||
-        status === "unpaid" ||
-        status === "past_due"
-      ) {
-        await deactivateAddon(orgId, addonType);
+      } else if (lsStatus === "past_due" || lsStatus === "unpaid") {
+        // Payment failed — deactivate access but preserve the exact failure status
+        // so the admin dashboard can distinguish "needs payment" from "cancelled"
+        await deactivateAddon(orgId, addonType, lsStatus);
         await (admin as any)
           .from("org_addons")
-          .update({ external_subscription_id: subscriptionId ?? null, status: "canceled" })
+          .update({ external_subscription_id: subscriptionId ?? null })
+          .eq("org_id", orgId)
+          .eq("addon_type", addonType);
+      } else if (lsStatus === "cancelled" || lsStatus === "expired" || lsStatus === "paused") {
+        await deactivateAddon(
+          orgId,
+          addonType,
+          lsStatus === "paused" ? "paused" : "canceled"
+        );
+        await (admin as any)
+          .from("org_addons")
+          .update({ external_subscription_id: subscriptionId ?? null })
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
       }
@@ -78,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     case "subscription_cancelled":
     case "subscription_expired": {
-      await deactivateAddon(orgId, addonType);
+      await deactivateAddon(orgId, addonType, "canceled");
       if (subscriptionId) {
         await (admin as any)
           .from("org_addons")

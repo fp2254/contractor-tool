@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
-export type AddonStatus = "active" | "trialing" | "canceled" | "paused" | "none";
+export type AddonStatus = "active" | "trialing" | "canceled" | "paused" | "past_due" | "unpaid" | "none";
 
 export interface AddonInfo {
   active: boolean;
@@ -96,11 +96,15 @@ export async function activateAddon(
   if (error) throw error;
 }
 
-export async function deactivateAddon(orgId: string, addonType: string): Promise<void> {
+export async function deactivateAddon(
+  orgId: string,
+  addonType: string,
+  status: "canceled" | "paused" | "past_due" | "unpaid" = "canceled"
+): Promise<void> {
   const admin = createAdminClient();
   const { error } = await (admin as any)
     .from("org_addons")
-    .update({ status: "canceled" })
+    .update({ status })
     .eq("org_id", orgId)
     .eq("addon_type", addonType);
 
