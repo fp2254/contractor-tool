@@ -24,7 +24,7 @@ async function retellFetch(method: "GET" | "POST" | "DELETE" | "PATCH", path: st
 
 export async function createRetellLlm(businessName: string): Promise<string> {
   const data = await retellFetch("POST", "/v2/create-retell-llm", {
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     general_prompt: `You are a professional, friendly phone receptionist for ${businessName}. Your job is to:
 1. Greet the caller warmly and ask how you can help
 2. Listen to their reason for calling

@@ -45,7 +45,7 @@ export default async function MorePage() {
   const isAdmin = isPlatformAdmin(user?.email);
   const { role } = await getUserOrgRole();
 
-  // Fetch showcase slug
+  // Fetch (or auto-create) showcase slug
   let showcaseSlug: string | null = null;
   try {
     const orgId = await ensureUserOrg();
@@ -56,6 +56,25 @@ export default async function MorePage() {
       .eq("org_id", orgId!)
       .maybeSingle();
     showcaseSlug = pub?.slug ?? null;
+
+    // Auto-provision a profile row for existing orgs that don't have one yet
+    if (!showcaseSlug && orgId) {
+      const { data: org } = await admin.from("orgs").select("name").eq("id", orgId).maybeSingle();
+      const orgName: string = org?.name ?? "contractor";
+      const base = orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "contractor";
+      let slug = base.slice(0, 80);
+      let attempt = 0;
+      while (attempt < 25) {
+        const { data: taken } = await admin.from("public_profiles").select("org_id").eq("slug", slug).maybeSingle();
+        if (!taken) break;
+        attempt++;
+        slug = `${base.slice(0, 75)}-${attempt}`;
+      }
+      const { error: insertErr } = await admin
+        .from("public_profiles")
+        .insert({ org_id: orgId, slug, is_published: false });
+      if (!insertErr) showcaseSlug = slug;
+    }
   } catch { /* ignore */ }
 
   const businessHref    = showcaseSlug ? `/contractor/${showcaseSlug}` : "/app/profile/public-profile";

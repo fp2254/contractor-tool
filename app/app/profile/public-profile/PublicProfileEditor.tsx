@@ -373,22 +373,47 @@ export function PublicProfileEditor() {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-gray-300" />
-            <div>
-              <span className="text-sm font-bold text-gray-500">Draft</span>
-              <p className="text-xs text-gray-400">Not visible to the public yet</p>
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-gray-300" />
+              <div>
+                <span className="text-sm font-bold text-gray-500">Draft</span>
+                <p className="text-xs text-gray-400">Not visible to the public yet</p>
+              </div>
             </div>
+            <button
+              onClick={handlePublishToggle}
+              disabled={publishing || !profile.slug}
+              className="text-sm font-bold px-4 py-2 rounded-xl text-white transition-colors"
+              style={{ backgroundColor: profile.slug ? "#1B3A6B" : "#9CA3AF" }}
+            >
+              {publishing ? "…" : profile.slug ? "Go Live" : "Save first"}
+            </button>
           </div>
-          <button
-            onClick={handlePublishToggle}
-            disabled={publishing || !profile.slug}
-            className="text-sm font-bold px-4 py-2 rounded-xl text-white transition-colors"
-            style={{ backgroundColor: profile.slug ? "#1B3A6B" : "#9CA3AF" }}
-          >
-            {publishing ? "…" : profile.slug ? "Go Live" : "Save first"}
-          </button>
+          {/* Show the profile URL even in draft mode so contractors can see/share it */}
+          {profile.slug && (
+            <div className="px-4 py-3 bg-gray-50 flex items-center gap-2">
+              <span className="text-xs text-gray-400 truncate flex-1">
+                /contractor/<span className="font-semibold text-slate-600">{profile.slug}</span>
+              </span>
+              <button
+                onClick={() => {
+                  const url = `${typeof window !== "undefined" ? window.location.origin : ""}/contractor/${profile.slug}`;
+                  navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2500);
+                }}
+                className="shrink-0 text-xs font-bold px-3 py-1 rounded-lg transition-all border"
+                style={copied
+                  ? { background: "#22C55E", color: "white", borderColor: "#22C55E" }
+                  : { background: "white", color: "#1B3A6B", borderColor: "#e5e7eb" }
+                }
+              >
+                {copied ? "✓ Copied" : "Copy Link"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
