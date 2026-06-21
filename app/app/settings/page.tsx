@@ -6,6 +6,7 @@ import { getAddonStatus } from "@/lib/addons";
 import Link from "next/link";
 import { SquareConnectSection } from "./SquareConnectSection";
 import { PaymentLinksCard } from "./PaymentLinksCard";
+import { BillingCard } from "@/components/BillingCard";
 
 async function changePassword(formData: FormData) {
   "use server";
@@ -135,6 +136,33 @@ export default async function SettingsPage({
           </div>
         </Link>
       </div>
+
+      {/* BILLING */}
+      {phoneActive ? (
+        <BillingCard
+          currentPeriodEnd={phoneAddon!.currentPeriodEnd}
+          priceMonthly={phoneAddon!.priceMonthly}
+          status={phoneAddon!.status}
+          hasSubscriptionId={!!phoneAddon!.externalSubscriptionId}
+        />
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Billing</p>
+          </div>
+          <div className="px-4 py-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-700">No active plans</p>
+              <p className="text-xs text-gray-400 mt-0.5">Add-ons will appear here once subscribed</p>
+            </div>
+            <Link
+              href="/app/phone"
+              className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-3 py-1.5 rounded-full whitespace-nowrap">
+              View Add-ons
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* PAYMENT LINKS */}
       <PaymentLinksCard squareConnected={squareConnected} initial={paymentLinks} />
