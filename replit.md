@@ -89,6 +89,8 @@ supabase/
   migration_homeowner_requests.sql ✅ applied
   migration_sections_config.sql        ⬜ pending — adds sections_config + trust_highlights columns
   migration_custom_blocks.sql          ⬜ pending — adds custom_blocks JSONB column
+  migration_addons.sql                 ⬜ pending — creates org_addons table (phone add-on gating)
+  migration_phone_system.sql           ⬜ pending — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
 ```
 
 ## Environment Variables

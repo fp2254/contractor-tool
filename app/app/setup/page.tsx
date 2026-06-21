@@ -30,6 +30,8 @@ export default async function SetupPage() {
     hasAiRuns, hasAiAttachments,
     hasInventory, hasTradeContacts,
     hasSquare,
+    hasOrgAddons,
+    hasOrgPhoneNumbers, hasOrgPhoneSettings, hasCallLogs, hasCallTranscripts,
   ] = await Promise.all([
     tbl(admin, "customer_portal_tokens"),
     col(admin, "customer_portal_tokens", "revoked_at"),
@@ -40,6 +42,11 @@ export default async function SetupPage() {
     tbl(admin, "inventory_items"),
     tbl(admin, "trade_contacts"),
     col(admin, "org_settings", "square_access_token"),
+    tbl(admin, "org_addons"),
+    tbl(admin, "org_phone_numbers"),
+    tbl(admin, "org_phone_settings"),
+    tbl(admin, "call_logs"),
+    tbl(admin, "call_transcripts"),
   ]);
 
   const migrations = [
@@ -53,6 +60,8 @@ export default async function SetupPage() {
     { title: "Phase 8 — Inventory (inventory_items)", file: "migration_inventory.sql" },
     { title: "Phase 9 — Trade Contacts (trade_contacts)", file: "migration_trade_contacts.sql" },
     { title: "Phase 10 — Square OAuth (org_settings columns)", file: "migration_square.sql" },
+    { title: "Phase 11 — Add-on Subscriptions (org_addons)", file: "migration_addons.sql" },
+    { title: "Phase 12 — Phone System (org_phone_numbers, org_phone_settings, call_logs, call_transcripts)", file: "migration_phone_system.sql" },
   ];
 
   type Check = { label: string; ok: boolean };
@@ -95,6 +104,23 @@ export default async function SetupPage() {
       pending: !hasSquare,
       checks: [
         { label: "org_settings.square_access_token", ok: hasSquare },
+      ],
+    },
+    {
+      title: "Add-on Subscriptions (Phone gating)",
+      pending: !hasOrgAddons,
+      checks: [
+        { label: "org_addons table", ok: hasOrgAddons },
+      ],
+    },
+    {
+      title: "Phone System",
+      pending: !(hasOrgPhoneNumbers && hasOrgPhoneSettings && hasCallLogs && hasCallTranscripts),
+      checks: [
+        { label: "org_phone_numbers table", ok: hasOrgPhoneNumbers },
+        { label: "org_phone_settings table", ok: hasOrgPhoneSettings },
+        { label: "call_logs table", ok: hasCallLogs },
+        { label: "call_transcripts table", ok: hasCallTranscripts },
       ],
     },
   ];
