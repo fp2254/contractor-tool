@@ -44,9 +44,8 @@ export async function POST(req: NextRequest) {
 
   await (admin as any).from("call_logs").update(updatePayload).eq("id", callLog.id);
 
-  const isMissed =
-    (callStatus === "no-answer" || callStatus === "failed" || callStatus === "busy") &&
-    !callLog.answered_by;
+  // Only treat "no-answer" as a genuine missed call; "failed"/"busy" may indicate network errors
+  const isMissed = callStatus === "no-answer" && !callLog.answered_by;
 
   // Missed-call SMS
   if (isMissed && !callLog.missed_call_sms_sent) {

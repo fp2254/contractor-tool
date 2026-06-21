@@ -47,6 +47,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid routing_mode" }, { status: 400 });
   }
 
+  // Validate forward number format (E.164 or empty)
+  if (body.contractor_forward_number) {
+    const cleaned = String(body.contractor_forward_number).trim();
+    if (!/^\+?1?\d{10,15}$/.test(cleaned.replace(/[\s\-().]/g, ""))) {
+      return NextResponse.json({ error: "Invalid contractor_forward_number — use E.164 format e.g. +14155551234" }, { status: 400 });
+    }
+  }
+
+  // Validate ring timeout (5–60 seconds)
+  if (body.ring_timeout_seconds !== undefined) {
+    const timeout = Number(body.ring_timeout_seconds);
+    if (!Number.isInteger(timeout) || timeout < 5 || timeout > 60) {
+      return NextResponse.json({ error: "ring_timeout_seconds must be an integer between 5 and 60" }, { status: 400 });
+    }
+  }
+
   const admin = createAdminClient();
   const { data, error } = await (admin as any)
     .from("org_phone_settings")

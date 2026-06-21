@@ -64,20 +64,23 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   if (!customer) return notFound();
 
-  // Phone calls for this customer (graceful if table doesn't exist yet)
+  // Phone calls for this customer — only when phone add-on is active and linked by customer_id
   let customerCalls: Array<{
     id: string; from_number: string; status: string; duration_seconds: number | null;
     answered_by: string | null; started_at: string; recording_url: string | null;
     call_transcripts?: { ai_summary: string | null } | null;
   }> = [];
+  let phoneAddonActive = false;
   try {
-    const phone = customer.phone;
-    if (phone) {
+    const { getAddonStatus } = await import("@/lib/addons");
+    const addon = orgId ? await getAddonStatus(orgId, "phone_ai") : null;
+    phoneAddonActive = addon?.active ?? false;
+    if (phoneAddonActive) {
       const { data: callsData } = await (admin as any)
         .from("call_logs")
         .select("id, from_number, status, duration_seconds, answered_by, started_at, recording_url, call_transcripts(ai_summary)")
         .eq("org_id", orgId!)
-        .or(`from_number.eq.${phone},from_number.eq.${phone.replace(/\D/g, "")}`)
+        .eq("customer_id", id)
         .order("started_at", { ascending: false })
         .limit(10);
       customerCalls = callsData ?? [];

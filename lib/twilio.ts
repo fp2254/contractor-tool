@@ -183,11 +183,11 @@ export function buildVoiceTwiml(opts: {
 
   if (routingMode === "ai_first") {
     if (!retellAgentId) return `<Response><Say>We're sorry, the AI receptionist is not configured yet. Please call back later.</Say><Hangup/></Response>`;
-    return `<Response><Dial${record}><Sip>sip:${retellAgentId}@5t4n3q.sip.retellai.com</Sip></Dial></Response>`;
+    return `<Response><Dial${record}><Sip>sip:${retellAgentId}@calls.retellai.com</Sip></Dial></Response>`;
   }
 
   if (routingMode === "simultaneous") {
-    const sipLeg = retellAgentId ? `<Sip>sip:${retellAgentId}@5t4n3q.sip.retellai.com</Sip>` : "";
+    const sipLeg = retellAgentId ? `<Sip>sip:${retellAgentId}@calls.retellai.com</Sip>` : "";
     const numLeg = contractorNumber ? `<Number>${contractorNumber}</Number>` : "";
     if (!sipLeg && !numLeg) return `<Response><Say>No routing configured.</Say><Hangup/></Response>`;
     return `<Response><Dial timeout="${ringTimeout}"${record}>${numLeg}${sipLeg}</Dial></Response>`;
@@ -200,7 +200,7 @@ export function buildVoiceTwiml(opts: {
 
   // No contractor number configured — go straight to AI
   if (retellAgentId) {
-    return `<Response><Dial${record}><Sip>sip:${retellAgentId}@5t4n3q.sip.retellai.com</Sip></Dial></Response>`;
+    return `<Response><Dial${record}><Sip>sip:${retellAgentId}@calls.retellai.com</Sip></Dial></Response>`;
   }
 
   return `<Response><Say>We are unable to take your call right now. Please try again later.</Say><Hangup/></Response>`;
@@ -209,5 +209,5 @@ export function buildVoiceTwiml(opts: {
 /** TwiML to connect the caller to Retell AI (used after contractor doesn't answer) */
 export function buildRetellFallbackTwiml(retellAgentId: string, recordCalls: boolean, appBaseUrl: string): string {
   const record = recordCalls ? ` record="record-from-answer" recordingStatusCallback="${appBaseUrl}/api/webhooks/twilio/recording" recordingStatusCallbackMethod="POST"` : "";
-  return `<Response><Dial${record}><Sip>sip:${retellAgentId}@5t4n3q.sip.retellai.com</Sip></Dial></Response>`;
+  return `<Response><Dial${record}><Sip>sip:${retellAgentId}@calls.retellai.com</Sip></Dial></Response>`;
 }
