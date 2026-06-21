@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import DevAddonActivator from "./DevAddonActivator";
 
 function readSql(filename: string) {
   try {
@@ -22,7 +23,7 @@ async function tbl(admin: ReturnType<typeof createAdminClient>, table: string) {
 }
 
 export default async function SetupPage() {
-  await ensureUserOrg();
+  const orgId = await ensureUserOrg();
   const admin = createAdminClient();
 
   const [
@@ -166,6 +167,10 @@ export default async function SetupPage() {
           ))}
         </div>
       ))}
+
+      {process.env.NODE_ENV !== "production" && (
+        <DevAddonActivator defaultOrgId={orgId ?? ""} />
+      )}
 
       <div className="space-y-4">
         {migrations.map(({ title, file }) => (
