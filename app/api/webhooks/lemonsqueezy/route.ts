@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
           .from("org_addons")
           .update({
             external_subscription_id: subscriptionId ?? null,
+            billing_provider: "lemonsqueezy",
             current_period_end: periodEnd,
             status: lsStatus === "on_trial" ? "trialing" : "active",
           })
@@ -66,7 +67,10 @@ export async function POST(req: NextRequest) {
         await deactivateAddon(orgId, addonType, lsStatus);
         await (admin as any)
           .from("org_addons")
-          .update({ external_subscription_id: subscriptionId ?? null })
+          .update({
+            external_subscription_id: subscriptionId ?? null,
+            billing_provider: "lemonsqueezy",
+          })
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
       } else if (lsStatus === "cancelled" || lsStatus === "expired" || lsStatus === "paused") {
@@ -77,7 +81,10 @@ export async function POST(req: NextRequest) {
         );
         await (admin as any)
           .from("org_addons")
-          .update({ external_subscription_id: subscriptionId ?? null })
+          .update({
+            external_subscription_id: subscriptionId ?? null,
+            billing_provider: "lemonsqueezy",
+          })
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
       }
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
       if (subscriptionId) {
         await (admin as any)
           .from("org_addons")
-          .update({ external_subscription_id: subscriptionId })
+          .update({ external_subscription_id: subscriptionId, billing_provider: "lemonsqueezy" })
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
       }
