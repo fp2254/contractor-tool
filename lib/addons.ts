@@ -10,6 +10,8 @@ export interface AddonInfo {
   notes: string | null;
   priceMonthly: number | null;
   activatedAt: string | null;
+  externalSubscriptionId: string | null;
+  billingProvider: string | null;
 }
 
 export async function getAddonStatus(orgId: string, addonType: string): Promise<AddonInfo> {
@@ -22,7 +24,7 @@ export async function getAddonStatus(orgId: string, addonType: string): Promise<
     .maybeSingle();
 
   if (!data) {
-    return { active: false, status: "none", currentPeriodEnd: null, notes: null, priceMonthly: null, activatedAt: null };
+    return { active: false, status: "none", currentPeriodEnd: null, notes: null, priceMonthly: null, activatedAt: null, externalSubscriptionId: null, billingProvider: null };
   }
 
   const now = new Date();
@@ -40,6 +42,8 @@ export async function getAddonStatus(orgId: string, addonType: string): Promise<
     notes: data.notes ?? null,
     priceMonthly: data.price_monthly ?? null,
     activatedAt: data.activated_at ?? null,
+    externalSubscriptionId: data.external_subscription_id ?? null,
+    billingProvider: data.billing_provider ?? null,
   };
 }
 

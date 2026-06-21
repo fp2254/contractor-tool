@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAddonStatus } from "@/lib/addons";
-import { PhoneCallLog, ProvisionButton, GetPhoneButton, ActivationPendingBanner, CopyNumberButton } from "./PhoneClient";
+import { PhoneCallLog, ProvisionButton, GetPhoneButton, ActivationPendingBanner, CopyNumberButton, BillingCard } from "./PhoneClient";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,44 @@ export default async function PhonePage({
 
   const addon = await getAddonStatus(orgId, "phone_ai");
   const admin = createAdminClient();
+
+  // Previously subscribed but now canceled / expired / paused / payment issue
+  const hadSubscription =
+    addon.status === "canceled" ||
+    addon.status === "paused" ||
+    addon.status === "past_due" ||
+    addon.status === "unpaid" ||
+    !!addon.externalSubscriptionId;
+
+  if (!addon.active && hadSubscription) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="flex items-center gap-3 p-4">
+          <Link href="/app/more" className="text-gray-400">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <h1 className="text-xl font-bold text-slate-800">AI Phone</h1>
+        </div>
+
+        <div className="flex-1 flex flex-col p-4 pb-10 space-y-4">
+          <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
+            <div className="text-4xl mb-3">📞</div>
+            <h2 className="text-lg font-bold text-slate-800 mb-1">Your AI Phone subscription has ended</h2>
+            <p className="text-sm text-gray-500">Resubscribe to get your business number back and resume call handling.</p>
+          </div>
+
+          <BillingCard
+            currentPeriodEnd={addon.currentPeriodEnd}
+            priceMonthly={addon.priceMonthly}
+            status={addon.status}
+            hasSubscriptionId={!!addon.externalSubscriptionId}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (!addon.active) {
     return (
@@ -172,6 +210,13 @@ export default async function PhonePage({
           </p>
           <ProvisionButton autoStart={activated} />
         </div>
+
+        <BillingCard
+          currentPeriodEnd={addon.currentPeriodEnd}
+          priceMonthly={addon.priceMonthly}
+          status={addon.status}
+          hasSubscriptionId={!!addon.externalSubscriptionId}
+        />
       </div>
     );
   }
@@ -234,6 +279,14 @@ export default async function PhonePage({
           <p className="text-[10px] font-semibold text-gray-400 mt-0.5">Avg Duration This Week</p>
         </div>
       </div>
+
+      {/* Billing */}
+      <BillingCard
+        currentPeriodEnd={addon.currentPeriodEnd}
+        priceMonthly={addon.priceMonthly}
+        status={addon.status}
+        hasSubscriptionId={!!addon.externalSubscriptionId}
+      />
 
       {/* Call log */}
       <div>

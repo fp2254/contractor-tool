@@ -86,6 +86,13 @@ export function validateLemonSqueezyWebhook(rawBody: string, signature: string):
   }
 }
 
+export async function getCustomerPortalUrl(subscriptionId: string): Promise<string> {
+  const data = await lsRequest("GET", `/subscriptions/${subscriptionId}`);
+  const portalUrl = data?.data?.attributes?.urls?.customer_portal as string | undefined;
+  if (!portalUrl) throw new Error("No customer portal URL returned by Lemon Squeezy");
+  return portalUrl;
+}
+
 export type LsSubscriptionStatus =
   | "active"
   | "on_trial"
