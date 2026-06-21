@@ -38,20 +38,30 @@ const STATUS_STYLE: Record<string, string> = {
   trialing: "bg-blue-100 text-blue-700",
   canceled: "bg-gray-100 text-gray-500",
   paused: "bg-amber-100 text-amber-700",
+  past_due: "bg-red-100 text-red-700",
+  unpaid: "bg-red-100 text-red-700",
   none: "bg-gray-50 text-gray-400",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "Active",
+  trialing: "Trialing",
+  canceled: "Cancelled",
+  paused: "Paused",
+  past_due: "Payment Failed",
+  unpaid: "Unpaid",
+  none: "None",
 };
 
 export default async function AdminAddonsPage() {
   await assertAdmin();
   const admin = createAdminClient();
 
-  // Get all orgs with their add-on status
   const [{ data: orgs }, { data: addons }] = await Promise.all([
     (admin as any).from("orgs").select("id,name").order("name"),
     (admin as any).from("org_addons").select("*").eq("addon_type", "phone_ai"),
   ]);
 
-  // Get any pending addon requests from support tickets
   const { data: requests } = await (admin as any)
     .from("support_tickets")
     .select("id,org_id,created_at,body")
@@ -68,6 +78,8 @@ export default async function AdminAddonsPage() {
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   }
 
+  const activeCount = (addons ?? []).filter((a: any) => a.status === "active" || a.status === "trialing").length;
+
   return (
     <div className="p-4 pb-24">
       <div className="flex items-center gap-3 mb-6">
@@ -76,7 +88,10 @@ export default async function AdminAddonsPage() {
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
           </svg>
         </a>
-        <h1 className="text-xl font-bold text-slate-800">Add-on Management</h1>
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-slate-800">Add-on Management</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{activeCount} active subscription{activeCount !== 1 ? "s" : ""}</p>
+        </div>
       </div>
 
       {/* Pending requests */}
@@ -115,32 +130,59 @@ export default async function AdminAddonsPage() {
             const addon = addonMap.get(org.id);
             const status: string = addon?.status ?? "none";
             const isActive = status === "active" || status === "trialing";
+            const isPaymentIssue = status === "past_due" || status === "unpaid";
+            const renewsAt = addon?.current_period_end ?? null;
+            const subId = (addon as any)?.external_subscription_id ?? null;
+            const billingProvider = (addon as any)?.billing_provider ?? null;
+
             return (
-              <div key={org.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-700 truncate">{org.name}</p>
-                  <p className="text-xs text-gray-400">{addon ? `Activated ${fmtDate(addon.activated_at)}` : "Not subscribed"}</p>
+              <div key={org.id} className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{org.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {addon ? (
+                        <p className="text-xs text-gray-400">
+                          {isActive && renewsAt
+                            ? `Renews ${fmtDate(renewsAt)}`
+                            : !isActive && renewsAt
+                            ? `Ended ${fmtDate(renewsAt)}`
+                            : `Activated ${fmtDate(addon.activated_at)}`}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-400">Not subscribed</p>
+                      )}
+                      {billingProvider && (
+                        <span className="text-[10px] font-semibold text-gray-300 uppercase">{billingProvider}</span>
+                      )}
+                    </div>
+                    {subId && (
+                      <p className="text-[10px] text-gray-300 font-mono truncate mt-0.5">Sub: {subId}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_STYLE[status] ?? STATUS_STYLE.none}`}>
+                      {STATUS_LABEL[status] ?? status}
+                    </span>
+                    {isActive ? (
+                      <form action={deactivateAction}>
+                        <input type="hidden" name="org_id" value={org.id} />
+                        <input type="hidden" name="addon_type" value="phone_ai" />
+                        <button type="submit" className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl">
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <form action={activateAction}>
+                        <input type="hidden" name="org_id" value={org.id} />
+                        <input type="hidden" name="addon_type" value="phone_ai" />
+                        <button type="submit" className="text-xs font-semibold text-white bg-[#1B3A6B] px-3 py-1.5 rounded-xl">
+                          {isPaymentIssue ? "Reactivate" : "Activate"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_STYLE[status] ?? STATUS_STYLE.none}`}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </span>
-                {isActive ? (
-                  <form action={deactivateAction}>
-                    <input type="hidden" name="org_id" value={org.id} />
-                    <input type="hidden" name="addon_type" value="phone_ai" />
-                    <button type="submit" className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl">
-                      Cancel
-                    </button>
-                  </form>
-                ) : (
-                  <form action={activateAction}>
-                    <input type="hidden" name="org_id" value={org.id} />
-                    <input type="hidden" name="addon_type" value="phone_ai" />
-                    <button type="submit" className="text-xs font-semibold text-white bg-[#1B3A6B] px-3 py-1.5 rounded-xl">
-                      Activate
-                    </button>
-                  </form>
-                )}
               </div>
             );
           })}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAddonStatus } from "@/lib/addons";
-import { PhoneCallLog, ProvisionButton, RequestAccessButton, CopyNumberButton } from "./PhoneClient";
+import { PhoneCallLog, ProvisionButton, GetPhoneButton, ActivationPendingBanner, CopyNumberButton } from "./PhoneClient";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,14 @@ function formatPhone(e164: string): string {
   return e164;
 }
 
-export default async function PhonePage() {
+export default async function PhonePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const params = await searchParams;
+  const activated = params.activated === "1";
+
   const orgId = await ensureUserOrg();
   if (!orgId) redirect("/auth/login");
 
@@ -70,10 +77,15 @@ export default async function PhonePage() {
             <p className="text-sm text-gray-500 mt-1">Cancel anytime · No setup fees · Instant activation</p>
           </div>
 
-          <RequestAccessButton />
+          {/* CTA: Lemon Squeezy checkout or pending banner */}
+          {activated ? (
+            <ActivationPendingBanner />
+          ) : (
+            <GetPhoneButton />
+          )}
 
           <p className="text-xs text-center text-gray-400 px-4">
-            Your admin will review your request and activate the add-on. Typically within 24 hours.
+            Secure checkout powered by Lemon Squeezy. Cancel anytime from your account.
           </p>
         </div>
       </div>
@@ -93,7 +105,7 @@ export default async function PhonePage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const weekStart = new Date(today);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
     const [{ data: todayCalls }, { data: weekCalls }] = await Promise.all([
       (admin as any)
@@ -124,7 +136,7 @@ export default async function PhonePage() {
     }
   }
 
-  // Recent calls from DB directly (more reliable in server component)
+  // Recent calls
   const { data: calls } = await (admin as any)
     .from("call_logs")
     .select(`id, direction, from_number, to_number, status, duration_seconds,
@@ -138,7 +150,6 @@ export default async function PhonePage() {
   const nextCursor = calls && calls.length === 30 ? calls[29].started_at : null;
 
   if (!phoneRow) {
-    // Active addon but no number yet — show provisioning step
     return (
       <div className="p-4 pb-10 space-y-4">
         <div className="flex items-center gap-3">
@@ -153,11 +164,13 @@ export default async function PhonePage() {
 
         <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
           <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">You're all set — let's get your number!</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">
+            {activated ? "Payment confirmed — setting up your number!" : "You're all set — let's get your number!"}
+          </h2>
           <p className="text-sm text-gray-500 mb-6">
             We'll buy a dedicated US phone number and configure your AI receptionist in about 10 seconds.
           </p>
-          <ProvisionButton />
+          <ProvisionButton autoStart={activated} />
         </div>
       </div>
     );
@@ -180,6 +193,17 @@ export default async function PhonePage() {
           Settings
         </Link>
       </div>
+
+      {/* Activated success banner */}
+      {activated && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <p className="text-sm font-semibold text-green-800">You&apos;re live!</p>
+            <p className="text-xs text-green-600 mt-0.5">Your AI phone receptionist is active and ready to take calls.</p>
+          </div>
+        </div>
+      )}
 
       {/* Phone number card */}
       <div className="rounded-2xl text-white p-4" style={{ backgroundColor: "#1B3A6B" }}>

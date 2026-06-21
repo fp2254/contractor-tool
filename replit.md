@@ -91,6 +91,7 @@ supabase/
   migration_custom_blocks.sql          ⬜ pending — adds custom_blocks JSONB column
   migration_addons.sql                 ⬜ pending — creates org_addons table (phone add-on gating)
   migration_phone_system.sql           ⬜ pending — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
+  migration_addons_v2.sql              ⬜ pending — adds external_subscription_id + billing_provider to org_addons
 ```
 
 ## Environment Variables
@@ -101,6 +102,10 @@ supabase/
 | `SUPABASE_ANON_KEY` | Public anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role — used by admin client |
 | `TB_POOL_URL` | Supabase connection pooler |
+| `LEMONSQUEEZY_API_KEY` | Lemon Squeezy API key (from LS dashboard → API Keys) |
+| `LEMONSQUEEZY_STORE_ID` | LS store ID (numeric, from store URL) |
+| `LEMONSQUEEZY_VARIANT_ID` | LS variant ID for the $29/mo phone plan |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | LS webhook signing secret (from webhook settings) |
 
 `next.config.ts` maps secrets to `NEXT_PUBLIC_*` and `DATABASE_URL` at runtime.
 

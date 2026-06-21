@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export function CopyNumberButton({ phoneNumber }: { phoneNumber: string }) {
@@ -122,7 +122,7 @@ interface Props {
   isProvisioning?: boolean;
 }
 
-export function PhoneCallLog({ initialCalls, nextCursor: initCursor, phoneNumber, isProvisioning }: Props) {
+export function PhoneCallLog({ initialCalls, nextCursor: initCursor }: Props) {
   const [calls, setCalls] = useState<CallLog[]>(initialCalls);
   const [cursor, setCursor] = useState<string | null>(initCursor);
   const [filter, setFilter] = useState<"all" | "missed" | "answered">("all");
@@ -150,7 +150,6 @@ export function PhoneCallLog({ initialCalls, nextCursor: initCursor, phoneNumber
 
   return (
     <div className="space-y-4">
-      {/* Filter tabs */}
       <div className="flex gap-2">
         {(["all", "missed", "answered"] as const).map((f) => (
           <button key={f} onClick={() => applyFilter(f)}
@@ -180,7 +179,7 @@ export function PhoneCallLog({ initialCalls, nextCursor: initCursor, phoneNumber
   );
 }
 
-export function ProvisionButton({ areaCode }: { areaCode?: string }) {
+export function ProvisionButton({ areaCode, autoStart }: { areaCode?: string; autoStart?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +202,10 @@ export function ProvisionButton({ areaCode }: { areaCode?: string }) {
     }
   }
 
+  useEffect(() => {
+    if (autoStart) provision();
+  }, []);
+
   return (
     <div className="space-y-3">
       <button onClick={provision} disabled={loading}
@@ -216,6 +219,61 @@ export function ProvisionButton({ areaCode }: { areaCode?: string }) {
           Provisioning your Twilio number and AI agent — this takes about 10 seconds…
         </p>
       )}
+    </div>
+  );
+}
+
+export function GetPhoneButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function startCheckout() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/billing/checkout", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not start checkout");
+      window.location.href = data.checkoutUrl;
+    } catch (e: any) {
+      setError(e.message ?? "Something went wrong — please try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <button onClick={startCheckout} disabled={loading}
+        className="w-full py-4 rounded-2xl text-white font-bold text-base disabled:opacity-60 transition-opacity"
+        style={{ backgroundColor: "#1B3A6B" }}>
+        {loading ? "Loading checkout…" : "Get AI Phone — $29/mo"}
+      </button>
+      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+    </div>
+  );
+}
+
+export function ActivationPendingBanner() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const t = setInterval(() => router.refresh(), 3000);
+    return () => clearInterval(t);
+  }, [router]);
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-3">
+      <div className="text-3xl">⏳</div>
+      <p className="text-sm font-semibold text-amber-800">Activating your add-on…</p>
+      <p className="text-xs text-amber-600 leading-relaxed">
+        Your payment is processing. This page will update automatically in a few seconds.
+      </p>
+      <div className="flex justify-center gap-1">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="w-2 h-2 rounded-full bg-amber-400 animate-bounce"
+            style={{ animationDelay: `${i * 0.15}s` }} />
+        ))}
+      </div>
     </div>
   );
 }

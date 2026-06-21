@@ -16,6 +16,15 @@ async function changePassword(formData: FormData) {
   await supabase.auth.updateUser({ password });
 }
 
+function formatPhone(e164: string): string {
+  const digits = e164.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const n = digits.slice(1);
+    return `(${n.slice(0, 3)}) ${n.slice(3, 6)}-${n.slice(6)}`;
+  }
+  return e164;
+}
+
 export default async function SettingsPage({
   searchParams,
 }: {
@@ -41,6 +50,16 @@ export default async function SettingsPage({
 
   const phoneAddon = orgId ? await getAddonStatus(orgId, "phone_ai") : null;
   const phoneActive = phoneAddon?.active ?? false;
+
+  let phoneNumber: string | null = null;
+  if (phoneActive && orgId) {
+    const { data: phoneRow } = await (admin as any)
+      .from("org_phone_numbers")
+      .select("e164_number")
+      .eq("org_id", orgId)
+      .maybeSingle();
+    phoneNumber = (phoneRow as any)?.e164_number ?? null;
+  }
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -98,7 +117,9 @@ export default async function SettingsPage({
             <div>
               <p className="text-sm font-semibold text-slate-800">Phone & AI Receptionist</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {phoneActive
+                {phoneActive && phoneNumber
+                  ? `Active — ${formatPhone(phoneNumber)}`
+                  : phoneActive
                   ? "Active — dedicated business number + AI answers missed calls"
                   : "Get a dedicated number and AI that answers for you — $29/mo"}
               </p>
