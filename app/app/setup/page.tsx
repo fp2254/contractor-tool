@@ -30,7 +30,7 @@ export default async function SetupPage() {
     hasAiRuns, hasAiAttachments,
     hasInventory, hasTradeContacts,
     hasSquare,
-    hasOrgAddons,
+    hasOrgAddons, hasExternalSubId, hasBillingProvider,
     hasOrgPhoneNumbers, hasOrgPhoneSettings, hasCallLogs, hasCallTranscripts,
   ] = await Promise.all([
     tbl(admin, "customer_portal_tokens"),
@@ -43,6 +43,8 @@ export default async function SetupPage() {
     tbl(admin, "trade_contacts"),
     col(admin, "org_settings", "square_access_token"),
     tbl(admin, "org_addons"),
+    col(admin, "org_addons", "external_subscription_id"),
+    col(admin, "org_addons", "billing_provider"),
     tbl(admin, "org_phone_numbers"),
     tbl(admin, "org_phone_settings"),
     tbl(admin, "call_logs"),
@@ -61,6 +63,7 @@ export default async function SetupPage() {
     { title: "Phase 9 — Trade Contacts (trade_contacts)", file: "migration_trade_contacts.sql" },
     { title: "Phase 10 — Square OAuth (org_settings columns)", file: "migration_square.sql" },
     { title: "Phase 11 — Add-on Subscriptions (org_addons)", file: "migration_addons.sql" },
+    { title: "Phase 11b — Add-on Billing Columns (external_subscription_id, billing_provider)", file: "migration_addons_v2.sql" },
     { title: "Phase 12 — Phone System (org_phone_numbers, org_phone_settings, call_logs, call_transcripts)", file: "migration_phone_system.sql" },
   ];
 
@@ -108,9 +111,11 @@ export default async function SetupPage() {
     },
     {
       title: "Add-on Subscriptions (Phone gating)",
-      pending: !hasOrgAddons,
+      pending: !(hasOrgAddons && hasExternalSubId && hasBillingProvider),
       checks: [
         { label: "org_addons table", ok: hasOrgAddons },
+        { label: "org_addons.external_subscription_id", ok: hasExternalSubId },
+        { label: "org_addons.billing_provider", ok: hasBillingProvider },
       ],
     },
     {

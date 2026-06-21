@@ -6,9 +6,13 @@
  *      export SUPABASE_DB_URL="postgresql://postgres:[password]@db.lrtrbocvcqgfnklknlnu.supabase.co:5432/postgres"
  *   2. Run: node scripts/run-phone-migrations.cjs
  *
- * Alternatively, copy the SQL from supabase/migration_addons.sql and
- * supabase/migration_phone_system.sql into Supabase Studio SQL Editor:
+ * Alternatively, copy the SQL from the migration files below into Supabase Studio SQL Editor:
  *   https://supabase.com/dashboard/project/lrtrbocvcqgfnklknlnu/sql
+ *
+ * Migrations applied by this script (in order):
+ *   1. migration_addons.sql       — creates org_addons table
+ *   2. migration_addons_v2.sql    — adds external_subscription_id + billing_provider columns
+ *   3. migration_phone_system.sql — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
  */
 
 const fs = require("fs");
@@ -37,6 +41,7 @@ async function main() {
 
   const migrations = [
     { label: "migration_addons.sql", file: path.join(root, "supabase/migration_addons.sql") },
+    { label: "migration_addons_v2.sql", file: path.join(root, "supabase/migration_addons_v2.sql") },
     { label: "migration_phone_system.sql", file: path.join(root, "supabase/migration_phone_system.sql") },
   ];
 
@@ -75,15 +80,26 @@ async function main() {
     }
   }
 
-  // Verify
+  // Verify tables
   const tables = ["org_addons", "org_phone_numbers", "org_phone_settings", "call_logs", "call_transcripts"];
-  console.log("\nVerification:");
+  console.log("\nVerification — tables:");
   for (const t of tables) {
     const { rows } = await client.query(
       "SELECT EXISTS(SELECT FROM pg_tables WHERE schemaname='public' AND tablename=$1)",
       [t]
     );
     console.log(`  ${rows[0].exists ? "✓" : "✗"} ${t}`);
+  }
+
+  // Verify v2 columns on org_addons
+  console.log("\nVerification — org_addons v2 columns:");
+  const cols = ["external_subscription_id", "billing_provider"];
+  for (const col of cols) {
+    const { rows } = await client.query(
+      "SELECT EXISTS(SELECT FROM information_schema.columns WHERE table_schema='public' AND table_name='org_addons' AND column_name=$1)",
+      [col]
+    );
+    console.log(`  ${rows[0].exists ? "✓" : "✗"} org_addons.${col}`);
   }
 
   await client.end();
