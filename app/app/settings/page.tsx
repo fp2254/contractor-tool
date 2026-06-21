@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
-import { getAddonStatus } from "@/lib/addons";
+import { listOrgAddons } from "@/lib/addons";
 import Link from "next/link";
 import { SquareConnectSection } from "./SquareConnectSection";
 import { PaymentLinksCard } from "./PaymentLinksCard";
@@ -49,7 +49,8 @@ export default async function SettingsPage({
   const squareAlert = params.square ?? null;
   const paymentLinks = (settings?.payment_links as Record<string, string>) ?? {};
 
-  const phoneAddon = orgId ? await getAddonStatus(orgId, "phone_ai") : null;
+  const orgAddons = orgId ? await listOrgAddons(orgId) : [];
+  const phoneAddon = orgAddons.find((a) => a.addonType === "phone_ai") ?? null;
   const phoneActive = phoneAddon?.active ?? false;
 
   let phoneNumber: string | null = null;
@@ -61,6 +62,8 @@ export default async function SettingsPage({
       .maybeSingle();
     phoneNumber = (phoneRow as any)?.e164_number ?? null;
   }
+
+  const billingAddons = orgAddons.filter((a) => a.active);
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -138,13 +141,25 @@ export default async function SettingsPage({
       </div>
 
       {/* BILLING */}
-      {phoneActive ? (
-        <BillingCard
-          currentPeriodEnd={phoneAddon!.currentPeriodEnd}
-          priceMonthly={phoneAddon!.priceMonthly}
-          status={phoneAddon!.status}
-          hasSubscriptionId={!!phoneAddon!.externalSubscriptionId}
-        />
+      {billingAddons.length > 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Billing</p>
+          </div>
+          {billingAddons.map((addon, i) => (
+            <BillingCard
+              key={addon.addonType}
+              addonName={addon.addonName}
+              addonType={addon.addonType}
+              currentPeriodEnd={addon.currentPeriodEnd}
+              priceMonthly={addon.priceMonthly}
+              status={addon.status}
+              hasSubscriptionId={!!addon.externalSubscriptionId}
+              standalone={false}
+              borderTop={i > 0}
+            />
+          ))}
+        </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">

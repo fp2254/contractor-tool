@@ -115,6 +115,49 @@ export async function deactivateAddon(
   if (error) throw error;
 }
 
+export const ADDON_DISPLAY_NAMES: Record<string, string> = {
+  phone_ai: "Phone & AI Receptionist",
+};
+
+export interface OrgAddonRow extends AddonInfo {
+  addonType: string;
+  addonName: string;
+}
+
+export async function listOrgAddons(orgId: string): Promise<OrgAddonRow[]> {
+  const admin = createAdminClient();
+  const { data } = await (admin as any)
+    .from("org_addons")
+    .select("*")
+    .eq("org_id", orgId)
+    .order("activated_at", { ascending: false });
+
+  if (!data || data.length === 0) return [];
+
+  const now = new Date();
+
+  return (data as any[]).map((row) => {
+    const periodEnd = row.current_period_end ? new Date(row.current_period_end) : null;
+    let active = false;
+    if (row.status === "active" || row.status === "trialing") {
+      active = periodEnd ? now <= periodEnd : true;
+    }
+
+    return {
+      addonType: row.addon_type,
+      addonName: ADDON_DISPLAY_NAMES[row.addon_type] ?? row.addon_type,
+      active,
+      status: (row.status ?? "none") as AddonStatus,
+      currentPeriodEnd: row.current_period_end ?? null,
+      notes: row.notes ?? null,
+      priceMonthly: row.price_monthly ?? null,
+      activatedAt: row.activated_at ?? null,
+      externalSubscriptionId: row.external_subscription_id ?? null,
+      billingProvider: row.billing_provider ?? null,
+    };
+  });
+}
+
 export async function listAllAddonsByType(addonType: string): Promise<Array<{
   org_id: string;
   status: string;
