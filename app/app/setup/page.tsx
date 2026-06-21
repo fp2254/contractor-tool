@@ -3,6 +3,7 @@ import { join } from "path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import DevAddonActivator from "./DevAddonActivator";
+import CopyButton from "./CopyButton";
 
 function readSql(filename: string) {
   try {
@@ -66,6 +67,8 @@ export default async function SetupPage() {
     { title: "Phase 11 — Add-on Subscriptions (org_addons)", file: "migration_addons.sql" },
     { title: "Phase 11b — Add-on Billing Columns (external_subscription_id, billing_provider)", file: "migration_addons_v2.sql" },
     { title: "Phase 12 — Phone System (org_phone_numbers, org_phone_settings, call_logs, call_transcripts)", file: "migration_phone_system.sql" },
+    { title: "Phase 13 — Public Profile: Section Config + Trust Highlights", file: "migration_sections_config.sql" },
+    { title: "Phase 14 — Public Profile: Custom Blocks", file: "migration_custom_blocks.sql" },
   ];
 
   type Check = { label: string; ok: boolean };
@@ -132,22 +135,44 @@ export default async function SetupPage() {
   ];
 
   const anyPending = statusGroups.some((g) => g.pending);
+  const combinedPendingSql = readSql("migration_run_pending.sql");
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <h1 className="text-xl font-bold text-slate-800">Database Setup</h1>
 
       {anyPending && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-          <p className="text-sm font-bold text-amber-800 mb-1">⚠️ Pending migrations</p>
-          <p className="text-xs text-amber-700 mb-2">Run the SQL below for any missing items in the Supabase SQL Editor.</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 space-y-3">
+          <div>
+            <p className="text-sm font-bold text-amber-800 mb-1">⚠️ Pending migrations</p>
+            <p className="text-xs text-amber-700">
+              Run the combined SQL below in the Supabase SQL Editor to enable add-on billing, phone features, and public profile sections.
+            </p>
+          </div>
           <a
             href="https://supabase.com/dashboard/project/lrtrbocvcqgfnklknlnu/sql"
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-[#1B3A6B] underline font-semibold">
+            className="inline-block text-xs text-[#1B3A6B] underline font-semibold">
             Open Supabase SQL Editor →
           </a>
+
+          <div className="bg-white rounded-xl border border-amber-200 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-amber-100 bg-amber-50">
+              <p className="text-xs font-semibold text-amber-800">All pending migrations — copy &amp; paste into Supabase SQL Editor</p>
+              <CopyButton text={combinedPendingSql} />
+            </div>
+            <pre className="p-4 text-xs text-slate-700 overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto bg-gray-50">
+              {combinedPendingSql}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {!anyPending && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
+          <p className="text-sm font-bold text-green-800">✓ All migrations applied</p>
+          <p className="text-xs text-green-700 mt-0.5">Database is fully up to date.</p>
         </div>
       )}
 
@@ -173,6 +198,7 @@ export default async function SetupPage() {
       )}
 
       <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-slate-600 pt-2">Individual Migration Files</h2>
         {migrations.map(({ title, file }) => (
           <div key={file} className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
