@@ -10,6 +10,7 @@ const MENU_ITEMS = [
   // Daily work
   { label: "Leads",              href: "/app/leads",             emoji: "🎯", color: "#F97316" },
   { label: "Quote Requests",     href: "/app/requests",          emoji: "📬", color: "#F97316" },
+  { label: "AI Phone",           href: "/app/phone",             emoji: "📞", color: "#1B3A6B" },
   { label: "Schedule",           href: "/app/schedule",          emoji: "📅", color: "#1B3A6B" },
   { label: "Expenses",           href: "/app/expenses",          emoji: "💸", color: "#16A34A" },
   { label: "Scan Receipt",       href: "/app/receipts",          emoji: "🧾", color: "#16A34A" },

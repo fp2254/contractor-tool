@@ -64,6 +64,26 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   if (!customer) return notFound();
 
+  // Phone calls for this customer (graceful if table doesn't exist yet)
+  let customerCalls: Array<{
+    id: string; from_number: string; status: string; duration_seconds: number | null;
+    answered_by: string | null; started_at: string; recording_url: string | null;
+    call_transcripts?: { ai_summary: string | null } | null;
+  }> = [];
+  try {
+    const phone = customer.phone;
+    if (phone) {
+      const { data: callsData } = await (admin as any)
+        .from("call_logs")
+        .select("id, from_number, status, duration_seconds, answered_by, started_at, recording_url, call_transcripts(ai_summary)")
+        .eq("org_id", orgId!)
+        .or(`from_number.eq.${phone},from_number.eq.${phone.replace(/\D/g, "")}`)
+        .order("started_at", { ascending: false })
+        .limit(10);
+      customerCalls = callsData ?? [];
+    }
+  } catch { /* phone_system migration not yet applied */ }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: aiAttachmentsRaw } = await (admin as any)
     .from("ai_attachments")
@@ -294,6 +314,55 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Phone Calls */}
+      {customerCalls.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+            Recent Calls ({customerCalls.length})
+          </p>
+          <div className="divide-y divide-gray-100">
+            {customerCalls.map(call => {
+              const answeredBy = call.answered_by;
+              const mins = call.duration_seconds ? Math.floor(call.duration_seconds / 60) : 0;
+              const secs = call.duration_seconds ? call.duration_seconds % 60 : 0;
+              const durStr = call.duration_seconds ? (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`) : "—";
+              return (
+                <div key={call.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📞</span>
+                      <span className="text-sm font-medium text-slate-700">
+                        {new Date(call.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                      <span className="text-xs text-gray-400">{durStr}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {answeredBy === "contractor" && <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Answered</span>}
+                      {answeredBy === "retell" && <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">AI Handled</span>}
+                      {!answeredBy && <span className="text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Missed</span>}
+                      {call.recording_url && (
+                        <a href={call.recording_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-2 py-0.5 rounded-full">
+                          🎧 Recording
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  {(call.call_transcripts as any)?.ai_summary && (
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed pl-6">
+                      {(call.call_transcripts as any).ai_summary}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="px-4 py-2.5 border-t border-gray-100">
+            <a href="/app/phone" className="text-xs font-semibold text-[#1B3A6B]">View all calls →</a>
           </div>
         </div>
       )}

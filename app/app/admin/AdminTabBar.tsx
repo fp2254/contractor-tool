@@ -14,6 +14,7 @@ const TABS = [
   { label: "Demo", href: "/app/admin/demo" },
   { label: "System", href: "/app/admin/system" },
   { label: "Billing", href: "/app/admin/billing" },
+  { label: "Add-ons", href: "/app/admin/addons" },
 ];
 
 export default function AdminTabBar() {
