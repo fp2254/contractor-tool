@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyTwilioWebhook } from "@/lib/twilio";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const params = Object.fromEntries(new URLSearchParams(rawBody).entries());
+  const signature = req.headers.get("x-twilio-signature") ?? "";
+
+  if (!verifyTwilioWebhook(req.url, params, signature)) {
+    console.error("[Twilio recording] Invalid signature");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+  }
 
   const callSid = params.CallSid ?? "";
   const recordingSid = params.RecordingSid ?? "";
@@ -17,7 +24,6 @@ export async function POST(req: NextRequest) {
   }
 
   const admin = createAdminClient();
-
   await (admin as any)
     .from("call_logs")
     .update({

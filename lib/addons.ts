@@ -52,8 +52,13 @@ export class AddonNotActiveError extends Error {
   }
 }
 
+const ADDON_DISPLAY: Record<string, string> = {
+  phone_ai: "Phone add-on not active",
+};
+
 export function addonNotActiveResponse(addonType: string): Response {
-  return NextResponse.json({ error: `Add-on not active: ${addonType}` }, { status: 403 });
+  const message = ADDON_DISPLAY[addonType] ?? `Add-on not active: ${addonType}`;
+  return NextResponse.json({ error: message }, { status: 403 });
 }
 
 export async function requireAddon(orgId: string | null, addonType: string): Promise<void> {

@@ -88,21 +88,39 @@ export default async function PhonePage() {
     .maybeSingle();
 
   // Fetch call stats
-  let stats = { callsToday: 0, missedToday: 0, answeredRate: 0 };
+  let stats = { callsToday: 0, missedToday: 0, avgDurationThisWeek: null as string | null };
   if (phoneRow) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const { data: todayCalls } = await (admin as any)
-      .from("call_logs")
-      .select("id,answered_by")
-      .eq("org_id", orgId)
-      .gte("started_at", today.toISOString());
+    const weekStart = new Date(today);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+
+    const [{ data: todayCalls }, { data: weekCalls }] = await Promise.all([
+      (admin as any)
+        .from("call_logs")
+        .select("id,answered_by")
+        .eq("org_id", orgId)
+        .gte("started_at", today.toISOString()),
+      (admin as any)
+        .from("call_logs")
+        .select("duration_seconds")
+        .eq("org_id", orgId)
+        .gte("started_at", weekStart.toISOString())
+        .not("duration_seconds", "is", null)
+        .gt("duration_seconds", 0),
+    ]);
 
     if (todayCalls) {
       stats.callsToday = todayCalls.length;
       stats.missedToday = todayCalls.filter((c: any) => !c.answered_by).length;
-      const answered = todayCalls.filter((c: any) => c.answered_by).length;
-      stats.answeredRate = stats.callsToday > 0 ? Math.round((answered / stats.callsToday) * 100) : 0;
+    }
+
+    if (weekCalls && weekCalls.length > 0) {
+      const total = weekCalls.reduce((s: number, c: any) => s + (c.duration_seconds ?? 0), 0);
+      const avg = Math.round(total / weekCalls.length);
+      const mins = Math.floor(avg / 60);
+      const secs = avg % 60;
+      stats.avgDurationThisWeek = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     }
   }
 
@@ -188,8 +206,8 @@ export default async function PhonePage() {
           <p className="text-[10px] font-semibold text-gray-400 mt-0.5">Missed Today</p>
         </div>
         <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
-          <p className="text-2xl font-bold text-green-600">{stats.answeredRate}%</p>
-          <p className="text-[10px] font-semibold text-gray-400 mt-0.5">Answer Rate</p>
+          <p className="text-xl font-bold text-blue-700 leading-tight mt-1">{stats.avgDurationThisWeek ?? "—"}</p>
+          <p className="text-[10px] font-semibold text-gray-400 mt-0.5">Avg Duration This Week</p>
         </div>
       </div>
 

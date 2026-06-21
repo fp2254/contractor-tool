@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateTwilioSignature, buildVoiceTwiml, getAppBaseUrl } from "@/lib/twilio";
+import { verifyTwilioWebhook, buildVoiceTwiml, getAppBaseUrl } from "@/lib/twilio";
 
 export const dynamic = "force-dynamic";
 
@@ -16,21 +16,11 @@ function normalizePhone(phone: string): string {
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const params = Object.fromEntries(new URLSearchParams(rawBody).entries());
-
   const signature = req.headers.get("x-twilio-signature") ?? "";
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const isDev = process.env.NODE_ENV !== "production";
 
-  if (authToken && signature) {
-    try {
-      const appBase = getAppBaseUrl();
-      const valid = validateTwilioSignature(authToken, `${appBase}/api/webhooks/twilio/voice`, params, signature);
-      if (!valid && !isDev) {
-        return twiml("<Response><Reject/></Response>");
-      }
-    } catch {
-      // APP_BASE_URL not set — skip validation in dev
-    }
+  if (!verifyTwilioWebhook(req.url, params, signature)) {
+    console.error("[Twilio voice] Invalid signature");
+    return twiml("<Response><Reject/></Response>");
   }
 
   const toNumber = params.To ?? "";
@@ -43,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Look up org by the Twilio number
+  // Look up org by the Twilio destination number
   const { data: phoneRow } = await (admin as any)
     .from("org_phone_numbers")
     .select("org_id, retell_agent_id")
@@ -83,9 +73,9 @@ export async function POST(req: NextRequest) {
     customerId = customer?.id ?? null;
   }
 
-  // Insert call log (fire and forget — don't block TwiML response)
   const appBase = (() => { try { return getAppBaseUrl(); } catch { return ""; } })();
 
+  // Insert call log (fire and forget)
   (admin as any).from("call_logs").insert({
     org_id: orgId,
     twilio_call_sid: callSid,

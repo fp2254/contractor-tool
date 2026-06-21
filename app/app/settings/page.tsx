@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { getAddonStatus } from "@/lib/addons";
 import Link from "next/link";
 import { SquareConnectSection } from "./SquareConnectSection";
 import { PaymentLinksCard } from "./PaymentLinksCard";
@@ -37,6 +38,9 @@ export default async function SettingsPage({
   const squareConnected = !!settings?.square_access_token;
   const squareAlert = params.square ?? null;
   const paymentLinks = (settings?.payment_links as Record<string, string>) ?? {};
+
+  const phoneAddon = orgId ? await getAddonStatus(orgId, "phone_ai") : null;
+  const phoneActive = phoneAddon?.active ?? false;
 
   return (
     <div className="p-4 pb-24 space-y-4">
@@ -82,6 +86,34 @@ export default async function SettingsPage({
 
       {/* INTEGRATIONS */}
       <SquareConnectSection connected={squareConnected} alert={squareAlert} merchantId={settings?.square_merchant_id ?? null} />
+
+      {/* PHONE & AI RECEPTIONIST */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Add-ons</p>
+        </div>
+        <Link href="/app/phone" className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📞</span>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Phone & AI Receptionist</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {phoneActive
+                  ? "Active — dedicated business number + AI answers missed calls"
+                  : "Get a dedicated number and AI that answers for you — $29/mo"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {phoneActive ? (
+              <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Active</span>
+            ) : (
+              <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">$29/mo</span>
+            )}
+            <span className="text-gray-300 text-lg">›</span>
+          </div>
+        </Link>
+      </div>
 
       {/* PAYMENT LINKS */}
       <PaymentLinksCard squareConnected={squareConnected} initial={paymentLinks} />

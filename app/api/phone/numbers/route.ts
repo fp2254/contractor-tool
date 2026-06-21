@@ -98,6 +98,9 @@ export async function DELETE() {
   const orgId = await ensureUserOrg();
   if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const addonCheck = await getAddonStatus(orgId, "phone_ai");
+  if (!addonCheck.active) return addonNotActiveResponse("phone_ai");
+
   const admin = createAdminClient();
   const { data: existing } = await (admin as any)
     .from("org_phone_numbers")

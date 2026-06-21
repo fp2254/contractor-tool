@@ -120,6 +120,46 @@ export function validateTwilioSignature(
   }
 }
 
+/**
+ * Verify a Twilio webhook request.
+ * Uses APP_BASE_URL + the request path+query as the canonical URL.
+ * Returns true if signature is valid, or if in dev mode and AUTH_TOKEN is unset.
+ */
+export function verifyTwilioWebhook(
+  reqUrl: string,
+  bodyParams: Record<string, string>,
+  signatureHeader: string
+): boolean {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const isDev = process.env.NODE_ENV !== "production";
+
+  if (!authToken) {
+    if (isDev) return true;
+    console.error("[Twilio] TWILIO_AUTH_TOKEN not set — rejecting webhook in production");
+    return false;
+  }
+
+  if (!signatureHeader) {
+    return isDev; // allow unsigned requests in dev only
+  }
+
+  try {
+    const appBase = getAppBaseUrl();
+    const parsed = new URL(reqUrl);
+    // Full URL = configured base + path + any query string (orgId, callSid, etc.)
+    const fullUrl = `${appBase}${parsed.pathname}${parsed.search}`;
+    const valid = validateTwilioSignature(authToken, fullUrl, bodyParams, signatureHeader);
+    if (!valid && isDev) {
+      console.warn(`[Twilio] Signature mismatch (allowed in dev). URL: ${fullUrl}`);
+      return true;
+    }
+    return valid;
+  } catch (err) {
+    console.error("[Twilio] verifyTwilioWebhook error:", err);
+    return isDev;
+  }
+}
+
 export function getAppBaseUrl(): string {
   const url = process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
   if (!url) throw new Error("APP_BASE_URL environment variable is not set.");

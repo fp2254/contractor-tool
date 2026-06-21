@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildRetellFallbackTwiml, getAppBaseUrl } from "@/lib/twilio";
+import { buildRetellFallbackTwiml, getAppBaseUrl, verifyTwilioWebhook } from "@/lib/twilio";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,12 @@ function twiml(xml: string) {
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const params = Object.fromEntries(new URLSearchParams(rawBody).entries());
+  const signature = req.headers.get("x-twilio-signature") ?? "";
+
+  if (!verifyTwilioWebhook(req.url, params, signature)) {
+    console.error("[Twilio dial-status] Invalid signature");
+    return twiml("<Response><Reject/></Response>");
+  }
 
   const url = new URL(req.url);
   const orgId = url.searchParams.get("orgId") ?? "";
@@ -20,7 +26,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
 
   if (dialCallStatus === "completed") {
-    // Contractor answered — update call log
+    // Contractor answered — mark the call log
     (admin as any).from("call_logs")
       .update({ answered_by: "contractor" })
       .eq("twilio_call_sid", callSid)
@@ -39,7 +45,7 @@ export async function POST(req: NextRequest) {
     const retellAgentId: string | null = phoneRow?.retell_agent_id ?? null;
     const recordCalls: boolean = settings?.record_calls !== false;
 
-    // Mark routing fell back
+    // Note the routing fell back in the call log
     (admin as any).from("call_logs")
       .update({ routing_mode_used: "ai_fallback_triggered" })
       .eq("twilio_call_sid", callSid)
