@@ -62,6 +62,7 @@ export default async function PhonePage({
             priceMonthly={addon.priceMonthly}
             status={addon.status}
             hasSubscriptionId={!!addon.externalSubscriptionId}
+            addonName="Phone & AI Receptionist"
           />
         </div>
       </div>
@@ -216,6 +217,7 @@ export default async function PhonePage({
           priceMonthly={addon.priceMonthly}
           status={addon.status}
           hasSubscriptionId={!!addon.externalSubscriptionId}
+          addonName="Phone & AI Receptionist"
         />
       </div>
     );
@@ -286,6 +288,7 @@ export default async function PhonePage({
         priceMonthly={addon.priceMonthly}
         status={addon.status}
         hasSubscriptionId={!!addon.externalSubscriptionId}
+        addonName="Phone & AI Receptionist"
       />
 
       {/* Call log */}
