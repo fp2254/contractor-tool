@@ -19,7 +19,7 @@ type Result = {
 };
 
 const ADDON_TYPES = [
-  { value: "phone_ai", label: "Phone AI" },
+  { value: "phone_ai", label: "Phone & AI Receptionist" },
   { value: "advanced_ai", label: "Advanced AI" },
 ];
 
