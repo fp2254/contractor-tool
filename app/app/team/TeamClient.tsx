@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AdminHubPanel } from "@/components/AdminHubPanel";
 
 type WorkItem = { id: string; customerName: string; status: string; amount?: number | null; title?: string; scheduledDate?: string | null };
 
@@ -236,6 +237,8 @@ export default function TeamClient({
 
   return (
     <div className="space-y-3">
+      {isAdmin && <AdminHubPanel />}
+
       {inviteMsg && (
         <div className={`rounded-xl px-4 py-3 text-sm font-medium ${inviteMsg.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {inviteMsg.text}
