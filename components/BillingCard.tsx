@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const BILLING_ACTION_ADDONS = new Set(["phone_ai"]);
+const BILLING_ACTION_ADDONS = new Set(["phone_ai", "advanced_ai"]);
 
 export function BillingCard({
   addonName,
@@ -41,7 +41,10 @@ export function BillingCard({
     setLoadingPortal(true);
     setPortalError(null);
     try {
-      const res = await fetch("/api/billing/portal-url");
+      const url = addonType
+        ? `/api/billing/portal-url?addonType=${encodeURIComponent(addonType)}`
+        : "/api/billing/portal-url";
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not open billing portal");
       window.open(data.portalUrl, "_blank", "noopener,noreferrer");
@@ -56,7 +59,11 @@ export function BillingCard({
     setLoadingCheckout(true);
     setCheckoutError(null);
     try {
-      const res = await fetch("/api/billing/checkout", { method: "POST" });
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addonType: addonType ?? "phone_ai" }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start checkout");
       window.location.href = data.checkoutUrl;

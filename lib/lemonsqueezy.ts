@@ -26,18 +26,26 @@ async function lsRequest(method: string, path: string, body?: unknown): Promise<
   return data;
 }
 
+const ADDON_VARIANT_ENV: Record<string, string> = {
+  phone_ai: "LEMONSQUEEZY_VARIANT_ID",
+  advanced_ai: "LEMONSQUEEZY_ADVANCED_AI_VARIANT_ID",
+};
+
 export async function createCheckoutSession(params: {
   orgId: string;
   userId: string;
   successUrl: string;
   cancelUrl?: string;
+  addonType?: string;
 }): Promise<string> {
-  const variantId = process.env.LEMONSQUEEZY_VARIANT_ID;
+  const addonType = params.addonType ?? "phone_ai";
+  const variantEnvKey = ADDON_VARIANT_ENV[addonType] ?? "LEMONSQUEEZY_VARIANT_ID";
+  const variantId = process.env[variantEnvKey] ?? process.env.LEMONSQUEEZY_VARIANT_ID;
   const storeId = process.env.LEMONSQUEEZY_STORE_ID;
-  if (!variantId) throw new Error("LEMONSQUEEZY_VARIANT_ID is not set — add it in Replit Secrets.");
+  if (!variantId) throw new Error(`${variantEnvKey} is not set — add it in Replit Secrets.`);
   if (!storeId) throw new Error("LEMONSQUEEZY_STORE_ID is not set — add it in Replit Secrets.");
 
-  const { orgId, userId, successUrl, cancelUrl } = params;
+  const { orgId, userId, successUrl } = params;
 
   const payload = {
     data: {
@@ -47,7 +55,7 @@ export async function createCheckoutSession(params: {
           custom: {
             org_id: orgId,
             user_id: userId,
-            addon_type: "phone_ai",
+            addon_type: addonType,
           },
         },
         product_options: {

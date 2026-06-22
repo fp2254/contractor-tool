@@ -46,8 +46,9 @@ export async function POST(req: NextRequest) {
     case "subscription_created":
     case "subscription_updated":
     case "subscription_resumed": {
+      const ADDON_PRICES: Record<string, number> = { phone_ai: 29, advanced_ai: 19 };
       if (lsStatus === "active" || lsStatus === "on_trial") {
-        await activateAddon(orgId, addonType, { priceMonthly: 29 });
+        await activateAddon(orgId, addonType, { priceMonthly: ADDON_PRICES[addonType] ?? 29 });
 
         const { error } = await (admin as any)
           .from("org_addons")

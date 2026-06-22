@@ -43,8 +43,13 @@ export async function POST(req: NextRequest) {
     case "subscription_resumed": {
       const lsStatus = attributes?.status;
 
+      const ADDON_PRICES: Record<string, number> = {
+        phone_ai: 29,
+        advanced_ai: 19,
+      };
+
       if (lsStatus === "active" || lsStatus === "on_trial") {
-        await activateAddon(orgId, addonType, { priceMonthly: 29 });
+        await activateAddon(orgId, addonType, { priceMonthly: ADDON_PRICES[addonType] ?? 29 });
 
         const periodEnd = attributes.renews_at ?? attributes.ends_at ?? null;
         await (admin as any)
@@ -58,9 +63,11 @@ export async function POST(req: NextRequest) {
           .eq("org_id", orgId)
           .eq("addon_type", addonType);
 
-        await autoProvisionIfNeeded(orgId).catch((e: Error) =>
-          console.error("[LemonSqueezy webhook] Auto-provision failed:", e.message)
-        );
+        if (addonType === "phone_ai") {
+          await autoProvisionIfNeeded(orgId).catch((e: Error) =>
+            console.error("[LemonSqueezy webhook] Auto-provision failed:", e.message)
+          );
+        }
       } else if (lsStatus === "past_due" || lsStatus === "unpaid") {
         // Payment failed — deactivate access but preserve the exact failure status
         // so the admin dashboard can distinguish "needs payment" from "cancelled"

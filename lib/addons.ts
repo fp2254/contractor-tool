@@ -58,6 +58,7 @@ export class AddonNotActiveError extends Error {
 
 const ADDON_DISPLAY: Record<string, string> = {
   phone_ai: "Phone add-on not active",
+  advanced_ai: "Advanced AI add-on not active",
 };
 
 export function addonNotActiveResponse(addonType: string): Response {
@@ -117,6 +118,7 @@ export async function deactivateAddon(
 
 export const ADDON_DISPLAY_NAMES: Record<string, string> = {
   phone_ai: "Phone & AI Receptionist",
+  advanced_ai: "Advanced AI",
 };
 
 export interface OrgAddonRow extends AddonInfo {

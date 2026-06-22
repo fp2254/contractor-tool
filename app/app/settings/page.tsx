@@ -52,6 +52,8 @@ export default async function SettingsPage({
   const orgAddons = orgId ? await listOrgAddons(orgId) : [];
   const phoneAddon = orgAddons.find((a) => a.addonType === "phone_ai") ?? null;
   const phoneActive = phoneAddon?.active ?? false;
+  const advancedAiAddon = orgAddons.find((a) => a.addonType === "advanced_ai") ?? null;
+  const advancedAiActive = advancedAiAddon?.active ?? false;
 
   let phoneNumber: string | null = null;
   if (phoneActive && orgId) {
@@ -110,12 +112,12 @@ export default async function SettingsPage({
       {/* INTEGRATIONS */}
       <SquareConnectSection connected={squareConnected} alert={squareAlert} merchantId={settings?.square_merchant_id ?? null} />
 
-      {/* PHONE & AI RECEPTIONIST */}
+      {/* ADD-ONS */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Add-ons</p>
         </div>
-        <Link href="/app/phone" className="flex items-center justify-between px-4 py-4">
+        <Link href="/app/phone" className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <span className="text-2xl">📞</span>
             <div>
@@ -134,6 +136,27 @@ export default async function SettingsPage({
               <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Active</span>
             ) : (
               <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">$29/mo</span>
+            )}
+            <span className="text-gray-300 text-lg">›</span>
+          </div>
+        </Link>
+        <Link href="/app/advanced-ai" className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🤖</span>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Advanced AI</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {advancedAiActive
+                  ? "Active — unlimited AI requests + priority responses"
+                  : "Unlimited AI requests, GPT vision, and priority processing — $19/mo"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {advancedAiActive ? (
+              <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Active</span>
+            ) : (
+              <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">$19/mo</span>
             )}
             <span className="text-gray-300 text-lg">›</span>
           </div>
