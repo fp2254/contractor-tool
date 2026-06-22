@@ -3,6 +3,7 @@ import { join } from "path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import DevAddonActivator from "./DevAddonActivator";
+import AddonStatusChecker from "./AddonStatusChecker";
 import CopyButton from "./CopyButton";
 
 function readSql(filename: string) {
@@ -192,6 +193,10 @@ export default async function SetupPage() {
           ))}
         </div>
       ))}
+
+      {process.env.NODE_ENV !== "production" && (
+        <AddonStatusChecker defaultOrgId={orgId ?? ""} />
+      )}
 
       {process.env.NODE_ENV !== "production" && (
         <DevAddonActivator defaultOrgId={orgId ?? ""} />

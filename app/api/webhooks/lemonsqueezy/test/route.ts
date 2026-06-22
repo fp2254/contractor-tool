@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { activateAddon, deactivateAddon, getAddonStatus } from "@/lib/addons";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { autoProvisionIfNeeded } from "@/lib/phone-provision";
 
 export const dynamic = "force-dynamic";
@@ -115,18 +116,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Not available in production" }, { status: 404 });
   }
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const orgId = req.nextUrl.searchParams.get("orgId");
   const addonType = req.nextUrl.searchParams.get("addonType") ?? "phone_ai";
 
   if (!orgId) {
     return NextResponse.json({
-      usage: "POST /api/webhooks/lemonsqueezy/test with { orgId, event?, addonType?, subscriptionId?, status? }",
-      events: ["subscription_created", "subscription_updated", "subscription_resumed", "subscription_cancelled", "subscription_expired"],
-      statuses: ["active", "on_trial", "past_due", "unpaid", "cancelled", "paused"],
+      usage: "GET /api/webhooks/lemonsqueezy/test?orgId=<uuid>&addonType=<type>",
+      addonTypes: ["phone_ai", "advanced_ai"],
     });
   }
 
-  const { getAddonStatus } = await import("@/lib/addons");
   const result = await getAddonStatus(orgId, addonType);
   return NextResponse.json({ orgId, addonType, addonStatus: result });
 }
