@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     address?: string;
     notes?: string;
     template_id?: string;
+    assigned_to?: string;
     is_recurring?: boolean;
     recurrence_rule?: string;
     recurrence_end_date?: string;
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
       address: body.address || null,
       notes: body.notes || null,
       template_id: body.template_id || null,
+      assigned_to: body.assigned_to || null,
       created_by_user: user?.id ?? null,
       is_recurring: body.is_recurring ?? false,
       recurrence_rule: body.is_recurring ? (body.recurrence_rule ?? null) : null,

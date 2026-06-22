@@ -4,6 +4,9 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
+import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
+import { AssigneeField } from "@/components/AssigneeField";
 import { PortalLinkCard } from "@/components/PortalLinkCard";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
 import { ShareCard } from "@/components/ShareCard";
@@ -289,6 +292,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
+  const { role: userRole } = await getUserOrgRole();
+  const canAssign = isOwnerOrAdmin(userRole);
+  const orgMembers = canAssign ? await getOrgMembers(orgId!) : [];
+  const memberOptions = orgMembers.map(m => ({ userId: m.userId, name: memberDisplayName(m) }));
+  const assignedMember = (quote as any).assigned_to
+    ? orgMembers.find(m => m.userId === (quote as any).assigned_to) ?? null
+    : null;
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
@@ -324,6 +335,22 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           customerPhone={customer?.phone ?? null}
           customerEmail={customer?.email ?? null}
         />
+      )}
+
+      {canAssign && memberOptions.length > 0 && (
+        <AssigneeField
+          entityType="quote"
+          entityId={quote.id}
+          currentAssigneeId={(quote as any).assigned_to ?? null}
+          currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
+          members={memberOptions}
+        />
+      )}
+      {!canAssign && (quote as any).assigned_to && assignedMember && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
+          <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
+        </div>
       )}
 
       {quote.customer_id && (

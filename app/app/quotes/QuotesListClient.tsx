@@ -18,6 +18,7 @@ export type QuoteRow = {
   total_amount: number;
   created_at: string;
   customer_id: string;
+  assignee_name?: string | null;
 };
 
 export default function QuotesListClient({
@@ -25,11 +26,13 @@ export default function QuotesListClient({
   customerMap,
   openedIds = [],
   activeTab,
+  showAssignee = false,
 }: {
   quotes: QuoteRow[];
   customerMap: Record<string, string>;
   openedIds?: string[];
   activeTab: string;
+  showAssignee?: boolean;
 }) {
   const router = useRouter();
   const [quotes, setQuotes] = useState(initialQuotes);
@@ -180,6 +183,9 @@ export default function QuotesListClient({
                 )}
                 {!openedSet.has(q.id) && q.status === "sent" && (
                   <p className="text-xs text-gray-400 mt-0.5">Not opened yet</p>
+                )}
+                {showAssignee && q.assignee_name && (
+                  <p className="text-xs text-blue-600 font-medium mt-0.5">👤 {q.assignee_name}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">

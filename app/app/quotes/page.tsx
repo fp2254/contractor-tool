@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
+import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
 import QuotesListClient from "./QuotesListClient";
 
 const TABS = [
@@ -21,29 +23,27 @@ export default async function QuotesPage({ searchParams }: PageProps) {
 
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
+  const { role, userId } = await getUserOrgRole();
+  const isMember = !isOwnerOrAdmin(role);
+
+  const membersData = isOwnerOrAdmin(role) ? await getOrgMembers(orgId!) : [];
+  const memberMap = Object.fromEntries(membersData.map(m => [m.userId, memberDisplayName(m)]));
+
+  let quotesQuery = admin
+    .from("quotes")
+    .select("id,status,total_amount,created_at,customer_id,assigned_to")
+    .eq("org_id", orgId!)
+    .order("created_at", { ascending: false });
+
+  if (isMember && userId) {
+    quotesQuery = quotesQuery.eq("assigned_to", userId);
+  }
 
   const [{ data: quotes }, { data: customers }, { data: openedNotes }, { data: archivedNotes }] = await Promise.all([
-    admin
-      .from("quotes")
-      .select("id,status,total_amount,created_at,customer_id")
-      .eq("org_id", orgId!)
-      .order("created_at", { ascending: false }),
-    admin
-      .from("customers")
-      .select("id,first_name,last_name,company_name")
-      .eq("org_id", orgId!),
-    admin
-      .from("notes")
-      .select("entity_id")
-      .eq("org_id", orgId!)
-      .eq("entity_type", "quote")
-      .eq("body", "__opened__"),
-    admin
-      .from("notes")
-      .select("entity_id")
-      .eq("org_id", orgId!)
-      .eq("entity_type", "quote")
-      .eq("body", "__archived__"),
+    quotesQuery,
+    admin.from("customers").select("id,first_name,last_name,company_name").eq("org_id", orgId!),
+    admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "quote").eq("body", "__opened__"),
+    admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "quote").eq("body", "__archived__"),
   ]);
 
   const openedIds = new Set((openedNotes ?? []).map(n => n.entity_id as string));
@@ -56,7 +56,10 @@ export default async function QuotesPage({ searchParams }: PageProps) {
     ])
   );
 
-  const all = quotes ?? [];
+  const all = (quotes ?? []).map(q => ({
+    ...q,
+    assignee_name: q.assigned_to ? (memberMap[q.assigned_to] ?? null) : null,
+  }));
 
   const buckets: Record<string, typeof all> = {
     sent:     all.filter(q => !archivedIds.has(q.id) && q.status === "sent"),
@@ -71,9 +74,10 @@ export default async function QuotesPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-4 space-y-3 pb-24">
-      <h1 className="text-xl font-bold text-slate-800">Quotes</h1>
+      <h1 className="text-xl font-bold text-slate-800">
+        {isMember ? "My Quotes" : "Quotes"}
+      </h1>
 
-      {/* Tab bar */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 no-scrollbar">
         {TABS.map((tab) => {
           const count = buckets[tab.key]?.length ?? 0;
@@ -105,6 +109,7 @@ export default async function QuotesPage({ searchParams }: PageProps) {
           customerMap={customerMap}
           openedIds={Array.from(openedIds)}
           activeTab={activeTab}
+          showAssignee={isOwnerOrAdmin(role)}
         />
       </Suspense>
     </div>

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
+import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
+import { AssigneeField } from "@/components/AssigneeField";
 import { logActivity } from "@/lib/activity";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
@@ -170,6 +173,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const paymentLinks = ((orgSettings as any)?.payment_links ?? {}) as Record<string, string>;
   const boundSaveWarranty = saveWarrantyNote.bind(null, id);
 
+  const { role: userRole } = await getUserOrgRole();
+  const canAssign = isOwnerOrAdmin(userRole);
+  const orgMembers = canAssign ? await getOrgMembers(orgId!) : [];
+  const memberOptions = orgMembers.map(m => ({ userId: m.userId, name: memberDisplayName(m) }));
+  const assignedMember = (invoice as any).assigned_to
+    ? orgMembers.find(m => m.userId === (invoice as any).assigned_to) ?? null
+    : null;
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
@@ -193,6 +204,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
         </span>
       </div>
+
+      {canAssign && memberOptions.length > 0 && (
+        <AssigneeField
+          entityType="invoice"
+          entityId={invoice.id}
+          currentAssigneeId={(invoice as any).assigned_to ?? null}
+          currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
+          members={memberOptions}
+        />
+      )}
+      {!canAssign && (invoice as any).assigned_to && assignedMember && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
+          <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">

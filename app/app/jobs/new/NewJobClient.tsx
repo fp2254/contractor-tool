@@ -18,10 +18,14 @@ export default function NewJobClient({
   customers,
   templates = [],
   canAssignTemplate = false,
+  members = [],
+  preAssignTo = null,
 }: {
   customers: { id: string; name: string }[];
   templates?: { id: string; name: string }[];
   canAssignTemplate?: boolean;
+  members?: { userId: string; name: string }[];
+  preAssignTo?: string | null;
 }) {
   const router = useRouter();
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "__new__");
@@ -31,6 +35,7 @@ export default function NewJobClient({
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [templateId, setTemplateId] = useState("");
+  const [assignedTo, setAssignedTo] = useState(preAssignTo ?? "");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState("weekly");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
@@ -56,6 +61,7 @@ export default function NewJobClient({
           address: address || undefined,
           notes: notes || undefined,
           template_id: templateId || undefined,
+          assigned_to: assignedTo || undefined,
           is_recurring: isRecurring,
           recurrence_rule: isRecurring ? recurrenceRule : undefined,
           recurrence_end_date: isRecurring && recurrenceEndDate ? recurrenceEndDate : undefined,
@@ -165,6 +171,21 @@ export default function NewJobClient({
         />
       </div>
 
+      {members.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assign To</label>
+          <select
+            value={assignedTo}
+            onChange={e => setAssignedTo(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-100">
+            <option value="">Unassigned</option>
+            {members.map(m => (
+              <option key={m.userId} value={m.userId}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {canAssignTemplate && templates.length > 0 && (
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Job Template</label>
@@ -181,7 +202,6 @@ export default function NewJobClient({
         </div>
       )}
 
-      {/* ── Recurring toggle ── */}
       <div className={`rounded-xl border transition-colors ${isRecurring ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-white"} p-4`}>
         <button
           type="button"

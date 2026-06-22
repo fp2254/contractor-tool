@@ -14,6 +14,7 @@ type Job = {
   customer_id: string;
   customer_name: string;
   is_recurring: boolean | null;
+  assignee_name?: string | null;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -40,7 +41,7 @@ function formatDate(d: string | null) {
   return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function JobsClient({ jobs }: { jobs: Job[] }) {
+export default function JobsClient({ jobs, showAssignee = false }: { jobs: Job[]; showAssignee?: boolean }) {
   const [activeTab, setActiveTab] = useState<Tab>("All");
 
   const today = new Date().toISOString().slice(0, 10);
@@ -65,7 +66,6 @@ export default function JobsClient({ jobs }: { jobs: Job[] }) {
 
   return (
     <>
-      {/* Filter tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 no-scrollbar">
         {TABS.map((tab) => {
           const count = counts[tab];
@@ -84,7 +84,6 @@ export default function JobsClient({ jobs }: { jobs: Job[] }) {
         })}
       </div>
 
-      {/* Add Job button */}
       <Link
         href="/app/jobs/new"
         className="flex items-center justify-center gap-2 w-full rounded-xl py-3 text-white font-semibold"
@@ -92,7 +91,6 @@ export default function JobsClient({ jobs }: { jobs: Job[] }) {
         <span className="text-lg leading-none">+</span> Add Job
       </Link>
 
-      {/* Job list */}
       <div className="space-y-3">
         {filtered.length === 0 && (
           <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
@@ -114,6 +112,9 @@ export default function JobsClient({ jobs }: { jobs: Job[] }) {
                   <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                     📍 {[job.address, job.city, job.state].filter(Boolean).join(", ")}
                   </p>
+                )}
+                {showAssignee && job.assignee_name && (
+                  <p className="text-xs text-blue-600 font-medium mt-0.5">👤 {job.assignee_name}</p>
                 )}
               </div>
               <span className={`text-xs rounded-full px-2 py-1 font-medium shrink-0 ${STATUS_BADGE[job.status] ?? "bg-gray-100 text-gray-600"}`}>

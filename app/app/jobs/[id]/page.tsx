@@ -15,6 +15,8 @@ import { JobTemplateAssigner } from "@/components/JobTemplateAssigner";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 import { JobScheduleModal } from "@/components/JobScheduleModal";
 import { logActivity } from "@/lib/activity";
+import { AssigneeField } from "@/components/AssigneeField";
+import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -250,6 +252,11 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   // Phase 2 + 3 + template assigner: template fields + responses + role
   const { role: userRole } = await getUserOrgRole();
   const canReview = isOwnerOrAdmin(userRole);
+  const orgMembers = canReview ? await getOrgMembers(orgId!) : [];
+  const memberOptions = orgMembers.map(m => ({ userId: m.userId, name: memberDisplayName(m) }));
+  const assignedMember = (job as any).assigned_to
+    ? orgMembers.find(m => m.userId === (job as any).assigned_to) ?? null
+    : null;
   let templateFields: TemplateField[] = [];
   let fieldResponses: FieldResponse[] = [];
   let templateName = "";
@@ -323,6 +330,22 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         {customer?.phone && <a href={`tel:${customer.phone}`} className="text-sm text-slate-700">📞 {customer.phone}</a>}
         {job.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mt-2">{job.notes}</p>}
       </div>
+
+      {canReview && memberOptions.length > 0 && (
+        <AssigneeField
+          entityType="job"
+          entityId={job.id}
+          currentAssigneeId={(job as any).assigned_to ?? null}
+          currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
+          members={memberOptions}
+        />
+      )}
+      {!canReview && (job as any).assigned_to && assignedMember && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
+          <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
+        </div>
+      )}
 
       {/* Recurring job info card */}
       {(job as Record<string, unknown>).is_recurring && (

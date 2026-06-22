@@ -2,15 +2,22 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureUserOrg } from "@/lib/auth";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
+import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
 import NewJobClient from "./NewJobClient";
 
-export default async function NewJobPage() {
+type PageProps = { searchParams: Promise<Record<string, string>> };
+
+export default async function NewJobPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const preAssignTo = params.assignTo ?? null;
+
   const orgId = await ensureUserOrg();
   const admin = createAdminClient();
   const { role } = await getUserOrgRole();
   const canAssignTemplate = isOwnerOrAdmin(role);
+  const canAssign = isOwnerOrAdmin(role);
 
-  const [customersRes, templatesRes] = await Promise.all([
+  const [customersRes, templatesRes, membersData] = await Promise.all([
     admin
       .from("customers")
       .select("id,first_name,last_name,company_name")
@@ -24,6 +31,7 @@ export default async function NewJobPage() {
           .eq("is_active", true)
           .order("name", { ascending: true })
       : Promise.resolve({ data: [] }),
+    canAssign ? getOrgMembers(orgId!) : Promise.resolve([]),
   ]);
 
   const customerOptions = (customersRes.data ?? []).map((c) => ({
@@ -37,6 +45,11 @@ export default async function NewJobPage() {
   const templateOptions = ((templatesRes.data ?? []) as { id: string; name: string }[]).map((t) => ({
     id: t.id,
     name: t.name,
+  }));
+
+  const memberOptions = (membersData as Awaited<ReturnType<typeof getOrgMembers>>).map(m => ({
+    userId: m.userId,
+    name: memberDisplayName(m),
   }));
 
   return (
@@ -54,6 +67,8 @@ export default async function NewJobPage() {
           customers={customerOptions}
           templates={templateOptions}
           canAssignTemplate={canAssignTemplate}
+          members={memberOptions}
+          preAssignTo={preAssignTo}
         />
       </div>
     </div>
