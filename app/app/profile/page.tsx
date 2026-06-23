@@ -12,6 +12,7 @@ import { BusinessIdentityForm, type BusinessIdentityData } from "@/components/Bu
 import { DefaultWarrantyForm } from "@/components/DefaultWarrantyForm";
 import { PublicProfileCard } from "./PublicProfileCard";
 import PriceSheetScanner from "@/components/PriceSheetScanner";
+import { AiAssistantSettings } from "@/components/AiAssistantSettings";
 
 const inputCls = "w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase mb-1";
@@ -287,6 +288,14 @@ export default async function ProfilePage() {
           </div>
           <button type="submit" className={saveBtnCls} style={{ backgroundColor: "#1B3A6B" }}>Save Automation</button>
         </form>
+      </Section>
+
+      {/* ── AI Assistant ── */}
+      <Section title="AI Assistant" emoji="🤖">
+        <div className="bg-amber-50 rounded-xl p-3 mb-4 text-xs text-amber-700">
+          <span className="font-semibold">AI-powered lead response.</span> The assistant texts new leads instantly, qualifies them, and books appointments — using only the info you configure here.
+        </div>
+        <AiAssistantSettings presets={presets ?? []} />
       </Section>
 
       {/* ── Data Export ── */}
