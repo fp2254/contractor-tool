@@ -89,6 +89,7 @@ supabase/
   migration_homeowner_requests.sql ✅ applied
   migration_sections_config.sql        ✅ applied — adds sections_config + trust_highlights columns
   migration_custom_blocks.sql          ✅ applied — adds custom_blocks JSONB column
+  migration_selected_template.sql      ✅ applied — adds selected_template TEXT column to public_profiles
   migration_addons.sql                 ✅ applied — creates org_addons table (phone add-on gating)
   migration_phone_system.sql           ✅ applied — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
   migration_addons_v2.sql              ✅ applied — adds external_subscription_id + billing_provider to org_addons
