@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
 const OPT_OUT_KEYWORDS = /^(stop|unsubscribe|quit|cancel|end)$/i;
 const OPT_IN_KEYWORDS = /^(start|yes|unstop)$/i;
 
-/** Max outbound messages to one number in 24h before we stop. */
-const RATE_LIMIT_24H = 10;
+/** Fallback rate limit if org config doesn't specify one. */
+const DEFAULT_RATE_LIMIT = 20;
 
 export async function POST(req: Request) {
   // Parse Twilio form body
@@ -54,14 +54,14 @@ export async function POST(req: Request) {
       { org_id: orgId, phone_number: from },
       { onConflict: "org_id,phone_number" }
     );
-    // Mark any active conversation as opted_out
+    // Mark any active/exhausted conversation as opted_out
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("sms_conversations")
       .update({ status: "opted_out", updated_at: new Date().toISOString() })
       .eq("org_id", orgId)
       .eq("from_number", from)
-      .eq("status", "active");
+      .in("status", ["active", "exhausted"]);
 
     await sendSmsGraceful(from, to, "You have been unsubscribed. Reply START to re-subscribe.");
     return emptyTwiml();
@@ -89,23 +89,49 @@ export async function POST(req: Request) {
 
   if (optedOut) return emptyTwiml();
 
-  // ── LOAD OR CREATE CONVERSATION ─────────────────────────────────────────────
+  // ── LOAD AI CONFIG (needed for rate limit + take-over gate) ─────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let { data: conv } = await (admin as any)
+  const { data: aiCfg } = await (admin as any)
+    .from("org_ai_assistant_config")
+    .select("enabled, auto_reply, followup_max_attempts, require_booking_approval")
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  const rateLimit: number = aiCfg?.followup_max_attempts ?? DEFAULT_RATE_LIMIT;
+
+  // ── FIND MOST RECENT CONVERSATION FOR THIS NUMBER ────────────────────────────
+  // Look for ANY conversation (all statuses) — this is how we honour take-over.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentConv } = await (admin as any)
     .from("sms_conversations")
     .select("id, status, lead_id")
     .eq("org_id", orgId)
     .eq("from_number", from)
-    .in("status", ["active"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  // If handed_off or no active conv, create a new one (and possibly a new lead)
+  // ── HANDED-OFF / OPTED-OUT / EXHAUSTED: log inbound, stay silent ────────────
+  // If the contractor has taken over (handed_off) or the conversation is
+  // otherwise closed, we still log the message so it appears in the thread,
+  // but we DO NOT create a new active AI conversation or run the AI.
+  if (recentConv && recentConv.status !== "active") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from("sms_messages").insert({
+      conversation_id: recentConv.id,
+      direction: "inbound",
+      body,
+    });
+    return emptyTwiml();
+  }
+
+  // ── GET OR CREATE ACTIVE CONVERSATION ───────────────────────────────────────
+  let conv = recentConv; // already active if we're here and recentConv exists
+
   if (!conv) {
+    // No conversation at all — create one (and possibly a new lead)
     let leadId: string | null = null;
 
-    // Try to find an existing lead with this phone number
     const digitsOnly = from.replace(/\D/g, "");
     if (digitsOnly) {
       const { data: existingLeads } = await admin
@@ -118,12 +144,9 @@ export async function POST(req: Request) {
       const matched = (existingLeads ?? []).find(
         (l) => l.phone && l.phone.replace(/\D/g, "") === digitsOnly
       );
-      if (matched) {
-        leadId = matched.id;
-      }
+      if (matched) leadId = matched.id;
     }
 
-    // No existing lead — create one
     if (!leadId) {
       const { data: newLead } = await admin
         .from("leads")
@@ -165,7 +188,7 @@ export async function POST(req: Request) {
     body,
   });
 
-  // ── RATE LIMIT CHECK ─────────────────────────────────────────────────────────
+  // ── RATE LIMIT CHECK (uses org config followup_max_attempts) ────────────────
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count: recentCount } = await admin
     .from("sms_messages")
@@ -174,7 +197,7 @@ export async function POST(req: Request) {
     .eq("direction", "outbound")
     .gte("sent_at", since);
 
-  if ((recentCount ?? 0) >= RATE_LIMIT_24H) {
+  if ((recentCount ?? 0) >= rateLimit) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("sms_conversations")
@@ -183,14 +206,7 @@ export async function POST(req: Request) {
     return emptyTwiml();
   }
 
-  // ── LOAD AI CONFIG & CHECK IF ENABLED ───────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aiCfg } = await (admin as any)
-    .from("org_ai_assistant_config")
-    .select("enabled, auto_reply")
-    .eq("org_id", orgId)
-    .maybeSingle();
-
+  // ── AI CONFIG CHECK ──────────────────────────────────────────────────────────
   if (!aiCfg?.enabled || !aiCfg?.auto_reply) return emptyTwiml();
 
   // ── RUN AI AGENT ────────────────────────────────────────────────────────────
@@ -212,17 +228,20 @@ export async function POST(req: Request) {
   // ── BOOKING DETECTED ────────────────────────────────────────────────────────
   if (result.booking && conv.lead_id) {
     const b = result.booking;
+    const requiresApproval = aiCfg?.require_booking_approval ?? false;
+
     const bookingNote = [
-      "📅 AI Booking Confirmed",
+      requiresApproval ? "📅 AI Booking — Pending Your Approval" : "📅 AI Booking Confirmed",
       b.job_type ? `Job: ${b.job_type}` : null,
       b.date ? `Date: ${b.date}` : null,
       b.time_window ? `Time: ${b.time_window}` : null,
+      requiresApproval ? "⚠️ Review and confirm this booking before it is finalized." : null,
     ]
       .filter(Boolean)
       .join("\n");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await Promise.all([
+    const updatePromises: Promise<unknown>[] = [
       (admin as any).from("notes").insert({
         org_id: orgId,
         entity_type: "lead",
@@ -230,12 +249,23 @@ export async function POST(req: Request) {
         body: bookingNote,
         created_by: null,
       }),
-      admin
-        .from("leads")
-        .update({ status: "scheduled" })
-        .eq("id", conv.lead_id)
-        .eq("org_id", orgId),
-    ]);
+    ];
+
+    if (!requiresApproval) {
+      // Auto-confirm: set lead to scheduled and record scheduled date
+      updatePromises.push(
+        admin
+          .from("leads")
+          .update({ status: "scheduled" })
+          .eq("id", conv.lead_id)
+          .eq("org_id", orgId)
+      );
+    }
+    // If require_booking_approval: lead stays at current status so contractor
+    // reviews the note and manually confirms. AI reply already told the customer
+    // the slot is provisionally held.
+
+    await Promise.allSettled(updatePromises);
   }
 
   return emptyTwiml();

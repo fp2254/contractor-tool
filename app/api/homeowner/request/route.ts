@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient } from "@/lib/email";
 import { homeownerLeadNotificationHtml } from "@/lib/email";
+import { maybeSendAutoReply } from "@/lib/ai/sms-trigger";
 
 const MAX_MATCHED_ORGS = 5;
 
@@ -111,7 +112,11 @@ async function routeLeads(
       .select("id")
       .single();
 
-    if (lead?.id) leadIds.push(lead.id);
+    if (lead?.id) {
+      leadIds.push(lead.id);
+      // Fire-and-forget auto-reply SMS for this org
+      maybeSendAutoReply(org.org_id, lead.id, phone?.trim() || null).catch(() => {});
+    }
 
     // Look up org owner for notification email
     notifyPromises.push(

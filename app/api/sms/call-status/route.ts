@@ -43,15 +43,25 @@ export async function POST(req: Request) {
   if (!phoneRow?.org_id) return NextResponse.json({ ok: true });
   const orgId: string = phoneRow.org_id;
 
-  // Check missed_call_sms_enabled in phone settings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: phoneSetting } = await (admin as any)
-    .from("org_phone_settings")
-    .select("missed_call_sms_enabled, missed_call_sms_template")
-    .eq("org_id", orgId)
-    .maybeSingle();
+  // Check BOTH phone settings AND AI assistant config auto_reply
+  const [{ data: phoneSetting }, { data: aiCfg }] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from("org_phone_settings")
+      .select("missed_call_sms_enabled, missed_call_sms_template")
+      .eq("org_id", orgId)
+      .maybeSingle(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from("org_ai_assistant_config")
+      .select("enabled, auto_reply")
+      .eq("org_id", orgId)
+      .maybeSingle(),
+  ]);
 
+  // Both guards must pass: phone settings AND AI config auto_reply
   if (!phoneSetting?.missed_call_sms_enabled) return NextResponse.json({ ok: true });
+  if (!aiCfg?.enabled || !aiCfg?.auto_reply) return NextResponse.json({ ok: true });
 
   // Check opt-out
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,7 +82,8 @@ export async function POST(req: Request) {
   ]);
   const businessName = orgSettings?.dba_name || org?.name || "us";
 
-  const template = phoneSetting.missed_call_sms_template ||
+  const template =
+    phoneSetting.missed_call_sms_template ||
     `Hi! You just called {business_name}. Sorry we missed you — how can we help?`;
   const message = template.replace(/\{business_name\}/g, businessName);
 
@@ -80,7 +91,7 @@ export async function POST(req: Request) {
   const sent = await sendSmsGraceful(callerNumber, twilioNumber, message);
 
   if (sent) {
-    // Log to call_logs if there's a matching record
+    // Update call_logs if there's a matching record
     const callSid = params.CallSid;
     if (callSid) {
       await admin
@@ -90,7 +101,7 @@ export async function POST(req: Request) {
         .eq("org_id", orgId);
     }
 
-    // Create or update an SMS conversation so the thread appears on any linked lead
+    // Log to sms_conversations/messages so it appears in any linked lead thread
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existingConv } = await (admin as any)
       .from("sms_conversations")
