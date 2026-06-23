@@ -75,12 +75,41 @@ export async function POST(req: Request) {
 
   // ── START / OPT-IN ──────────────────────────────────────────────────────────
   if (OPT_IN_KEYWORDS.test(body)) {
+    // Remove from opt-out list
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("opted_out_numbers")
       .delete()
       .eq("org_id", orgId)
       .eq("phone_number", from);
+
+    // Reactivate the most recent opted_out conversation so subsequent messages
+    // can trigger AI again. Without this the thread stays muted.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: optedOutConv } = await (admin as any)
+      .from("sms_conversations")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("from_number", from)
+      .eq("status", "opted_out")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (optedOutConv?.id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
+        .from("sms_conversations")
+        .update({
+          status: "active",
+          followup_attempts: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", optedOutConv.id);
+    }
+    // else: new conversation will be created on next inbound message
+
+    await sendSmsGraceful(from, to, "You've been re-subscribed. We'll be in touch shortly!");
     return emptyTwiml();
   }
 
@@ -184,13 +213,23 @@ export async function POST(req: Request) {
 
   if (!conv?.id) return emptyTwiml();
 
-  // ── LOG INBOUND MESSAGE ──────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any).from("sms_messages").insert({
-    conversation_id: conv.id,
-    direction: "inbound",
-    body,
-  });
+  // ── LOG INBOUND MESSAGE + reset follow-up counter ────────────────────────────
+  const nowIso = new Date().toISOString();
+  await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from("sms_messages").insert({
+      conversation_id: conv.id,
+      direction: "inbound",
+      body,
+    }),
+    // Reset followup_attempts: customer has replied, so the "non-responder"
+    // follow-up cadence restarts from zero.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from("sms_conversations")
+      .update({ last_customer_reply_at: nowIso, followup_attempts: 0, updated_at: nowIso })
+      .eq("id", conv.id),
+  ]);
 
   // ── ABUSE-PREVENTION SAFETY CAP ─────────────────────────────────────────────
   // We are REPLYING to an inbound message — followup_max_attempts does NOT apply

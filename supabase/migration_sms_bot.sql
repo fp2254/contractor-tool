@@ -4,15 +4,17 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table if not exists sms_conversations (
-  id           uuid primary key default gen_random_uuid(),
-  org_id       uuid not null references orgs(id) on delete cascade,
-  lead_id      uuid references leads(id) on delete set null,
-  from_number  text not null,   -- customer phone (E.164)
-  to_number    text not null,   -- org Twilio number (E.164)
-  status       text not null default 'active'
-                 check (status in ('active', 'handed_off', 'opted_out', 'exhausted')),
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+  id                    uuid primary key default gen_random_uuid(),
+  org_id                uuid not null references orgs(id) on delete cascade,
+  lead_id               uuid references leads(id) on delete set null,
+  from_number           text not null,   -- customer phone (E.164)
+  to_number             text not null,   -- org Twilio number (E.164)
+  status                text not null default 'active'
+                          check (status in ('active', 'handed_off', 'opted_out', 'exhausted')),
+  followup_attempts     int not null default 0,  -- proactive follow-ups sent without a customer reply
+  last_customer_reply_at timestamptz,            -- set every time an inbound message arrives
+  created_at            timestamptz default now(),
+  updated_at            timestamptz default now()
 );
 
 create index if not exists sms_conversations_org_id_idx  on sms_conversations (org_id, created_at desc);

@@ -63,6 +63,20 @@ export async function POST(req: Request) {
   if (!phoneSetting?.missed_call_sms_enabled) return NextResponse.json({ ok: true });
   if (!aiCfg?.enabled || !aiCfg?.auto_reply) return NextResponse.json({ ok: true });
 
+  // ── Idempotency guard: skip if SMS already sent for this CallSid ─────────────
+  const callSid = params.CallSid ?? "";
+  if (callSid) {
+    const { data: existingLog } = await admin
+      .from("call_logs")
+      .select("missed_call_sms_sent")
+      .eq("twilio_call_sid", callSid)
+      .eq("org_id", orgId)
+      .maybeSingle();
+    if (existingLog?.missed_call_sms_sent) {
+      return NextResponse.json({ ok: true, skipped: "already_sent" });
+    }
+  }
+
   // Check opt-out
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: optedOut } = await (admin as any)
@@ -91,8 +105,7 @@ export async function POST(req: Request) {
   const sent = await sendSmsGraceful(callerNumber, twilioNumber, message);
 
   if (sent) {
-    // Update call_logs if there's a matching record
-    const callSid = params.CallSid;
+    // Update call_logs if there's a matching record (callSid already declared above)
     if (callSid) {
       await admin
         .from("call_logs")
