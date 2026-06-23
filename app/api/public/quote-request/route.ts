@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResendClient, homeownerLeadNotificationHtml } from "@/lib/email";
+import { maybeSendAutoReply } from "@/lib/ai/sms-trigger";
 
 export async function POST(req: Request) {
   try {
@@ -48,6 +49,11 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Fire-and-forget auto-reply SMS (if org has AI assistant + phone configured)
+    if (lead?.id) {
+      maybeSendAutoReply(pub.org_id, lead.id, phone?.trim() || null).catch(() => {});
     }
 
     // Fire-and-forget notification email to contractor

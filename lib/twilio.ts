@@ -103,6 +103,27 @@ export async function sendSms(to: string, from: string, body: string): Promise<v
   await twilioRequest("POST", "/Messages.json", { To: to, From: from, Body: body });
 }
 
+/**
+ * Send SMS without throwing. Returns false when credentials are missing or call fails.
+ * Use this in background/fire-and-forget paths.
+ */
+export async function sendSmsGraceful(to: string, from: string, body: string): Promise<boolean> {
+  try {
+    await sendSms(to, from, body);
+    return true;
+  } catch (err) {
+    console.warn("[twilio] sendSmsGraceful failed:", (err as Error).message);
+    return false;
+  }
+}
+
+/** Empty TwiML response — acknowledges a webhook without saying anything to caller/texter. */
+export function emptyTwiml(): Response {
+  return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    headers: { "Content-Type": "text/xml" },
+  });
+}
+
 export function validateTwilioSignature(
   authToken: string,
   url: string,

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
+import { SmsThread } from "@/components/SmsThread";
 
 const STATUS_OPTIONS = ["new","contacted","quoted","scheduled","won","lost"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -199,6 +200,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           ))}
         </div>
       </div>
+      <SmsThread leadId={lead.id} />
       <EntityAiSection entityType="lead" entityId={lead.id} initialAttachments={aiAttachments} />
     </div>
   );

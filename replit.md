@@ -92,6 +92,7 @@ supabase/
   migration_addons.sql                 ✅ applied — creates org_addons table (phone add-on gating)
   migration_phone_system.sql           ✅ applied — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
   migration_addons_v2.sql              ✅ applied — adds external_subscription_id + billing_provider to org_addons
+  migration_sms_bot.sql                ⬜ pending — creates sms_conversations, sms_messages, opted_out_numbers
 ```
 
 ## Environment Variables
