@@ -14,8 +14,13 @@ export const dynamic = "force-dynamic";
 const OPT_OUT_KEYWORDS = /^(stop|unsubscribe|quit|cancel|end)$/i;
 const OPT_IN_KEYWORDS = /^(start|yes|unstop)$/i;
 
-/** Fallback rate limit if org config doesn't specify one. */
-const DEFAULT_RATE_LIMIT = 20;
+/**
+ * Abuse-prevention cap: max outbound messages per conversation per 24h.
+ * This is NOT followup_max_attempts — that config governs proactive follow-ups
+ * to non-responders (future feature). Here we are RESPONDING to an inbound
+ * message, so the follow-up cadence limit must not apply.
+ */
+const INBOUND_REPLY_SAFETY_CAP = 50;
 
 export async function POST(req: Request) {
   // Parse Twilio form body
@@ -90,15 +95,13 @@ export async function POST(req: Request) {
 
   if (optedOut) return emptyTwiml();
 
-  // ── LOAD AI CONFIG (needed for rate limit + take-over gate) ─────────────────
+  // ── LOAD AI CONFIG ───────────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: aiCfg } = await (admin as any)
     .from("org_ai_assistant_config")
-    .select("enabled, auto_reply, followup_max_attempts, require_booking_approval")
+    .select("enabled, auto_reply, require_booking_approval")
     .eq("org_id", orgId)
     .maybeSingle();
-
-  const rateLimit: number = aiCfg?.followup_max_attempts ?? DEFAULT_RATE_LIMIT;
 
   // ── FIND MOST RECENT CONVERSATION FOR THIS NUMBER ────────────────────────────
   // Look for ANY conversation (all statuses) — this is how we honour take-over.
@@ -189,7 +192,10 @@ export async function POST(req: Request) {
     body,
   });
 
-  // ── RATE LIMIT CHECK (uses org config followup_max_attempts) ────────────────
+  // ── ABUSE-PREVENTION SAFETY CAP ─────────────────────────────────────────────
+  // We are REPLYING to an inbound message — followup_max_attempts does NOT apply
+  // here (that config governs proactive follow-ups to non-responders).
+  // Apply a high per-conversation cap to prevent runaway API costs only.
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count: recentCount } = await admin
     .from("sms_messages")
@@ -198,7 +204,7 @@ export async function POST(req: Request) {
     .eq("direction", "outbound")
     .gte("sent_at", since);
 
-  if ((recentCount ?? 0) >= rateLimit) {
+  if ((recentCount ?? 0) >= INBOUND_REPLY_SAFETY_CAP) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("sms_conversations")

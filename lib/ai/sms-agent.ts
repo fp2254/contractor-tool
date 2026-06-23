@@ -22,6 +22,42 @@ const MAX_JOBS_PER_DAY = 3;
 /** Days ahead to include in schedule availability. */
 const SCHEDULE_HORIZON_DAYS = 14;
 
+/**
+ * Deterministically compute which question the bot should ask next.
+ * Qualification stages are strictly ordered:
+ *   1. Job type  →  2. Service area (if configured)  →  3. Custom qualifiers  →  4. Availability
+ *
+ * We derive the stage by counting outbound messages already sent in this
+ * conversation, NOT by asking the AI to interpret conversation history.
+ * This guarantees the ordering requirement is always honoured.
+ */
+function computeNextDirective(
+  outboundCount: number,
+  serviceArea: string | null,
+  customQualifiers: string[]
+): string {
+  // Stage 1 — no outbound yet: greeting + ask job type
+  if (outboundCount === 0) {
+    return "DIRECTIVE: This is your opening message. Greet the customer warmly and ask what type of work they need done. One sentence only.";
+  }
+
+  // Stage 2 — service area check (only when service_area is configured)
+  if (serviceArea && outboundCount === 1) {
+    return `DIRECTIVE: You have their job type. Now ask for their address or city so you can confirm it's within your service area (${serviceArea}).`;
+  }
+
+  // Stage 3 — custom qualifier questions (in strict order, one per turn)
+  const customStartsAt = serviceArea ? 2 : 1;
+  const customIdx = outboundCount - customStartsAt;
+  if (customIdx >= 0 && customIdx < customQualifiers.length) {
+    const q = customQualifiers[customIdx];
+    return `DIRECTIVE: Ask this qualifying question (${customIdx + 1} of ${customQualifiers.length}): "${q}" — nothing else.`;
+  }
+
+  // Stage 4 — all qualifiers answered: propose availability
+  return "DIRECTIVE: All qualifying questions have been answered. Propose 1–2 specific available dates from the schedule below. If the customer has already agreed to a date, confirm it and append BOOKING_JSON.";
+}
+
 /** Format a date as "Monday, June 23" */
 function formatDateLabel(isoDate: string): string {
   return new Date(isoDate + "T12:00:00Z").toLocaleDateString("en-US", {
@@ -31,6 +67,8 @@ function formatDateLabel(isoDate: string): string {
     timeZone: "UTC",
   });
 }
+
+type SmsHistoryMsg = { direction: "inbound" | "outbound"; body: string };
 
 export async function runSmsAgent(
   orgId: string,
@@ -65,7 +103,6 @@ export async function runSmsAgent(
       .select("dba_name, phone")
       .eq("org_id", orgId)
       .maybeSingle(),
-    // Load active service presets so we can filter out disabled ones
     admin
       .from("service_presets")
       .select("id, service_name, description, category")
@@ -78,7 +115,6 @@ export async function runSmsAgent(
       .eq("conversation_id", conversationId)
       .order("sent_at", { ascending: true })
       .limit(40),
-    // Real upcoming jobs for availability calculation
     admin
       .from("jobs")
       .select("scheduled_date")
@@ -163,12 +199,13 @@ export async function runSmsAgent(
   }
 
   // ── Qualifier questions (schema: string[]) ────────────────────────────────
-  let qualifierBlock = "";
-  if (Array.isArray(cfg.qualifier_questions) && cfg.qualifier_questions.length > 0) {
-    qualifierBlock = (cfg.qualifier_questions as string[])
-      .map((q, i) => `${i + 1}. ${q}`)
-      .join("\n");
-  }
+  const customQualifiers: string[] = Array.isArray(cfg.qualifier_questions)
+    ? (cfg.qualifier_questions as string[])
+    : [];
+  const qualifierBlock =
+    customQualifiers.length > 0
+      ? customQualifiers.map((q, i) => `${i + 1}. ${q}`).join("\n")
+      : "";
 
   // ── Compute available days from real schedule data ─────────────────────────
   const jobsPerDay: Record<string, number> = {};
@@ -177,7 +214,6 @@ export async function runSmsAgent(
     jobsPerDay[j.scheduled_date] = (jobsPerDay[j.scheduled_date] ?? 0) + 1;
   }
 
-  // Build business_hours days set for schedule filtering
   const workDayNums = new Set<number>();
   const dayMap: Record<string, number> = {
     sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
@@ -188,13 +224,12 @@ export async function runSmsAgent(
       if (n != null) workDayNums.add(n);
     }
   } else {
-    // Default Mon-Fri
     [1, 2, 3, 4, 5].forEach((n) => workDayNums.add(n));
   }
 
   const availableDays: string[] = [];
   const cursor = new Date();
-  cursor.setDate(cursor.getDate() + 1); // start tomorrow
+  cursor.setDate(cursor.getDate() + 1);
   for (let i = 0; i < SCHEDULE_HORIZON_DAYS && availableDays.length < 6; i++) {
     const iso = cursor.toISOString().slice(0, 10);
     const dow = cursor.getUTCDay();
@@ -207,7 +242,7 @@ export async function runSmsAgent(
   const scheduleBlock =
     availableDays.length > 0
       ? `Available appointment days:\n${availableDays.map((d) => `- ${d}`).join("\n")}\nOnly offer dates from this list when proposing appointments.`
-      : "Schedule is full for the next two weeks — ask the customer for preferred date and note you will confirm availability.";
+      : "Schedule is full for the next two weeks — ask the customer for their preferred date and note you will confirm availability.";
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -216,53 +251,76 @@ export async function runSmsAgent(
     day: "numeric",
   });
 
-  const systemPrompt = `You are ${businessName}'s SMS scheduling assistant. Your job is to qualify leads, answer questions, and book appointments via text.
+  // ── Deterministic stage directive ─────────────────────────────────────────
+  // Count outbound messages already sent to know exactly which stage we're at.
+  // This enforces strict ordering without relying on AI text interpretation.
+  const historyMsgs = (history ?? []) as SmsHistoryMsg[];
+  const outboundCount = historyMsgs.filter((m) => m.direction === "outbound").length;
+  const nextDirective = computeNextDirective(outboundCount, serviceArea, customQualifiers);
 
-## TONE
-Keep responses ${tone}, concise, and SMS-appropriate (1-3 short sentences max). Never use asterisks or markdown.
+  // Build stage list for the prompt
+  const stageLines: string[] = [
+    "Stage 1: Job type — what work does the customer need?",
+  ];
+  if (serviceArea) stageLines.push(`Stage 2: Service area — confirm location is within: ${serviceArea}.`);
+  if (customQualifiers.length > 0) {
+    stageLines.push(`Stage ${serviceArea ? 3 : 2}: Custom qualifiers (ask one at a time):\n${qualifierBlock}`);
+  }
+  const lastStage = (serviceArea ? 1 : 0) + (customQualifiers.length > 0 ? 1 : 0) + 2;
+  stageLines.push(`Stage ${lastStage}: Availability — propose dates from the schedule.`);
 
-## BUSINESS INFO
-Business name: ${businessName}
-Today: ${today}
-${serviceArea ? `Service area: ${serviceArea}` : ""}
-${hoursBlock ? `Business hours: ${hoursBlock}` : ""}
-
-## SERVICES OFFERED
-${servicesBlock}
-
-${pricingBlock ? `## PRICING\n${pricingBlock}\n` : ""}
-## SCHEDULE AVAILABILITY (real-time calendar data)
-${scheduleBlock}
-
-## FREQUENTLY ASKED QUESTIONS
-${faqBlock || "(No FAQs on file — defer specific questions to the owner)"}
-
-## CONVERSATION FLOW
-Ask qualifying questions ONE AT A TIME in this order (skip already answered):
-${qualifierBlock || "1. What type of work do you need done?\n2. What is your address or city?\n3. When are you hoping to get this scheduled?"}
-
-Once all qualifying questions are answered, propose one or two specific dates from the schedule.
-
-## BOOKING CONFIRMATION
-When the customer explicitly agrees to a specific date and time (e.g. "Yes, Thursday works"), confirm it and append this JSON at the very END of your reply (the customer never sees this):
-BOOKING_JSON:{"date":"YYYY-MM-DD","time_window":"9am-12pm","job_type":"short description"}
-
-Only append BOOKING_JSON when the customer has clearly agreed to a slot. Never append it speculatively.
-
-## STRICT RULES
-- Only answer questions that can be answered from the information above.
-- If a question is outside these topics, reply: "Good question — let me have the team follow up with you on that."
-- If the requested location is outside the service area, politely decline and say you don't cover that area.
-${pricingBlock ? "- Never quote prices outside the ranges listed above." : "- Do not quote prices — say you will provide a quote after assessment."}
-- Never impersonate a human. You are ${businessName}'s assistant.
-- Keep every reply under 160 characters when possible.`;
+  const systemPrompt = [
+    `You are ${businessName}'s SMS scheduling assistant. Qualify leads, answer questions, and book appointments via text.`,
+    "",
+    "## TONE",
+    `Keep responses ${tone}, concise, and SMS-appropriate (1–3 short sentences max). Never use asterisks or markdown.`,
+    "",
+    "## BUSINESS INFO",
+    `Business name: ${businessName}`,
+    `Today: ${today}`,
+    serviceArea ? `Service area: ${serviceArea}` : "",
+    hoursBlock ? `Business hours: ${hoursBlock}` : "",
+    "",
+    "## SERVICES OFFERED",
+    servicesBlock,
+    "",
+    pricingBlock ? `## PRICING\n${pricingBlock}\n` : "",
+    "## SCHEDULE AVAILABILITY (real-time calendar data)",
+    scheduleBlock,
+    "",
+    "## FREQUENTLY ASKED QUESTIONS",
+    faqBlock || "(No FAQs on file — defer specific questions to the owner)",
+    "",
+    "## QUALIFICATION STAGES (strict order — do not skip ahead)",
+    stageLines.join("\n"),
+    "",
+    "## CURRENT DIRECTIVE (follow this EXACTLY for your reply this turn)",
+    nextDirective,
+    "",
+    "## BOOKING CONFIRMATION",
+    'When the customer explicitly agrees to a specific date (e.g. "Yes, Thursday works"), confirm it and append this JSON at the very END of your reply (the customer never sees this):',
+    'BOOKING_JSON:{"date":"YYYY-MM-DD","time_window":"9am-12pm","job_type":"short description"}',
+    "Only append BOOKING_JSON when the customer has clearly agreed to a slot. Never append it speculatively.",
+    "",
+    "## STRICT RULES",
+    "- Follow the CURRENT DIRECTIVE above — do not skip to a later stage.",
+    "- Only answer questions answerable from the information above.",
+    '- If asked something outside your knowledge: "Good question — let me have the team follow up on that."',
+    "- If requested location is outside the service area, politely decline.",
+    pricingBlock
+      ? "- Never quote prices outside the ranges listed above."
+      : "- Do not quote prices — say you will provide a quote after assessment.",
+    `- Never impersonate a human. You are ${businessName}'s assistant.`,
+    "- Keep every reply under 160 characters when possible.",
+  ]
+    .filter((line) => line !== null && line !== undefined)
+    .join("\n");
 
   type MsgRole = "system" | "user" | "assistant";
-  type SmsHistoryMsg = { direction: "inbound" | "outbound"; body: string };
 
   const msgs: { role: MsgRole; content: string }[] = [
     { role: "system", content: systemPrompt },
-    ...((history ?? []) as SmsHistoryMsg[]).map((m) => ({
+    ...historyMsgs.map((m) => ({
       role: (m.direction === "outbound" ? "assistant" : "user") as MsgRole,
       content: m.body,
     })),
@@ -299,7 +357,6 @@ ${pricingBlock ? "- Never quote prices outside the ranges listed above." : "- Do
     } catch {
       /* ignore parse errors */
     }
-    // Strip the JSON signal from the customer-facing reply
     reply = reply.replace(/\s*BOOKING_JSON:\{[^}]+\}/, "").trim();
   }
 
