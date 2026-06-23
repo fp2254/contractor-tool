@@ -19,13 +19,16 @@ export const dynamic = "force-dynamic";
 const SILENCE_HOURS = 2;
 
 export async function POST(req: Request) {
-  // Simple shared-secret auth for scheduler calls
+  // Deny-by-default: FOLLOWUP_SECRET must be set in env vars.
+  // Without it the endpoint is locked — this prevents accidental open access
+  // to a route that can trigger bulk outbound SMS.
   const secret = process.env.FOLLOWUP_SECRET;
-  if (secret) {
-    const provided = req.headers.get("x-followup-secret");
-    if (provided !== secret) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
+  if (!secret) {
+    return new NextResponse("Service unavailable — FOLLOWUP_SECRET not configured", { status: 503 });
+  }
+  const provided = req.headers.get("x-followup-secret");
+  if (provided !== secret) {
+    return new NextResponse("Forbidden", { status: 403 });
   }
 
   const admin = createAdminClient();
@@ -50,8 +53,8 @@ export async function POST(req: Request) {
     const maxAttempts: number = cfg.followup_max_attempts ?? 2;
 
     // Find active conversations for this org where:
-    // - last customer reply was before the silence cutoff (or never replied at all)
-    // - followup_attempts < maxAttempts (still within the budget)
+    // - last update was before the silence cutoff (no outbound sent recently either)
+    // - followup_attempts < maxAttempts (counter-based budget check)
     // - not handed_off / opted_out / exhausted
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: stalConvs } = await (admin as any)
@@ -60,8 +63,6 @@ export async function POST(req: Request) {
       .eq("org_id", cfg.org_id)
       .eq("status", "active")
       .lt("followup_attempts", maxAttempts)
-      // Only conversations that were last updated before the silence window
-      // (no outbound sent recently either)
       .lt("updated_at", silenceCutoff);
 
     if (!stalConvs || stalConvs.length === 0) continue;
@@ -80,8 +81,30 @@ export async function POST(req: Request) {
       to_number: string;
       followup_attempts: number;
     }[]) {
+      // 24h outbound-count check (per spec): count outbound messages to this
+      // number in the last 24 hours. If already at/over the limit, skip.
+      const window24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count: recentOutbound } = await (admin as any)
+        .from("sms_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conv.id)
+        .eq("direction", "outbound")
+        .gte("sent_at", window24h);
+
+      if ((recentOutbound ?? 0) >= maxAttempts) {
+        // Already at limit for this 24h window — mark exhausted
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any)
+          .from("sms_conversations")
+          .update({ status: "exhausted", updated_at: new Date().toISOString() })
+          .eq("id", conv.id);
+        exhausted++;
+        continue;
+      }
+
       const attempt = conv.followup_attempts + 1;
-      const isLast = attempt >= maxAttempts;
+      const isLast = attempt >= maxAttempts || (recentOutbound ?? 0) + 1 >= maxAttempts;
 
       const message = isLast
         ? `Hi! Just checking in from ${businessName} — still interested in getting a quote? Reply anytime or call us directly.`

@@ -17,6 +17,10 @@ create table if not exists sms_conversations (
   updated_at            timestamptz default now()
 );
 
+-- handoff_phrase on org_ai_assistant_config (add if column doesn't exist yet)
+alter table org_ai_assistant_config
+  add column if not exists handoff_phrase text;
+
 create index if not exists sms_conversations_org_id_idx  on sms_conversations (org_id, created_at desc);
 create index if not exists sms_conversations_lead_id_idx on sms_conversations (lead_id);
 create index if not exists sms_conversations_from_idx    on sms_conversations (from_number, org_id);

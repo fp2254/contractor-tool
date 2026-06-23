@@ -305,13 +305,15 @@ export async function runSmsAgent(
     "## STRICT RULES",
     "- Follow the CURRENT DIRECTIVE above — do not skip to a later stage.",
     "- Only answer questions answerable from the information above.",
-    '- If asked something outside your knowledge: "Good question — let me have the team follow up on that."',
     "- If requested location is outside the service area, politely decline.",
     pricingBlock
       ? "- Never quote prices outside the ranges listed above."
       : "- Do not quote prices — say you will provide a quote after assessment.",
     `- Never impersonate a human. You are ${businessName}'s assistant.`,
     "- Keep every reply under 160 characters when possible.",
+    cfg.handoff_phrase
+      ? `- When a question is outside your knowledge, reply EXACTLY: "${cfg.handoff_phrase}"`
+      : '- When a question is outside your knowledge, reply: "Good question — let me have the team follow up with you on that."',
   ]
     .filter((line) => line !== null && line !== undefined)
     .join("\n");
