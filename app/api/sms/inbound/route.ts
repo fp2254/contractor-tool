@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTwilioWebhook, sendSmsGraceful, emptyTwiml } from "@/lib/twilio";
 import { runSmsAgent } from "@/lib/ai/sms-agent";
+import { logActivity } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -228,32 +229,73 @@ export async function POST(req: Request) {
   // ── BOOKING DETECTED ────────────────────────────────────────────────────────
   if (result.booking && conv.lead_id) {
     const b = result.booking;
-    const requiresApproval = aiCfg?.require_booking_approval ?? false;
+    const requiresApproval: boolean = aiCfg?.require_booking_approval ?? true;
 
-    const bookingNote = [
-      requiresApproval ? "📅 AI Booking — Pending Your Approval" : "📅 AI Booking Confirmed",
-      b.job_type ? `Job: ${b.job_type}` : null,
-      b.date ? `Date: ${b.date}` : null,
-      b.time_window ? `Time: ${b.time_window}` : null,
-      requiresApproval ? "⚠️ Review and confirm this booking before it is finalized." : null,
+    // Load lead to get customer_id + name for job creation
+    const { data: lead } = await admin
+      .from("leads")
+      .select("name, converted_customer_id")
+      .eq("id", conv.lead_id)
+      .eq("org_id", orgId)
+      .maybeSingle();
+
+    const jobTitle = b.job_type || (lead?.name ? `Job for ${lead.name}` : "AI Booked Job");
+
+    // Create a job record — the primary durable booking artifact
+    // Status: "scheduled" when confirmed, "pending" when awaiting contractor approval
+    const jobStatus = requiresApproval ? "pending" : "scheduled";
+    const jobNotes = [
+      "Booked via AI SMS assistant.",
+      b.time_window ? `Requested time: ${b.time_window}` : null,
+      requiresApproval ? "⚠️ Pending contractor confirmation — review before finalizing." : null,
     ]
       .filter(Boolean)
       .join("\n");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updatePromises: Promise<unknown>[] = [
+    const { data: newJob } = await (admin as any)
+      .from("jobs")
+      .insert({
+        org_id: orgId,
+        customer_id: lead?.converted_customer_id ?? null,
+        title: jobTitle,
+        status: jobStatus,
+        scheduled_date: b.date ?? null,
+        notes: jobNotes,
+      })
+      .select("id")
+      .single();
+
+    // Add a note on the lead summarising the booking
+    const noteBody = [
+      requiresApproval
+        ? "📅 AI Booking — Awaiting Your Approval"
+        : "📅 AI Booking Confirmed",
+      b.job_type ? `Service: ${b.job_type}` : null,
+      b.date ? `Date: ${b.date}` : null,
+      b.time_window ? `Time: ${b.time_window}` : null,
+      newJob?.id ? `Job created: #${newJob.id.slice(0, 8)}` : null,
+      requiresApproval
+        ? "Go to Jobs to review and confirm this booking."
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sideEffects: Promise<unknown>[] = [
       (admin as any).from("notes").insert({
         org_id: orgId,
         entity_type: "lead",
         entity_id: conv.lead_id,
-        body: bookingNote,
+        body: noteBody,
         created_by: null,
       }),
     ];
 
     if (!requiresApproval) {
-      // Auto-confirm: set lead to scheduled and record scheduled date
-      updatePromises.push(
+      // Auto-confirm: advance lead status to scheduled
+      sideEffects.push(
         admin
           .from("leads")
           .update({ status: "scheduled" })
@@ -261,11 +303,25 @@ export async function POST(req: Request) {
           .eq("org_id", orgId)
       );
     }
-    // If require_booking_approval: lead stays at current status so contractor
-    // reviews the note and manually confirms. AI reply already told the customer
-    // the slot is provisionally held.
 
-    await Promise.allSettled(updatePromises);
+    await Promise.allSettled(sideEffects);
+
+    // In-app notification via activity log (visible on /app/activity)
+    logActivity({
+      orgId,
+      entityType: "lead",
+      entityId: conv.lead_id,
+      action: requiresApproval ? "sms_booking_pending" : "sms_booking_confirmed",
+      description: requiresApproval
+        ? `AI booked ${jobTitle} — awaiting your approval (${b.date ?? "date TBD"})`
+        : `AI confirmed booking: ${jobTitle} on ${b.date ?? "TBD"}`,
+      metadata: {
+        job_id: newJob?.id ?? null,
+        booking_date: b.date,
+        booking_time: b.time_window,
+        requires_approval: requiresApproval,
+      },
+    }).catch(() => {});
   }
 
   return emptyTwiml();

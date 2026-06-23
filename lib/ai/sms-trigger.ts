@@ -21,7 +21,7 @@ export async function maybeSendAutoReply(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: cfg } = await (admin as any)
       .from("org_ai_assistant_config")
-      .select("enabled, auto_reply, greeting_message")
+      .select("enabled, auto_reply")
       .eq("org_id", orgId)
       .maybeSingle();
 
@@ -42,11 +42,12 @@ export async function maybeSendAutoReply(
 
     // Normalize customer phone to E.164 (best-effort)
     const digits = customerPhone.replace(/\D/g, "");
-    const toNumber = digits.startsWith("1") && digits.length === 11
-      ? `+${digits}`
-      : digits.length === 10
-      ? `+1${digits}`
-      : customerPhone;
+    const toNumber =
+      digits.startsWith("1") && digits.length === 11
+        ? `+${digits}`
+        : digits.length === 10
+        ? `+1${digits}`
+        : customerPhone;
 
     if (OPT_OUT_KEYWORDS.test(toNumber)) return;
 
@@ -73,16 +74,19 @@ export async function maybeSendAutoReply(
 
     if (existingConv) return;
 
-    // Load business name
+    // Load business name for greeting
     const [{ data: org }, { data: orgSettings }] = await Promise.all([
       admin.from("orgs").select("name").eq("id", orgId).maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (admin as any).from("org_settings").select("dba_name").eq("org_id", orgId).maybeSingle(),
+      (admin as any)
+        .from("org_settings")
+        .select("dba_name")
+        .eq("org_id", orgId)
+        .maybeSingle(),
     ]);
     const businessName = orgSettings?.dba_name || org?.name || "us";
 
-    const greeting = cfg.greeting_message ||
-      `Hi! Thanks for reaching out to ${businessName}. What type of work are you looking for help with?`;
+    const greeting = `Hi! Thanks for reaching out to ${businessName}. What type of work are you looking to get done?`;
 
     // Create conversation row
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,7 +108,6 @@ export async function maybeSendAutoReply(
     const sent = await sendSmsGraceful(toNumber, fromNumber, greeting);
 
     if (sent) {
-      // Log the outbound message
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin as any).from("sms_messages").insert({
         conversation_id: conv.id,

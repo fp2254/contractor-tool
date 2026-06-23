@@ -1,7 +1,7 @@
 /**
  * AI SMS conversation engine.
- * Loads org config, builds context-aware system prompt including real schedule
- * availability, appends history, calls OpenAI.
+ * Loads org config (aligned to org_ai_assistant_config schema), builds context-
+ * aware system prompt with real schedule availability, calls OpenAI.
  * Returns structured reply with optional booking detection.
  */
 import { getOpenAIClient } from "@/lib/openai";
@@ -14,11 +14,6 @@ export interface SmsAgentResult {
     time_window: string | null;
     job_type: string | null;
   } | null;
-}
-
-export interface SmsMessage {
-  direction: "inbound" | "outbound";
-  body: string;
 }
 
 /** Max jobs per day before we consider a day "full". */
@@ -53,6 +48,7 @@ export async function runSmsAgent(
     { data: cfg },
     { data: org },
     { data: settings },
+    { data: presets },
     { data: history },
     { data: upcomingJobs },
   ] = await Promise.all([
@@ -66,16 +62,23 @@ export async function runSmsAgent(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from("org_settings")
-      .select("dba_name, phone, service_area_description")
+      .select("dba_name, phone")
       .eq("org_id", orgId)
       .maybeSingle(),
+    // Load active service presets so we can filter out disabled ones
+    admin
+      .from("service_presets")
+      .select("id, service_name, description, category")
+      .eq("org_id", orgId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
     admin
       .from("sms_messages")
       .select("direction, body")
       .eq("conversation_id", conversationId)
       .order("sent_at", { ascending: true })
       .limit(40),
-    // Pull upcoming scheduled jobs so we can compute real availability
+    // Real upcoming jobs for availability calculation
     admin
       .from("jobs")
       .select("scheduled_date")
@@ -88,24 +91,105 @@ export async function runSmsAgent(
   if (!cfg || !cfg.enabled) return null;
 
   const businessName = settings?.dba_name || org?.name || "the contractor";
-  const serviceArea =
-    cfg.service_area_description || settings?.service_area_description || null;
-  const handoffPhrase =
-    cfg.handoff_phrase || "Let me connect you with the team for that.";
-  const tone = cfg.tone || "friendly";
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 
-  // ── Compute available days from real schedule ─────────────────────────────
-  // Count jobs per day, then list days with capacity remaining.
+  // ── Service area (schema field: service_area) ──────────────────────────────
+  const serviceArea: string | null = cfg.service_area ?? null;
+
+  // ── Tone ──────────────────────────────────────────────────────────────────
+  const tone: string = cfg.tone ?? "casual";
+
+  // ── Business hours (schema: {days:[...], open:"HH:MM", close:"HH:MM"}) ───
+  let hoursBlock = "";
+  if (cfg.business_hours && typeof cfg.business_hours === "object") {
+    const h = cfg.business_hours as {
+      days?: string[];
+      open?: string;
+      close?: string;
+    };
+    if (h.days && h.open && h.close) {
+      const dayNames = (h.days as string[]).join(", ");
+      hoursBlock = `${dayNames}: ${h.open}–${h.close}`;
+    }
+  }
+
+  // ── Services (active presets minus disabled_service_ids) ──────────────────
+  const disabledIds: string[] = Array.isArray(cfg.disabled_service_ids)
+    ? (cfg.disabled_service_ids as string[])
+    : [];
+  const enabledPresets = (presets ?? []).filter((p) => !disabledIds.includes(p.id));
+  const servicesBlock =
+    enabledPresets.length > 0
+      ? enabledPresets
+          .map(
+            (p) =>
+              `- ${p.service_name}${p.description ? `: ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}`
+          )
+          .join("\n")
+      : "General contracting services.";
+
+  // ── Pricing ranges (schema: [{preset_id, label, min, max}]) ──────────────
+  let pricingBlock = "";
+  if (cfg.show_pricing && Array.isArray(cfg.pricing_ranges) && cfg.pricing_ranges.length > 0) {
+    const ranges = cfg.pricing_ranges as {
+      preset_id?: string;
+      label?: string;
+      min?: number;
+      max?: number;
+    }[];
+    pricingBlock = ranges
+      .filter((r) => r.label)
+      .map((r) => {
+        const rangeStr =
+          r.min != null && r.max != null
+            ? `$${r.min}–$${r.max}`
+            : r.min != null
+            ? `from $${r.min}`
+            : r.max != null
+            ? `up to $${r.max}`
+            : "";
+        return `- ${r.label}${rangeStr ? `: ${rangeStr}` : ""}`;
+      })
+      .join("\n");
+  }
+
+  // ── FAQs (schema: [{q, a}]) ───────────────────────────────────────────────
+  let faqBlock = "";
+  if (Array.isArray(cfg.faqs) && cfg.faqs.length > 0) {
+    const faqs = cfg.faqs as { q?: string; a?: string }[];
+    faqBlock = faqs
+      .filter((f) => f.q && f.a)
+      .map((f) => `Q: ${f.q}\nA: ${f.a}`)
+      .join("\n\n");
+  }
+
+  // ── Qualifier questions (schema: string[]) ────────────────────────────────
+  let qualifierBlock = "";
+  if (Array.isArray(cfg.qualifier_questions) && cfg.qualifier_questions.length > 0) {
+    qualifierBlock = (cfg.qualifier_questions as string[])
+      .map((q, i) => `${i + 1}. ${q}`)
+      .join("\n");
+  }
+
+  // ── Compute available days from real schedule data ─────────────────────────
   const jobsPerDay: Record<string, number> = {};
   for (const j of upcomingJobs ?? []) {
     if (!j.scheduled_date) continue;
     jobsPerDay[j.scheduled_date] = (jobsPerDay[j.scheduled_date] ?? 0) + 1;
+  }
+
+  // Build business_hours days set for schedule filtering
+  const workDayNums = new Set<number>();
+  const dayMap: Record<string, number> = {
+    sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+  };
+  if (cfg.business_hours?.days && Array.isArray(cfg.business_hours.days)) {
+    for (const d of cfg.business_hours.days as string[]) {
+      const n = dayMap[d.toLowerCase()];
+      if (n != null) workDayNums.add(n);
+    }
+  } else {
+    // Default Mon-Fri
+    [1, 2, 3, 4, 5].forEach((n) => workDayNums.add(n));
   }
 
   const availableDays: string[] = [];
@@ -113,80 +197,24 @@ export async function runSmsAgent(
   cursor.setDate(cursor.getDate() + 1); // start tomorrow
   for (let i = 0; i < SCHEDULE_HORIZON_DAYS && availableDays.length < 6; i++) {
     const iso = cursor.toISOString().slice(0, 10);
-    const dow = cursor.getDay();
-    // Skip Sunday (0) by default unless business hours say otherwise
-    if (dow !== 0 && (jobsPerDay[iso] ?? 0) < MAX_JOBS_PER_DAY) {
-      availableDays.push(formatDateLabel(iso) + ` (${iso})`);
+    const dow = cursor.getUTCDay();
+    if (workDayNums.has(dow) && (jobsPerDay[iso] ?? 0) < MAX_JOBS_PER_DAY) {
+      availableDays.push(`${formatDateLabel(iso)} (${iso})`);
     }
     cursor.setDate(cursor.getDate() + 1);
   }
 
   const scheduleBlock =
     availableDays.length > 0
-      ? `The following dates have open availability:\n${availableDays.map((d) => `- ${d}`).join("\n")}\nOffer only these dates when suggesting appointment times.`
-      : "No confirmed availability in the next two weeks — ask the customer for their preferred date and let them know you'll confirm.";
+      ? `Available appointment days:\n${availableDays.map((d) => `- ${d}`).join("\n")}\nOnly offer dates from this list when proposing appointments.`
+      : "Schedule is full for the next two weeks — ask the customer for preferred date and note you will confirm availability.";
 
-  // ── Services block ────────────────────────────────────────────────────────
-  let servicesBlock = "";
-  if (cfg.services && Array.isArray(cfg.services)) {
-    const enabled = cfg.services.filter(
-      (s: { enabled?: boolean }) => s.enabled !== false
-    );
-    if (enabled.length > 0) {
-      servicesBlock = enabled
-        .map(
-          (s: { name: string; description?: string }) =>
-            `- ${s.name}${s.description ? `: ${s.description}` : ""}`
-        )
-        .join("\n");
-    }
-  }
-
-  // ── FAQ block ─────────────────────────────────────────────────────────────
-  let faqBlock = "";
-  if (cfg.faqs && Array.isArray(cfg.faqs) && cfg.faqs.length > 0) {
-    faqBlock = cfg.faqs
-      .map((f: { question: string; answer: string }) => `Q: ${f.question}\nA: ${f.answer}`)
-      .join("\n\n");
-  }
-
-  // ── Qualifier questions ───────────────────────────────────────────────────
-  let qualifierBlock = "";
-  if (
-    cfg.qualifier_questions &&
-    Array.isArray(cfg.qualifier_questions) &&
-    cfg.qualifier_questions.length > 0
-  ) {
-    qualifierBlock = cfg.qualifier_questions
-      .map((q: string, i: number) => `${i + 1}. ${q}`)
-      .join("\n");
-  }
-
-  // ── Business hours block ──────────────────────────────────────────────────
-  let hoursBlock = "";
-  if (cfg.business_hours && typeof cfg.business_hours === "object") {
-    const h = cfg.business_hours as Record<
-      string,
-      { open: string; close: string; closed?: boolean }
-    >;
-    hoursBlock = Object.entries(h)
-      .map(([day, val]) =>
-        val.closed ? `${day}: Closed` : `${day}: ${val.open}–${val.close}`
-      )
-      .join(", ");
-  }
-
-  // ── Pricing ranges ────────────────────────────────────────────────────────
-  let pricingBlock = "";
-  if (
-    cfg.pricing_ranges &&
-    Array.isArray(cfg.pricing_ranges) &&
-    cfg.pricing_ranges.length > 0
-  ) {
-    pricingBlock = cfg.pricing_ranges
-      .map((p: { service: string; range: string }) => `- ${p.service}: ${p.range}`)
-      .join("\n");
-  }
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   const systemPrompt = `You are ${businessName}'s SMS scheduling assistant. Your job is to qualify leads, answer questions, and book appointments via text.
 
@@ -200,42 +228,42 @@ ${serviceArea ? `Service area: ${serviceArea}` : ""}
 ${hoursBlock ? `Business hours: ${hoursBlock}` : ""}
 
 ## SERVICES OFFERED
-${servicesBlock || "General contracting services."}
+${servicesBlock}
 
-## PRICING RANGES
-${pricingBlock || "Pricing varies by job — we give exact quotes after assessment."}
-
-## SCHEDULE AVAILABILITY (real data from calendar)
+${pricingBlock ? `## PRICING\n${pricingBlock}\n` : ""}
+## SCHEDULE AVAILABILITY (real-time calendar data)
 ${scheduleBlock}
 
 ## FREQUENTLY ASKED QUESTIONS
-${faqBlock || "(none on file — defer all specific questions to the owner)"}
+${faqBlock || "(No FAQs on file — defer specific questions to the owner)"}
 
 ## CONVERSATION FLOW
-Ask qualifying questions ONE AT A TIME in this order (skip questions already answered):
-${qualifierBlock || "1. What type of work do you need done?\n2. What is your address or city?\n3. When are you hoping to get this done?"}
+Ask qualifying questions ONE AT A TIME in this order (skip already answered):
+${qualifierBlock || "1. What type of work do you need done?\n2. What is your address or city?\n3. When are you hoping to get this scheduled?"}
 
-Once all qualifying questions are answered, propose one or two specific available dates from the schedule above.
+Once all qualifying questions are answered, propose one or two specific dates from the schedule.
 
 ## BOOKING CONFIRMATION
-When the customer explicitly agrees to a specific date and time (e.g., "Yes, Thursday works" or "Let's do the 26th at 9am"), confirm it and append this JSON block at the very END of your reply (the customer never sees this):
+When the customer explicitly agrees to a specific date and time (e.g. "Yes, Thursday works"), confirm it and append this JSON at the very END of your reply (the customer never sees this):
 BOOKING_JSON:{"date":"YYYY-MM-DD","time_window":"9am-12pm","job_type":"short description"}
 
-Only append BOOKING_JSON when the customer has clearly and explicitly agreed to a slot. Never append it speculatively.
+Only append BOOKING_JSON when the customer has clearly agreed to a slot. Never append it speculatively.
 
 ## STRICT RULES
-- If the question is outside the FAQ or service scope, say: "${handoffPhrase}"
-- If the requested location is outside the service area, politely decline.
-- Never make up prices outside the ranges listed above.
-- Never confirm dates outside the availability list above.
-- Never impersonate a human. You are ${businessName}'s scheduling assistant.
-- If the customer texts STOP, UNSUBSCRIBE, QUIT, CANCEL, or END, reply only: "You have been unsubscribed. Reply START to re-subscribe."
+- Only answer questions that can be answered from the information above.
+- If a question is outside these topics, reply: "Good question — let me have the team follow up with you on that."
+- If the requested location is outside the service area, politely decline and say you don't cover that area.
+${pricingBlock ? "- Never quote prices outside the ranges listed above." : "- Do not quote prices — say you will provide a quote after assessment."}
+- Never impersonate a human. You are ${businessName}'s assistant.
 - Keep every reply under 160 characters when possible.`;
 
-  const msgs: { role: "system" | "user" | "assistant"; content: string }[] = [
+  type MsgRole = "system" | "user" | "assistant";
+  type SmsHistoryMsg = { direction: "inbound" | "outbound"; body: string };
+
+  const msgs: { role: MsgRole; content: string }[] = [
     { role: "system", content: systemPrompt },
-    ...((history ?? []) as SmsMessage[]).map((m) => ({
-      role: m.direction === "outbound" ? ("assistant" as const) : ("user" as const),
+    ...((history ?? []) as SmsHistoryMsg[]).map((m) => ({
+      role: (m.direction === "outbound" ? "assistant" : "user") as MsgRole,
       content: m.body,
     })),
     { role: "user", content: inboundText },
@@ -271,7 +299,7 @@ Only append BOOKING_JSON when the customer has clearly and explicitly agreed to 
     } catch {
       /* ignore parse errors */
     }
-    // Remove the JSON signal from the customer-facing reply
+    // Strip the JSON signal from the customer-facing reply
     reply = reply.replace(/\s*BOOKING_JSON:\{[^}]+\}/, "").trim();
   }
 
