@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- AI SMS Bot — conversations, messages, opt-outs
+-- AI SMS Bot — conversations, messages, opt-outs, pending bookings
 -- Run AFTER migration_ai_assistant_config.sql
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -56,4 +56,34 @@ create table if not exists opted_out_numbers (
 
 alter table opted_out_numbers enable row level security;
 create policy "opted_out_numbers_select" on opted_out_numbers for select
+  using (org_id in (select om.org_id from org_members om where om.user_id = auth.uid()));
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Durable pending-confirmation state for AI-detected bookings.
+-- Contractor sees these in the activity log (/app/activity) and on the lead
+-- detail page. When they confirm: update status → 'confirmed' and create a job.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists sms_pending_bookings (
+  id              uuid primary key default gen_random_uuid(),
+  org_id          uuid not null references orgs(id) on delete cascade,
+  conversation_id uuid references sms_conversations(id) on delete set null,
+  lead_id         uuid references leads(id) on delete set null,
+  job_id          uuid references jobs(id) on delete set null,  -- set when promoted
+  job_type        text,
+  booking_date    date,
+  booking_time    text,   -- e.g. "9am-12pm"
+  status          text not null default 'pending_approval'
+                    check (status in ('pending_approval', 'confirmed', 'cancelled')),
+  created_at      timestamptz default now(),
+  updated_at      timestamptz default now()
+);
+
+create index if not exists sms_pending_bookings_org_idx  on sms_pending_bookings (org_id, created_at desc);
+create index if not exists sms_pending_bookings_lead_idx on sms_pending_bookings (lead_id);
+
+alter table sms_pending_bookings enable row level security;
+create policy "sms_pending_bookings_select" on sms_pending_bookings for select
+  using (org_id in (select om.org_id from org_members om where om.user_id = auth.uid()));
+create policy "sms_pending_bookings_update" on sms_pending_bookings for update
   using (org_id in (select om.org_id from org_members om where om.user_id = auth.uid()));

@@ -22,8 +22,8 @@ export async function POST(req: Request) {
   const callerNumber = params.From ?? "";
   const twilioNumber = params.To ?? "";
 
-  // Only act on missed/failed calls
-  if (!["no-answer", "busy", "failed"].includes(callStatus)) {
+  // Only act on missed calls (no-answer or busy — not "failed" which is a network error)
+  if (!["no-answer", "busy"].includes(callStatus)) {
     return NextResponse.json({ ok: true });
   }
 
