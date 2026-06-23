@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAddonStatus } from "@/lib/addons";
+import { getAddonStatus, ADDON_DISPLAY_NAMES } from "@/lib/addons";
 import { PhoneCallLog, ProvisionButton, GetPhoneButton, ActivationPendingBanner, CopyNumberButton, BillingCard } from "./PhoneClient";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function PhonePage({
             priceMonthly={addon.priceMonthly}
             status={addon.status}
             hasSubscriptionId={!!addon.externalSubscriptionId}
-            addonName="Phone & AI Receptionist"
+            addonName={ADDON_DISPLAY_NAMES["phone_ai"]}
           />
         </div>
       </div>
@@ -217,7 +217,7 @@ export default async function PhonePage({
           priceMonthly={addon.priceMonthly}
           status={addon.status}
           hasSubscriptionId={!!addon.externalSubscriptionId}
-          addonName="Phone & AI Receptionist"
+          addonName={ADDON_DISPLAY_NAMES["phone_ai"]}
         />
       </div>
     );
@@ -288,7 +288,7 @@ export default async function PhonePage({
         priceMonthly={addon.priceMonthly}
         status={addon.status}
         hasSubscriptionId={!!addon.externalSubscriptionId}
-        addonName="Phone & AI Receptionist"
+        addonName={ADDON_DISPLAY_NAMES["phone_ai"]}
       />
 
       {/* Call log */}
