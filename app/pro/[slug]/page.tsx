@@ -8,6 +8,7 @@ import { ClassicContractorTemplate } from "@/components/templates/ClassicContrac
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
 import type { ContractorProfile, ServiceEntry, SectionsConfig, CustomBlock } from "./types";
+import { OwnerDebugPanel } from "@/components/OwnerDebugPanel";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -292,14 +293,16 @@ export default async function Page({ params }: Props) {
     </div>
   );
 
+  const debugPanel = isOwner ? <OwnerDebugPanel profile={profile} /> : null;
+
   if (profile.selectedTemplate === "classic") {
-    return <>{isOwner && <BackBar />}<ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
   if (profile.selectedTemplate === "modern") {
-    return <>{isOwner && <BackBar />}<ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
   if (profile.selectedTemplate === "trust") {
-    return <>{isOwner && <BackBar />}<TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}</>;
+    return <>{isOwner && <BackBar />}<TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
-  return <>{isOwner && <BackBar />}<ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}</>;
+  return <>{isOwner && <BackBar />}<ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
 }
