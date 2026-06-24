@@ -361,12 +361,12 @@ export function PublicProfileEditor() {
               <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
                 <span className="text-[11px] text-white/50">Public profile page</span>
                 <a
-                  href={`/contractor/${profile.slug}`}
+                  href={`/pro/${profile.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[11px] font-semibold text-white/80 hover:text-white underline underline-offset-2"
                 >
-                  /contractor/{profile.slug} ↗
+                  /pro/{profile.slug} ↗
                 </a>
               </div>
             )}
@@ -395,11 +395,11 @@ export function PublicProfileEditor() {
           {profile.slug && (
             <div className="px-4 py-3 bg-gray-50 flex items-center gap-2">
               <span className="text-xs text-gray-400 truncate flex-1">
-                /contractor/<span className="font-semibold text-slate-600">{profile.slug}</span>
+                /pro/<span className="font-semibold text-slate-600">{profile.slug}</span>
               </span>
               <button
                 onClick={() => {
-                  const url = `${typeof window !== "undefined" ? window.location.origin : ""}/contractor/${profile.slug}`;
+                  const url = `${typeof window !== "undefined" ? window.location.origin : ""}/pro/${profile.slug}`;
                   navigator.clipboard.writeText(url);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2500);
@@ -586,7 +586,7 @@ export function PublicProfileEditor() {
               "border-gray-200"
             }`}>
               <span className="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
-                /contractor/
+                /pro/
               </span>
               <input
                 value={profile.slug}
