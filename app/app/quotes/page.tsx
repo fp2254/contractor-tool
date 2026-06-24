@@ -39,8 +39,18 @@ export default async function QuotesPage({ searchParams }: PageProps) {
     quotesQuery = quotesQuery.eq("assigned_to", userId);
   }
 
-  const [{ data: quotes }, { data: customers }, { data: openedNotes }, { data: archivedNotes }] = await Promise.all([
-    quotesQuery,
+  // Fetch quotes — fall back to a query without assigned_to if that column doesn't exist yet
+  let { data: quotes } = await quotesQuery;
+  if (!quotes) {
+    let fallback = admin
+      .from("quotes")
+      .select("id,status,total_amount,created_at,customer_id")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false });
+    ({ data: quotes } = await fallback);
+  }
+
+  const [{ data: customers }, { data: openedNotes }, { data: archivedNotes }] = await Promise.all([
     admin.from("customers").select("id,first_name,last_name,company_name").eq("org_id", orgId!),
     admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "quote").eq("body", "__opened__"),
     admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "quote").eq("body", "__archived__"),

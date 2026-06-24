@@ -76,8 +76,17 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
     invoicesQuery = invoicesQuery.eq("assigned_to", userId);
   }
 
-  const [{ data: invoices }, { data: customers }, { data: archivedNotes }, { data: openedNotes }] = await Promise.all([
-    invoicesQuery,
+  // Fetch invoices — fall back to a query without assigned_to if that column doesn't exist yet
+  let { data: invoices } = await invoicesQuery;
+  if (!invoices) {
+    ({ data: invoices } = await admin
+      .from("invoices")
+      .select("id,status,total_amount,due_date,invoice_number,customer_id")
+      .eq("org_id", orgId!)
+      .order("created_at", { ascending: false }));
+  }
+
+  const [{ data: customers }, { data: archivedNotes }, { data: openedNotes }] = await Promise.all([
     admin.from("customers").select("id,first_name,last_name,company_name").eq("org_id", orgId!),
     admin.from("notes").select("entity_id").eq("org_id",orgId!).eq("entity_type","invoice").eq("body","__archived__"),
     admin.from("notes").select("entity_id").eq("org_id",orgId!).eq("entity_type","invoice").eq("body","__opened__"),
