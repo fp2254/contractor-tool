@@ -5,6 +5,7 @@ import { isPlatformAdmin } from "@/lib/admin";
 import { getUserOrgRole } from "@/lib/orgRole";
 import { ensureUserOrg } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const MENU_ITEMS = [
   // Daily work
@@ -115,6 +116,8 @@ export default async function MorePage() {
           <span className="text-[10px] text-purple-400">{showcaseSlug ? `/showcase/${showcaseSlug}` : "Set up first"}</span>
         </Link>
       </div>
+
+      <InstallPrompt />
 
       <div className="grid grid-cols-2 gap-3">
         {MENU_ITEMS.map((item) => (
