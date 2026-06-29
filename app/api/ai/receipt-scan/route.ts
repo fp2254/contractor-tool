@@ -68,9 +68,10 @@ export async function POST(req: Request) {
     });
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(cleaned);
     } catch {
       return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
     }
