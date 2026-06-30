@@ -13,7 +13,6 @@ import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection
 import { ShareCard } from "@/components/ShareCard";
 import { WarrantyCard } from "@/components/WarrantyCard";
 import { SquarePaymentButton } from "@/components/SquarePaymentButton";
-import { SendEmailButton } from "@/components/SendEmailButton";
 import { PortalLinkCard } from "@/components/PortalLinkCard";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -278,19 +277,17 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         </div>
       )}
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase">Send Invoice</p>
-        <SendEmailButton
-          apiPath={`/api/invoices/${id}/send`}
-          label="Send Invoice by Email"
-          customerEmail={customer?.email ?? null}
-        />
-        {!customer?.email && (
-          <p className="text-xs text-gray-400 text-center">
-            Add an email address to this customer to send by email.
-          </p>
-        )}
-      </div>
+      <ShareCard
+        type="invoice"
+        customerName={customerName}
+        customerPhone={customer?.phone ?? null}
+        customerEmail={customer?.email ?? null}
+        amount={Number(invoice.total_amount ?? 0)}
+        customerId={invoice.customer_id ?? ""}
+        portalToken={null}
+        orgName={orgName}
+        entityNumber={invoice.invoice_number ?? undefined}
+      />
 
       {/* Payment options preview */}
       {Object.keys(paymentLinks).length > 0 ? (
