@@ -150,8 +150,8 @@ export default async function PortalPage({
 
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-3">
 
-        {/* Invoices — shown first, most actionable */}
-        {visibleInvoices.length > 0 && (
+        {/* Invoices — hidden when filtering to a specific quote */}
+        {!filterQuote && visibleInvoices.length > 0 && (
           <>
             {!filterInvoice && !filterQuote && (
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 pb-1">

@@ -415,6 +415,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         portalToken={activeToken?.token ?? null}
         orgName={orgName}
         entityNumber={`Q-${id.slice(0, 8).toUpperCase()}`}
+        entityId={id}
       />
 
       <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
