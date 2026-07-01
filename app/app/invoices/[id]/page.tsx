@@ -287,6 +287,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         portalToken={null}
         orgName={orgName}
         entityNumber={invoice.invoice_number ?? undefined}
+        entityId={id}
       />
 
       {/* Payment options preview */}

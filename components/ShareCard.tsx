@@ -12,6 +12,7 @@ interface ShareCardProps {
   portalToken: string | null;
   orgName: string;
   entityNumber?: string;
+  entityId?: string;
 }
 
 export function ShareCard({
@@ -24,6 +25,7 @@ export function ShareCard({
   portalToken: initialPortalToken,
   orgName,
   entityNumber,
+  entityId,
 }: ShareCardProps) {
   const [portalToken, setPortalToken] = useState<string | null>(initialPortalToken);
   const [textLoading, setTextLoading] = useState(false);
@@ -34,7 +36,12 @@ export function ShareCard({
   const amountStr = `$${Number(amount).toLocaleString()}`;
 
   function buildPortalUrl(token: string) {
-    return `${typeof window !== "undefined" ? window.location.origin : ""}/portal/${token}`;
+    const base = `${typeof window !== "undefined" ? window.location.origin : ""}/portal/${token}`;
+    if (entityId) {
+      const param = type === "invoice" ? "invoice" : "quote";
+      return `${base}?${param}=${entityId}`;
+    }
+    return base;
   }
 
   function buildSmsMessage(token: string | null) {
