@@ -51,8 +51,8 @@ function fmtDate(d: string | null) {
 
 function fmtMoney(n: number | null) {
   if (!n) return null;
-  if (n >= 1000) return `$\${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
-  return `$\${n.toLocaleString()}`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
+  return `$${n.toLocaleString()}`;
 }
 
 function groupByMonth(projects: Project[]) {
@@ -71,8 +71,8 @@ function groupByMonth(projects: Project[]) {
 /** Detect "before" photo index from captions, fall back to first photo */
 function detectBeforeAfter(photos: Photo[]): { before: Photo; after: Photo } | null {
   if (photos.length < 2) return null;
-  const bIdx = photos.findIndex(p => /\\bbefore\\b/i.test(p.caption));
-  const aIdx = photos.findIndex(p => /\\bafter\\b/i.test(p.caption));
+  const bIdx = photos.findIndex(p => /\bbefore\b/i.test(p.caption));
+  const aIdx = photos.findIndex(p => /\bafter\b/i.test(p.caption));
   if (bIdx !== -1 && aIdx !== -1 && bIdx !== aIdx) {
     return { before: photos[bIdx], after: photos[aIdx] };
   }
@@ -121,11 +121,11 @@ function BeforeAfterSlider({ before, after }: { before: Photo; after: Photo }) {
       {/* After (bottom, full width) */}
       <img src={after.url} alt="After" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
       {/* Before (top, clipped) */}
-      <div className="absolute inset-0 overflow-hidden border-r-[4px] border-black" style={{ width: `\${pos}%` }}>
-        <img src={before.url} alt="Before" className="absolute inset-0 w-full h-full object-cover" style={{ width: containerRef.current ? `\${containerRef.current.offsetWidth}px` : "100%" }} draggable={false} />
+      <div className="absolute inset-0 overflow-hidden border-r-[4px] border-black" style={{ width: `${pos}%` }}>
+        <img src={before.url} alt="Before" className="absolute inset-0 w-full h-full object-cover" style={{ width: containerRef.current ? `${containerRef.current.offsetWidth}px` : "100%" }} draggable={false} />
       </div>
       {/* Divider line / Handle */}
-      <div className="absolute top-0 bottom-0 w-1 bg-yellow-400" style={{ left: `\${pos}%`, transform: "translateX(-50%)" }}>
+      <div className="absolute top-0 bottom-0 w-1 bg-yellow-400" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-yellow-400 border-[3px] border-black shadow-[3px_3px_0_0_#000] flex items-center justify-center cursor-ew-resize">
           <ArrowLeftRight size={18} className="text-black font-black" />
         </div>
@@ -142,8 +142,8 @@ function ShareButton({ name, slug }: { name: string; slug: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
-    const url = `\${window.location.origin}/showcase/\${slug}`;
-    const text = `Check out \${name}'s project portfolio on TradeBase`;
+    const url = `${window.location.origin}/showcase/${slug}`;
+    const text = `Check out ${name}'s project portfolio on TradeBase`;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: text, url });
@@ -176,7 +176,7 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
     if (!confirm("Remove this project from your showcase?")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/projects/api/\${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/projects/api/${id}`, { method: "DELETE" });
       if (res.ok) setProjects(ps => ps.filter(p => p.id !== id));
     } finally {
       setDeletingId(null);
@@ -247,7 +247,7 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
               </button>
             )}
             <ShareButton name={profile.name} slug={profile.slug} />
-            <a href={`/pro/\${profile.slug}`}
+            <a href={`/pro/${profile.slug}`}
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white bg-black border-[3px] border-black shadow-[3px_3px_0_0_#FDE047] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[2px_2px_0_0_#FDE047] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none transition-all">
               <ExternalLink size={14} /> HQ
             </a>
@@ -295,7 +295,7 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
           <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
             {TABS.map(t => (
               <button key={t} onClick={() => setActiveTab(t)}
-                className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest border-[3px] border-black transition-all whitespace-nowrap \${
+                className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest border-[3px] border-black transition-all whitespace-nowrap ${
                   activeTab === t 
                     ? "bg-lime-400 text-black shadow-[4px_4px_0_0_#000] translate-y-[-2px]" 
                     : "bg-white text-gray-500 hover:bg-gray-50 hover:shadow-[2px_2px_0_0_#000] shadow-[0_0_0_0_#000]"
