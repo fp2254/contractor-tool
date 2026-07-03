@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import {
   MapPin, CheckCircle, DollarSign,
   Briefcase, ExternalLink, Camera, Tag, Share2, Check,
-  ArrowLeftRight, Clock, Pencil, Trash2, X,
+  ArrowLeftRight, Clock, Pencil, Trash2, X, Star, Gamepad2, Award, Zap
 } from "lucide-react";
 
 type Photo = { url: string; caption: string };
@@ -41,18 +41,18 @@ type Props = {
   isOwner?: boolean;
 };
 
-const TABS = ["Timeline", "Projects", "Photos"] as const;
+const TABS = ["TIMELINE", "MISSIONS", "INTEL"] as const;
 type Tab = typeof TABS[number];
 
 function fmtDate(d: string | null) {
   if (!d) return "";
-  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }).toUpperCase();
 }
 
 function fmtMoney(n: number | null) {
   if (!n) return null;
-  if (n >= 1000) return `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
-  return `$${n.toLocaleString()}`;
+  if (n >= 1000) return `$\${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
+  return `$\${n.toLocaleString()}`;
 }
 
 function groupByMonth(projects: Project[]) {
@@ -60,8 +60,8 @@ function groupByMonth(projects: Project[]) {
   const seen = new Map<string, Project[]>();
   for (const p of projects) {
     const key = p.completed_at
-      ? new Date(p.completed_at + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })
-      : "In Progress";
+      ? new Date(p.completed_at + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase()
+      : "IN PROGRESS";
     if (!seen.has(key)) { seen.set(key, []); groups.push({ label: key, items: seen.get(key)! }); }
     seen.get(key)!.push(p);
   }
@@ -71,18 +71,17 @@ function groupByMonth(projects: Project[]) {
 /** Detect "before" photo index from captions, fall back to first photo */
 function detectBeforeAfter(photos: Photo[]): { before: Photo; after: Photo } | null {
   if (photos.length < 2) return null;
-  const bIdx = photos.findIndex(p => /\bbefore\b/i.test(p.caption));
-  const aIdx = photos.findIndex(p => /\bafter\b/i.test(p.caption));
+  const bIdx = photos.findIndex(p => /\\bbefore\\b/i.test(p.caption));
+  const aIdx = photos.findIndex(p => /\\bafter\\b/i.test(p.caption));
   if (bIdx !== -1 && aIdx !== -1 && bIdx !== aIdx) {
     return { before: photos[bIdx], after: photos[aIdx] };
   }
-  // Default: first = before, last = after
   return { before: photos[0], after: photos[photos.length - 1] };
 }
 
 const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }> = {
-  completed:   { label: "Completed",   color: "#16A34A", bg: "#DCFCE7" },
-  in_progress: { label: "In Progress", color: "#D97706", bg: "#FEF3C7" },
+  completed:   { label: "COMPLETED",   color: "#000", bg: "#4ADE80" },
+  in_progress: { label: "IN PROGRESS", color: "#000", bg: "#FDE047" },
 };
 
 // ── Before/After slider component ──────────────────────────────────────────
@@ -117,24 +116,23 @@ function BeforeAfterSlider({ before, after }: { before: Photo; after: Photo }) {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full select-none overflow-hidden rounded-t-2xl" style={{ height: 220 }}
+    <div ref={containerRef} className="relative w-full select-none overflow-hidden rounded-t-[14px] border-b-[4px] border-black" style={{ height: 220 }}
       onMouseDown={onMouseDown} onTouchStart={onTouchStart}>
       {/* After (bottom, full width) */}
       <img src={after.url} alt="After" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
       {/* Before (top, clipped) */}
-      <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
-        <img src={before.url} alt="Before" className="absolute inset-0 w-full h-full object-cover" style={{ width: containerRef.current ? `${containerRef.current.offsetWidth}px` : "100%" }} draggable={false} />
+      <div className="absolute inset-0 overflow-hidden border-r-[4px] border-black" style={{ width: `\${pos}%` }}>
+        <img src={before.url} alt="Before" className="absolute inset-0 w-full h-full object-cover" style={{ width: containerRef.current ? `\${containerRef.current.offsetWidth}px` : "100%" }} draggable={false} />
       </div>
-      {/* Divider line */}
-      <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
-        {/* Handle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center cursor-ew-resize">
-          <ArrowLeftRight size={14} className="text-gray-500" />
+      {/* Divider line / Handle */}
+      <div className="absolute top-0 bottom-0 w-1 bg-yellow-400" style={{ left: `\${pos}%`, transform: "translateX(-50%)" }}>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-yellow-400 border-[3px] border-black shadow-[3px_3px_0_0_#000] flex items-center justify-center cursor-ew-resize">
+          <ArrowLeftRight size={18} className="text-black font-black" />
         </div>
       </div>
       {/* Labels */}
-      <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/50 rounded-full px-2 py-0.5 backdrop-blur-sm">BEFORE</div>
-      <div className="absolute bottom-2 right-2 text-[10px] font-bold text-white bg-black/50 rounded-full px-2 py-0.5 backdrop-blur-sm">AFTER</div>
+      <div className="absolute bottom-3 left-3 text-[10px] font-black text-black bg-yellow-400 border-[2px] border-black shadow-[2px_2px_0_0_#000] px-3 py-1 uppercase tracking-widest">BEFORE</div>
+      <div className="absolute bottom-3 right-3 text-[10px] font-black text-white bg-black border-[2px] border-black shadow-[2px_2px_0_0_#000] px-3 py-1 uppercase tracking-widest">AFTER</div>
     </div>
   );
 }
@@ -144,14 +142,14 @@ function ShareButton({ name, slug }: { name: string; slug: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
-    const url = `${window.location.origin}/showcase/${slug}`;
-    const text = `Check out ${name}'s project portfolio on TradeBase`;
+    const url = `\${window.location.origin}/showcase/\${slug}`;
+    const text = `Check out \${name}'s project portfolio on TradeBase`;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: text, url });
         return;
       } catch {
-        // user cancelled or not supported — fall through
+        // user cancelled or not supported
       }
     }
     await navigator.clipboard.writeText(url);
@@ -161,16 +159,15 @@ function ShareButton({ name, slug }: { name: string; slug: string }) {
 
   return (
     <button onClick={handleShare}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm transition-colors"
-      style={{ backgroundColor: copied ? "#16A34A" : "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
-      {copied ? <><Check size={11} /> Copied!</> : <><Share2 size={11} /> Share</>}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-cyan-300 border-[3px] border-black shadow-[3px_3px_0_0_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[2px_2px_0_0_#000] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none transition-all">
+      {copied ? <><Check size={14} /> Copied!</> : <><Share2 size={14} /> Share</>}
     </button>
   );
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function ShowcaseClient({ profile, stats, projects: initialProjects, isOwner = false }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("Timeline");
+  const [activeTab, setActiveTab] = useState<Tab>("TIMELINE");
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [managing, setManaging] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -179,7 +176,7 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
     if (!confirm("Remove this project from your showcase?")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/projects/api/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/projects/api/\${id}`, { method: "DELETE" });
       if (res.ok) setProjects(ps => ps.filter(p => p.id !== id));
     } finally {
       setDeletingId(null);
@@ -191,7 +188,6 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
     [projects]
   );
 
-  // Use first real project photo as banner (no external Unsplash dependency)
   const bannerUrl = useMemo(() => allPhotos[0]?.url ?? null, [allPhotos]);
 
   const tagCounts = useMemo(() => {
@@ -205,101 +201,106 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
   const initials = profile.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-pink-400 selection:text-black">
       {/* ── Profile header ── */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white border-b-[4px] border-black shadow-[0_8px_0_0_rgba(0,0,0,1)] relative z-10">
         {/* Banner */}
-        <div className="h-56 bg-gradient-to-br from-[#1B3A6B] to-[#0f2347] relative overflow-hidden">
+        <div className="h-64 bg-black relative overflow-hidden flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-500 opacity-80" />
           {bannerUrl && (
-            <img src={bannerUrl} alt="banner"
-              className="absolute inset-0 w-full h-full object-cover opacity-60" />
+            <img src={bannerUrl} alt="banner" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60 grayscale" />
           )}
+          
+          <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+             <div className="w-[120%] h-[120%] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8cGF0aCBkPSJNMCAwbDhfOFpNOCAwTDBfOHoiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')]"></div>
+          </div>
+
           {isOwner && (
             <a href="/app/more"
-              className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm z-10"
-              style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}>
-              ← Back
+              className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-white border-[3px] border-black shadow-[3px_3px_0_0_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[2px_2px_0_0_#000] transition-all z-20">
+              ← BACK TO HQ
             </a>
           )}
-          <div className="absolute -bottom-10 left-6">
+          
+          <div className="absolute -bottom-12 left-6 z-20">
             {profile.photo_url ? (
               <img src={profile.photo_url} alt={profile.name}
-                className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover bg-white" />
+                className="w-24 h-24 rounded-2xl border-[4px] border-black shadow-[4px_4px_0_0_#000] object-cover bg-white transform -rotate-3" />
             ) : (
-              <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-2xl font-bold text-white"
-                style={{ backgroundColor: "#1B3A6B" }}>
+              <div className="w-24 h-24 rounded-2xl border-[4px] border-black shadow-[4px_4px_0_0_#000] flex items-center justify-center text-3xl font-black text-black bg-yellow-400 transform -rotate-3">
                 {initials}
               </div>
             )}
           </div>
+          
           {/* Action buttons */}
-          <div className="absolute bottom-3 right-4 flex gap-2">
+          <div className="absolute bottom-4 right-4 flex gap-3 z-20">
             {isOwner && (
               <button
                 onClick={() => setManaging(m => !m)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-black border-[3px] border-black shadow-[3px_3px_0_0_#000] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[2px_2px_0_0_#000] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none transition-all"
                 style={{
-                  backgroundColor: managing ? "#DC2626" : "rgba(255,255,255,0.2)",
-                  color: "white",
-                  backdropFilter: managing ? undefined : "blur(4px)",
+                  backgroundColor: managing ? "#EF4444" : "#FDE047",
+                  color: managing ? "#FFF" : "#000",
                 }}>
-                {managing ? <><X size={11} /> Done</> : <><Pencil size={11} /> Manage</>}
+                {managing ? <><X size={14} /> DONE</> : <><Pencil size={14} /> MANAGE</>}
               </button>
             )}
             <ShareButton name={profile.name} slug={profile.slug} />
-            <a href={`/pro/${profile.slug}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm"
-              style={{ backgroundColor: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
-              <ExternalLink size={11} /> Business Page
+            <a href={`/pro/\${profile.slug}`}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white bg-black border-[3px] border-black shadow-[3px_3px_0_0_#FDE047] hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-[2px_2px_0_0_#FDE047] active:translate-y-[3px] active:translate-x-[3px] active:shadow-none transition-all">
+              <ExternalLink size={14} /> HQ
             </a>
           </div>
         </div>
 
-        <div className="px-6 pt-12 pb-5">
-          <div className="flex items-start justify-between gap-3">
+        <div className="px-6 pt-16 pb-6 relative">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-gray-900">{profile.name}</h1>
-                {profile.is_published && <CheckCircle size={17} fill="#1B3A6B" className="text-white shrink-0" />}
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-3xl font-black text-black uppercase tracking-tight">{profile.name}</h1>
+                {profile.is_published && <Award size={28} className="text-yellow-400 fill-yellow-400 filter drop-shadow-[2px_2px_0_rgba(0,0,0,1)] shrink-0" />}
               </div>
-              {profile.trade && <p className="text-sm font-semibold text-blue-600 mb-1">{profile.trade}</p>}
-              {profile.tagline && <p className="text-sm text-gray-500 mb-1">{profile.tagline}</p>}
+              {profile.trade && <p className="text-sm font-black uppercase tracking-widest text-pink-500 mb-2">{profile.trade}</p>}
+              {profile.tagline && <p className="text-base font-bold text-gray-700 mb-2">{profile.tagline}</p>}
               {profile.location && (
-                <p className="text-xs text-gray-400 flex items-center gap-1">
-                  <MapPin size={11} />{profile.location}
+                <p className="text-xs font-black uppercase tracking-widest text-black flex items-center gap-1.5 bg-gray-100 border-[2px] border-black px-3 py-1.5 rounded-lg w-fit shadow-[2px_2px_0_0_#000]">
+                  <MapPin size={12} />{profile.location}
                 </p>
               )}
             </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-2 mt-5 border-t border-gray-100 pt-5">
-            <div className="text-center">
-              <p className="text-xl font-bold text-gray-900">{stats.projectCount}</p>
-              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Completed Projects</p>
-            </div>
-            <div className="text-center border-x border-gray-100">
-              <p className="text-xl font-bold text-gray-900">
-                {stats.totalInvested > 0 ? fmtMoney(stats.totalInvested) : "—"}
-              </p>
-              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Total Value</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xl font-bold text-gray-900">{allPhotos.length}</p>
-              <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Photos</p>
+            
+            {/* Stats Block */}
+            <div className="flex gap-4 shrink-0 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+              <div className="bg-yellow-100 border-[3px] border-black rounded-xl p-3 min-w-[100px] text-center shadow-[4px_4px_0_0_#000]">
+                <p className="text-3xl font-black text-black">{stats.projectCount}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-black mt-1">MISSIONS</p>
+              </div>
+              <div className="bg-cyan-100 border-[3px] border-black rounded-xl p-3 min-w-[100px] text-center shadow-[4px_4px_0_0_#000]">
+                <p className="text-3xl font-black text-black">
+                  {stats.totalInvested > 0 ? fmtMoney(stats.totalInvested) : "—"}
+                </p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-black mt-1">VALUE SECURED</p>
+              </div>
+              <div className="bg-pink-100 border-[3px] border-black rounded-xl p-3 min-w-[100px] text-center shadow-[4px_4px_0_0_#000]">
+                <p className="text-3xl font-black text-black">{allPhotos.length}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-black mt-1">INTEL FILES</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="border-t border-gray-100 px-6">
-          <div className="flex gap-1 -mb-px overflow-x-auto">
+        <div className="px-6 bg-gray-100 border-t-[4px] border-black py-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 sm:pb-0">
             {TABS.map(t => (
               <button key={t} onClick={() => setActiveTab(t)}
-                className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === t ? "border-current" : "border-transparent text-gray-500 hover:text-gray-700"
+                className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest border-[3px] border-black transition-all whitespace-nowrap \${
+                  activeTab === t 
+                    ? "bg-lime-400 text-black shadow-[4px_4px_0_0_#000] translate-y-[-2px]" 
+                    : "bg-white text-gray-500 hover:bg-gray-50 hover:shadow-[2px_2px_0_0_#000] shadow-[0_0_0_0_#000]"
                 }`}
-                style={activeTab === t ? { borderColor: "#1B3A6B", color: "#1B3A6B" } : {}}>
+              >
                 {t}
               </button>
             ))}
@@ -307,323 +308,226 @@ export default function ShowcaseClient({ profile, stats, projects: initialProjec
         </div>
       </div>
 
-      {/* ── Content + Sidebar ── */}
-      <div className="max-w-6xl mx-auto px-4 py-5">
-        <div className="lg:flex lg:gap-6 items-start">
-
-          {/* ── Main column ── */}
-          <div className="flex-1 min-w-0 space-y-4">
-
-            {/* TIMELINE */}
-            {activeTab === "Timeline" && (
-              projects.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-                  <p className="text-5xl mb-3">🏗️</p>
-                  <p className="font-semibold text-gray-700 mb-1">Portfolio coming soon</p>
-                  <p className="text-sm text-gray-400">Projects will appear here as they&apos;re added.</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {months.map(({ label, items }) => (
-                    <div key={label}>
-                      {/* Month header — OUTSIDE cards, green checkmark like mockup */}
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                          <CheckCircle size={13} className="text-white" strokeWidth={2.5} />
-                        </div>
-                        <span className="text-sm font-semibold text-gray-600">{label}</span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-                      {/* Individual project cards */}
-                      <div className="space-y-3">
-                        {items.map(p => {
-                          const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
-                          return (
-                            <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden relative">
-                              {/* Delete overlay (manage mode) */}
-                              {managing && (
-                                <button
-                                  onClick={() => handleDelete(p.id)}
-                                  disabled={deletingId === p.id}
-                                  className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-1 shadow-lg active:bg-red-600 disabled:opacity-60"
-                                >
-                                  <Trash2 size={11} />
-                                  {deletingId === p.id ? "Removing…" : "Remove"}
-                                </button>
-                              )}
-                              {/* Card body: text LEFT + large portrait photo RIGHT */}
-                              <div className="p-4 flex gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start gap-2 mb-1.5">
-                                    <h3 className="font-bold text-[15px] text-gray-900 leading-snug flex-1">{p.title}</h3>
-                                    <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 mt-0.5"
-                                      style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
-                                  </div>
-                                  {p.location && (
-                                    <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
-                                      <MapPin size={10} />{p.location}
-                                    </p>
-                                  )}
-                                  {p.description && (
-                                    <p className="text-[13px] text-gray-600 leading-relaxed mb-2.5 line-clamp-3">{p.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
-                                    {p.cost && (
-                                      <span className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
-                                        <DollarSign size={10} className="text-gray-400" />{fmtMoney(p.cost)}
-                                      </span>
-                                    )}
-                                    {p.completed_at && (
-                                      <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                                        <Clock size={10} />Completed {fmtDate(p.completed_at)}
-                                      </span>
-                                    )}
-                                    {p.tags.map((tag, i) => (
-                                      <span key={i} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{tag}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                                {/* Right: large photo fills card height */}
-                                {p.photos[0] && (
-                                  <div className="relative shrink-0 w-28">
-                                    <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
-                                      className="w-28 rounded-xl object-cover"
-                                      style={{ height: "100%", minHeight: "130px", maxHeight: "200px" }} />
-                                  </div>
+      {/* ── Content ── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 relative z-0">
+        
+        {/* TIMELINE */}
+        {activeTab === "TIMELINE" && (
+          projects.length === 0 ? (
+            <div className="bg-white border-[4px] border-black rounded-3xl p-12 shadow-[8px_8px_0_0_#000] text-center max-w-2xl mx-auto mt-10">
+              <Gamepad2 size={80} className="mx-auto text-gray-300 mb-6" />
+              <p className="font-black text-3xl uppercase tracking-tighter text-black mb-2">AWAITING MISSIONS</p>
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">No data available in sector.</p>
+            </div>
+          ) : (
+            <div className="space-y-12">
+              {months.map(({ label, items }) => (
+                <div key={label} className="relative">
+                  {/* Month header */}
+                  <div className="flex items-center gap-4 mb-6 sticky top-4 z-10 bg-[#FAFAFA]/90 backdrop-blur-sm py-2">
+                    <div className="w-10 h-10 rounded-xl bg-pink-500 border-[3px] border-black flex items-center justify-center shrink-0 shadow-[3px_3px_0_0_#000] transform -rotate-3">
+                      <Zap size={20} className="text-white fill-white" />
+                    </div>
+                    <span className="text-xl font-black text-black uppercase tracking-tighter bg-white border-[3px] border-black px-4 py-1.5 rounded-xl shadow-[3px_3px_0_0_#000]">{label}</span>
+                    <div className="flex-1 h-1.5 bg-black rounded-full" />
+                  </div>
+                  
+                  {/* Cards */}
+                  <div className="space-y-6 pl-4 sm:pl-14 border-l-[4px] border-black/10 ml-5 sm:ml-5">
+                    {items.map(p => {
+                      const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                      return (
+                        <div key={p.id} className="bg-white rounded-2xl border-[4px] border-black shadow-[6px_6px_0_0_#000] overflow-hidden relative transition-transform hover:-translate-y-1">
+                          {/* Delete overlay */}
+                          {managing && (
+                            <button
+                              onClick={() => handleDelete(p.id)}
+                              disabled={deletingId === p.id}
+                              className="absolute top-3 right-3 z-30 flex items-center gap-2 bg-red-500 text-white text-xs font-black uppercase tracking-widest border-[3px] border-black rounded-xl px-3 py-1.5 shadow-[3px_3px_0_0_#000] hover:translate-y-[1px] hover:translate-x-[1px] active:shadow-none transition-all"
+                            >
+                              <Trash2 size={14} />
+                              {deletingId === p.id ? "..." : "DELETE"}
+                            </button>
+                          )}
+                          
+                          <div className="flex flex-col sm:flex-row">
+                            <div className="p-6 flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-3 mb-3">
+                                <span className="text-[10px] font-black uppercase tracking-widest border-[2px] border-black rounded-full px-3 py-1 shadow-[2px_2px_0_0_#000]"
+                                  style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
+                                {p.completed_at && (
+                                  <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-[2px] border-black rounded-full px-3 py-1 shadow-[2px_2px_0_0_#000]">
+                                    <Clock size={12} /> {fmtDate(p.completed_at)}
+                                  </span>
                                 )}
                               </div>
-                              {/* Thumbnail strip — below main content */}
-                              {p.photos.length > 1 && (
-                                <div className="px-4 pb-4 flex gap-2">
-                                  {p.photos.slice(1, 5).map((ph, i) => (
-                                    <div key={i} className="flex-1 max-w-[72px]">
-                                      <img src={ph.url} alt={ph.caption || p.title}
-                                        className="w-full h-14 rounded-xl object-cover" />
-                                    </div>
-                                  ))}
-                                  {p.photos.length > 5 && (
-                                    <div className="flex-1 max-w-[72px] h-14 rounded-xl bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500">
-                                      +{p.photos.length - 5}
-                                    </div>
-                                  )}
+                              
+                              <h3 className="font-black text-2xl sm:text-3xl text-black uppercase tracking-tight leading-none mb-3">{p.title}</h3>
+                              
+                              {p.location && (
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+                                  <MapPin size={14} className="text-black" /> {p.location}
+                                </p>
+                              )}
+                              
+                              {p.description && (
+                                <p className="text-sm font-medium text-gray-700 leading-relaxed mb-5 bg-gray-50 p-4 border-[2px] border-black rounded-xl">
+                                  {p.description}
+                                </p>
+                              )}
+                              
+                              <div className="flex flex-wrap gap-2 items-center">
+                                {p.cost && (
+                                  <span className="flex items-center gap-1 text-xs font-black text-black bg-green-300 border-[2px] border-black rounded-lg px-3 py-1 shadow-[2px_2px_0_0_#000]">
+                                    <DollarSign size={12} className="text-black" /> {fmtMoney(p.cost)}
+                                  </span>
+                                )}
+                                {p.tags.map((tag, i) => (
+                                  <span key={i} className="text-[10px] font-black uppercase tracking-widest bg-cyan-200 border-[2px] border-black text-black rounded-lg px-2.5 py-1 shadow-[2px_2px_0_0_#000]">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* Right: large photo fills card height */}
+                            {p.photos[0] && (
+                              <div className="relative shrink-0 w-full sm:w-64 border-t-[4px] sm:border-t-0 sm:border-l-[4px] border-black bg-black">
+                                <img src={p.photos[0].url} alt={p.photos[0].caption || p.title}
+                                  className="w-full h-48 sm:h-full object-cover opacity-90 hover:opacity-100 transition-opacity" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Thumbnail strip */}
+                          {p.photos.length > 1 && (
+                            <div className="p-4 bg-gray-900 border-t-[4px] border-black flex gap-3 overflow-x-auto">
+                              {p.photos.slice(1, 5).map((ph, i) => (
+                                <div key={i} className="flex-shrink-0 w-20 h-20 border-[3px] border-black rounded-xl overflow-hidden bg-black shadow-[3px_3px_0_0_rgba(255,255,255,0.2)]">
+                                  <img src={ph.url} alt={ph.caption || p.title}
+                                    className="w-full h-full object-cover" />
+                                </div>
+                              ))}
+                              {p.photos.length > 5 && (
+                                <div className="flex-shrink-0 w-20 h-20 border-[3px] border-black rounded-xl bg-yellow-400 flex items-center justify-center text-lg font-black text-black shadow-[3px_3px_0_0_#000]">
+                                  +{p.photos.length - 5}
                                 </div>
                               )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* PROJECTS — same card style as timeline */}
-            {activeTab === "Projects" && (
-              projects.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-                  <p className="text-5xl mb-3">📁</p>
-                  <p className="font-semibold text-gray-700">No projects yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tagCounts.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {tagCounts.map(([tag, count]) => (
-                        <span key={tag} className="shrink-0 text-xs font-semibold bg-white border border-gray-200 rounded-full px-3 py-1.5 text-gray-600 shadow-sm">
-                          {tag} <span className="text-gray-400">({count})</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {projects.map(p => {
-                    const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
-                    const ba = detectBeforeAfter(p.photos);
-                    return (
-                      <div key={p.id} className="bg-white rounded-2xl shadow-sm overflow-hidden relative">
-                        {/* Delete overlay (manage mode) */}
-                        {managing && (
-                          <button
-                            onClick={() => handleDelete(p.id)}
-                            disabled={deletingId === p.id}
-                            className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold rounded-full px-2.5 py-1 shadow-lg active:bg-red-600 disabled:opacity-60"
-                          >
-                            <Trash2 size={11} />
-                            {deletingId === p.id ? "Removing…" : "Remove"}
-                          </button>
-                        )}
-                        <div className="p-4 flex gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-2 mb-1.5">
-                              <h3 className="font-bold text-[15px] text-gray-900 leading-snug flex-1">{p.title}</h3>
-                              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 mt-0.5"
-                                style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
-                            </div>
-                            {p.location && (
-                              <p className="text-xs text-gray-400 flex items-center gap-1 mb-1.5">
-                                <MapPin size={10} />{p.location}
-                              </p>
-                            )}
-                            {p.description && (
-                              <p className="text-[13px] text-gray-600 leading-relaxed mb-2.5 line-clamp-3">{p.description}</p>
-                            )}
-                            <div className="flex flex-wrap gap-x-3 gap-y-1.5 items-center">
-                              {p.cost && (
-                                <span className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
-                                  <DollarSign size={10} className="text-gray-400" />{fmtMoney(p.cost)}
-                                </span>
-                              )}
-                              {p.completed_at && (
-                                <span className="flex items-center gap-1 text-[11px] text-gray-400">
-                                  <Clock size={10} />{fmtDate(p.completed_at)}
-                                </span>
-                              )}
-                              {ba && <span className="text-[10px] font-semibold text-purple-600">Before &amp; After ✓</span>}
-                              {p.tags.map((tag, i) => (
-                                <span key={i} className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{tag}</span>
-                              ))}
-                            </div>
-                          </div>
-                          {p.photos[0] && (
-                            <div className="relative shrink-0 w-28">
-                              <img src={p.photos[0].url} alt={p.title}
-                                className="w-28 rounded-xl object-cover"
-                                style={{ height: "100%", minHeight: "130px", maxHeight: "200px" }} />
                             </div>
                           )}
                         </div>
-                        {ba && <div className="px-4 pb-4"><BeforeAfterSlider before={ba.before} after={ba.after} /></div>}
-                        {p.photos.length > 1 && !ba && (
-                          <div className="px-4 pb-4 flex gap-2">
-                            {p.photos.slice(1, 5).map((ph, i) => (
-                              <div key={i} className="flex-1 max-w-[72px]">
-                                <img src={ph.url} alt={p.title}
-                                  className="w-full h-14 rounded-xl object-cover" />
-                              </div>
-                            ))}
-                            {p.photos.length > 5 && (
-                              <div className="flex-1 max-w-[72px] h-14 rounded-xl bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500">
-                                +{p.photos.length - 5}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            )}
-
-            {/* PHOTOS */}
-            {activeTab === "Photos" && (
-              allPhotos.length === 0 ? (
-                <div className="bg-white rounded-2xl p-12 shadow-sm text-center">
-                  <p className="text-5xl mb-3">📷</p>
-                  <p className="font-semibold text-gray-700">No photos yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-xs text-gray-400 font-semibold">
-                    {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""} across {projects.filter(p => p.photos.length > 0).length} project{projects.filter(p => p.photos.length > 0).length !== 1 ? "s" : ""}
-                  </p>
-                  <div className="columns-2 sm:columns-3 gap-2 space-y-2">
-                    {allPhotos.map((ph, i) => (
-                      <div key={i} className="break-inside-avoid rounded-xl overflow-hidden bg-gray-100">
-                        <img src={ph.url} alt={ph.caption || ph.project} className="w-full object-cover" />
-                        {ph.caption && <p className="text-[10px] text-gray-500 px-2 py-1 truncate">{ph.caption}</p>}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
-              )
-            )}
-
-            {/* Mobile CTA (hidden on desktop — desktop has sidebar CTA) */}
-            {profile.is_published && (
-              <div className="lg:hidden bg-[#1B3A6B] rounded-2xl p-5 text-center shadow-sm">
-                <p className="text-white font-bold mb-1">Work with {profile.name.split(" ")[0]}</p>
-                <p className="text-blue-200 text-xs mb-4">Get a free quote for your next project</p>
-                <a href={`/pro/${profile.slug}`}
-                  className="inline-block bg-white text-[#1B3A6B] font-bold text-sm px-6 py-2.5 rounded-xl shadow-sm">
-                  Get a Free Quote →
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* ── Right sidebar (desktop only) ── */}
-          <div className="hidden lg:block w-72 shrink-0 space-y-4">
-
-            {/* Business Overview */}
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <h3 className="font-bold text-gray-900 mb-4">Business Overview</h3>
-              <div className="space-y-3">
-                {profile.trade && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs text-gray-400">Trade</span>
-                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.trade}</span>
-                  </div>
-                )}
-                {profile.location && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs text-gray-400">Service Area</span>
-                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.location}</span>
-                  </div>
-                )}
-                {profile.years_experience != null && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs text-gray-400">Experience</span>
-                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.years_experience} years</span>
-                  </div>
-                )}
-                {profile.license_text && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs text-gray-400">License</span>
-                    <span className="text-xs font-semibold text-gray-700 text-right ml-4">{profile.license_text}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-start">
-                  <span className="text-xs text-gray-400">Projects</span>
-                  <span className="text-xs font-semibold text-gray-700">{stats.projectCount} completed</span>
-                </div>
-                {stats.totalInvested > 0 && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs text-gray-400">Total Value</span>
-                    <span className="text-xs font-semibold text-gray-700">{fmtMoney(stats.totalInvested)}</span>
-                  </div>
-                )}
-              </div>
-              {profile.is_published && (
-                <a href={`/pro/${profile.slug}`}
-                  className="mt-5 block w-full text-center text-white font-bold text-sm py-3 rounded-xl shadow-sm"
-                  style={{ backgroundColor: "#1B3A6B" }}>
-                  Get a Free Quote →
-                </a>
-              )}
+              ))}
             </div>
+          )
+        )}
 
-            {/* Photos preview */}
-            {allPhotos.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-gray-900">Photos</h3>
-                  <button onClick={() => setActiveTab("Photos")}
-                    className="text-xs font-semibold" style={{ color: "#1B3A6B" }}>
-                    View all {allPhotos.length}
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {allPhotos.slice(0, 6).map((ph, i) => (
-                    <img key={i} src={ph.url} alt={ph.caption || ph.project}
-                      className="w-full aspect-square object-cover rounded-lg" />
+        {/* PROJECTS (Grid Mode) */}
+        {activeTab === "MISSIONS" && (
+          projects.length === 0 ? (
+            <div className="bg-white border-[4px] border-black rounded-3xl p-12 shadow-[8px_8px_0_0_#000] text-center max-w-2xl mx-auto mt-10">
+              <Gamepad2 size={80} className="mx-auto text-gray-300 mb-6" />
+              <p className="font-black text-3xl uppercase tracking-tighter text-black mb-2">NO MISSIONS FOUND</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {tagCounts.length > 0 && (
+                <div className="flex gap-3 overflow-x-auto pb-4">
+                  {tagCounts.map(([tag, count]) => (
+                    <span key={tag} className="shrink-0 text-xs font-black uppercase tracking-widest bg-white border-[3px] border-black rounded-xl px-4 py-2 text-black shadow-[3px_3px_0_0_#000]">
+                      {tag} <span className="text-gray-400 bg-gray-100 rounded px-1 ml-1">{count}</span>
+                    </span>
                   ))}
                 </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(p => {
+                  const ss = STATUS_STYLES[p.status] ?? STATUS_STYLES.completed;
+                  const ba = detectBeforeAfter(p.photos);
+                  return (
+                    <div key={p.id} className="bg-white rounded-2xl border-[4px] border-black shadow-[6px_6px_0_0_#000] flex flex-col overflow-hidden relative group hover:-translate-y-1 transition-transform">
+                      {managing && (
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          className="absolute top-2 right-2 z-30 flex items-center gap-1.5 bg-red-500 text-white text-[10px] font-black uppercase border-[3px] border-black rounded-lg px-2 py-1 shadow-[2px_2px_0_0_#000]"
+                        >
+                          <Trash2 size={12} /> {deletingId === p.id ? "..." : "DEL"}
+                        </button>
+                      )}
+                      
+                      {ba ? (
+                        <BeforeAfterSlider before={ba.before} after={ba.after} />
+                      ) : p.photos[0] ? (
+                        <div className="h-48 border-b-[4px] border-black bg-black relative">
+                          <img src={p.photos[0].url} alt="Cover" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      ) : (
+                        <div className="h-48 border-b-[4px] border-black bg-gray-100 flex items-center justify-center">
+                          <Camera size={32} className="text-gray-300" />
+                        </div>
+                      )}
+                      
+                      <div className="p-5 flex-1 flex flex-col">
+                        <div className="flex items-start gap-2 mb-2">
+                          <h3 className="font-black text-xl uppercase tracking-tight text-black leading-none flex-1">{p.title}</h3>
+                        </div>
+                        <div className="mb-4">
+                           <span className="inline-block text-[9px] font-black uppercase tracking-widest border-[2px] border-black rounded-md px-2 py-0.5 shadow-[2px_2px_0_0_#000]"
+                              style={{ color: ss.color, background: ss.bg }}>{ss.label}</span>
+                        </div>
+                        
+                        {p.description && (
+                          <p className="text-sm font-medium text-gray-600 line-clamp-3 mb-4 flex-1">{p.description}</p>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t-[3px] border-gray-100">
+                          {p.location && (
+                            <span className="flex items-center gap-1 text-[10px] font-black uppercase bg-gray-100 border-[2px] border-black rounded-md px-2 py-1 text-black shadow-[2px_2px_0_0_#000]">
+                              <MapPin size={10} /> {p.location.split(",")[0]}
+                            </span>
+                          )}
+                          {p.cost && (
+                            <span className="flex items-center gap-1 text-[10px] font-black uppercase bg-green-200 border-[2px] border-black rounded-md px-2 py-1 text-black shadow-[2px_2px_0_0_#000]">
+                              <DollarSign size={10} /> {fmtMoney(p.cost)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
+            </div>
+          )
+        )}
 
-        </div>
+        {/* INTEL (Photos) */}
+        {activeTab === "INTEL" && (
+          allPhotos.length === 0 ? (
+            <div className="bg-white border-[4px] border-black rounded-3xl p-12 shadow-[8px_8px_0_0_#000] text-center max-w-2xl mx-auto mt-10">
+              <Camera size={80} className="mx-auto text-gray-300 mb-6" />
+              <p className="font-black text-3xl uppercase tracking-tighter text-black mb-2">NO INTEL CAPTURED</p>
+            </div>
+          ) : (
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+              {allPhotos.map((ph, i) => (
+                <div key={i} className="break-inside-avoid relative group rounded-2xl border-[4px] border-black shadow-[6px_6px_0_0_#000] overflow-hidden bg-black">
+                  <img src={ph.url} alt={ph.caption || ph.project} className="w-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-5">
+                    <p className="text-white font-black uppercase tracking-widest text-xs mb-1 bg-black/50 w-fit px-2 py-1 rounded border-[2px] border-white/20 backdrop-blur-sm">{ph.project}</p>
+                    {ph.caption && <p className="text-gray-200 text-sm font-medium">{ph.caption}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
       </div>
     </div>
   );
