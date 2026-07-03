@@ -345,7 +345,7 @@ function RecentProjectsCarousel({
                   className="flex-1 text-center text-[9px] font-bold py-1.5 rounded-lg border border-gray-200 text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors">
                   View Project
                 </Link>
-                <Link href={`/contractor/${p.contractor_slug}`}
+                <Link href={`/pro/${p.contractor_slug}`}
                   onClick={(e) => e.stopPropagation()}
                   className="flex-1 text-center text-[9px] font-bold py-1.5 rounded-lg text-white transition-opacity hover:opacity-90"
                   style={{ backgroundColor: "#1B3A6B" }}>
@@ -512,7 +512,7 @@ function ContractorCard({
 
         {/* Buttons */}
         <div className="flex gap-2">
-          <Link href={`/contractor/${c.slug}`} onClick={(e) => e.stopPropagation()}
+          <Link href={`/pro/${c.slug}`} onClick={(e) => e.stopPropagation()}
             className="flex-1 rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors">
             View Profile
           </Link>
@@ -627,7 +627,7 @@ function MapFloatingCard({
               View Project
             </Link>
           )}
-          <Link href={`/contractor/${c.slug}`}
+          <Link href={`/pro/${c.slug}`}
             className={`${project ? "" : "flex-1 "}rounded-xl py-2 text-center text-xs font-bold border-2 text-slate-600 border-gray-200 hover:border-blue-200 hover:text-blue-700 transition-colors px-3`}>
             Profile
           </Link>

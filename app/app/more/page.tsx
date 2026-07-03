@@ -79,7 +79,7 @@ export default async function MorePage() {
     }
   } catch { /* ignore */ }
 
-  const businessHref    = showcaseSlug ? `/contractor/${showcaseSlug}` : "/app/profile/public-profile";
+  const businessHref    = showcaseSlug ? `/pro/${showcaseSlug}` : "/app/profile/public-profile";
   const showcaseHref    = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
 
   return (
@@ -107,7 +107,7 @@ export default async function MorePage() {
           style={{ backgroundColor: "#1B3A6B" }}>
           <span className="text-2xl">🏢</span>
           <span className="text-[13px] font-bold">My Business Page</span>
-          <span className="text-[10px] opacity-70">{showcaseSlug ? `/contractor/${showcaseSlug}` : "Set up first"}</span>
+          <span className="text-[10px] opacity-70">{showcaseSlug ? `/pro/${showcaseSlug}` : "Set up first"}</span>
         </Link>
         <Link href={showcaseHref}
           className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 shadow-sm border border-purple-200 bg-gradient-to-b from-purple-50 to-white">
