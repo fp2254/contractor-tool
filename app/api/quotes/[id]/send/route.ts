@@ -17,16 +17,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const demoBlock = await checkDemoBlock(orgId!, "Email sending");
   if (demoBlock) return demoBlock;
 
-  const [{ data: quote }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
+  const [{ data: quote }, { data: items }, { data: org }, { data: settings }, { data: quoteNotes }] = await Promise.all([
     admin.from("quotes").select("*").eq("id", id).eq("org_id", orgId!).single(),
     admin.from("quote_items").select("*").eq("quote_id", id).eq("org_id", orgId!),
     admin.from("orgs").select("*").eq("id", orgId!).single(),
     admin.from("org_settings").select("*").eq("org_id", orgId!).maybeSingle(),
+    admin.from("notes").select("body").eq("entity_type", "quote").eq("entity_id", id).eq("org_id", orgId!).like("body", "__warranty__%"),
   ]);
 
   if (!quote || !org) {
     return NextResponse.json({ error: "Quote not found" }, { status: 404 });
   }
+
+  const quoteWarrantyNote = (quoteNotes ?? [])[0];
+  const warrantyText: string | null = quoteWarrantyNote
+    ? String(quoteWarrantyNote.body).replace("__warranty__:", "")
+    : null;
 
   const { data: customer } = await admin
     .from("customers")
@@ -49,6 +55,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       customer,
       org,
       settings: settings as any,
+      warrantyText,
     })
   );
 
@@ -73,6 +80,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         total_price: Number(i.total_price),
       })),
       notes: quote.notes,
+      warrantyText,
     }),
     attachments: [
       {

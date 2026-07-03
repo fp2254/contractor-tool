@@ -1,3 +1,4 @@
 - [Payment link feature](payment-link.md) — defer Stripe; add contractor-owned payment link field (Venmo/Zelle/Square) surfaced on invoices + portal
 - [Homeowner lead request system](homeowner-leads.md) — Angi-style lead submission, routes to matching contractors' pipelines; subscription-included (no per-lead fees)
 - [Teams feature](teams-feature.md) — assigned_to column on jobs/quotes/invoices; members see only their work; admins see all + can reassign
+- [Warranty notes pattern](warranty-notes-pattern.md) — warranty text lives in `notes` table as `__warranty__:` prefixed rows, not a column; new send/PDF routes must fetch it explicitly

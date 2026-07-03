@@ -47,6 +47,7 @@ type Props = {
     quote_expiration_days?: number | null;
     logo_url?: string | null;
   } | null;
+  warrantyText?: string | null;
 };
 
 function fmt(n: number) {
@@ -56,7 +57,7 @@ function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function QuotePDF({ quote, items, customer, org, settings }: Props) {
+export function QuotePDF({ quote, items, customer, org, settings, warrantyText }: Props) {
   const s = settings ?? {};
   const taxRate = s.tax_applied_auto ? (s.default_tax_rate ?? 0) : 0;
   const subtotal = items.reduce((sum, i) => sum + Number(i.total_price), 0);
@@ -162,6 +163,14 @@ export function QuotePDF({ quote, items, customer, org, settings }: Props) {
             <Text style={base.notesText}>{notesText}</Text>
           </View>
         )}
+
+        {/* Warranty / Terms */}
+        {warrantyText ? (
+          <View style={[base.notesBox, { marginTop: 12, borderLeft: "3px solid #1B3A6B" }]}>
+            <Text style={base.notesLabel}>Terms &amp; Warranty</Text>
+            <Text style={base.notesText}>{warrantyText}</Text>
+          </View>
+        ) : null}
 
         {/* Signature / Footer */}
         {s.owner_name && (

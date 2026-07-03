@@ -76,6 +76,7 @@ export function quoteEmailHtml(opts: {
   total: number;
   lineItems: { description: string; quantity: number; total_price: number }[];
   notes?: string | null;
+  warrantyText?: string | null;
 }): string {
   const items = opts.lineItems
     .map(
@@ -105,6 +106,7 @@ export function quoteEmailHtml(opts: {
         <span style="color:#fff;font-size:18px;font-weight:bold">$${Number(opts.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
       </div>
       ${opts.notes ? `<p style="margin:20px 0 0;font-size:14px;color:#64748b;background:#f8fafc;padding:12px 16px;border-left:3px solid #1B3A6B;border-radius:4px">${opts.notes}</p>` : ""}
+      ${opts.warrantyText ? `<div style="margin-top:20px;background:#f8fafc;border-radius:8px;padding:12px 16px;border-left:3px solid #1B3A6B"><p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#334155">Terms &amp; Warranty</p><p style="margin:0;font-size:13px;color:#64748b;white-space:pre-line">${opts.warrantyText}</p></div>` : ""}
       <p style="margin:24px 0 0;font-size:15px;color:#334155">Please review and let us know if you'd like to move forward.</p>
       <p style="margin:8px 0 0;font-size:15px;color:#64748b">Thanks,<br><strong>${opts.businessName}</strong></p>
     </div>

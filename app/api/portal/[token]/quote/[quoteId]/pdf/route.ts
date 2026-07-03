@@ -24,11 +24,12 @@ export async function GET(
     return NextResponse.json({ error: "Invalid or expired link" }, { status: 403 });
   }
 
-  const [{ data: quote }, { data: items }, { data: org }, { data: settings }] = await Promise.all([
+  const [{ data: quote }, { data: items }, { data: org }, { data: settings }, { data: quoteNotes }] = await Promise.all([
     admin.from("quotes").select("*").eq("id", quoteId).eq("customer_id", pt.customer_id).eq("org_id", pt.org_id).single(),
     admin.from("quote_items").select("*").eq("quote_id", quoteId).eq("org_id", pt.org_id),
     admin.from("orgs").select("*").eq("id", pt.org_id).single(),
     admin.from("org_settings").select("*").eq("org_id", pt.org_id).maybeSingle(),
+    admin.from("notes").select("body").eq("entity_type", "quote").eq("entity_id", quoteId).eq("org_id", pt.org_id).like("body", "__warranty__%"),
   ]);
 
   if (!quote || !org) {
@@ -40,6 +41,11 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const quoteWarrantyNote = (quoteNotes ?? [])[0];
+  const warrantyText: string | null = quoteWarrantyNote
+    ? String(quoteWarrantyNote.body).replace("__warranty__:", "")
+    : null;
+
   const buffer = await renderToBuffer(
     React.createElement(QuotePDF, {
       quote,
@@ -47,6 +53,7 @@ export async function GET(
       customer,
       org,
       settings: settings as any,
+      warrantyText,
     })
   );
 
