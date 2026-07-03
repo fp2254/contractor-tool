@@ -130,7 +130,7 @@ async function routeLeads(
           if (!ownerEmail) return;
 
           const { client, fromEmail } = await getResendClient();
-          await client.emails.send({
+          const { error: sendError } = await client.emails.send({
             from: fromEmail,
             to: ownerEmail,
             subject: `🔔 New Lead: ${service_type} in ${city || state || "your area"}`,
@@ -146,6 +146,7 @@ async function routeLeads(
               urgency: urgency ?? "flexible",
             }),
           });
+          if (sendError) console.error("[homeowner/request] Resend send error:", sendError);
         } catch (err) {
           console.error("[homeowner/request] notify email error:", err);
         }

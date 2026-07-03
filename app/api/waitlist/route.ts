@@ -114,12 +114,13 @@ export async function POST(req: Request) {
 
     try {
       const { client, fromEmail } = await getResendClient();
-      await client.emails.send({
+      const { error: sendError } = await client.emails.send({
         from: fromEmail,
         to: body.email.trim().toLowerCase(),
         subject: "You're on the TradeBase waitlist",
         html: waitlistConfirmationHtml(body.first_name.trim()),
       });
+      if (sendError) console.error("[waitlist] Resend send error:", sendError);
     } catch (emailErr) {
       console.error("Waitlist confirmation email failed (non-fatal):", emailErr);
     }

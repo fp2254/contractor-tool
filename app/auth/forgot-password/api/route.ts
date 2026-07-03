@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
   try {
     const { client: resend, fromEmail } = await getResendClient();
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: "Reset Your TradeBase Password",
@@ -57,6 +57,10 @@ export async function POST(req: Request) {
   </div>
 </body></html>`,
     });
+    if (sendError) {
+      console.error("[forgot-password] Resend send error:", sendError);
+      return NextResponse.json({ error: sendError.message ?? "Could not send email" }, { status: 500 });
+    }
   } catch (emailErr) {
     console.error("[forgot-password] Resend error:", emailErr);
     return NextResponse.json({ error: "Could not send email" }, { status: 500 });

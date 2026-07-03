@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         if (!ownerEmail) return;
 
         const { client, fromEmail } = await getResendClient();
-        await client.emails.send({
+        const { error: sendError } = await client.emails.send({
           from: fromEmail,
           to: ownerEmail,
           subject: `🔔 New Quote Request from ${name.trim()}`,
@@ -86,6 +86,7 @@ export async function POST(req: Request) {
             urgency: "flexible",
           }),
         });
+        if (sendError) console.error("[public/quote-request] Resend send error:", sendError);
       } catch (err) {
         console.error("[quote-request] email error:", err);
       }

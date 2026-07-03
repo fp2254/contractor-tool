@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     try {
       const { client, fromEmail } = await getResendClient();
       const typeLabel = body.type === "bug" ? "🐛 Bug Report" : body.type === "feature" ? "💡 Feature Request" : "💬 General Feedback";
-      await client.emails.send({
+      const { error: sendError } = await client.emails.send({
         from: fromEmail,
         to: adminEmail,
         subject: `[TradeBase Support] ${typeLabel}: ${body.title}`,
@@ -83,6 +83,7 @@ export async function POST(req: Request) {
             </div>
           </div>`,
       });
+      if (sendError) console.error("[support] Resend send error:", sendError);
     } catch (emailErr) {
       console.error("[support] email notification failed:", emailErr);
     }

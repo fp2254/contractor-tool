@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const { client, fromEmail } = await getResendClient();
     const adminEmail = process.env.ADMIN_EMAIL?.split(",")[0]?.trim();
     if (adminEmail) {
-      await client.emails.send({
+      const { error: sendError } = await client.emails.send({
         from: `TradeBase <${fromEmail}>`,
         to: [adminEmail],
         subject: `[Add-on Request] AI Phone — org ${orgId}`,
@@ -42,9 +42,10 @@ export async function POST(req: NextRequest) {
                <p><strong>Message:</strong> ${message}</p>
                <p>Visit <a href="${process.env.APP_BASE_URL ?? ""}/app/admin/addons">Admin Addons</a> to activate.</p>`,
       });
+      if (sendError) console.error("[addon-request] Resend send error:", sendError);
     }
-  } catch {
-    // Email failure is non-fatal
+  } catch (emailErr) {
+    console.error("[addon-request] email notification failed (non-fatal):", emailErr);
   }
 
   return NextResponse.json({ success: true });

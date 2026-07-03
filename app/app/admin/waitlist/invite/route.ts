@@ -38,12 +38,16 @@ export async function POST(req: Request) {
 
   try {
     const { client: resend, fromEmail } = await getResendClient();
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: `You're invited to TradeBase`,
       html: inviteEmailHtml({ firstName: first_name, inviteUrl }),
     });
+    if (sendError) {
+      console.error("[invite] Resend send error:", sendError);
+      return NextResponse.json({ error: sendError.message ?? "Could not send invite email" }, { status: 500 });
+    }
   } catch (emailErr) {
     console.error("[invite] Resend error:", emailErr);
     return NextResponse.json({ error: "Could not send invite email" }, { status: 500 });
