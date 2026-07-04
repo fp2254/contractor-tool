@@ -59,6 +59,14 @@ function TeamIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
+function MoreIcon({ active }: { active: boolean }) {
+  const c = active ? "#1B3A6B" : "#9ca3af";
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill={c}>
+      <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+    </svg>
+  );
+}
 
 const navItems = [
   { label: "Home",     href: "/app",            Icon: HomeIcon,   exact: true  },
@@ -91,8 +99,58 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#1B3A6B" }}>
+    <div className="min-h-screen bg-gray-100">
+      {/* ── Desktop fixed left sidebar (lg and up) ── */}
+      <aside
+        className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:z-50"
+        style={{ backgroundColor: "#1B3A6B" }}
+      >
+        <Link href="/app" className="flex items-center gap-2 px-6 py-5 shrink-0">
+          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="white">
+            <path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <rect x="9" y="14" width="6" height="7" rx="0.5" fill="white" />
+          </svg>
+          <span className="text-xl font-bold text-white">TradeBase</span>
+        </Link>
+
+        <nav className="flex-1 overflow-y-auto px-3 space-y-1">
+          {navItems.map(({ label, href, Icon, exact }) => {
+            const active = isActive(href, exact);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  active ? "bg-white/10 text-white" : "text-blue-100/70 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <Icon active={active} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {!isOnline && (
+          <div className="mx-3 mb-2 flex items-center justify-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-800 inline-block" />
+            Offline
+          </div>
+        )}
+
+        <Link
+          href="/app/more"
+          className={`flex items-center gap-3 px-6 py-4 border-t border-white/10 text-sm font-medium transition-colors ${
+            isActive("/app/more", false) ? "text-white" : "text-blue-100/70 hover:text-white"
+          }`}
+        >
+          <MoreIcon active={isActive("/app/more", false)} />
+          <span>More</span>
+        </Link>
+      </aside>
+
+      {/* ── Mobile fixed top header (below lg) ── */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3" style={{ backgroundColor: "#1B3A6B" }}>
         <Link href="/app" className="flex items-center gap-2">
           <svg viewBox="0 0 24 24" className="h-7 w-7" fill="white">
             <path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
@@ -108,15 +166,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           )}
           <Link href="/app/more" className="text-white p-1">
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
-              <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-            </svg>
+            <MoreIcon active={false} />
           </Link>
         </div>
       </header>
 
+      {/* ── Desktop fixed top bar (lg and up) ── */}
+      <div className="hidden lg:flex lg:fixed lg:top-0 lg:left-64 lg:right-0 lg:z-40 lg:h-14 items-center justify-end bg-white border-b border-gray-200 px-6">
+        {!isOnline && (
+          <span className="flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-800 inline-block" />
+            Offline
+          </span>
+        )}
+      </div>
+
       {!isOnline && (
-        <div className="fixed top-[52px] left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
+        <div className="lg:hidden fixed top-[52px] left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
           <span className="text-sm">📡</span>
           <p className="text-xs font-medium text-amber-800">
             You&apos;re offline — showing cached data. Changes will save when you reconnect.
@@ -124,13 +190,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <main className={`flex-1 ${isOnline ? "pt-14" : "pt-[84px]"} pb-20 overflow-y-auto`}>
+      <main className={`lg:pl-64 ${isOnline ? "pt-14" : "pt-[84px]"} lg:pt-14 pb-20 lg:pb-0 min-h-screen overflow-y-auto`}>
         {children}
       </main>
 
       <QuickCreate />
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+      {/* ── Mobile fixed bottom nav (below lg) ── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
         <div className="flex">
           {navItems.map(({ label, href, Icon, exact }) => {
             const active = isActive(href, exact);

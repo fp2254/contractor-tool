@@ -148,7 +148,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* ── Header ── */}
-      <div className="px-4 pt-5 pb-4 flex items-start justify-between">
+      <div className="px-4 lg:px-8 pt-5 lg:pt-8 pb-4 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
             {greeting()}{firstName ? `, ${firstName}` : ""}
@@ -158,11 +158,11 @@ export default async function DashboardPage() {
         <CreateNewButton />
       </div>
 
-      <div className="px-4 space-y-4 pb-32">
+      <div className="px-4 lg:px-8 space-y-4 pb-32 lg:pb-12 lg:max-w-7xl">
         {!isDemo && <SetupChecklist orgId={orgId!} />}
 
-        {/* ── 3 Stat Cards ── */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ── Stat Cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Jobs Today */}
           <Link href="/app/schedule" className="bg-white rounded-2xl p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
             <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#EFF6FF" }}>
@@ -204,161 +204,179 @@ export default async function DashboardPage() {
             <span className="text-xs text-gray-500 mt-0.5 leading-tight">Outstanding</span>
             <span className="text-[10px] font-semibold text-green-600 mt-1.5 flex items-center gap-0.5">View invoices ›</span>
           </Link>
+
+          {/* Needs Attention (4th stat card — desktop only, mirrors mobile section below) */}
+          <Link href="/app/leads" className="hidden lg:flex bg-white rounded-2xl p-4 shadow-sm flex-col items-center text-center active:bg-gray-50">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#FEF2F2" }}>
+              <svg className="w-5 h-5" style={{ color: "#DC2626" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+              </svg>
+            </div>
+            <span className="text-2xl font-bold text-slate-800">{needsAttentionCount}</span>
+            <span className="text-xs text-gray-500 mt-0.5 leading-tight">Needs Attention</span>
+            <span className="text-[10px] font-semibold text-red-500 mt-1.5 flex items-center gap-0.5">View all ›</span>
+          </Link>
         </div>
 
-        {/* ── Today's Schedule ── */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 pt-4 pb-3">
-            <h2 className="font-bold text-slate-800">Today&apos;s Schedule</h2>
-            <Link href="/app/schedule" className="text-xs font-semibold text-blue-600">View all</Link>
-          </div>
-          {jobsTodayList.length === 0 ? (
-            <div className="px-4 pb-5 text-center">
-              <p className="text-3xl mb-2">📅</p>
-              <p className="text-sm font-medium text-gray-500">No jobs scheduled today</p>
-              <Link href="/app/jobs/new" className="mt-3 inline-block text-xs font-bold text-white px-4 py-2 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
-                Schedule a Job
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {jobsTodayList.map(job => {
-                const customerName = customerMap[job.customer_id] ?? "";
-                const addrLine = [job.address, job.city, job.state].filter(Boolean).join(", ");
-                return (
-                  <Link key={job.id} href={`/app/jobs/${job.id}`}
-                    className="flex items-center gap-3 px-4 py-3 active:bg-gray-50">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#EFF6FF" }}>
-                      <span className="text-base">🔧</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{customerName || job.job_title}</p>
-                      {addrLine && <p className="text-xs text-gray-400 truncate">{addrLine}</p>}
-                      {customerName && <p className="text-[11px] text-gray-400 truncate">{job.job_title}</p>}
-                    </div>
-                    <span className="text-gray-300 text-sm shrink-0">›</span>
+        {/* ── Two-column dashboard layout on desktop ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left column: Schedule + Job Capture + Demo guide */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* ── Today's Schedule ── */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                <h2 className="font-bold text-slate-800">Today&apos;s Schedule</h2>
+                <Link href="/app/schedule" className="text-xs font-semibold text-blue-600">View all</Link>
+              </div>
+              {jobsTodayList.length === 0 ? (
+                <div className="px-4 pb-5 text-center">
+                  <p className="text-3xl mb-2">📅</p>
+                  <p className="text-sm font-medium text-gray-500">No jobs scheduled today</p>
+                  <Link href="/app/jobs/new" className="mt-3 inline-block text-xs font-bold text-white px-4 py-2 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
+                    Schedule a Job
                   </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ── Needs Attention + Recent Activity ── */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Needs Attention */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-              <span className="font-bold text-sm text-slate-800">Needs Attention</span>
-              {needsAttentionCount > 0 && (
-                <span className="text-[10px] font-bold bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center shrink-0">
-                  {needsAttentionCount > 9 ? "9+" : needsAttentionCount}
-                </span>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {jobsTodayList.map(job => {
+                    const customerName = customerMap[job.customer_id] ?? "";
+                    const addrLine = [job.address, job.city, job.state].filter(Boolean).join(", ");
+                    return (
+                      <Link key={job.id} href={`/app/jobs/${job.id}`}
+                        className="flex items-center gap-3 px-4 py-3 active:bg-gray-50">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#EFF6FF" }}>
+                          <span className="text-base">🔧</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{customerName || job.job_title}</p>
+                          {addrLine && <p className="text-xs text-gray-400 truncate">{addrLine}</p>}
+                          {customerName && <p className="text-[11px] text-gray-400 truncate">{job.job_title}</p>}
+                        </div>
+                        <span className="text-gray-300 text-sm shrink-0">›</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </div>
-            {needsAttentionCount === 0 ? (
-              <div className="px-3 pb-4 text-center">
-                <p className="text-xs text-green-600 font-semibold">✓ All caught up</p>
+
+            {/* ── Job Capture ── */}
+            <div className="bg-white rounded-2xl px-4 pt-4 pb-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg leading-none">✨</span>
+                <h2 className="text-sm font-bold text-slate-800">Job Capture</h2>
               </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {needsAttentionItems.slice(0, 4).map(item => (
-                  <Link key={item.key} href={item.href}
-                    className="flex items-start gap-2 px-3 py-2.5 active:bg-gray-50">
-                    <span className="text-sm shrink-0 mt-0.5">{item.emoji}</span>
-                    <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{item.text}</p>
-                  </Link>
-                ))}
-                {needsAttentionCount > 4 && (
-                  <Link href="/app/leads" className="block px-3 py-2 text-[11px] font-semibold text-blue-600 text-center">
-                    View all
-                  </Link>
+              <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
+              <Suspense fallback={null}>
+                <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
+              </Suspense>
+            </div>
+
+            {/* Demo guide */}
+            {isDemo && (
+              <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm border border-amber-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">🗺️</span>
+                  <h2 className="text-sm font-bold text-slate-800">Start Here</h2>
+                  <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 uppercase tracking-wide">Demo</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">Tap through these to see what TradeBase can do:</p>
+                <div className="space-y-1.5">
+                  {[
+                    { label: "Review a lead", href: "/app/leads", icon: "📥" },
+                    { label: "Open a quote", href: "/app/quotes", icon: "📋" },
+                    { label: "Check the jobs board", href: "/app/jobs", icon: "🔨" },
+                    { label: "View the calendar", href: "/app/jobs?view=calendar", icon: "📅" },
+                    { label: "Mark an invoice paid", href: "/app/invoices", icon: "💵" },
+                    { label: "Try Job Capture", href: null, icon: "🤖" },
+                  ].map(step =>
+                    step.href ? (
+                      <Link key={step.label} href={step.href}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50 active:bg-blue-50">
+                        <span className="text-sm">{step.icon}</span>
+                        <span className="text-xs font-medium text-slate-700">{step.label}</span>
+                        <span className="ml-auto text-gray-300 text-xs">›</span>
+                      </Link>
+                    ) : (
+                      <div key={step.label} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50">
+                        <span className="text-sm">{step.icon}</span>
+                        <span className="text-xs font-medium text-slate-700">
+                          {step.label} <span className="text-gray-400">(tap above ↑)</span>
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right column: Needs Attention + Recent Activity */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-4 content-start">
+            {/* Needs Attention */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+                <span className="font-bold text-sm text-slate-800">Needs Attention</span>
+                {needsAttentionCount > 0 && (
+                  <span className="text-[10px] font-bold bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center shrink-0">
+                    {needsAttentionCount > 9 ? "9+" : needsAttentionCount}
+                  </span>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-3 pt-3 pb-2">
-              <span className="font-bold text-sm text-slate-800">Recent Activity</span>
-              <Link href="/app/activity" className="text-[10px] font-semibold text-blue-600">View all</Link>
-            </div>
-            {recentActivity.length === 0 ? (
-              <div className="px-3 pb-4 text-center">
-                <p className="text-xs text-gray-400">No activity yet</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {recentActivity.map(log => {
-                  const meta = ENTITY_META[log.entity_type];
-                  const href = meta ? meta.href(log.entity_id) : "/app/activity";
-                  const label = log.description ?? `${meta?.label ?? log.entity_type} ${log.action}`;
-                  return (
-                    <Link key={log.id} href={href}
+              {needsAttentionCount === 0 ? (
+                <div className="px-3 pb-4 text-center">
+                  <p className="text-xs text-green-600 font-semibold">✓ All caught up</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {needsAttentionItems.slice(0, 4).map(item => (
+                    <Link key={item.key} href={item.href}
                       className="flex items-start gap-2 px-3 py-2.5 active:bg-gray-50">
-                      <span className="text-sm shrink-0 mt-0.5">{meta?.emoji ?? "📋"}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{label}</p>
-                        <p className="text-[9px] text-gray-400 mt-0.5">{timeAgo(log.created_at)}</p>
-                      </div>
+                      <span className="text-sm shrink-0 mt-0.5">{item.emoji}</span>
+                      <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{item.text}</p>
                     </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Job Capture ── */}
-        <div className="bg-white rounded-2xl px-4 pt-4 pb-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg leading-none">✨</span>
-            <h2 className="text-sm font-bold text-slate-800">Job Capture</h2>
-          </div>
-          <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
-          <Suspense fallback={null}>
-            <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
-          </Suspense>
-        </div>
-
-        {/* Demo guide */}
-        {isDemo && (
-          <div className="bg-white rounded-2xl px-4 pt-4 pb-4 shadow-sm border border-amber-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-base">🗺️</span>
-              <h2 className="text-sm font-bold text-slate-800">Start Here</h2>
-              <span className="ml-auto text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 uppercase tracking-wide">Demo</span>
+                  ))}
+                  {needsAttentionCount > 4 && (
+                    <Link href="/app/leads" className="block px-3 py-2 text-[11px] font-semibold text-blue-600 text-center">
+                      View all
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="text-xs text-gray-400 mb-2">Tap through these to see what TradeBase can do:</p>
-            <div className="space-y-1.5">
-              {[
-                { label: "Review a lead", href: "/app/leads", icon: "📥" },
-                { label: "Open a quote", href: "/app/quotes", icon: "📋" },
-                { label: "Check the jobs board", href: "/app/jobs", icon: "🔨" },
-                { label: "View the calendar", href: "/app/jobs?view=calendar", icon: "📅" },
-                { label: "Mark an invoice paid", href: "/app/invoices", icon: "💵" },
-                { label: "Try Job Capture", href: null, icon: "🤖" },
-              ].map(step =>
-                step.href ? (
-                  <Link key={step.label} href={step.href}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50 active:bg-blue-50">
-                    <span className="text-sm">{step.icon}</span>
-                    <span className="text-xs font-medium text-slate-700">{step.label}</span>
-                    <span className="ml-auto text-gray-300 text-xs">›</span>
-                  </Link>
-                ) : (
-                  <div key={step.label} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-gray-50">
-                    <span className="text-sm">{step.icon}</span>
-                    <span className="text-xs font-medium text-slate-700">
-                      {step.label} <span className="text-gray-400">(tap above ↑)</span>
-                    </span>
-                  </div>
-                )
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-3 pt-3 pb-2">
+                <span className="font-bold text-sm text-slate-800">Recent Activity</span>
+                <Link href="/app/activity" className="text-[10px] font-semibold text-blue-600">View all</Link>
+              </div>
+              {recentActivity.length === 0 ? (
+                <div className="px-3 pb-4 text-center">
+                  <p className="text-xs text-gray-400">No activity yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {recentActivity.map(log => {
+                    const meta = ENTITY_META[log.entity_type];
+                    const href = meta ? meta.href(log.entity_id) : "/app/activity";
+                    const label = log.description ?? `${meta?.label ?? log.entity_type} ${log.action}`;
+                    return (
+                      <Link key={log.id} href={href}
+                        className="flex items-start gap-2 px-3 py-2.5 active:bg-gray-50">
+                        <span className="text-sm shrink-0 mt-0.5">{meta?.emoji ?? "📋"}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{label}</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">{timeAgo(log.created_at)}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Floating Actions ── */}
