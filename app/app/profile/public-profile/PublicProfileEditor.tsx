@@ -130,6 +130,7 @@ export function PublicProfileEditor() {
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [blockDraft, setBlockDraft] = useState({ icon: "", title: "", body: "" });
   const [slugCheck, setSlugCheck] = useState<"idle" | "checking" | "available" | "taken" | "error">("idle");
+  const [previewNonce, setPreviewNonce] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const slugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -244,6 +245,7 @@ export function PublicProfileEditor() {
           slug: j.profile?.slug ?? prev.slug,
         }));
         setSaveStatus("saved");
+        setPreviewNonce((n) => n + 1);
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
     } catch {
@@ -434,7 +436,8 @@ export function PublicProfileEditor() {
           <div className="p-3">
             <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 320 }}>
               <iframe
-                src={previewUrl}
+                key={previewNonce}
+                src={previewNonce > 0 ? `${previewUrl}?v=${previewNonce}` : previewUrl}
                 className="w-full h-full"
                 style={{ border: "none" }}
                 title="Profile Preview"
