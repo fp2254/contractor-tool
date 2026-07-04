@@ -4,6 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QuickCreate } from "@/components/QuickCreate";
+import {
+  ALL_SIDEBAR_ITEMS,
+  DEFAULT_SIDEBAR_IDS,
+  SIDEBAR_STORAGE_KEY,
+  SIDEBAR_UPDATED_EVENT,
+} from "@/lib/sidebarNav";
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -77,9 +83,21 @@ const navItems = [
   { label: "Team",     href: "/app/team",       Icon: TeamIcon,   exact: false },
 ];
 
+function readSidebarIds(): string[] {
+  try {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as string[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_SIDEBAR_IDS;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isOnline, setIsOnline] = useState(true);
+  const [sidebarIds, setSidebarIds] = useState<string[]>(DEFAULT_SIDEBAR_IDS);
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -92,6 +110,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("offline", goOffline);
     };
   }, []);
+
+  useEffect(() => {
+    setSidebarIds(readSidebarIds());
+    const onSidebarUpdated = () => setSidebarIds(readSidebarIds());
+    window.addEventListener(SIDEBAR_UPDATED_EVENT, onSidebarUpdated);
+    window.addEventListener("storage", onSidebarUpdated);
+    return () => {
+      window.removeEventListener(SIDEBAR_UPDATED_EVENT, onSidebarUpdated);
+      window.removeEventListener("storage", onSidebarUpdated);
+    };
+  }, []);
+
+  const sidebarItems = sidebarIds
+    .map(id => ALL_SIDEBAR_ITEMS.find(item => item.id === id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   function isActive(href: string, exact: boolean) {
     if (exact) return pathname === href;
@@ -114,17 +147,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="flex-1 overflow-y-auto px-3 space-y-1">
-          {navItems.map(({ label, href, Icon, exact }) => {
-            const active = isActive(href, exact);
+          {sidebarItems.map(({ id, label, href, icon, exact }) => {
+            const active = isActive(href, !!exact);
             return (
               <Link
-                key={href}
+                key={id}
                 href={href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active ? "bg-white/10 text-white" : "text-blue-100/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <Icon active={active} />
+                <span className="text-lg w-6 text-center leading-none">{icon}</span>
                 <span>{label}</span>
               </Link>
             );

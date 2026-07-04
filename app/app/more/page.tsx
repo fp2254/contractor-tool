@@ -16,6 +16,7 @@ const MENU_ITEMS = [
   { label: "Expenses",           href: "/app/expenses",          emoji: "💸", color: "#16A34A" },
   { label: "Scan Receipt",       href: "/app/receipts",          emoji: "🧾", color: "#16A34A" },
   { label: "Activity Log",       href: "/app/activity",          emoji: "📋", color: "#1B3A6B" },
+  { label: "Customize Sidebar",  href: "/app/more/sidebar",      emoji: "📌", color: "#1B3A6B" },
   // Business growth
   { label: "My Profile",         href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
   { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
