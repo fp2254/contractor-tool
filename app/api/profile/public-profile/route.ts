@@ -118,10 +118,13 @@ export async function POST(req: Request) {
     return { data, error };
   }
 
+  console.log("[public-profile][DEBUG] incoming body.selected_template =", JSON.stringify(body.selected_template), "row.selected_template =", JSON.stringify(row.selected_template), "orgId =", orgId);
+
   try {
     let { data, error } = await tryUpsert(row);
 
     if (error && (error.code === "PGRST204" || error.code === "42703" || error.message?.includes("column"))) {
+      console.log("[public-profile][DEBUG] retrying without optional cols due to error:", error.code, error.message);
       const stripped = { ...row };
       for (const col of optionalCols) {
         delete stripped[col];
@@ -130,6 +133,8 @@ export async function POST(req: Request) {
     }
 
     if (error) throw error;
+
+    console.log("[public-profile][DEBUG] saved row selected_template =", JSON.stringify(data?.selected_template));
 
     return NextResponse.json({ profile: data });
   } catch (err: any) {
