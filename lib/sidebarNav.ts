@@ -29,4 +29,4 @@ export const DEFAULT_SIDEBAR_IDS = ["home", "clients", "quotes", "jobs", "invoic
 export const SIDEBAR_STORAGE_KEY = "tb_sidebar_items";
 export const SIDEBAR_UPDATED_EVENT = "tb-sidebar-updated";
 export const MIN_SIDEBAR_ITEMS = 3;
-export const MAX_SIDEBAR_ITEMS = 10;
+export const MAX_SIDEBAR_ITEMS = ALL_SIDEBAR_ITEMS.length;
