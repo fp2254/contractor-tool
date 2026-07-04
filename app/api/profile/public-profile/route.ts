@@ -106,9 +106,6 @@ export async function POST(req: Request) {
   }
   if (body.services !== undefined)           row.services           = body.services ?? [];
 
-  // Optional columns — if DB doesn't have them yet, retry without them
-  const optionalCols = ["stat_label", "selected_template", "photos", "trust_highlights", "sections_config", "custom_blocks"] as const;
-
   async function tryUpsert(r: Record<string, unknown>) {
     const { data, error } = await (admin as any)
       .from("public_profiles")
@@ -118,23 +115,35 @@ export async function POST(req: Request) {
     return { data, error };
   }
 
-  console.log("[public-profile][DEBUG] incoming body.selected_template =", JSON.stringify(body.selected_template), "row.selected_template =", JSON.stringify(row.selected_template), "orgId =", orgId);
+  // If a specific column doesn't exist yet in the DB (migration not applied),
+  // drop ONLY that column and retry — never drop unrelated columns like
+  // selected_template just because a different column (e.g. photos) is missing.
+  function extractMissingColumn(error: { code?: string; message?: string } | null): string | null {
+    if (!error) return null;
+    if (error.code !== "PGRST204" && error.code !== "42703") return null;
+    const msg = error.message ?? "";
+    const m1 = msg.match(/'([a-zA-Z0-9_]+)' column/);
+    if (m1) return m1[1];
+    const m2 = msg.match(/column "([a-zA-Z0-9_]+)"/);
+    if (m2) return m2[1];
+    return null;
+  }
 
   try {
-    let { data, error } = await tryUpsert(row);
+    const attemptRow = { ...row };
+    let { data, error } = await tryUpsert(attemptRow);
+    let attempts = 0;
 
-    if (error && (error.code === "PGRST204" || error.code === "42703" || error.message?.includes("column"))) {
-      console.log("[public-profile][DEBUG] retrying without optional cols due to error:", error.code, error.message);
-      const stripped = { ...row };
-      for (const col of optionalCols) {
-        delete stripped[col];
-      }
-      ({ data, error } = await tryUpsert(stripped));
+    while (error && attempts < 10) {
+      const missingCol = extractMissingColumn(error);
+      if (!missingCol || !(missingCol in attemptRow)) break;
+      console.warn(`[public-profile] column "${missingCol}" missing in DB — dropping it from this save and retrying. Run the pending migration to persist it.`);
+      delete attemptRow[missingCol];
+      ({ data, error } = await tryUpsert(attemptRow));
+      attempts += 1;
     }
 
     if (error) throw error;
-
-    console.log("[public-profile][DEBUG] saved row selected_template =", JSON.stringify(data?.selected_template));
 
     return NextResponse.json({ profile: data });
   } catch (err: any) {

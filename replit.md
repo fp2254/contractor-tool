@@ -94,6 +94,7 @@ supabase/
   migration_phone_system.sql           ✅ applied — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
   migration_addons_v2.sql              ✅ applied — adds external_subscription_id + billing_provider to org_addons
   migration_sms_bot.sql                ⬜ pending — creates sms_conversations, sms_messages, opted_out_numbers
+  migration_public_profile_photos.sql  ⬜ pending — adds photos JSONB column to public_profiles (gallery photos)
 ```
 
 ## Environment Variables

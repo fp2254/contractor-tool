@@ -229,8 +229,6 @@ export function PublicProfileEditor() {
       stat_label: profile.stat_label,
     };
 
-    console.log("[DEBUG] handleSave: payload.selected_template =", payload.selected_template, "profile.selected_template =", profile.selected_template);
-
     try {
       const res = await fetch("/api/profile/public-profile", {
         method: "POST",
@@ -238,7 +236,6 @@ export function PublicProfileEditor() {
         body: JSON.stringify(payload),
       });
       const j = await res.json();
-      console.log("[DEBUG] handleSave: response.ok =", res.ok, "returned profile.selected_template =", j.profile?.selected_template, "full response =", JSON.stringify(j));
       if (!res.ok) {
         setSaveError(j.error ?? "Failed to save");
         setSaveStatus("error");
@@ -251,8 +248,7 @@ export function PublicProfileEditor() {
         setPreviewNonce((n) => n + 1);
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
-    } catch (e) {
-      console.log("[DEBUG] handleSave: network error", e);
+    } catch {
       setSaveError("Network error — please try again");
       setSaveStatus("error");
     } finally {
