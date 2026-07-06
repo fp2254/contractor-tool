@@ -77,6 +77,7 @@ export default async function DashboardPage() {
     orgSettingsResult,
     pubProfileResult,
     archivedNotesResult,
+    archivedQuoteNotesResult,
     customersResult,
     activityResult,
     newLeadsResult,
@@ -88,6 +89,7 @@ export default async function DashboardPage() {
     admin.from("org_settings").select("default_warranty_text,owner_name").eq("org_id", orgId!).maybeSingle(),
     (async () => { try { return await (admin as any).from("public_profiles").select("slug,is_published").eq("org_id", orgId!).maybeSingle(); } catch { return { data: null }; } })(),
     admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "invoice").eq("body", "__archived__"),
+    admin.from("notes").select("entity_id").eq("org_id", orgId!).eq("entity_type", "quote").eq("body", "__archived__"),
     admin.from("customers").select("id,first_name,last_name").eq("org_id", orgId!),
     (async () => { try { return await (admin as any).from("activity_log").select("id,entity_type,entity_id,action,description,created_at").eq("org_id", orgId!).order("created_at", { ascending: false }).limit(5); } catch { return { data: [] }; } })(),
     admin.from("leads").select("id,full_name,source,created_at").eq("org_id", orgId!).eq("status", "new").order("created_at", { ascending: false }).limit(3),
@@ -100,6 +102,7 @@ export default async function DashboardPage() {
   const firstName = ownerName.split(" ")[0] || "";
 
   const archivedInvoiceIds = new Set((archivedNotesResult.data ?? []).map(n => n.entity_id as string));
+  const archivedQuoteIds = new Set((archivedQuoteNotesResult.data ?? []).map(n => n.entity_id as string));
   const customerMap = Object.fromEntries(
     (customersResult.data ?? []).map(c => [c.id, `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "Unknown"])
   );
@@ -114,11 +117,17 @@ export default async function DashboardPage() {
     .reduce((s, i) => s + (Number(i.total_amount) || 0), 0);
   const overdueInvoices = (invoicesResult.data ?? []).filter(i => !archivedInvoiceIds.has(i.id) && i.status === "overdue");
 
-  const sentQuotes = quotesResult.data ?? [];
+  // Exclude quotes the contractor has archived — they're still "sent" in the DB
+  // but shouldn't count as awaiting a response on the dashboard.
+  const sentQuotes = (quotesResult.data ?? []).filter(q => !archivedQuoteIds.has(q.id));
   const estimatesCount = sentQuotes.length;
   const sentQuotesHref = sentQuotes.length === 1 ? `/app/quotes/${sentQuotes[0].id}` : "/app/quotes?tab=sent";
   const newLeadsCount = leadsResult.count ?? 0;
   const newLeadsData = (newLeadsResult.data ?? []) as { id: string; full_name: string | null; source: string | null; created_at: string }[];
+
+  // Needs Attention badge must reflect the TRUE totals, not the truncated
+  // preview lists below (which cap leads/quotes/invoices for display only).
+  const needsAttentionCount = newLeadsCount + estimatesCount + overdueInvoices.length;
 
   const needsAttentionItems = [
     ...newLeadsData.map(l => ({
@@ -140,7 +149,6 @@ export default async function DashboardPage() {
       href: `/app/invoices/${inv.id}`,
     })),
   ];
-  const needsAttentionCount = needsAttentionItems.length;
 
   const recentActivity: { id: string; entity_type: string; entity_id: string; action: string; description: string | null; created_at: string }[] =
     (activityResult as any)?.data ?? [];
