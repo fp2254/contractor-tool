@@ -21,6 +21,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect("/auth/login");
 
+  // Realtor accounts are a separate account type — never auto-provision a
+  // contractor org for them, and keep them out of the contractor CRM.
+  if (user.user_metadata?.account_type === "realtor") redirect("/realtor");
+
   const orgId = await ensureUserOrg();
 
   if (!orgId) redirect("/auth/login");

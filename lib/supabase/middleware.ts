@@ -40,5 +40,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (!user && request.nextUrl.pathname.startsWith("/realtor")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.searchParams.set("next", "/realtor");
+    return NextResponse.redirect(url);
+  }
+
   return response;
 }

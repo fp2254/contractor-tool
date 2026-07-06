@@ -95,6 +95,7 @@ supabase/
   migration_addons_v2.sql              ✅ applied — adds external_subscription_id + billing_provider to org_addons
   migration_sms_bot.sql                ⬜ pending — creates sms_conversations, sms_messages, opted_out_numbers
   migration_public_profile_photos.sql  ⬜ pending — adds photos JSONB column to public_profiles (gallery photos)
+  migration_realtor.sql                ⬜ pending — creates realtor_profiles table (separate Realtor account type) + RLS
 ```
 
 ## Environment Variables
@@ -223,6 +224,17 @@ supabase/
 - 404 state: clean centered card for unknown/unpublished slugs
 - Mock data in `mockData.ts` — one profile: `mike-sullivan-roofing`
 - **Next step**: wire slug to Supabase org `profile_slug` column; save QuoteModal submissions as leads
+
+### Realtor Accounts (`/realtor`, `/agent/[slug]`)
+- Brand new account type, fully separate from contractor orgs — no `org_members` row is ever created for a realtor
+- Sign up at `/auth/realtor-signup` (real Supabase auth user, tagged `user_metadata.account_type = "realtor"`) — separate from the contractor signup (which is waitlist-only demo)
+- Login (`/auth/login`) routes realtor sessions to `/realtor` instead of `/app`; contractor `/app` layout redirects realtor accounts back to `/realtor` if they land there
+- `realtor_profiles` table (1:1 with `auth.users`), auto-provisioned on first visit to `/realtor` (mirrors `homeowner_profiles` pattern) — see `lib/realtor.ts`
+- Realtor dashboard shell (`app/realtor/`) with limited nav (Dashboard, Settings only) — no access to contractor CRM data
+- Settings page: edit name, agency, license number, phone, bio, service area, photo (Supabase Storage `profile-photos` bucket); publish/unpublish toggle generates a unique slug
+- Public profile at `/agent/[slug]` — public, unauthenticated, shows name/agency/license/bio/phone once published
+- **Requires**: `supabase/migration_realtor.sql` applied in Supabase Studio
+- **Next steps** (future tasks): contractor directory browsing + connect requests, work requests into contractor Leads pipeline + separate Realtor Requests view
 
 ## Not Yet Built
 - Online payments (Stripe/Square)

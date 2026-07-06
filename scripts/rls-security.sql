@@ -339,6 +339,15 @@ BEGIN
     CREATE POLICY "public_profiles: org delete" ON public_profiles FOR DELETE USING (org_id IN (SELECT user_org_ids()));
   END IF;
 
+  -- realtor_profiles
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='realtor_profiles') THEN
+    ALTER TABLE realtor_profiles ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "realtor_own_profile" ON realtor_profiles;
+    DROP POLICY IF EXISTS "realtor_public_profile_read" ON realtor_profiles;
+    CREATE POLICY "realtor_own_profile" ON realtor_profiles FOR ALL USING (user_id = auth.uid());
+    CREATE POLICY "realtor_public_profile_read" ON realtor_profiles FOR SELECT USING (is_published = true);
+  END IF;
+
   -- profile_reviews
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='profile_reviews') THEN
     ALTER TABLE profile_reviews ENABLE ROW LEVEL SECURITY;

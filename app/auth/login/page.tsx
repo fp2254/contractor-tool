@@ -13,7 +13,9 @@ export default function LoginPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) window.location.href = "/app";
+      if (user) {
+        window.location.href = user.user_metadata?.account_type === "realtor" ? "/realtor" : "/app";
+      }
     });
   }, []);
 
@@ -35,7 +37,9 @@ export default function LoginPage() {
         setError(json.error ?? "Incorrect email or password.");
         return;
       }
-      window.location.href = "/app";
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      window.location.href = user?.user_metadata?.account_type === "realtor" ? "/realtor" : "/app";
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -108,6 +112,13 @@ export default function LoginPage() {
               New here?{" "}
               <Link href="/auth/sign-up" className="font-semibold underline" style={{ color: "#1B3A6B" }}>
                 Create an account
+              </Link>
+            </p>
+
+            <p className="text-xs text-center text-gray-400">
+              Are you a realtor?{" "}
+              <Link href="/auth/realtor-signup" className="underline" style={{ color: "#1B3A6B" }}>
+                Sign up here
               </Link>
             </p>
 
