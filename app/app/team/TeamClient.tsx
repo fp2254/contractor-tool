@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AdminHubPanel } from "@/components/AdminHubPanel";
+import { InlineAssignSelect } from "@/components/InlineAssignSelect";
+import { TeamCalendar } from "@/components/TeamCalendar";
 
 type WorkItem = { id: string; customerName: string; status: string; amount?: number | null; title?: string; scheduledDate?: string | null };
 
@@ -15,6 +17,17 @@ type MemberWithWork = {
   quotes: (WorkItem & { amount: number | null })[];
   invoices: (WorkItem & { amount: number | null })[];
 };
+
+type CalendarJob = {
+  id: string;
+  title: string;
+  status: string;
+  scheduledDate: string;
+  assignedTo: string | null;
+  customerName: string;
+};
+
+type MemberOption = { userId: string; name: string };
 
 const ROLE_COLORS: Record<string, string> = {
   owner:  "bg-amber-100 text-amber-700",
@@ -51,13 +64,16 @@ function MemberCard({
   isAdmin,
   expanded,
   onToggle,
+  memberOptions,
 }: {
   m: MemberWithWork;
   isAdmin: boolean;
   expanded: boolean;
   onToggle: () => void;
+  memberOptions: MemberOption[];
 }) {
   const totalWork = m.jobs.length + m.quotes.length + m.invoices.length;
+  const otherMembers = memberOptions.filter(o => o.userId !== m.userId);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -108,16 +124,20 @@ function MemberCard({
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Jobs</p>
               <div className="space-y-1.5">
                 {m.jobs.map(j => (
-                  <Link key={j.id} href={`/app/jobs/${j.id}`}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 hover:bg-gray-50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{j.title}</p>
-                      <p className="text-xs text-gray-400">{j.customerName}{j.scheduledDate ? ` · ${fmtDate(j.scheduledDate)}` : ""}</p>
-                    </div>
-                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ml-2 shrink-0 capitalize ${JOB_STATUS_COLORS[j.status] ?? "bg-gray-100 text-gray-500"}`}>
-                      {j.status.replace(/_/g, " ")}
-                    </span>
-                  </Link>
+                  <div key={j.id} className="flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2">
+                    <Link href={`/app/jobs/${j.id}`} className="flex-1 min-w-0 flex items-center justify-between hover:opacity-80">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{j.title}</p>
+                        <p className="text-xs text-gray-400">{j.customerName}{j.scheduledDate ? ` · ${fmtDate(j.scheduledDate)}` : ""}</p>
+                      </div>
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-medium ml-2 shrink-0 capitalize ${JOB_STATUS_COLORS[j.status] ?? "bg-gray-100 text-gray-500"}`}>
+                        {j.status.replace(/_/g, " ")}
+                      </span>
+                    </Link>
+                    {isAdmin && otherMembers.length > 0 && (
+                      <InlineAssignSelect entityType="job" entityId={j.id} currentAssigneeId={m.userId} members={otherMembers} placeholder="Reassign…" />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -129,14 +149,18 @@ function MemberCard({
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Quotes</p>
               <div className="space-y-1.5">
                 {m.quotes.map(q => (
-                  <Link key={q.id} href={`/app/quotes/${q.id}`}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 hover:bg-gray-50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{q.customerName}</p>
-                      <p className="text-xs text-gray-400 capitalize">{q.status}</p>
-                    </div>
-                    <span className="text-sm font-bold text-slate-700 ml-2 shrink-0">{fmtMoney(q.amount)}</span>
-                  </Link>
+                  <div key={q.id} className="flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2">
+                    <Link href={`/app/quotes/${q.id}`} className="flex-1 min-w-0 flex items-center justify-between hover:opacity-80">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{q.customerName}</p>
+                        <p className="text-xs text-gray-400 capitalize">{q.status}</p>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 ml-2 shrink-0">{fmtMoney(q.amount)}</span>
+                    </Link>
+                    {isAdmin && otherMembers.length > 0 && (
+                      <InlineAssignSelect entityType="quote" entityId={q.id} currentAssigneeId={m.userId} members={otherMembers} placeholder="Reassign…" />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -148,14 +172,18 @@ function MemberCard({
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Invoices</p>
               <div className="space-y-1.5">
                 {m.invoices.map(i => (
-                  <Link key={i.id} href={`/app/invoices/${i.id}`}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 hover:bg-gray-50">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{i.customerName}</p>
-                      <p className="text-xs text-gray-400 capitalize">{i.status === "unpaid" ? "open" : i.status}</p>
-                    </div>
-                    <span className="text-sm font-bold text-slate-700 ml-2 shrink-0">{fmtMoney(i.amount)}</span>
-                  </Link>
+                  <div key={i.id} className="flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2">
+                    <Link href={`/app/invoices/${i.id}`} className="flex-1 min-w-0 flex items-center justify-between hover:opacity-80">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">{i.customerName}</p>
+                        <p className="text-xs text-gray-400 capitalize">{i.status === "unpaid" ? "open" : i.status}</p>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 ml-2 shrink-0">{fmtMoney(i.amount)}</span>
+                    </Link>
+                    {isAdmin && otherMembers.length > 0 && (
+                      <InlineAssignSelect entityType="invoice" entityId={i.id} currentAssigneeId={m.userId} members={otherMembers} placeholder="Reassign…" />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -194,22 +222,88 @@ function MemberCard({
   );
 }
 
+function UnassignedSection({
+  unassignedJobs,
+  unassignedQuotes,
+  unassignedInvoices,
+  memberOptions,
+}: {
+  unassignedJobs: WorkItem[];
+  unassignedQuotes: WorkItem[];
+  unassignedInvoices: WorkItem[];
+  memberOptions: MemberOption[];
+}) {
+  const total = unassignedJobs.length + unassignedQuotes.length + unassignedInvoices.length;
+  if (total === 0 || memberOptions.length === 0) return null;
+
+  return (
+    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-amber-800">Unassigned Work</p>
+        <span className="text-xs font-bold rounded-full px-2 py-0.5 bg-amber-100 text-amber-700">{total}</span>
+      </div>
+      <p className="text-xs text-amber-700 -mt-2">Hand these off in one tap.</p>
+
+      <div className="space-y-1.5">
+        {unassignedJobs.map(j => (
+          <div key={`job-${j.id}`} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2">
+            <Link href={`/app/jobs/${j.id}`} className="flex-1 min-w-0 hover:opacity-80">
+              <p className="text-sm font-medium text-slate-700 truncate">🔨 {j.title}</p>
+              <p className="text-xs text-gray-400 truncate">{j.customerName}</p>
+            </Link>
+            <InlineAssignSelect entityType="job" entityId={j.id} currentAssigneeId={null} members={memberOptions} />
+          </div>
+        ))}
+        {unassignedQuotes.map(q => (
+          <div key={`quote-${q.id}`} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2">
+            <Link href={`/app/quotes/${q.id}`} className="flex-1 min-w-0 hover:opacity-80">
+              <p className="text-sm font-medium text-slate-700 truncate">📋 {q.customerName}</p>
+              <p className="text-xs text-gray-400 capitalize truncate">{q.status}{q.amount != null ? ` · ${fmtMoney(q.amount)}` : ""}</p>
+            </Link>
+            <InlineAssignSelect entityType="quote" entityId={q.id} currentAssigneeId={null} members={memberOptions} />
+          </div>
+        ))}
+        {unassignedInvoices.map(i => (
+          <div key={`invoice-${i.id}`} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2">
+            <Link href={`/app/invoices/${i.id}`} className="flex-1 min-w-0 hover:opacity-80">
+              <p className="text-sm font-medium text-slate-700 truncate">📄 {i.customerName}</p>
+              <p className="text-xs text-gray-400 capitalize truncate">{i.status === "unpaid" ? "open" : i.status}{i.amount != null ? ` · ${fmtMoney(i.amount)}` : ""}</p>
+            </Link>
+            <InlineAssignSelect entityType="invoice" entityId={i.id} currentAssigneeId={null} members={memberOptions} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TeamClient({
   members,
   isAdmin,
   currentUserId,
   orgId,
+  unassignedJobs,
+  unassignedQuotes,
+  unassignedInvoices,
+  calendarJobs,
+  memberOptions,
 }: {
   members: MemberWithWork[];
   isAdmin: boolean;
   currentUserId: string;
   orgId: string;
+  unassignedJobs: WorkItem[];
+  unassignedQuotes: WorkItem[];
+  unassignedInvoices: WorkItem[];
+  calendarJobs: CalendarJob[];
+  memberOptions: MemberOption[];
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [tab, setTab] = useState<"team" | "calendar">("team");
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -239,70 +333,103 @@ export default function TeamClient({
     <div className="space-y-3">
       {isAdmin && <AdminHubPanel />}
 
+      {isAdmin && (
+        <div className="flex bg-white rounded-xl shadow-sm p-1 gap-1">
+          <button
+            onClick={() => setTab("team")}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${tab === "team" ? "text-white" : "text-gray-500"}`}
+            style={tab === "team" ? { backgroundColor: "#1B3A6B" } : {}}>
+            Team
+          </button>
+          <button
+            onClick={() => setTab("calendar")}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${tab === "calendar" ? "text-white" : "text-gray-500"}`}
+            style={tab === "calendar" ? { backgroundColor: "#1B3A6B" } : {}}>
+            Calendar
+          </button>
+        </div>
+      )}
+
       {inviteMsg && (
         <div className={`rounded-xl px-4 py-3 text-sm font-medium ${inviteMsg.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {inviteMsg.text}
         </div>
       )}
 
-      {members.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
-          <p className="text-3xl mb-2">👥</p>
-          <p className="font-medium text-slate-600 mb-1">No team members yet</p>
-          <p className="text-sm">Invite someone to get started.</p>
-        </div>
+      {tab === "calendar" ? (
+        <TeamCalendar jobs={calendarJobs} members={memberOptions} />
       ) : (
-        <div className="space-y-2">
-          {members.map(m => (
-            <MemberCard
-              key={m.userId}
-              m={m}
-              isAdmin={isAdmin}
-              expanded={expandedId === m.userId}
-              onToggle={() => setExpandedId(prev => prev === m.userId ? null : m.userId)}
-            />
-          ))}
-        </div>
-      )}
-
-      {isAdmin && (
         <>
-          {showInvite ? (
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <p className="text-sm font-semibold text-slate-700 mb-3">Invite a team member</p>
-              <form onSubmit={handleInvite} className="space-y-3">
-                <input
-                  type="email"
-                  required
-                  placeholder="their@email.com"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <div className="flex gap-2">
-                  <button type="submit" disabled={inviting}
-                    className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-                    style={{ backgroundColor: "#1B3A6B" }}>
-                    {inviting ? "Sending…" : "Send Invite"}
-                  </button>
-                  <button type="button"
-                    onClick={() => { setShowInvite(false); setInviteEmail(""); }}
-                    className="rounded-xl px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-600">
-                    Cancel
-                  </button>
-                </div>
-              </form>
+          {isAdmin && (
+            <UnassignedSection
+              unassignedJobs={unassignedJobs}
+              unassignedQuotes={unassignedQuotes}
+              unassignedInvoices={unassignedInvoices}
+              memberOptions={memberOptions}
+            />
+          )}
+
+          {members.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+              <p className="text-3xl mb-2">👥</p>
+              <p className="font-medium text-slate-600 mb-1">No team members yet</p>
+              <p className="text-sm">Invite someone to get started.</p>
             </div>
           ) : (
-            <button onClick={() => setShowInvite(true)}
-              className="w-full rounded-xl py-3 text-white font-semibold flex items-center justify-center gap-2"
-              style={{ backgroundColor: "#1B3A6B" }}>
-              <span className="text-lg leading-none">+</span> Invite Team Member
-            </button>
+            <div className="space-y-2">
+              {members.map(m => (
+                <MemberCard
+                  key={m.userId}
+                  m={m}
+                  isAdmin={isAdmin}
+                  expanded={expandedId === m.userId}
+                  onToggle={() => setExpandedId(prev => prev === m.userId ? null : m.userId)}
+                  memberOptions={memberOptions}
+                />
+              ))}
+            </div>
           )}
-          <p className="text-xs text-gray-400 text-center px-4">
-            Team members receive an email to join your TradeBase workspace.
-          </p>
+
+          {isAdmin && (
+            <>
+              {showInvite ? (
+                <div className="bg-white rounded-2xl shadow-sm p-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-3">Invite a team member</p>
+                  <form onSubmit={handleInvite} className="space-y-3">
+                    <input
+                      type="email"
+                      required
+                      placeholder="their@email.com"
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                    <div className="flex gap-2">
+                      <button type="submit" disabled={inviting}
+                        className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                        style={{ backgroundColor: "#1B3A6B" }}>
+                        {inviting ? "Sending…" : "Send Invite"}
+                      </button>
+                      <button type="button"
+                        onClick={() => { setShowInvite(false); setInviteEmail(""); }}
+                        className="rounded-xl px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-600">
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <button onClick={() => setShowInvite(true)}
+                  className="w-full rounded-xl py-3 text-white font-semibold flex items-center justify-center gap-2"
+                  style={{ backgroundColor: "#1B3A6B" }}>
+                  <span className="text-lg leading-none">+</span> Invite Team Member
+                </button>
+              )}
+              <p className="text-xs text-gray-400 text-center px-4">
+                Team members receive an email to join your TradeBase workspace.
+              </p>
+            </>
+          )}
         </>
       )}
     </div>
