@@ -234,7 +234,9 @@ function UnassignedSection({
   memberOptions: MemberOption[];
 }) {
   const total = unassignedJobs.length + unassignedQuotes.length + unassignedInvoices.length;
-  if (total === 0 || memberOptions.length === 0) return null;
+  // Assigning only makes sense once there's someone else to hand work off to —
+  // for a solo operator, nothing is ever "assigned" and that's normal, not a problem.
+  if (total === 0 || memberOptions.length < 2) return null;
 
   return (
     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-3">
