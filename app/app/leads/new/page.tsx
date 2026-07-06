@@ -10,6 +10,11 @@ async function createLead(formData: FormData) {
   const user = await supabase.auth.getUser();
   const admin = createAdminClient();
 
+  const selectedServices = formData.getAll("job_type").map(v => String(v)).filter(Boolean);
+  const otherService = String(formData.get("job_type_other") ?? "").trim();
+  if (otherService) selectedServices.push(otherService);
+  const jobType = selectedServices.length > 0 ? selectedServices.join(", ") : null;
+
   const { data: lead, error } = await admin.from("leads").insert({
     org_id: orgId!,
     name: String(formData.get("name") ?? ""),
@@ -19,7 +24,7 @@ async function createLead(formData: FormData) {
     city: String(formData.get("city") ?? "") || null,
     state: String(formData.get("state") ?? "") || null,
     lead_source: String(formData.get("lead_source") ?? "") || null,
-    job_type: String(formData.get("job_type") ?? "") || null,
+    job_type: jobType,
     notes: String(formData.get("notes") ?? "") || null,
     status: "new",
     created_by_user: user.data.user?.id ?? null,
@@ -101,7 +106,7 @@ export default async function NewLeadPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-              Service Type
+              Services
               {serviceNames.length === 0 && (
                 <span className="ml-2 normal-case font-normal text-gray-400">
                   — <a href="/app/profile" className="text-blue-500 underline">add your services</a> to see them here
@@ -109,12 +114,22 @@ export default async function NewLeadPage() {
               )}
             </label>
             {serviceNames.length > 0 ? (
-              <select name="job_type"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-100">
-                <option value="">Select service…</option>
-                {serviceNames.map(s => <option key={s} value={s}>{s}</option>)}
-                <option value="Other">Other</option>
-              </select>
+              <div className="space-y-2">
+                <p className="text-[11px] text-gray-400">Select all services that apply to this lead.</p>
+                <div className="flex flex-wrap gap-2">
+                  {serviceNames.map(s => (
+                    <label
+                      key={s}
+                      className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm cursor-pointer has-[:checked]:border-[#1B3A6B] has-[:checked]:bg-blue-50"
+                    >
+                      <input type="checkbox" name="job_type" value={s} className="accent-[#1B3A6B]" />
+                      {s}
+                    </label>
+                  ))}
+                </div>
+                <input name="job_type_other" placeholder="Other service (optional)"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
+              </div>
             ) : (
               <input name="job_type" placeholder="e.g. Roof repair, Plumbing, HVAC…"
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
