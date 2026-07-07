@@ -96,6 +96,7 @@ supabase/
   migration_sms_bot.sql                ⬜ pending — creates sms_conversations, sms_messages, opted_out_numbers
   migration_public_profile_photos.sql  ⬜ pending — adds photos JSONB column to public_profiles (gallery photos)
   migration_realtor.sql                ⬜ pending — creates realtor_profiles table (separate Realtor account type) + RLS
+  migration_realtor_connections.sql    ⬜ pending — creates realtor_connections, realtor_contacts; adds is_realtor_request + realtor_connection_id + realtor_profile_id to leads
 ```
 
 ## Environment Variables
@@ -233,8 +234,17 @@ supabase/
 - Realtor dashboard shell (`app/realtor/`) with limited nav (Dashboard, Settings only) — no access to contractor CRM data
 - Settings page: edit name, agency, license number, phone, bio, service area, photo (Supabase Storage `profile-photos` bucket); publish/unpublish toggle generates a unique slug
 - Public profile at `/agent/[slug]` — public, unauthenticated, shows name/agency/license/bio/phone once published
-- **Requires**: `supabase/migration_realtor.sql` applied in Supabase Studio
-- **Next steps** (future tasks): contractor directory browsing + connect requests, work requests into contractor Leads pipeline + separate Realtor Requests view
+- **Requires**: `supabase/migration_realtor.sql` + `supabase/migration_realtor_connections.sql` applied in Supabase Studio
+- Realtor nav now includes: Dashboard, Directory, Connections, Contacts, Requests, Settings
+
+### Realtor Connections & Work Requests
+- **Contractor Directory** (`/realtor/directory`): realtor browses published contractor profiles, sends connect requests with optional message; shows live connection status (pending/connected/declined)
+- **Connections** (`/realtor/connections`): realtor tracks all sent connection requests; from any accepted connection can open "Send Work Request" modal (client name/phone/email/address/job type/notes)
+- **Contacts** (`/realtor/contacts`): realtor maintains private contact list (name/phone/email/company/notes); full CRUD inline
+- **Requests** (`/realtor/requests`): realtor sees all work requests sent + the lead status in each contractor's pipeline
+- **Contractor — Realtor Requests** (`/app/realtor-requests`): two-tab view — "Connect Requests" (accept/decline incoming realtor requests) + "Work Requests" (realtor-originated leads, clicking opens the lead detail); accessible from More menu and sidebar customizer
+- Work requests create real leads in contractor's pipeline (`lead_source = "Realtor"`, notes prefixed with `[Realtor Request from X]`); graceful fallback if migration columns not yet applied
+- API routes: `/api/realtor/connections` (GET/POST), `/api/realtor/connections/[id]` (DELETE/cancel), `/api/realtor/contacts` (GET/POST), `/api/realtor/contacts/[id]` (DELETE), `/api/realtor/work-requests` (GET/POST), `/api/app/realtor-connections` (GET), `/api/app/realtor-connections/[id]` (PATCH accept/decline)
 
 ## Not Yet Built
 - Online payments (Stripe/Square)

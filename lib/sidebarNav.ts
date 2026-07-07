@@ -22,7 +22,8 @@ export const ALL_SIDEBAR_ITEMS: SidebarNavItem[] = [
   { id: "reports",        label: "Reports",            href: "/app/reports",        icon: "📊" },
   { id: "requests",       label: "Quote Requests",     href: "/app/requests",       icon: "📬" },
   { id: "phone",          label: "AI Phone",           href: "/app/phone",          icon: "📞" },
-  { id: "projects",       label: "Completed Projects", href: "/app/projects",       icon: "🏗️" },
+  { id: "projects",          label: "Completed Projects", href: "/app/projects",          icon: "🏗️" },
+  { id: "realtor-requests",  label: "Realtor Requests",   href: "/app/realtor-requests",  icon: "🏡" },
 ];
 
 export const DEFAULT_SIDEBAR_IDS = ["home", "clients", "quotes", "jobs", "invoices", "team"];

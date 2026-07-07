@@ -22,6 +22,7 @@ const MENU_ITEMS = [
   { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
   { label: "Earn With TradeBase",href: "/app/referral",          emoji: "💰", color: "#16A34A" },
   // Management
+  { label: "Realtor Requests",   href: "/app/realtor-requests",  emoji: "🏡", color: "#1B3A6B" },
   { label: "Team",               href: "/app/team",              emoji: "🧑‍🤝‍🧑", color: "#1B3A6B" },
   { label: "Trade Contacts",     href: "/app/trade-contacts",    emoji: "👥", color: "#1B3A6B" },
   { label: "Inventory",          href: "/app/inventory",         emoji: "📦", color: "#8B4513" },
