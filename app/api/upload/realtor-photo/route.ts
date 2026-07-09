@@ -25,9 +25,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Only image files are allowed (JPG, PNG, WEBP, GIF)" }, { status: 400 });
   }
 
+  const kindRaw = formData.get("kind");
+  const kind = kindRaw === "banner" ? "banner" : "profile";
+
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  const path = `${user.id}/profile.${ext}`;
+  const path = `${user.id}/${kind}.${ext}`;
 
   await admin.storage.createBucket("profile-photos", { public: true }).catch(() => {});
 

@@ -12,6 +12,7 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
   const [bio, setBio] = useState(profile.bio ?? "");
   const [serviceArea, setServiceArea] = useState(profile.service_area ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? "");
+  const [bannerUrl, setBannerUrl] = useState(profile.banner_url ?? "");
   const [yearsExperience, setYearsExperience] = useState(profile.years_experience?.toString() ?? "");
   const [homesSold, setHomesSold] = useState(profile.homes_sold?.toString() ?? "");
   const [salesVolume, setSalesVolume] = useState(profile.sales_volume?.toString() ?? "");
@@ -19,9 +20,11 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
   const [slug, setSlug] = useState(profile.slug);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -31,6 +34,7 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("kind", "profile");
       const res = await fetch("/api/upload/realtor-photo", { method: "POST", body: formData });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) {
@@ -42,6 +46,29 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
       setError("Upload failed. Please try again.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("kind", "banner");
+      const res = await fetch("/api/upload/realtor-photo", { method: "POST", body: formData });
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        setError(json.error ?? "Upload failed.");
+        return;
+      }
+      setBannerUrl(json.url);
+    } catch {
+      setError("Upload failed. Please try again.");
+    } finally {
+      setUploadingBanner(false);
     }
   }
 
@@ -61,6 +88,7 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
           bio,
           service_area: serviceArea,
           avatar_url: avatarUrl,
+          banner_url: bannerUrl,
           years_experience: yearsExperience,
           homes_sold: homesSold,
           sales_volume: salesVolume,
@@ -132,6 +160,38 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
             <p className="text-sm font-semibold text-slate-800">Profile photo</p>
             <p className="text-xs text-gray-400">JPG, PNG, or WEBP</p>
           </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-slate-800 mb-2">Cover photo</p>
+          <div
+            className="relative w-full h-28 rounded-xl overflow-hidden border border-gray-200 bg-cover bg-center flex items-center justify-center"
+            style={{
+              backgroundImage: bannerUrl
+                ? `linear-gradient(180deg, rgba(11,26,58,0.15), rgba(11,26,58,0.35)), url(${bannerUrl})`
+                : "linear-gradient(135deg, #0f2652 0%, #1B3A6B 60%, #2a4d85 100%)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              disabled={uploadingBanner}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-white transition-colors"
+            >
+              {uploadingBanner ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+              {bannerUrl ? "Change cover photo" : "Upload cover photo"}
+            </button>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleBannerChange}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1.5">
+            Shown as the full-width banner behind your name on your public profile.
+          </p>
         </div>
 
         <div>
