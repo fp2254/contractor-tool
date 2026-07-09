@@ -13,6 +13,10 @@ export type RealtorProfile = {
   slug: string | null;
   is_published: boolean;
   profile_completion: number;
+  years_experience?: number | null;
+  homes_sold?: number | null;
+  sales_volume?: number | null;
+  banner_url?: string | null;
 };
 
 function slugifyName(text: string): string {

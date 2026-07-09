@@ -3,78 +3,34 @@
 import { SectionTitle } from "./SectionTitle";
 import type { ServiceEntry } from "../types";
 
-const C = {
-  navy: "#0f1f3d",
-  offWhite: "#f4f5f7",
-  lightGray: "#e8ecf2",
-  gray: "#8a9ab5",
-};
-
 type Props = {
   services: ServiceEntry[];
-  condensedFont: string;
 };
 
-export function ServicesSection({ services, condensedFont }: Props) {
+export function ServicesSection({ services }: Props) {
   const withPhoto = services.filter((s) => s.photo_url);
   const withoutPhoto = services.filter((s) => !s.photo_url);
 
   return (
-    <div
-      style={{
-        padding: "22px 24px",
-        borderBottom: `1px solid ${C.lightGray}`,
-        background: "white",
-        marginBottom: 8,
-      }}
-    >
-      <SectionTitle condensedFont={condensedFont}>Services</SectionTitle>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+      <SectionTitle>Services</SectionTitle>
 
       {/* Photo cards for services that have an example photo */}
       {withPhoto.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 10,
-            marginBottom: withoutPhoto.length > 0 ? 12 : 0,
-          }}
-        >
+        <div className="grid grid-cols-2 gap-3 mb-4">
           {withPhoto.map((svc, i) => (
             <div
               key={i}
-              style={{
-                borderRadius: 10,
-                overflow: "hidden",
-                border: `1px solid ${C.lightGray}`,
-                background: C.offWhite,
-              }}
+              className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50"
             >
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  aspectRatio: "4/3",
-                  background: "#d0d8e4",
-                }}
-              >
+              <div className="relative w-full aspect-[4/3] bg-gray-200">
                 <img
                   src={svc.photo_url}
                   alt={svc.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  className="w-full h-full object-cover block"
                 />
               </div>
-              <div
-                className={condensedFont}
-                style={{
-                  padding: "7px 10px",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: C.navy,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.3px",
-                }}
-              >
+              <div className="p-2.5 text-xs font-bold text-slate-800 tracking-tight">
                 {svc.name}
               </div>
             </div>
@@ -84,19 +40,11 @@ export function ServicesSection({ services, condensedFont }: Props) {
 
       {/* Plain pill chips for services without a photo */}
       {withoutPhoto.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div className="flex flex-wrap gap-2">
           {withoutPhoto.map((svc, i) => (
             <span
               key={i}
-              style={{
-                background: C.offWhite,
-                border: `1px solid ${C.lightGray}`,
-                color: C.navy,
-                fontSize: 13,
-                fontWeight: 600,
-                padding: "6px 14px",
-                borderRadius: 20,
-              }}
+              className="bg-[#EAF0FB] text-[#1B3A6B] text-[11px] font-bold px-3 py-1.5 rounded-lg border border-[#1B3A6B]/5"
             >
               {svc.name}
             </span>

@@ -1,46 +1,23 @@
 import { SectionTitle } from "./SectionTitle";
 import type { ContractorProfile } from "../types";
-
-const C = {
-  navy: "#0f1f3d",
-  offWhite: "#f4f5f7",
-  lightGray: "#e8ecf2",
-  green: "#22c55e",
-};
+import { Handshake } from "lucide-react";
 
 type Props = {
   about: ContractorProfile["about"];
   licenseNumber?: string;
-  condensedFont: string;
 };
 
-export function AboutSection({ about, licenseNumber, condensedFont }: Props) {
+export function AboutSection({ about, licenseNumber }: Props) {
   return (
-    <div
-      style={{
-        padding: "22px 24px",
-        borderBottom: `1px solid ${C.lightGray}`,
-        background: "white",
-        marginBottom: 8,
-      }}
-    >
-      <SectionTitle condensedFont={condensedFont}>About</SectionTitle>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+      <SectionTitle>About</SectionTitle>
 
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      <ul className="flex flex-col gap-3">
         {about.map((item, i) => (
-          <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#2d3748", fontWeight: 500 }}>
+          <li key={i} className="flex items-center gap-3 text-sm text-gray-600 font-medium">
             <div
-              style={{
-                width: 30,
-                height: 30,
-                background: C.offWhite,
-                borderRadius: 8,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-                flexShrink: 0,
-              }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+              style={{ backgroundColor: "#EAF0FB" }}
             >
               {item.icon}
             </div>
@@ -49,23 +26,10 @@ export function AboutSection({ about, licenseNumber, condensedFont }: Props) {
         ))}
       </ul>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginTop: 14,
-          padding: "10px 12px",
-          background: C.offWhite,
-          borderRadius: 8,
-          fontSize: 13,
-          color: C.navy,
-          fontWeight: 500,
-        }}
-      >
-        <span style={{ color: C.green, fontWeight: 700 }}>✓</span>
+      <div className="flex items-center gap-2 mt-4 text-xs font-medium text-gray-500">
+        <Handshake size={14} style={{ color: "#1B3A6B" }} />
         TradeBase Verified Contractor
-        {licenseNumber && <span style={{ marginLeft: "auto", fontSize: 12, opacity: 0.6 }}>License #{licenseNumber}</span>}
+        {licenseNumber && <span className="ml-auto opacity-60">License #{licenseNumber}</span>}
       </div>
     </div>
   );

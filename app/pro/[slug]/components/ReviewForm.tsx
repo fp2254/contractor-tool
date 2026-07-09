@@ -1,22 +1,11 @@
-"use client";
-
 import { useState } from "react";
-
-const C = {
-  navy: "#0f1f3d",
-  gold: "#f5a623",
-  offWhite: "#f4f5f7",
-  lightGray: "#e8ecf2",
-  gray: "#8a9ab5",
-  green: "#22c55e",
-};
+import { Star } from "lucide-react";
 
 type Props = {
   slug: string;
-  condensedFont: string;
 };
 
-export function ReviewForm({ slug, condensedFont }: Props) {
+export function ReviewForm({ slug }: Props) {
   const [open, setOpen] = useState(false);
   const [stars, setStars] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -56,79 +45,33 @@ export function ReviewForm({ slug, condensedFont }: Props) {
   }
 
   return (
-    <div
-      style={{
-        padding: "0 24px 24px",
-        background: "white",
-        borderBottom: `1px solid ${C.lightGray}`,
-        marginBottom: 8,
-      }}
-    >
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
       {done ? (
-        <div
-          style={{
-            background: "#f0fdf4",
-            border: `1px solid ${C.green}33`,
-            borderRadius: 12,
-            padding: "20px 18px",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 26, marginBottom: 6 }}>✅</div>
-          <div
-            className={condensedFont}
-            style={{ fontWeight: 700, fontSize: 16, color: C.navy, marginBottom: 4, textTransform: "uppercase" }}
-          >
-            Thanks for your review!
-          </div>
-          <div style={{ fontSize: 13, color: C.gray, lineHeight: 1.5 }}>Your review has been submitted and is awaiting approval before it appears publicly.</div>
+        <div className="bg-green-50 rounded-xl p-6 text-center border border-green-100">
+          <div className="text-3xl mb-3">✅</div>
+          <h3 className="font-bold text-slate-800 mb-1">Thanks for your review!</h3>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Your review has been submitted and is awaiting approval before it appears publicly.
+          </p>
         </div>
       ) : !open ? (
         <button
           onClick={() => setOpen(true)}
-          style={{
-            width: "100%",
-            background: C.offWhite,
-            border: `2px solid ${C.lightGray}`,
-            borderRadius: 12,
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            cursor: "pointer",
-          }}
+          className="w-full bg-gray-50 border border-gray-100 rounded-xl py-4 flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
         >
-          <span style={{ fontSize: 16 }}>⭐</span>
-          <span
-            className={condensedFont}
-            style={{ fontWeight: 700, fontSize: 14, color: C.navy, textTransform: "uppercase", letterSpacing: "0.3px" }}
-          >
-            Leave a Review
-          </span>
+          <Star size={18} className="text-amber-400 fill-amber-400" />
+          <span className="font-bold text-slate-800 text-sm">Leave a Review</span>
         </button>
       ) : (
-        <form onSubmit={handleSubmit}>
-          <div
-            className={condensedFont}
-            style={{
-              fontWeight: 800,
-              fontSize: 15,
-              color: C.navy,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              marginBottom: 14,
-            }}
-          >
-            Write a Review
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider mb-2">Write a Review</h3>
 
           {/* Star selector */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.gray, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>
-              Your Rating <span style={{ color: "#ef4444" }}>*</span>
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
+              Your Rating <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
@@ -136,164 +79,95 @@ export function ReviewForm({ slug, condensedFont }: Props) {
                   onClick={() => setStars(n)}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
-                  style={{
-                    fontSize: 30,
-                    background: "none",
-                    border: "none",
-                    padding: "2px 3px",
-                    cursor: "pointer",
-                    color: n <= (hovered || stars) ? C.gold : C.lightGray,
-                    transition: "color 0.1s",
-                  }}
+                  className="focus:outline-none transition-transform active:scale-95"
                 >
-                  ★
+                  <Star
+                    size={32}
+                    className={`${n <= (hovered || stars) ? "text-amber-400 fill-amber-400" : "text-gray-200"}`}
+                  />
                 </button>
               ))}
             </div>
             {stars > 0 && (
-              <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>
+              <p className="text-[10px] text-gray-400 mt-1 font-medium ml-1">
                 {["", "Poor", "Fair", "Good", "Great", "Excellent"][stars]}
-              </div>
+              </p>
             )}
           </div>
 
-          {/* Name */}
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.gray, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-              Your Name <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="First name or first + last"
-              required
-              maxLength={80}
-              style={{
-                width: "100%",
-                border: `1.5px solid ${C.lightGray}`,
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+                Your Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Smith"
+                required
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+                Email <span className="text-red-500">*</span>
+                <span className="normal-case font-medium text-[10px] ml-1.5 opacity-60">(not public)</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
+              />
+            </div>
           </div>
 
-          {/* Email */}
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.gray, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-              Email <span style={{ color: "#ef4444" }}>*</span>
-              <span style={{ fontWeight: 400, textTransform: "none", fontSize: 10, marginLeft: 4, letterSpacing: 0 }}>(not shown publicly)</span>
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              style={{
-                width: "100%",
-                border: `1.5px solid ${C.lightGray}`,
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-
-          {/* Job type (optional) */}
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.gray, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-              Type of Job <span style={{ fontWeight: 400, textTransform: "none", fontSize: 10, marginLeft: 4, letterSpacing: 0 }}>(optional)</span>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Type of Job <span className="normal-case font-medium text-[10px] ml-1.5 opacity-60">(optional)</span>
             </label>
             <input
               value={jobType}
               onChange={(e) => setJobType(e.target.value)}
-              placeholder="e.g. Radon mitigation, water testing"
-              maxLength={80}
-              style={{
-                width: "100%",
-                border: `1.5px solid ${C.lightGray}`,
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
+              placeholder="e.g. Bathroom remodel"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
             />
           </div>
 
-          {/* Comment */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.gray, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>
-              Your Review <span style={{ color: "#ef4444" }}>*</span>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Your Review <span className="text-red-500">*</span>
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tell others about your experience with this contractor…"
+              placeholder="Describe your experience..."
               required
               rows={4}
-              maxLength={1200}
-              style={{
-                width: "100%",
-                border: `1.5px solid ${C.lightGray}`,
-                borderRadius: 10,
-                padding: "10px 12px",
-                fontSize: 14,
-                outline: "none",
-                resize: "none",
-                boxSizing: "border-box",
-                fontFamily: "inherit",
-              }}
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all resize-none"
             />
           </div>
 
           {error && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px", marginBottom: 12, fontSize: 13, color: "#dc2626" }}>
+            <div className="bg-red-50 border border-red-100 text-red-600 text-xs p-3 rounded-lg">
               {error}
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={() => { setOpen(false); setError(""); }}
-              style={{
-                flex: "0 0 auto",
-                background: C.offWhite,
-                border: `1.5px solid ${C.lightGray}`,
-                borderRadius: 10,
-                padding: "12px 16px",
-                fontSize: 13,
-                fontWeight: 600,
-                color: C.gray,
-                cursor: "pointer",
-              }}
+              className="flex-1 bg-gray-50 border border-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !stars || !name.trim() || !email.trim() || !comment.trim()}
-              className={condensedFont}
-              style={{
-                flex: 1,
-                background: C.navy,
-                border: "none",
-                borderRadius: 10,
-                padding: "12px 16px",
-                fontSize: 15,
-                fontWeight: 800,
-                color: "white",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                cursor: "pointer",
-                opacity: submitting || !stars || !name.trim() || !email.trim() || !comment.trim() ? 0.5 : 1,
-              }}
+              className="flex-[2] bg-[#1B3A6B] text-white font-bold py-3 rounded-xl hover:bg-[#152e55] transition-colors disabled:opacity-50"
             >
               {submitting ? "Submitting…" : "Submit Review"}
             </button>

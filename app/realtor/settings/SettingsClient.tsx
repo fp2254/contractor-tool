@@ -12,6 +12,9 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
   const [bio, setBio] = useState(profile.bio ?? "");
   const [serviceArea, setServiceArea] = useState(profile.service_area ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? "");
+  const [yearsExperience, setYearsExperience] = useState(profile.years_experience?.toString() ?? "");
+  const [homesSold, setHomesSold] = useState(profile.homes_sold?.toString() ?? "");
+  const [salesVolume, setSalesVolume] = useState(profile.sales_volume?.toString() ?? "");
   const [isPublished, setIsPublished] = useState(profile.is_published);
   const [slug, setSlug] = useState(profile.slug);
   const [saving, setSaving] = useState(false);
@@ -58,6 +61,9 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
           bio,
           service_area: serviceArea,
           avatar_url: avatarUrl,
+          years_experience: yearsExperience,
+          homes_sold: homesSold,
+          sales_volume: salesVolume,
           is_published: publish !== undefined ? publish : isPublished,
         }),
       });
@@ -171,6 +177,39 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
               value={serviceArea}
               onChange={(e) => setServiceArea(e.target.value)}
               placeholder="e.g. Austin, TX"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Years experience</label>
+            <input
+              type="number"
+              value={yearsExperience}
+              onChange={(e) => setYearsExperience(e.target.value)}
+              placeholder="8"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Homes sold</label>
+            <input
+              type="number"
+              value={homesSold}
+              onChange={(e) => setHomesSold(e.target.value)}
+              placeholder="127"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Sales volume ($)</label>
+            <input
+              type="number"
+              value={salesVolume}
+              onChange={(e) => setSalesVolume(e.target.value)}
+              placeholder="34000000"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
             />
           </div>

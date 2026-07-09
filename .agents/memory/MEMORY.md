@@ -3,3 +3,4 @@
 - [Teams feature](teams-feature.md) — assigned_to column on jobs/quotes/invoices; members see only their work; admins see all + can reassign
 - [Warranty notes pattern](warranty-notes-pattern.md) — warranty text lives in `notes` table as `__warranty__:` prefixed rows, not a column; new send/PDF routes must fetch it explicitly
 - [Optional-column fallback bug](optional-column-fallback-bug.md) — a missing-column retry that strips a whole hardcoded list silently drops unrelated fields on every save; strip only the actual missing column
+- [PWA stale service worker in dev](pwa-dev-stale-service-worker.md) — screenshot tool can show a fixed bug as still broken due to sw.js caching; verify via curl/chunk content before re-debugging

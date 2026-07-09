@@ -17,6 +17,14 @@ const NAV_ITEMS = [
   { icon: Settings,        label: "Settings",    href: "/realtor/settings" },
 ];
 
+const MOBILE_NAV_ITEMS = [
+  { icon: LayoutDashboard, label: "Home",    href: "/realtor" },
+  { icon: MapPin,          label: "Directory", href: "/realtor/directory" },
+  { icon: Link2,           label: "Connect", href: "/realtor/connections" },
+  { icon: SendHorizonal,   label: "Requests", href: "/realtor/requests" },
+  { icon: Settings,        label: "Settings", href: "/realtor/settings" },
+];
+
 export default function RealtorShell({
   children,
   displayName,
@@ -40,6 +48,10 @@ export default function RealtorShell({
       .slice(0, 2)
       .toUpperCase() || "RE";
 
+  function isActive(href: string) {
+    return pathname === href || (href !== "/realtor" && pathname.startsWith(href));
+  }
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -47,8 +59,9 @@ export default function RealtorShell({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden text-sm">
-      <aside className="w-56 bg-white border-r border-gray-100 flex flex-col shrink-0 overflow-y-auto">
+    <div className="min-h-screen bg-gray-50 font-sans text-sm">
+      {/* ── Desktop fixed left sidebar (lg and up) ── */}
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-56 lg:z-50 bg-white border-r border-gray-100">
         <div className="px-4 py-4 border-b border-gray-100">
           <Link href="/realtor" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
@@ -59,9 +72,9 @@ export default function RealtorShell({
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mt-1 ml-9">Realtor</p>
         </div>
 
-        <nav className="flex-1 px-3 py-3 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
           {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-            const active = pathname === href || (href !== "/realtor" && pathname.startsWith(href));
+            const active = isActive(href);
             return (
               <Link
                 key={label}
@@ -136,33 +149,77 @@ export default function RealtorShell({
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-12 bg-white border-b border-gray-100 flex items-center px-6 gap-4 shrink-0">
-          <div className="flex-1" />
-          <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-lg">
-            <Bell size={16} />
-          </button>
-          <button className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg">
-            <HelpCircle size={16} />
-          </button>
-          <div className="flex items-center gap-2">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: "#1B3A6B" }}
-              >
-                {initials}
-              </div>
-            )}
-            <span className="text-xs font-semibold text-gray-800 hidden sm:block">{displayName}</span>
-            <ChevronRight size={12} className="text-gray-400 rotate-90" />
+      {/* ── Mobile fixed top header (below lg) ── */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <Link href="/realtor" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
+            <Building2 size={14} className="text-white" />
           </div>
-        </header>
+          <div>
+            <span className="font-bold text-gray-900 text-sm tracking-tight block leading-none">TRADEBASE</span>
+            <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">Realtor</span>
+          </div>
+        </Link>
+        <div className="flex items-center gap-1">
+          <button className="p-2 text-gray-500">
+            <Bell size={18} />
+          </button>
+          <button className="p-2 text-gray-500">
+            <HelpCircle size={18} />
+          </button>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: "#1B3A6B" }}
+            >
+              {initials}
+            </div>
+          )}
+        </div>
+      </header>
 
-        <div className="flex-1 overflow-y-auto">{children}</div>
+      {/* ── Desktop fixed top bar (lg and up) ── */}
+      <div className="hidden lg:flex lg:fixed lg:top-0 lg:left-56 lg:right-0 lg:z-40 lg:h-12 items-center justify-end bg-white border-b border-gray-100 px-6 gap-4">
+        <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-lg">
+          <Bell size={16} />
+        </button>
+        <button className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg">
+          <HelpCircle size={16} />
+        </button>
+        <div className="flex items-center gap-2">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: "#1B3A6B" }}
+            >
+              {initials}
+            </div>
+          )}
+          <span className="text-xs font-semibold text-gray-800">{displayName}</span>
+          <ChevronRight size={12} className="text-gray-400 rotate-90" />
+        </div>
       </div>
+
+      <main className="lg:pl-56 pt-14 lg:pt-12 pb-20 lg:pb-0 min-h-screen">{children}</main>
+
+      {/* ── Mobile fixed bottom nav (below lg) ── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
+        <div className="flex">
+          {MOBILE_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
+            const active = isActive(href);
+            return (
+              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5">
+                <Icon size={20} className={active ? "text-[#1B3A6B]" : "text-gray-400"} />
+                <span className={`text-[10px] font-medium ${active ? "text-[#1B3A6B]" : "text-gray-400"}`}>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

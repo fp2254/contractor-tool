@@ -1,11 +1,5 @@
 import type { ContractorProfile } from "../types";
-
-const C = {
-  navy: "#0f1f3d",
-  gold: "#f5a623",
-  green: "#22c55e",
-  gray: "#8a9ab5",
-};
+import { BadgeCheck } from "lucide-react";
 
 type Props = {
   review: ContractorProfile["featuredReview"];
@@ -13,57 +7,25 @@ type Props = {
 
 export function FeaturedReview({ review }: Props) {
   return (
-    <div
-      style={{
-        background: "white",
-        padding: "20px 24px",
-        marginBottom: 8,
-        borderLeft: `4px solid ${C.gold}`,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 28,
-          color: C.gold,
-          lineHeight: 1,
-          marginBottom: 6,
-          fontFamily: "Georgia, serif",
-        }}
-      >
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 relative">
+      <div className="text-4xl text-[#EAF0FB] absolute top-4 right-6 font-serif select-none">
         &ldquo;
       </div>
-      <p
-        style={{
-          fontSize: 15,
-          color: "#2d3748",
-          lineHeight: 1.55,
-          fontStyle: "italic",
-          marginBottom: 10,
-        }}
-      >
+      <p className="text-sm text-slate-700 leading-relaxed italic mb-4 relative z-10">
         {review.text}
       </p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="flex items-center justify-between">
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, lineHeight: 1.2 }}>
+          <div className="text-sm font-bold text-slate-800 leading-tight">
             {review.reviewer}
           </div>
-          <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>
+          <div className="text-[10px] text-gray-500 mt-0.5">
             {review.jobType} · {review.location}
           </div>
         </div>
-        <span
-          style={{
-            fontSize: 10,
-            color: C.green,
-            fontWeight: 700,
-            background: "rgba(34,197,94,0.1)",
-            padding: "3px 8px",
-            borderRadius: 10,
-            whiteSpace: "nowrap",
-          }}
-        >
-          ✓ Verified Job
+        <span className="text-[9px] text-green-500 font-bold bg-green-500/10 px-2 py-0.5 rounded-full uppercase tracking-tight flex items-center gap-1">
+          <BadgeCheck size={10} />
+          Verified
         </span>
       </div>
     </div>

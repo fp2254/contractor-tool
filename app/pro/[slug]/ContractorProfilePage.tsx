@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Barlow, Barlow_Condensed } from "next/font/google";
 import type { ContractorProfile } from "./types";
 import { HeroSection } from "./components/HeroSection";
 import { StatsBar } from "./components/StatsBar";
@@ -16,140 +15,79 @@ import { StickyBar } from "./components/StickyBar";
 import { QuoteModal } from "./components/QuoteModal";
 import { ReviewForm } from "./components/ReviewForm";
 
-const barlow = Barlow({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
-
-const barlowCondensed = Barlow_Condensed({
-  subsets: ["latin"],
-  weight: ["600", "700", "800", "900"],
-  display: "swap",
-});
-
-const C = {
-  offWhite: "#f4f5f7",
-  navy: "#0f1f3d",
-  navyMid: "#1a2f52",
-  gray: "#8a9ab5",
-  lightGray: "#e8ecf2",
-  gold: "#f5a623",
-};
-
 type Props = {
   profile: ContractorProfile;
 };
 
 export function ContractorProfilePage({ profile }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
-  const bc = barlowCondensed.className;
 
   return (
     <div
-      className={barlow.className}
-      style={{ backgroundColor: C.offWhite, color: "#1a2035", paddingBottom: 76, minHeight: "100vh" }}
+      className="min-h-screen bg-gray-100 pb-20"
+      style={{ color: "#1a2035" }}
     >
-      <HeroSection profile={profile} condensedFont={bc} onQuoteClick={() => setModalOpen(true)} />
-      <StatsBar stats={profile.stats} condensedFont={bc} />
-      <TrustStrip items={profile.trustItems} />
-      {profile.featuredReview && <FeaturedReview review={profile.featuredReview} />}
-      <ServicesSection services={profile.services} condensedFont={bc} />
-      <ProjectsSection photos={profile.photos} condensedFont={bc} />
+      <HeroSection profile={profile} onQuoteClick={() => setModalOpen(true)} />
+      
+      <div className="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-8 space-y-4">
+        <StatsBar stats={profile.stats} />
+        <TrustStrip items={profile.trustItems} />
+        {profile.featuredReview && <FeaturedReview review={profile.featuredReview} />}
+        <ServicesSection services={profile.services} />
+        <ProjectsSection photos={profile.photos} />
 
-      {/* Portfolio showcase link */}
-      <div
-        style={{
-          padding: "14px 24px",
-          background: "white",
-          borderBottom: `1px solid ${C.lightGray}`,
-          marginBottom: 8,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <div>
-          <p className={bc} style={{ fontWeight: 700, fontSize: 13, color: C.navy, margin: 0, textTransform: "uppercase", letterSpacing: "0.4px" }}>
-            Full Project Portfolio
-          </p>
-          <p style={{ fontSize: 11, color: C.gray, margin: "2px 0 0" }}>
-            See every project with photos, costs & details
+        {/* Portfolio showcase link */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-slate-800 text-sm">
+              Full Project Portfolio
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              See every project with photos, costs & details
+            </p>
+          </div>
+          <a
+            href={`/showcase/${profile.slug}`}
+            className="bg-[#1B3A6B] text-white font-semibold text-xs px-4 py-2 rounded-xl hover:bg-[#152e55] transition-colors shrink-0"
+          >
+            View Portfolio →
+          </a>
+        </div>
+
+        <ReviewsSection reviews={profile.reviews} />
+        <ReviewForm slug={profile.slug} />
+        <AboutSection about={profile.about} licenseNumber={profile.licenseNumber} />
+        <BottomCloser />
+
+        {/* Powered by bar */}
+        <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-gray-400">
+          <span>Powered by</span>
+          <a
+            href="https://tradebase.contractors"
+            className="font-bold text-[#1B3A6B] hover:underline"
+          >
+            TradeBase
+          </a>
+          <span>· Built for contractors</span>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-[#1B3A6B]/5 rounded-2xl p-4 text-center border border-[#1B3A6B]/10">
+          <p className="text-xs text-gray-500">
+            Are you a contractor?{" "}
+            <a
+              href="https://tradebase.contractors/waitlist"
+              className="text-[#1B3A6B] font-semibold hover:underline"
+            >
+              Get more jobs with TradeBase →
+            </a>
           </p>
         </div>
-        <a
-          href={`/showcase/${profile.slug}`}
-          className={bc}
-          style={{
-            backgroundColor: C.navy,
-            color: "white",
-            fontWeight: 700,
-            fontSize: 13,
-            padding: "9px 18px",
-            borderRadius: 8,
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          View Portfolio →
-        </a>
-      </div>
-
-      <ReviewsSection reviews={profile.reviews} condensedFont={bc} />
-      <ReviewForm slug={profile.slug} condensedFont={bc} />
-      <AboutSection about={profile.about} licenseNumber={profile.licenseNumber} condensedFont={bc} />
-      <BottomCloser />
-
-      {/* Powered by bar */}
-      <div
-        style={{
-          background: C.offWhite,
-          borderTop: `1px solid ${C.lightGray}`,
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          fontSize: 12,
-          color: C.gray,
-        }}
-      >
-        <span>Powered by</span>
-        <a
-          href="https://tradebase.contractors"
-          className={bc}
-          style={{ fontWeight: 700, color: C.navy, textDecoration: "none", fontSize: 14 }}
-        >
-          TradeBase
-        </a>
-        <span>· Built for contractors</span>
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          backgroundColor: C.navyMid,
-          padding: "14px 24px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
-          Are you a contractor?{" "}
-          <a
-            href="https://tradebase.contractors/waitlist"
-            style={{ color: C.gold, textDecoration: "none", fontWeight: 600 }}
-          >
-            Get more jobs with TradeBase →
-          </a>
-        </p>
       </div>
 
       <StickyBar
         phone={profile.phone}
         phoneFormatted={profile.phoneFormatted}
-        condensedFont={bc}
         onQuoteClick={() => setModalOpen(true)}
       />
 
@@ -158,7 +96,6 @@ export function ContractorProfilePage({ profile }: Props) {
         slug={profile.slug}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        condensedFont={bc}
       />
     </div>
   );
