@@ -17,6 +17,8 @@ export type RealtorProfile = {
   homes_sold?: number | null;
   sales_volume?: number | null;
   banner_url?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 function slugifyName(text: string): string {

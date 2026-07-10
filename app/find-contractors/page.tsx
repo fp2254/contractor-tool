@@ -154,7 +154,49 @@ async function fetchLiveContractors(): Promise<Contractor[]> {
   }
 }
 
+export type RealtorPin = {
+  id: string;
+  slug: string;
+  name: string;
+  agencyName: string;
+  lat: number;
+  lng: number;
+};
+
+async function fetchLiveRealtors(): Promise<RealtorPin[]> {
+  const admin = createAdminClient();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profiles, error } = await (admin as any)
+      .from("realtor_profiles")
+      .select("id, slug, display_name, agency_name, lat, lng")
+      .eq("is_published", true)
+      .not("lat", "is", null)
+      .not("slug", "is", null);
+
+    if (error || !profiles?.length) return [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (profiles as any[])
+      .filter((r) => r.slug && r.lat != null && r.lng != null)
+      .map((r) => ({
+        id: `realtor-${r.id}`,
+        slug: r.slug as string,
+        name: (r.display_name as string) || "Realtor",
+        agencyName: (r.agency_name as string) || "",
+        lat: r.lat as number,
+        lng: r.lng as number,
+      }));
+  } catch (err) {
+    console.error("[find-contractors] live realtor fetch error:", err);
+    return [];
+  }
+}
+
 export default async function FindContractorsPage() {
-  const liveContractors = await fetchLiveContractors();
-  return <FindContractorsClient liveContractors={liveContractors} />;
+  const [liveContractors, liveRealtors] = await Promise.all([
+    fetchLiveContractors(),
+    fetchLiveRealtors(),
+  ]);
+  return <FindContractorsClient liveContractors={liveContractors} liveRealtors={liveRealtors} />;
 }

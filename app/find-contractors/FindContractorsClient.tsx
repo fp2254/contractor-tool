@@ -7,6 +7,7 @@ import {
   CONTRACTORS as MOCK_CONTRACTORS, PROJECTS, TRENDING_SEARCHES, SERVICES, CITIES,
   type Contractor, type Project,
 } from "./mockData";
+import type { RealtorPin } from "./page";
 import GetQuotesModal from "@/components/GetQuotesModal";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
@@ -706,11 +707,12 @@ function FilterSheet({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function FindContractorsClient({ liveContractors = [] }: { liveContractors?: Contractor[] }) {
+export default function FindContractorsClient({ liveContractors = [], liveRealtors = [] }: { liveContractors?: Contractor[]; liveRealtors?: RealtorPin[] }) {
   // Merge: live contractors first (real data), then mock fill-ins for the map demo.
   // Computed once — liveContractors only changes when the server sends different data.
   const liveIds = new Set(liveContractors.map((c) => c.id));
   const CONTRACTORS = [...liveContractors, ...MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id))];
+  const [showRealtors, setShowRealtors] = useState(true);
 
 
   const [query, setQuery] = useState("");
@@ -888,12 +890,27 @@ export default function FindContractorsClient({ liveContractors = [] }: { liveCo
             selectedId={selectedPinId}
             hasSelection={selectedPinId !== null}
             liveContractors={liveContractors}
+            realtors={liveRealtors}
+            showRealtors={showRealtors}
             onSelect={(id) => {
               setSelectedPinId((prev) => prev === id ? null : id);
               setSelectedProject(null);
             }}
             onHover={setHoveredId}
           />
+
+          {liveRealtors.length > 0 && (
+            <button
+              onClick={() => setShowRealtors((v) => !v)}
+              className={`absolute top-3 left-3 z-[400] rounded-xl px-3 py-2 shadow-sm border text-[11px] font-semibold transition-colors ${
+                showRealtors
+                  ? "bg-teal-700 text-white border-teal-700"
+                  : "bg-white/90 backdrop-blur-sm text-slate-600 border-gray-100"
+              }`}
+            >
+              🏡 Realtors {showRealtors ? "shown" : "hidden"}
+            </button>
+          )}
 
           {selectedContractor && (
             <MapFloatingCard

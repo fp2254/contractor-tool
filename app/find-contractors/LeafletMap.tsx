@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { Contractor } from "./mockData";
+import type { RealtorPin } from "./page";
 
 const DEFAULT_CENTER: L.LatLngExpression = [45.52, -122.68];
 const DEFAULT_ZOOM = 11;
@@ -23,11 +24,53 @@ const TRADE_EMOJI: Record<string, string> = {
 interface Props {
   contractors: Contractor[];
   liveContractors?: Contractor[];
+  realtors?: RealtorPin[];
+  showRealtors?: boolean;
   hoveredId: string | null;
   selectedId: string | null;
   hasSelection: boolean;
   onSelect: (id: string | null) => void;
   onHover: (id: string | null) => void;
+}
+
+function makeRealtorIcon(): L.DivIcon {
+  return L.divIcon({
+    html: `
+      <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+        <div style="
+          width:36px;height:36px;
+          background:#0F766E;
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          display:flex;align-items:center;justify-content:center;
+          border:2.5px solid white;
+          box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        ">
+          <span style="transform:rotate(45deg);font-size:15px;line-height:1">🏡</span>
+        </div>
+      </div>`,
+    className: "",
+    iconSize: [36, 42],
+    iconAnchor: [18, 42],
+    popupAnchor: [0, -42],
+  });
+}
+
+function makeRealtorTooltipHtml(r: RealtorPin): string {
+  return `
+    <div style="font-family:system-ui,-apple-system,sans-serif;width:200px;pointer-events:none;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:#0F766E;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:13px;flex-shrink:0;">
+          ${r.name.charAt(0)}
+        </div>
+        <div style="min-width:0;">
+          <div style="font-weight:700;font-size:12px;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+          <div style="font-size:10px;color:#64748B;">🏡 Realtor${r.agencyName ? " · " + r.agencyName : ""}</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:9px;color:#94A3B8;text-align:center;">Click pin to see full profile</div>
+    </div>
+  `;
 }
 
 function makeIcon(c: Contractor, active: boolean, selected: boolean, dimmed: boolean) {
@@ -106,11 +149,12 @@ function makeTooltipHtml(c: Contractor): string {
   `;
 }
 
-export default function LeafletMap({ contractors, liveContractors, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
+export default function LeafletMap({ contractors, liveContractors, realtors = [], showRealtors = true, hoveredId, selectedId, hasSelection, onSelect, onHover }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const tooltipsRef = useRef<Map<string, L.Tooltip>>(new Map());
+  const realtorMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const rafRef = useRef<number | null>(null);
   // Capture liveContractors at mount time so init effect can use the correct initial center.
   const initialLiveRef = useRef<Contractor[] | undefined>(liveContractors);
@@ -244,6 +288,37 @@ export default function LeafletMap({ contractors, liveContractors, hoveredId, se
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractors, hoveredId, selectedId, hasSelection]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const active = showRealtors ? realtors : [];
+    const currentIds = new Set(active.map((r) => r.id));
+
+    realtorMarkersRef.current.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        marker.remove();
+        realtorMarkersRef.current.delete(id);
+      }
+    });
+
+    active.forEach((r) => {
+      if (realtorMarkersRef.current.has(r.id)) return;
+
+      const marker = L.marker([r.lat, r.lng], { icon: makeRealtorIcon() })
+        .addTo(map)
+        .bindTooltip(
+          L.tooltip({ permanent: false, direction: "top", offset: [0, -4], className: "pin-tooltip", opacity: 1 }).setContent(
+            makeRealtorTooltipHtml(r)
+          )
+        )
+        .on("click", () => window.open(`/agent/${r.slug}`, "_blank"));
+
+      realtorMarkersRef.current.set(r.id, marker);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtors, showRealtors]);
 
   return (
     <div

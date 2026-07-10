@@ -97,6 +97,7 @@ supabase/
   migration_public_profile_photos.sql  ⬜ pending — adds photos JSONB column to public_profiles (gallery photos)
   migration_realtor.sql                ⬜ pending — creates realtor_profiles table (separate Realtor account type) + RLS
   migration_realtor_connections.sql    ⬜ pending — creates realtor_connections, realtor_contacts; adds is_realtor_request + realtor_connection_id + realtor_profile_id to leads
+  migration_realtor_map.sql            ⬜ pending — adds lat/lng/geocoded_at to realtor_profiles (map pins on /find-contractors)
 ```
 
 ## Environment Variables
@@ -245,6 +246,13 @@ supabase/
 - **Contractor — Realtor Requests** (`/app/realtor-requests`): two-tab view — "Connect Requests" (accept/decline incoming realtor requests) + "Work Requests" (realtor-originated leads, clicking opens the lead detail); accessible from More menu and sidebar customizer
 - Work requests create real leads in contractor's pipeline (`lead_source = "Realtor"`, notes prefixed with `[Realtor Request from X]`); graceful fallback if migration columns not yet applied
 - API routes: `/api/realtor/connections` (GET/POST), `/api/realtor/connections/[id]` (DELETE/cancel), `/api/realtor/contacts` (GET/POST), `/api/realtor/contacts/[id]` (DELETE), `/api/realtor/work-requests` (GET/POST), `/api/app/realtor-connections` (GET), `/api/app/realtor-connections/[id]` (PATCH accept/decline)
+
+### Realtors on the Public Map (`/find-contractors`)
+- Published realtors (with `service_area` geocoded) now show as teal 🏡 pins alongside contractor pins on the Leaflet map
+- `PUT /api/realtor/profile` geocodes `service_area` (via `lib/geocode.ts`, same Nominatim pattern as contractor `business-identity`) into `lat`/`lng`/`geocoded_at` whenever the service area changes
+- `app/find-contractors/page.tsx` fetches published+geocoded `realtor_profiles` server-side as `RealtorPin[]`, passed into `FindContractorsClient` → `LeafletMap`
+- "🏡 Realtors shown/hidden" toggle button top-left of map (only rendered when live realtor pins exist); clicking a realtor pin opens `/agent/[slug]` in a new tab
+- **Requires**: `supabase/migration_realtor_map.sql` applied in Supabase Studio, and each realtor must save Settings with a `service_area` set (e.g. "Austin, TX") to get geocoded
 
 ## Not Yet Built
 - Online payments (Stripe/Square)
