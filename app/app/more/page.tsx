@@ -20,6 +20,7 @@ const MENU_ITEMS = [
   // Business growth
   { label: "My Profile",         href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
   { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
+  { label: "Find Contractors",   href: "/find-contractors",      emoji: "🔍", color: "#1B3A6B" },
   { label: "Earn With TradeBase",href: "/app/referral",          emoji: "💰", color: "#16A34A" },
   // Management
   { label: "Realtor Requests",   href: "/app/realtor-requests",  emoji: "🏡", color: "#1B3A6B" },

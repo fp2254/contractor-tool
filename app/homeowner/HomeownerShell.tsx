@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { icon: TrendingUp,      label: "Future Projects",    href: "/homeowner/future" },
   { icon: DollarSign,      label: "Finances",           href: "/homeowner/finances" },
   { icon: FileText,        label: "Documents",          href: "/homeowner/documents" },
+  { icon: Search,          label: "Find Contractors",   href: "/find-contractors", external: true },
   { icon: Settings,        label: "Settings",           href: "/homeowner/settings" },
 ];
 
@@ -62,12 +63,13 @@ export default function HomeownerShell({
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-3 space-y-0.5">
-          {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-            const active = pathname === href || (href !== "/homeowner" && pathname.startsWith(href));
+          {NAV_ITEMS.map(({ icon: Icon, label, href, external }) => {
+            const active = !external && (pathname === href || (href !== "/homeowner" && pathname.startsWith(href)));
             return (
               <Link
                 key={label}
                 href={href}
+                {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors ${
                   active ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-50"
                 }`}

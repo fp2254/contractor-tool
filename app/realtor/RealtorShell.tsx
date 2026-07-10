@@ -4,17 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Building2, Settings, Bell, HelpCircle,
-  ChevronRight, Globe, LogOut, MapPin, Link2, Users, SendHorizonal,
+  ChevronRight, Globe, LogOut, MapPin, Link2, Users, SendHorizonal, Search,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard",   href: "/realtor" },
-  { icon: MapPin,          label: "Directory",   href: "/realtor/directory" },
-  { icon: Link2,           label: "Connections", href: "/realtor/connections" },
-  { icon: Users,           label: "Contacts",    href: "/realtor/contacts" },
-  { icon: SendHorizonal,   label: "Requests",    href: "/realtor/requests" },
-  { icon: Settings,        label: "Settings",    href: "/realtor/settings" },
+  { icon: LayoutDashboard, label: "Dashboard",         href: "/realtor" },
+  { icon: MapPin,          label: "Directory",         href: "/realtor/directory" },
+  { icon: Link2,           label: "Connections",       href: "/realtor/connections" },
+  { icon: Users,           label: "Contacts",          href: "/realtor/contacts" },
+  { icon: SendHorizonal,   label: "Requests",          href: "/realtor/requests" },
+  { icon: Search,          label: "Find Contractors",  href: "/find-contractors", external: true },
+  { icon: Settings,        label: "Settings",          href: "/realtor/settings" },
 ];
 
 const MOBILE_NAV_ITEMS = [
@@ -73,12 +74,13 @@ export default function RealtorShell({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          {NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-            const active = isActive(href);
+          {NAV_ITEMS.map(({ icon: Icon, label, href, external }) => {
+            const active = !external && isActive(href);
             return (
               <Link
                 key={label}
                 href={href}
+                {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors ${
                   active ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-50"
                 }`}
