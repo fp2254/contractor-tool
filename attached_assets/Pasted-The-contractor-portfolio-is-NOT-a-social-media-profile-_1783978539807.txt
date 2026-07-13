@@ -1,0 +1,214 @@
+The contractor portfolio is NOT a social media profile and it is NOT a game.
+
+It should feel like a living record of a contractor's career, reputation, and accomplishments. Every completed job, review, certification, milestone, and dollar earned should make the portfolio feel more valuable over time.
+
+The emotional goal is pride, professionalism, trust, and legacy.
+
+I want users to feel the same sense of accomplishment that games create, but through real-world achievements instead of fictional rewards.
+
+The portfolio should answer these questions immediately:
+
+• Who is this contractor?
+• Why should I trust them?
+• What have they accomplished?
+• What type of work do they specialize in?
+• How much experience do they have?
+• Can I see proof?
+
+The page should feel like an interactive annual report mixed with a premium résumé.
+
+----------------------------------------------------
+HEADER
+----------------------------------------------------
+
+Company Logo
+
+Company Name
+
+★★★★★ Rating
+
+Licensed • Insured • Veteran Owned • NRPP Certified
+
+Service Area
+
+Years in Business
+
+"Building safer homes across Maine since 2022."
+
+----------------------------------------------------
+CAREER SNAPSHOT
+----------------------------------------------------
+
+527
+Completed Projects
+
+$1.28M
+Revenue Tracked
+
+14,900+
+Hours Worked
+
+4.98★
+Average Rating
+
+99%
+Customer Recommendation Rate
+
+22
+Professional Certifications
+
+----------------------------------------------------
+FEATURED PROJECTS
+----------------------------------------------------
+
+Each project should be displayed as a premium card with:
+
+• Before & After photos
+• Project value
+• Completion date
+• Location
+• Services performed
+• Customer review
+• Time to complete
+• Materials used (optional)
+
+Allow filtering by:
+
+Radon
+
+Water
+
+Commercial
+
+Residential
+
+New Construction
+
+Historic Homes
+
+Emergency Service
+
+----------------------------------------------------
+CAREER TIMELINE
+----------------------------------------------------
+
+2026
+
+✓ Completed 143 projects
+
+✓ Crossed $1M revenue tracked
+
+✓ Added commercial mitigation
+
+✓ Hired first technician
+
+✓ Earned NRPP Certification
+
+✓ 250th verified review
+
+2025
+
+✓ Started business
+
+✓ First customer
+
+✓ First 50 projects
+
+✓ First commercial project
+
+This should read like a professional career history.
+
+----------------------------------------------------
+SPECIALIZATIONS
+----------------------------------------------------
+
+Display expertise as cards.
+
+Radon Mitigation
+412 Projects
+
+Water Filtration
+183 Projects
+
+Water Testing
+249 Projects
+
+Commercial Systems
+37 Projects
+
+Well Pumps
+81 Projects
+
+----------------------------------------------------
+PHOTO GALLERY
+----------------------------------------------------
+
+High-quality before/after photos organized by service.
+
+Customers should be able to browse real work.
+
+----------------------------------------------------
+REVIEWS
+----------------------------------------------------
+
+Display customer reviews beautifully with photos, dates, project type, and ratings.
+
+Highlight repeat customers.
+
+----------------------------------------------------
+CERTIFICATIONS
+----------------------------------------------------
+
+Professional badges with verification.
+
+NRPP
+
+State Licenses
+
+OSHA
+
+Veteran Owned
+
+Insurance Verified
+
+Background Verified
+
+----------------------------------------------------
+BUSINESS GROWTH
+----------------------------------------------------
+
+Instead of XP, visualize business growth.
+
+Projects completed over time
+
+Revenue growth
+
+Average review trend
+
+Response time
+
+Referral rate
+
+Repeat customer percentage
+
+Jobs by category
+
+----------------------------------------------------
+FOOTER
+----------------------------------------------------
+
+Request Estimate
+
+Call
+
+Text
+
+Website
+
+Social Links
+
+The overall design should feel like the contractor's Hall of Fame.
+
+This is not a profile.
+
+It is the permanent record of everything the contractor has accomplished throughout their career.

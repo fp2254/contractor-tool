@@ -7,8 +7,10 @@ import { ContractorProfilePage } from "./ContractorProfilePage";
 import { ClassicContractorTemplate } from "@/components/templates/ClassicContractorTemplate";
 import { ModernProTemplate } from "@/components/templates/ModernProTemplate";
 import { TrustContractorTemplate } from "@/components/templates/TrustContractorTemplate";
+import { PortfolioTemplate } from "./components/PortfolioTemplate";
 import type { ContractorProfile, ServiceEntry, SectionsConfig, CustomBlock } from "./types";
 import { OwnerDebugPanel } from "@/components/OwnerDebugPanel";
+import { getProfile as getMockProfile } from "./mockData";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -56,7 +58,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       .eq("is_published", true)
       .maybeSingle();
 
-    if (!pub) return null;
+    if (!pub) return getMockProfile(slug);
 
     const [{ data: org }, { count: jobsCompleted }, { data: reviewRows }] = await Promise.all([
       admin.from("orgs").select("name").eq("id", pub.org_id).single(),
@@ -304,5 +306,5 @@ export default async function Page({ params }: Props) {
   if (profile.selectedTemplate === "trust") {
     return <>{isOwner && <BackBar />}<TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
-  return <>{isOwner && <BackBar />}<ContractorProfilePage profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
+  return <>{isOwner && <BackBar />}<PortfolioTemplate profile={profile} />{debugPanel}</>;
 }
