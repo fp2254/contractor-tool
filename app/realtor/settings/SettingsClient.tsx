@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, LogOut } from "lucide-react";
 import type { RealtorProfile } from "@/lib/realtor";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsClient({ profile }: { profile: RealtorProfile }) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
@@ -341,6 +342,21 @@ export default function SettingsClient({ profile }: { profile: RealtorProfile })
             View public profile ↗
           </a>
         )}
+      </div>
+
+      {/* Log out */}
+      <div className="mt-2 pt-4 border-t border-gray-100">
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = "/auth/login";
+          }}
+          className="flex items-center gap-2 text-sm font-semibold text-red-500 hover:text-red-600 transition-colors"
+        >
+          <LogOut size={16} />
+          Log Out
+        </button>
       </div>
     </div>
   );
