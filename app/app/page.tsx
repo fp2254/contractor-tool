@@ -170,47 +170,47 @@ export default async function DashboardPage() {
         {!isDemo && <SetupChecklist orgId={orgId!} />}
 
         {/* ── Stat Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-3">
           {/* Jobs Today */}
-          <Link href="/app/schedule" className="bg-white rounded-2xl p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#EFF6FF" }}>
-              <svg className="w-5 h-5" style={{ color: "#2563EB" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <Link href="/app/schedule" className="bg-white rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1.5 lg:mb-2" style={{ backgroundColor: "#EFF6FF" }}>
+              <svg className="w-4 h-4 lg:w-5 lg:h-5" style={{ color: "#2563EB" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round"/>
                 <line x1="16" y1="2" x2="16" y2="6" strokeLinecap="round"/>
                 <line x1="8" y1="2" x2="8" y2="6" strokeLinecap="round"/>
                 <line x1="3" y1="10" x2="21" y2="10" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="text-2xl font-bold text-slate-800">{jobsTodayCount}</span>
-            <span className="text-xs text-gray-500 mt-0.5 leading-tight">Jobs Today</span>
-            <span className="text-[10px] font-semibold text-blue-600 mt-1.5 flex items-center gap-0.5">View schedule ›</span>
+            <span className="text-xl lg:text-2xl font-bold text-slate-800">{jobsTodayCount}</span>
+            <span className="text-[10px] lg:text-xs text-gray-500 mt-0.5 leading-tight">Jobs Today</span>
+            <span className="text-[9px] lg:text-[10px] font-semibold text-blue-600 mt-1 flex items-center gap-0.5">Schedule ›</span>
           </Link>
 
           {/* Quotes Awaiting */}
-          <Link href={sentQuotesHref} className="bg-white rounded-2xl p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#FFF7ED" }}>
-              <svg className="w-5 h-5" style={{ color: "#F97316" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <Link href={sentQuotesHref} className="bg-white rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1.5 lg:mb-2" style={{ backgroundColor: "#FFF7ED" }}>
+              <svg className="w-4 h-4 lg:w-5 lg:h-5" style={{ color: "#F97316" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
             </div>
-            <span className="text-2xl font-bold text-slate-800">{estimatesCount}</span>
-            <span className="text-xs text-gray-500 mt-0.5 leading-tight">Quotes Awaiting</span>
-            <span className="text-[10px] font-semibold text-orange-500 mt-1.5 flex items-center gap-0.5">View quotes ›</span>
+            <span className="text-xl lg:text-2xl font-bold text-slate-800">{estimatesCount}</span>
+            <span className="text-[10px] lg:text-xs text-gray-500 mt-0.5 leading-tight">Quotes</span>
+            <span className="text-[9px] lg:text-[10px] font-semibold text-orange-500 mt-1 flex items-center gap-0.5">View ›</span>
           </Link>
 
           {/* Outstanding */}
-          <Link href="/app/invoices" className="bg-white rounded-2xl p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "#F0FDF4" }}>
-              <svg className="w-5 h-5" style={{ color: "#16A34A" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <Link href="/app/invoices" className="bg-white rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col items-center text-center active:bg-gray-50">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1.5 lg:mb-2" style={{ backgroundColor: "#F0FDF4" }}>
+              <svg className="w-4 h-4 lg:w-5 lg:h-5" style={{ color: "#16A34A" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <line x1="12" y1="1" x2="12" y2="23" strokeLinecap="round"/>
                 <path strokeLinecap="round" d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
               </svg>
             </div>
-            <span className={`text-xl font-bold ${unpaidTotal > 0 ? "text-slate-800" : "text-green-600"}`}>
+            <span className={`text-lg lg:text-xl font-bold ${unpaidTotal > 0 ? "text-slate-800" : "text-green-600"}`}>
               {unpaidTotal > 0 ? `$${unpaidTotal >= 1000 ? (unpaidTotal / 1000).toFixed(1) + "k" : unpaidTotal.toLocaleString()}` : "Clear"}
             </span>
-            <span className="text-xs text-gray-500 mt-0.5 leading-tight">Outstanding</span>
-            <span className="text-[10px] font-semibold text-green-600 mt-1.5 flex items-center gap-0.5">View invoices ›</span>
+            <span className="text-[10px] lg:text-xs text-gray-500 mt-0.5 leading-tight">Outstanding</span>
+            <span className="text-[9px] lg:text-[10px] font-semibold text-green-600 mt-1 flex items-center gap-0.5">Invoices ›</span>
           </Link>
 
           {/* Needs Attention (4th stat card — desktop only, mirrors mobile section below) */}
@@ -269,12 +269,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* ── Job Capture ── */}
-            <div className="bg-white rounded-2xl px-4 pt-4 pb-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg leading-none">✨</span>
-                <h2 className="text-sm font-bold text-slate-800">Job Capture</h2>
-              </div>
-              <p className="text-sm text-slate-500 mb-4">Describe the job. We&apos;ll build it fast.</p>
+            <div className="bg-white rounded-2xl px-4 py-4 shadow-sm">
               <Suspense fallback={null}>
                 <AiCaptureModal defaultWarrantyText={defaultWarrantyText} />
               </Suspense>
