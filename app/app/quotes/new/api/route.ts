@@ -24,27 +24,47 @@ export async function POST(req: Request) {
       email?: string;
     };
 
-    const { data: newCust, error: custErr } = await admin
-      .from("customers")
-      .insert({
-        org_id: orgId!,
-        first_name: nc.first_name ?? "",
-        last_name: nc.last_name ?? "",
-        phone: nc.phone ?? "",
-        email: nc.email ?? "",
-        created_by_user: userId,
-      })
-      .select("id")
-      .single();
-
-    if (custErr || !newCust) {
-      return NextResponse.json(
-        { error: custErr?.message ?? "Could not create customer" },
-        { status: 400 }
-      );
+    // Deduplicate: reuse existing customer if phone or email already on file for this org.
+    let existingId: string | null = null;
+    if (nc.phone || nc.email) {
+      const orClauses: string[] = [];
+      if (nc.phone) orClauses.push(`phone.eq.${nc.phone}`);
+      if (nc.email) orClauses.push(`email.eq.${nc.email}`);
+      const { data: existing } = await admin
+        .from("customers")
+        .select("id")
+        .eq("org_id", orgId!)
+        .or(orClauses.join(","))
+        .limit(1)
+        .maybeSingle();
+      existingId = existing?.id ?? null;
     }
 
-    customerId = newCust.id;
+    if (existingId) {
+      customerId = existingId;
+    } else {
+      const { data: newCust, error: custErr } = await admin
+        .from("customers")
+        .insert({
+          org_id: orgId!,
+          first_name: nc.first_name ?? "",
+          last_name: nc.last_name ?? "",
+          phone: nc.phone ?? "",
+          email: nc.email ?? "",
+          created_by_user: userId,
+        })
+        .select("id")
+        .single();
+
+      if (custErr || !newCust) {
+        return NextResponse.json(
+          { error: custErr?.message ?? "Could not create customer" },
+          { status: 400 }
+        );
+      }
+
+      customerId = newCust.id;
+    }
   }
 
   const totalAmount = parsed.items.reduce(
