@@ -14,12 +14,24 @@ export function SendEmailButton({
   const [state, setState] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
+  if (!customerEmail) {
+    return (
+      <div className="space-y-1">
+        <button
+          disabled
+          className="w-full rounded-xl py-3 text-white font-semibold opacity-40 cursor-not-allowed flex items-center justify-center gap-2"
+          style={{ backgroundColor: "#1B3A6B" }}
+        >
+          ✉️ {label}
+        </button>
+        <p className="text-xs text-gray-400 text-center px-2">
+          Add a customer email to enable.
+        </p>
+      </div>
+    );
+  }
+
   async function handleClick() {
-    if (!customerEmail) {
-      setErrorMsg("No email address on file for this customer. Add one in their profile first.");
-      setState("error");
-      return;
-    }
     setState("loading");
     try {
       const res = await fetch(apiPath, { method: "POST" });

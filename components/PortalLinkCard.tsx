@@ -37,6 +37,7 @@ export function PortalLinkCard({
   const [result, setResult] = useState<{ method: "text" | "email" | "copy"; to: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
+  const [revokeConfirm, setRevokeConfirm] = useState(false);
   const [error, setError] = useState("");
 
   const hasContact = !!(customerPhone || customerEmail);
@@ -129,7 +130,6 @@ export function PortalLinkCard({
 
   async function revoke() {
     if (!token) return;
-    if (!confirm(`Revoke the active portal link for ${customerName}?`)) return;
     setRevoking(true);
     setError("");
     try {
@@ -138,6 +138,7 @@ export function PortalLinkCard({
       setToken(null);
       setPortalUrl(null);
       setResult(null);
+      setRevokeConfirm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -251,12 +252,28 @@ export function PortalLinkCard({
             {token ? "Resend Link" : "Send Portal Link"}
           </button>
           {token && (
-            <button
-              onClick={revoke}
-              disabled={revoking}
-              className="rounded-xl px-3 py-2.5 text-sm font-semibold text-red-500 border border-red-200 bg-red-50 disabled:opacity-50">
-              {revoking ? "…" : "Revoke"}
-            </button>
+            revokeConfirm ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={revoke}
+                  disabled={revoking}
+                  className="rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-red-500 disabled:opacity-50 whitespace-nowrap">
+                  {revoking ? "…" : "Confirm Revoke ✕"}
+                </button>
+                <button
+                  onClick={() => setRevokeConfirm(false)}
+                  className="text-xs text-gray-400 underline whitespace-nowrap">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setRevokeConfirm(true); setError(""); }}
+                disabled={revoking}
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-red-500 border border-red-200 bg-red-50 disabled:opacity-50">
+                Revoke
+              </button>
+            )
           )}
         </div>
       )}

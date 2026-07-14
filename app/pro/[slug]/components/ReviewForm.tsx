@@ -1,16 +1,18 @@
+"use client";
+
 import { useState } from "react";
 import { Star } from "lucide-react";
 
 type Props = {
   slug: string;
+  defaultOpen?: boolean;
 };
 
-export function ReviewForm({ slug }: Props) {
-  const [open, setOpen] = useState(false);
+export function ReviewForm({ slug, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const [stars, setStars] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [comment, setComment] = useState("");
   const [jobType, setJobType] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -19,26 +21,26 @@ export function ReviewForm({ slug }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!stars || !name.trim() || !email.trim() || !comment.trim()) return;
+    if (!stars || !name.trim() || !comment.trim()) return;
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`/api/reviews/${slug}`, {
+      const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          slug,
           reviewer_name: name.trim(),
-          reviewer_email: email.trim(),
-          stars,
-          comment: comment.trim(),
+          rating: stars,
+          text: comment.trim(),
           job_type: jobType.trim() || undefined,
         }),
       });
       const json = await res.json() as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Submission failed");
       setDone(true);
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -66,7 +68,6 @@ export function ReviewForm({ slug }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider mb-2">Write a Review</h3>
 
-          {/* Star selector */}
           <div>
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
               Your Rating <span className="text-red-500">*</span>
@@ -95,33 +96,17 @@ export function ReviewForm({ slug }: Props) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
-                Your Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Smith"
-                required
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
-                Email <span className="text-red-500">*</span>
-                <span className="normal-case font-medium text-[10px] ml-1.5 opacity-60">(not public)</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john@example.com"
-                required
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
-              />
-            </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">
+              Your Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Smith"
+              required
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/5 focus:border-[#1B3A6B] transition-all"
+            />
           </div>
 
           <div>
@@ -166,7 +151,7 @@ export function ReviewForm({ slug }: Props) {
             </button>
             <button
               type="submit"
-              disabled={submitting || !stars || !name.trim() || !email.trim() || !comment.trim()}
+              disabled={submitting || !stars || !name.trim() || !comment.trim()}
               className="flex-[2] bg-[#1B3A6B] text-white font-bold py-3 rounded-xl hover:bg-[#152e55] transition-colors disabled:opacity-50"
             >
               {submitting ? "Submitting…" : "Submit Review"}

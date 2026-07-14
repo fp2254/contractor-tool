@@ -229,18 +229,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <QuickCreate />
 
-      {/* ── Mobile fixed bottom nav (below lg) ── */}
+      {/* ── Mobile fixed bottom nav (below lg) — mirrors desktop sidebar top 5 items ── */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
         <div className="flex">
-          {navItems.map(({ label, href, Icon, exact }) => {
-            const active = isActive(href, exact);
+          {sidebarItems.slice(0, 5).map(({ id, label, href, icon, exact }) => {
+            const active = isActive(href, !!exact);
             return (
-              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5">
-                <Icon active={active} />
+              <Link key={id} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5">
+                <span className={`text-2xl leading-none ${active ? "" : "opacity-40"}`}>{icon}</span>
                 <span className={`text-[10px] font-medium ${active ? "text-[#1B3A6B]" : "text-gray-400"}`}>{label}</span>
               </Link>
             );
           })}
+          <Link href="/app/more" className="flex-1 flex flex-col items-center py-2 gap-0.5">
+            <MoreIcon active={isActive("/app/more", false)} />
+            <span className={`text-[10px] font-medium ${isActive("/app/more", false) ? "text-[#1B3A6B]" : "text-gray-400"}`}>More</span>
+          </Link>
         </div>
       </nav>
     </div>

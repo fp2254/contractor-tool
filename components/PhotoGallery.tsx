@@ -18,6 +18,7 @@ type Props = {
 export function PhotoGallery({ entityType, entityId, initialPhotos }: Props) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<Photo | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,17 +26,33 @@ export function PhotoGallery({ entityType, entityId, initialPhotos }: Props) {
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadError("");
     try {
-      for (const file of Array.from(files)) {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("entity_type", entityType);
-        form.append("entity_id", entityId);
-        const res = await fetch("/api/photos/upload", { method: "POST", body: form });
-        if (res.ok) {
-          const photo = await res.json() as Photo;
-          setPhotos(prev => [photo, ...prev]);
-        }
+      const fileArray = Array.from(files);
+      const results = await Promise.allSettled(
+        fileArray.map(async (file) => {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("entity_type", entityType);
+          form.append("entity_id", entityId);
+          const res = await fetch("/api/photos/upload", { method: "POST", body: form });
+          if (!res.ok) throw new Error("Upload failed");
+          return res.json() as Promise<Photo>;
+        })
+      );
+
+      const succeeded = results
+        .filter((r): r is PromiseFulfilledResult<Photo> => r.status === "fulfilled")
+        .map(r => r.value);
+      const failCount = results.filter(r => r.status === "rejected").length;
+
+      if (succeeded.length > 0) {
+        setPhotos(prev => [...succeeded, ...prev]);
+      }
+      if (failCount > 0) {
+        setUploadError(
+          `${failCount} photo${failCount > 1 ? "s" : ""} failed to upload — try again.`
+        );
       }
     } finally {
       setUploading(false);
@@ -90,6 +107,12 @@ export function PhotoGallery({ entityType, entityId, initialPhotos }: Props) {
             onChange={e => handleFiles(e.target.files)}
           />
         </div>
+
+        {uploadError && (
+          <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+            ⚠️ {uploadError}
+          </p>
+        )}
 
         {photos.length === 0 ? (
           <button
