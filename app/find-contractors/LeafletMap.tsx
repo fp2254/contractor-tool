@@ -159,13 +159,26 @@ export default function LeafletMap({ contractors, liveContractors, realtors = []
   // Capture liveContractors at mount time so init effect can use the correct initial center.
   const initialLiveRef = useRef<Contractor[] | undefined>(liveContractors);
 
-  // Pan to selected contractor whenever selection changes
+  // Always-current refs for callbacks — prevents stale closures in marker handlers.
+  const onSelectRef = useRef(onSelect);
+  const onHoverRef = useRef(onHover);
+  useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+  useEffect(() => { onHoverRef.current = onHover; }, [onHover]);
+
+  // Keep a ref to the current contractors array so flyTo can read it without
+  // being in its deps (avoiding spurious fly calls on every hover/filter change).
+  const contractorsRef = useRef(contractors);
+  useEffect(() => { contractorsRef.current = contractors; }, [contractors]);
+
+  // Pan to selected contractor ONLY when selectedId changes, not on every
+  // contractors-array reference change (which was causing the map to snap back).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedId) return;
-    const c = contractors.find((x) => x.id === selectedId);
+    const c = contractorsRef.current.find((x) => x.id === selectedId);
     if (c) map.flyTo([c.lat, c.lng], Math.max(map.getZoom(), 12), { animate: true, duration: 0.8 });
-  }, [selectedId, contractors]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -278,9 +291,9 @@ export default function LeafletMap({ contractors, liveContractors, realtors = []
         const marker = L.marker([c.lat, c.lng], { icon })
           .addTo(map)
           .bindTooltip(tooltip)
-          .on("click", () => onSelect(selectedId === c.id ? null : c.id))
-          .on("mouseover", () => onHover(c.id))
-          .on("mouseout", () => onHover(null));
+          .on("click", () => onSelectRef.current(c.id))
+          .on("mouseover", () => onHoverRef.current(c.id))
+          .on("mouseout", () => onHoverRef.current(null));
 
         markersRef.current.set(c.id, marker);
         tooltipsRef.current.set(c.id, tooltip);

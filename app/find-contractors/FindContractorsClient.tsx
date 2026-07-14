@@ -708,10 +708,13 @@ function FilterSheet({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function FindContractorsClient({ liveContractors = [], liveRealtors = [] }: { liveContractors?: Contractor[]; liveRealtors?: RealtorPin[] }) {
-  // Merge: live contractors first (real data), then mock fill-ins for the map demo.
-  // Computed once — liveContractors only changes when the server sends different data.
-  const liveIds = new Set(liveContractors.map((c) => c.id));
-  const CONTRACTORS = [...liveContractors, ...MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id))];
+  // Merge: live contractors first, then mock fill-ins. Memoized so the array
+  // reference is stable between renders, preventing spurious flyTo calls.
+  const allContractors = useMemo(() => {
+    const liveIds = new Set(liveContractors.map((c) => c.id));
+    return [...liveContractors, ...MOCK_CONTRACTORS.filter((c) => !liveIds.has(c.id))];
+  }, [liveContractors]);
+
   const [showRealtors, setShowRealtors] = useState(true);
 
 
@@ -744,7 +747,7 @@ export default function FindContractorsClient({ liveContractors = [], liveRealto
   const activeFilterCount = [verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly].filter(Boolean).length + (minRating > 0 ? 1 : 0);
 
   const filtered = useMemo(() => {
-    let list = [...CONTRACTORS];
+    let list = [...allContractors];
     const q = query.toLowerCase().trim();
     if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || c.trade.toLowerCase().includes(q) || c.description.toLowerCase().includes(q) || c.services.some((s) => s.toLowerCase().includes(q)));
     if (service !== "All Services") list = list.filter((c) => c.trade === service || c.services.some((s) => s.includes(service)));
@@ -762,8 +765,7 @@ export default function FindContractorsClient({ liveContractors = [], liveRealto
     else if (sort === "reviews") list.sort((a, b) => b.reviews_google - a.reviews_google);
     else if (sort === "featured") list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     return list;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [CONTRACTORS, query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
+  }, [allContractors, query, service, city, distance, verifiedOnly, licensedOnly, insuredOnly, emergencyOnly, veteranOnly, minRating, sort]);
 
   const selectedContractor = selectedPinId ? filtered.find((c) => c.id === selectedPinId) ?? null : null;
   const activeIds = new Set(filtered.map((c) => c.id));
