@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     ...(replitDomain ? [replitDomain] : []),
   ],
   typescript: {
+    // NOTE: 1145 pre-existing TS errors from Supabase table types not included in lib/types.ts.
+    // Setting to false would break `next build` / deployment until those are fixed.
+    // Run `npm run type-check` to see all outstanding errors. Tracked as tech debt.
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ["@react-pdf/renderer"],

@@ -17,7 +17,9 @@ export function SignatureCapture({ token, quoteId, quoteNum, large }: Props) {
   const [hasStrokes, setHasStrokes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [canvasWidth, setCanvasWidth] = useState(560);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,6 +28,19 @@ export function SignatureCapture({ token, quoteId, quoteNum, large }: Props) {
       setError("");
       setTimeout(() => clearCanvas(), 50);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function measure() {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        setCanvasWidth(Math.max(280, Math.min(560, w)));
+      }
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, [open]);
 
   function clearCanvas() {
@@ -135,11 +150,11 @@ export function SignatureCapture({ token, quoteId, quoteNum, large }: Props) {
       </p>
 
       <div className="space-y-2">
-        <div className="relative">
+        <div ref={containerRef} className="relative">
           <canvas
             ref={canvasRef}
-            width={560}
-            height={120}
+            width={canvasWidth}
+            height={Math.round(canvasWidth * (120 / 560))}
             className="w-full rounded-lg border-2 border-dashed border-green-300 bg-white touch-none"
             style={{ height: 100 }}
             onPointerDown={onPointerDown}

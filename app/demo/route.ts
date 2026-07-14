@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 export const dynamic = "force-dynamic";
 
 const DEMO_EMAIL = "demo@trade-base.biz";
-const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "TradeBaseDemo2024!";
+const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD;
 
 function getOrigin(req: Request): string {
   const fwdHost =
@@ -20,6 +20,10 @@ function getOrigin(req: Request): string {
 
 export async function GET(request: Request) {
   const origin = getOrigin(request);
+
+  if (!DEMO_PASSWORD) {
+    return NextResponse.redirect(`${origin}/auth/login?demo=unavailable`);
+  }
 
   const response = NextResponse.redirect(`${origin}/app`);
 

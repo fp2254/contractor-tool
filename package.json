@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 5000",
+    "type-check": "tsc --noEmit",
     "lint": "next lint",
     "test": "playwright test --config=playwright.config.ts --project=smoke --reporter=line",
     "test:e2e": "playwright test"

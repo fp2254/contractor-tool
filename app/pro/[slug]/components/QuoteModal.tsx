@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void;
 };
 
-type FormState = "idle" | "submitting" | "success";
+type FormState = "idle" | "submitting" | "success" | "error";
 
 export function QuoteModal({ contractorName, slug, open, onClose }: Props) {
   const firstName = contractorName.split(" ")[0];
@@ -24,15 +24,16 @@ export function QuoteModal({ contractorName, slug, open, onClose }: Props) {
     e.preventDefault();
     setState("submitting");
     try {
-      await fetch("/api/public/quote-request", {
+      const res = await fetch("/api/public/quote-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, ...form }),
       });
+      if (!res.ok) throw new Error("Request failed");
+      setState("success");
     } catch {
-      // fail silently — still show success to the visitor
+      setState("error");
     }
-    setState("success");
   }
 
   function handleClose() {
@@ -74,6 +75,22 @@ export function QuoteModal({ contractorName, slug, open, onClose }: Props) {
               className="w-full bg-[#1B3A6B] text-white font-bold py-4 rounded-2xl hover:bg-[#152e55] transition-colors shadow-lg shadow-blue-900/10"
             >
               Done
+            </button>
+          </div>
+        ) : state === "error" ? (
+          <div className="p-8 sm:p-12 text-center">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <X size={40} className="text-red-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Something went wrong</h2>
+            <p className="text-slate-500 mb-8 leading-relaxed">
+              We couldn&apos;t send your request. Please call {firstName} directly or try again.
+            </p>
+            <button
+              onClick={() => setState("idle")}
+              className="w-full bg-[#1B3A6B] text-white font-bold py-4 rounded-2xl hover:bg-[#152e55] transition-colors shadow-lg shadow-blue-900/10"
+            >
+              Try Again
             </button>
           </div>
         ) : (
