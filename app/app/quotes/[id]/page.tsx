@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { nextInvoiceNumber } from "@/lib/invoiceNumber";
 import { getUserOrgRole, isOwnerOrAdmin } from "@/lib/orgRole";
 import { getOrgMembers, memberDisplayName } from "@/lib/teamUtils";
 import { AssigneeField } from "@/components/AssigneeField";
@@ -67,7 +68,7 @@ async function convertToInvoice(formData: FormData) {
     customer_id: quote.customer_id,
     status: "unpaid",
     total_amount: quote.total_amount,
-    invoice_number: `INV-${Date.now()}`,
+    invoice_number: await nextInvoiceNumber(admin, orgId!),
     due_date: dueDate.toISOString(),
     created_by_user: user.data.user?.id ?? null,
   }).select("id").single();

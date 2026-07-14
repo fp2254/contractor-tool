@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { nextInvoiceNumber } from "@/lib/invoiceNumber";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { PermitAssistant } from "@/components/PermitAssistant";
 import { EntityAiSection, type AiAttachment } from "@/components/EntityAiSection";
@@ -178,7 +179,7 @@ async function createInvoiceFromJob(formData: FormData) {
     job_id: jobId,
     status: "unpaid",
     total_amount: amount,
-    invoice_number: `INV-${Date.now()}`,
+    invoice_number: await nextInvoiceNumber(admin, orgId!),
     due_date: dueDate.toISOString(),
     created_by_user: user.data.user?.id ?? null,
   }).select("id").single();

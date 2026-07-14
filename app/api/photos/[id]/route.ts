@@ -18,8 +18,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Photo not found" }, { status: 404 });
   }
 
+  // Delete DB record FIRST — if it fails, storage is untouched.
+  // A dangling storage file with no DB row is harmless; the reverse is not.
+  const { error: dbError } = await admin
+    .from("photos")
+    .delete()
+    .eq("id", id)
+    .eq("org_id", orgId!);
+
+  if (dbError) {
+    return NextResponse.json({ error: dbError.message }, { status: 500 });
+  }
+
+  // DB row gone — now safe to remove from storage.
   await admin.storage.from("tradebase-photos").remove([photo.storage_path]);
-  await admin.from("photos").delete().eq("id", id).eq("org_id", orgId!);
 
   return NextResponse.json({ success: true });
 }

@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   if (!invoice || !org) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { data: customer } = await admin.from("customers").select("*").eq("id", invoice.customer_id).single();
+  const { data: customer } = await admin.from("customers").select("*").eq("id", invoice.customer_id).eq("org_id", orgId!).single();
   if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
 
   // Resolve the linked quote: prefer direct quote→invoice link, fall back via job

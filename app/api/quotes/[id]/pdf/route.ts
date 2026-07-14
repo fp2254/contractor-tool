@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { data: customer } = await admin.from("customers").select("*").eq("id", quote.customer_id).single();
+  const { data: customer } = await admin.from("customers").select("*").eq("id", quote.customer_id).eq("org_id", orgId!).single();
   if (!customer) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }

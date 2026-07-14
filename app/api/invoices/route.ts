@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
+import { nextInvoiceNumber } from "@/lib/invoiceNumber";
 import { z } from "zod";
 
 const invoiceSchema = z.object({
@@ -37,26 +38,47 @@ export async function POST(req: Request) {
       phone?: string;
       email?: string;
     };
-    const { data: newCust, error: custErr } = await admin
-      .from("customers")
-      .insert({
-        org_id: orgId!,
-        first_name: nc.first_name ?? "",
-        last_name: nc.last_name || null,
-        phone: nc.phone || null,
-        email: nc.email || null,
-        created_by_user: user?.id ?? null,
-      })
-      .select("id")
-      .single();
 
-    if (custErr || !newCust) {
-      return NextResponse.json(
-        { error: custErr?.message ?? "Could not create client" },
-        { status: 400 }
-      );
+    // Deduplicate: reuse existing customer if phone or email already on file for this org.
+    let existingId: string | null = null;
+    if (nc.phone || nc.email) {
+      const orClauses: string[] = [];
+      if (nc.phone) orClauses.push(`phone.eq.${nc.phone}`);
+      if (nc.email) orClauses.push(`email.eq.${nc.email}`);
+      const { data: existing } = await admin
+        .from("customers")
+        .select("id")
+        .eq("org_id", orgId!)
+        .or(orClauses.join(","))
+        .limit(1)
+        .maybeSingle();
+      existingId = existing?.id ?? null;
     }
-    customer_id = newCust.id;
+
+    if (existingId) {
+      customer_id = existingId;
+    } else {
+      const { data: newCust, error: custErr } = await admin
+        .from("customers")
+        .insert({
+          org_id: orgId!,
+          first_name: nc.first_name ?? "",
+          last_name: nc.last_name || null,
+          phone: nc.phone || null,
+          email: nc.email || null,
+          created_by_user: user?.id ?? null,
+        })
+        .select("id")
+        .single();
+
+      if (custErr || !newCust) {
+        return NextResponse.json(
+          { error: custErr?.message ?? "Could not create client" },
+          { status: 400 }
+        );
+      }
+      customer_id = newCust.id;
+    }
   }
 
   if (!customer_id) {
@@ -72,7 +94,7 @@ export async function POST(req: Request) {
       customer_id,
       status: "unpaid",
       total_amount: totalAmount,
-      invoice_number: `INV-${Date.now()}`,
+      invoice_number: await nextInvoiceNumber(admin, orgId!),
       due_date: due_date ?? null,
       created_by_user: user?.id ?? null,
     } as Record<string, unknown>)

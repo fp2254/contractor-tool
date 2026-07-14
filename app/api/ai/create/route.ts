@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { nextInvoiceNumber } from "@/lib/invoiceNumber";
 
 export const dynamic = "force-dynamic";
 
@@ -209,7 +210,7 @@ export async function POST(req: Request) {
         customer_id: customerId,
         status: "unpaid",
         total_amount: total,
-        invoice_number: `INV-${Date.now()}`,
+        invoice_number: await nextInvoiceNumber(admin, orgId!),
         due_date: dueDateStr,
         created_by_user: userId,
       } as Record<string, unknown>)
