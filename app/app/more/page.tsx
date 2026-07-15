@@ -85,6 +85,11 @@ export default async function MorePage() {
 
   const showcaseHref = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
 
+  // Ensure website URL has a protocol so it opens as an external link
+  const normalizedWebsiteUrl = websiteUrl
+    ? /^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`
+    : null;
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">More</h1>
@@ -105,8 +110,8 @@ export default async function MorePage() {
 
       {/* My Pages — two prominent buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        {websiteUrl ? (
-          <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
+        {normalizedWebsiteUrl ? (
+          <a href={normalizedWebsiteUrl} target="_blank" rel="noopener noreferrer"
             className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
             style={{ backgroundColor: "#1B3A6B" }}>
             <span className="text-2xl">🏢</span>
