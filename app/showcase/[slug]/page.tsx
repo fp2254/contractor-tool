@@ -21,7 +21,7 @@ async function loadShowcase(slug: string) {
 
   const { data: pub } = await a
     .from("public_profiles")
-    .select("org_id, slug, trade, photo_url, service_area, tagline, years_experience, license_text, is_published, trust_highlights, services, phone, revenue_display, photos")
+    .select("org_id, slug, trade, photo_url, service_area, tagline, years_experience, license_text, is_published, trust_highlights, services, phone, revenue_display")
     .eq("slug", slug)
     .maybeSingle();
 
