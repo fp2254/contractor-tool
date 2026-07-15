@@ -324,7 +324,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
 
         {/* ── owner settings box ── */}
         {isOwner && (
-          <div style={{ margin: "0 10px 10px", background: "#f0f4ff", borderRadius: 10, padding: "11px 12px", border: "1px solid #c7d7f5" }}>
+          <div style={{ margin: "8px 10px 10px", background: "#f0f4ff", borderRadius: 10, padding: "11px 12px", border: "1px solid #c7d7f5" }}>
             <p style={{ fontSize: 10.5, fontWeight: 700, color: NAVY, margin: "0 0 9px", display: "flex", alignItems: "center", gap: 5 }}>
               ⚙️ Page Settings
             </p>
