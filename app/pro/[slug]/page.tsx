@@ -269,7 +269,7 @@ export default async function Page({ params }: Props) {
           flexShrink: 0,
         }}
       >
-        View Portfolio →
+        View Showcase →
       </a>
     </div>
   );
