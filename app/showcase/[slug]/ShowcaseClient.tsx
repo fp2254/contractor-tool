@@ -322,28 +322,6 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
           </div>
         </div>
 
-        {/* nav */}
-        <nav style={{ flex: 1, padding: "10px 8px" }}>
-          {NAV.map(item => {
-            const active = activeSection === item.id;
-            return (
-              <button key={item.id} onClick={() => scrollTo(item.id)} style={{
-                display: "flex", alignItems: "center", gap: 9, width: "100%",
-                padding: "8px 11px", borderRadius: 8, border: "none", cursor: "pointer",
-                background: active ? NAVY : "transparent",
-                color: active ? "white" : "#6b7280",
-                fontWeight: active ? 600 : 400, fontSize: 12.5, textAlign: "left",
-                marginBottom: 2, transition: "all 0.12s",
-              }}>
-                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0, opacity: active ? 1 : 0.65 }}>
-                  <path d={item.icon} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
         {/* ── owner settings box ── */}
         {isOwner && (
           <div style={{ margin: "0 10px 10px", background: "#f0f4ff", borderRadius: 10, padding: "11px 12px", border: "1px solid #c7d7f5" }}>
@@ -415,6 +393,28 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
             </div>
           </div>
         )}
+
+        {/* nav */}
+        <nav style={{ flex: 1, padding: "10px 8px" }}>
+          {NAV.map(item => {
+            const active = activeSection === item.id;
+            return (
+              <button key={item.id} onClick={() => scrollTo(item.id)} style={{
+                display: "flex", alignItems: "center", gap: 9, width: "100%",
+                padding: "8px 11px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: active ? NAVY : "transparent",
+                color: active ? "white" : "#6b7280",
+                fontWeight: active ? 600 : 400, fontSize: 12.5, textAlign: "left",
+                marginBottom: 2, transition: "all 0.12s",
+              }}>
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0, opacity: active ? 1 : 0.65 }}>
+                  <path d={item.icon} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
         {/* profile strength */}
         <div style={{ margin: "0 10px 14px", background: "#f8fafc", borderRadius: 10, padding: "11px 12px", border: "1px solid #e8ecf2" }}>
