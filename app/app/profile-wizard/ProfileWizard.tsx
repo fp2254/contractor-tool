@@ -31,14 +31,7 @@ const EMPTY: Form = {
   slug: "",
 };
 
-const TEMPLATES = [
-  { id: "classic", name: "Classic",      desc: "Trust-focused, traditional",   colors: ["#0f1f3d", "#f5a623"] },
-  { id: "modern",  name: "Modern Pro",   desc: "Sleek dark + bold stats",       colors: ["#0d1117", "#58a6ff"] },
-  { id: "trust",   name: "Trust Builder",desc: "Services, reviews, gallery",    colors: ["#0f172a", "#f59e0b"] },
-  { id: "",        name: "Default",      desc: "Mobile-first dark",             colors: ["#0a0a0a", "#ff5b1f"] },
-] as const;
-
-const TOTAL = 4;
+const TOTAL = 3;
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
 const inputCls = "w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white";
 
@@ -202,51 +195,8 @@ export default function ProfileWizard() {
       {/* Content */}
       <div className="flex-1 px-4 py-6 overflow-y-auto">
 
-        {/* ── Step 1: Template ── */}
+        {/* ── Step 1: Pitch ── */}
         {step === 1 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Pick your look</h2>
-              <p className="text-sm text-gray-500">Choose a style for your public lead page — you can change it anytime.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {TEMPLATES.map(t => {
-                const active = form.selected_template === t.id;
-                return (
-                  <button
-                    key={t.id || "default"}
-                    onClick={() => set("selected_template", t.id)}
-                    className="rounded-2xl overflow-hidden border-2 text-left transition-all"
-                    style={{ borderColor: active ? "#1B3A6B" : "#E5E7EB" }}
-                  >
-                    {/* Color swatch */}
-                    <div
-                      className="h-16 flex items-center justify-center gap-2"
-                      style={{ background: `linear-gradient(135deg, ${t.colors[0]} 0%, ${t.colors[1]} 100%)` }}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-white/20" />
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.colors[1] }} />
-                    </div>
-                    <div className="bg-white px-3 py-2.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-bold text-gray-800">{t.name}</p>
-                        {active && (
-                          <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "#1B3A6B" }}>
-                            <svg viewBox="0 0 12 10" className="w-2.5 h-2" fill="none"><path d="M1 5l3 3 7-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{t.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 2: Pitch ── */}
-        {step === 2 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Your pitch</h2>
@@ -308,8 +258,8 @@ export default function ProfileWizard() {
           </div>
         )}
 
-        {/* ── Step 3: Services ── */}
-        {step === 3 && (
+        {/* ── Step 2: Services ── */}
+        {step === 2 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">What you offer</h2>
@@ -374,8 +324,8 @@ export default function ProfileWizard() {
           </div>
         )}
 
-        {/* ── Step 4: Go Live ── */}
-        {step === 4 && (
+        {/* ── Step 3: Go Live ── */}
+        {step === 3 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">Go live</h2>
@@ -458,7 +408,7 @@ export default function ProfileWizard() {
           )}
         </div>
       )}
-      {step === 4 && step > 1 && (
+      {step === 3 && step > 1 && (
         <div className="px-4 pb-4 pt-2 bg-white border-t border-gray-100">
           <button onClick={() => setStep(s => s - 1)} className="w-full py-2 text-sm font-medium text-gray-500">
             ← Back

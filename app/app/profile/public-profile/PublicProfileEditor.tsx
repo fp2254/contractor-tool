@@ -74,33 +74,6 @@ const EMPTY: EditorProfile = {
   stat_label: "",
 };
 
-const TEMPLATES = [
-  {
-    id: "classic",
-    name: "Classic",
-    description: "Trust-focused, traditional",
-    colors: ["#0f1f3d", "#f5a623"],
-  },
-  {
-    id: "modern",
-    name: "Modern Pro",
-    description: "Sleek dark + bold stats",
-    colors: ["#0d1117", "#58a6ff"],
-  },
-  {
-    id: "trust",
-    name: "Trust Builder",
-    description: "Services, reviews, gallery",
-    colors: ["#0f172a", "#f59e0b"],
-  },
-  {
-    id: "",
-    name: "Default",
-    description: "Mobile-first dark",
-    colors: ["#0a0a0a", "#ff5b1f"],
-  },
-] as const;
-
 const BASE_URL = "https://tradebase.contractors/showcase";
 
 function normalizeServices(raw: unknown[]): ServiceItem[] {
@@ -125,7 +98,6 @@ export function PublicProfileEditor() {
   const [copied, setCopied] = useState(false);
   const [serviceInput, setServiceInput] = useState("");
   const [trustInput, setTrustInput] = useState("");
-  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [websiteLeadsCount, setWebsiteLeadsCount] = useState(0);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [blockDraft, setBlockDraft] = useState({ icon: "", title: "", body: "" });
@@ -134,12 +106,6 @@ export function PublicProfileEditor() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const slugTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function templatePreviewSlug(id: string) {
-    if (id === "classic") return "classic";
-    if (id === "modern") return "modern";
-    if (id === "trust") return "trust";
-    return "default";
-  }
 
   // Debounced slug availability check
   useEffect(() => {
@@ -447,57 +413,10 @@ export function PublicProfileEditor() {
         </div>
       )}
 
-      {/* ── Step 1: Template ── */}
+      {/* ── Step 1: About You ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">1</span>
-          <p className="font-semibold text-slate-800 text-sm">Pick Your Look</p>
-        </div>
-        <div className="px-4 py-3">
-          <div className="grid grid-cols-2 gap-2">
-            {TEMPLATES.map((t) => {
-              const selected = profile.selected_template === t.id;
-              return (
-                <div
-                  key={t.id}
-                  className="rounded-xl border-2 overflow-hidden transition-all"
-                  style={{
-                    borderColor: selected ? "#1B3A6B" : "#E5E7EB",
-                    background: selected ? "#EFF6FF" : "#FAFAFA",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => update("selected_template", t.id)}
-                    className="w-full p-3 text-left active:scale-[0.98]"
-                  >
-                    <div className="flex gap-1.5 mb-2">
-                      {t.colors.map((c, i) => (
-                        <div key={i} className="w-5 h-5 rounded" style={{ background: c }} />
-                      ))}
-                    </div>
-                    <p className="text-xs font-bold text-slate-800">{t.name}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{t.description}</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTemplateId(t.id)}
-                    className="w-full border-t py-1.5 text-[10px] font-semibold text-[#1B3A6B] active:bg-blue-100 transition-colors"
-                    style={{ borderColor: selected ? "#BFDBFE" : "#F3F4F6", background: selected ? "#DBEAFE" : "#F9FAFB" }}
-                  >
-                    Preview →
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Step 2: About You ── */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">2</span>
           <p className="font-semibold text-slate-800 text-sm">Tell People Who You Are</p>
         </div>
         <div className="px-4 py-3 space-y-3">
@@ -612,10 +531,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 3: Services ── */}
+      {/* ── Step 2: Services ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">3</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">2</span>
           <p className="font-semibold text-slate-800 text-sm">What Do You Do?</p>
         </div>
         <div className="px-4 py-3 space-y-3">
@@ -713,10 +632,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 4: Trust Highlights ── */}
+      {/* ── Step 3: Trust Highlights ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">4</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">3</span>
           <p className="font-semibold text-slate-800 text-sm">Trust Highlights</p>
         </div>
         <div className="px-4 py-3 space-y-3">
@@ -759,10 +678,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 5: Custom Blocks ── */}
+      {/* ── Step 4: Custom Blocks ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">4</span>
           <p className="font-semibold text-slate-800 text-sm">Custom Sections</p>
         </div>
         <div className="px-4 py-3 space-y-3">
@@ -924,10 +843,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 6: Photos ── */}
+      {/* ── Step 5: Photos ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
           <p className="font-semibold text-slate-800 text-sm">Photos</p>
         </div>
         <div className="px-4 py-3 space-y-4">
@@ -1083,10 +1002,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 7: Sections ── */}
+      {/* ── Step 6: Sections ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
           <p className="font-semibold text-slate-800 text-sm">Sections on Your Page</p>
         </div>
         <div className="px-4 py-3 space-y-1">
@@ -1125,10 +1044,10 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 8: URL ── */}
+      {/* ── Step 7: URL ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">8</span>
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
           <p className="font-semibold text-slate-800 text-sm">Your Public URL</p>
         </div>
         <div className="px-4 py-3">
@@ -1176,44 +1095,6 @@ export function PublicProfileEditor() {
 
       <div className="h-4" />
 
-      {/* ── Template Preview Bottom Sheet ── */}
-      {previewTemplateId !== null && (
-        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "rgba(0,0,0,0.55)" }}>
-          {/* Header bar */}
-          <div className="flex items-center justify-between px-4 py-3 bg-white shadow-sm flex-shrink-0">
-            <p className="text-sm font-bold text-slate-800">
-              {TEMPLATES.find(t => t.id === previewTemplateId)?.name ?? "Template"} Preview
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  update("selected_template", previewTemplateId);
-                  setPreviewTemplateId(null);
-                }}
-                className="text-xs font-bold px-3 py-1.5 rounded-lg text-white"
-                style={{ backgroundColor: "#1B3A6B" }}
-              >
-                Use This
-              </button>
-              <button
-                onClick={() => setPreviewTemplateId(null)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-          {/* Scrollable iframe */}
-          <div className="flex-1 overflow-hidden bg-white">
-            <iframe
-              key={previewTemplateId}
-              src={`/pro/preview/${templatePreviewSlug(previewTemplateId)}`}
-              className="w-full h-full border-0"
-              title="Template preview"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
