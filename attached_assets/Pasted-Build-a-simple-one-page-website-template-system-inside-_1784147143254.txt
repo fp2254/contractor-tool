@@ -1,0 +1,264 @@
+Build a simple one-page website template system inside TradeBase for contractors and local service businesses.
+
+The goal is NOT to build a full Wix-style website builder. It should be much simpler, faster, and easier for non-technical contractors to use.
+
+Use the attached mockup as the visual direction.
+
+CORE REQUIREMENTS
+
+1. ONE-PAGE WEBSITE
+Create a single scrolling landing page with these sections:
+
+- Header
+- Hero section
+- Services
+- About
+- Recent projects
+- Reviews
+- Quote request section
+- Footer
+
+Do not create multiple website pages.
+
+2. MODULAR SECTIONS
+Every section must be its own reusable editable block.
+
+Users must be able to:
+
+- Edit all text
+- Replace all images
+- Change icons
+- Add, remove, or reorder service cards
+- Add, remove, or reorder project photos
+- Add, remove, or reorder reviews
+- Hide or show any section
+- Reorder entire sections
+- Duplicate sections where appropriate
+
+Use drag-and-drop section ordering.
+
+3. SIMPLE EDITING EXPERIENCE
+The builder should feel much easier than Wix.
+
+Do not create a complicated freeform canvas.
+
+Instead, use a structured editor where users click a section and edit its fields in a simple side panel or modal.
+
+Example:
+
+Click hero section:
+- Headline
+- Subheadline
+- Background image
+- Primary button text
+- Secondary button text
+- Trust badges
+- Service area text
+
+Click services section:
+- Section title
+- Add service
+- Service name
+- Description
+- Icon
+- Reorder
+- Delete
+
+4. DESIGN
+Match the attached mockup closely:
+
+- Clean white background
+- Dark navy text
+- Gold accent color
+- Large professional hero image
+- Clear typography
+- Spacious layout
+- Simple rectangular cards
+- Minimal animations
+- No unnecessary effects
+- Professional contractor-focused appearance
+
+The website must look polished on desktop, tablet, and mobile.
+
+5. HEADER
+Header should include:
+
+- Contractor logo
+- Business name
+- Navigation links that scroll to sections
+- Prominent “Get a Quote” button
+- Sticky header on scroll
+
+On mobile, use a simple menu icon and keep a visible quote button.
+
+6. HERO SECTION
+Include:
+
+- Small tagline
+- Large headline
+- Short description
+- Primary “Request a Free Quote” button
+- Optional secondary “Our Services” button
+- Large background or split-layout image
+- Trust badges such as:
+  - Licensed & Insured
+  - Quality Guaranteed
+  - On-Time Service
+- Optional service-area text
+- Optional review rating
+
+7. SERVICES SECTION
+Display 1–6 service cards.
+
+Each card includes:
+
+- Icon
+- Service name
+- Short description
+- Optional link or button
+
+The contractor must be able to add, remove, edit, and reorder cards.
+
+8. ABOUT SECTION
+Include:
+
+- Heading
+- Short company description
+- Editable bullet points
+- Image
+- Optional button
+
+Allow image-left or image-right layout.
+
+9. PROJECTS SECTION
+Include:
+
+- Section heading
+- 1–8 project photos
+- Optional captions
+- Clickable lightbox gallery
+
+Allow contractors to upload, delete, and reorder photos.
+
+Hide the section automatically if there are no project images.
+
+10. REVIEWS SECTION
+Include:
+
+- Customer review text
+- Customer name
+- Star rating
+- Optional review source
+
+Support multiple reviews in a slider or carousel.
+
+Hide the section automatically if there are no reviews.
+
+11. QUOTE REQUEST
+This is the most important conversion feature.
+
+Include clear quote buttons throughout the page:
+
+- Header
+- Hero
+- Bottom CTA
+
+The main quote button should open or scroll to a simple quote request form.
+
+Form fields:
+
+- Name
+- Phone
+- Email
+- Address or ZIP code
+- Service needed
+- Project description
+- Preferred contact method
+- Optional photo upload
+
+On submission:
+
+- Create a lead inside TradeBase
+- Save the website source
+- Attach uploaded photos
+- Send confirmation to the customer
+- Notify the contractor
+
+12. FOOTER
+Include editable:
+
+- Logo
+- Business name
+- Phone
+- Email
+- Address
+- Service areas
+- Business hours
+- Social links
+- Copyright
+- “Powered by TradeBase”
+
+13. BRAND SETTINGS
+Add simple global controls:
+
+- Logo
+- Primary color
+- Accent color
+- Heading font
+- Body font
+- Button style
+- Border radius
+
+Changes should update the full website automatically.
+
+14. PREVIEW AND PUBLISHING
+Include:
+
+- Desktop preview
+- Tablet preview
+- Mobile preview
+- Save draft
+- Preview website
+- Publish website
+- Unpublish website
+
+15. DATA STRUCTURE
+Store the page as structured JSON instead of hardcoding content.
+
+Suggested structure:
+
+website
+- id
+- business_id
+- template_id
+- slug
+- status
+- brand_settings
+- seo_settings
+- sections
+- published_at
+
+Each section should contain:
+
+- id
+- type
+- order
+- visible
+- settings
+- content
+
+16. TEMPLATE NAME
+Call this first template:
+
+TradeBase Classic
+
+17. IMPORTANT UX RULE
+Do not allow users to freely drag individual text boxes anywhere on the page.
+
+Users should only edit structured fields and reorder complete sections or cards.
+
+The entire experience should feel like:
+
+Choose template → add business info → add services → upload photos → publish.
+
+A contractor should be able to finish and publish the website in under 10 minutes.
