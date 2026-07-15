@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { QuickCreate } from "@/components/QuickCreate";
 import {
   ALL_SIDEBAR_ITEMS,
@@ -94,10 +94,26 @@ function readSidebarIds(): string[] {
   return DEFAULT_SIDEBAR_IDS;
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  userEmail = "",
+  userName = "",
+}: {
+  children: React.ReactNode;
+  userEmail?: string;
+  userName?: string;
+}) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
   const [sidebarIds, setSidebarIds] = useState<string[]>(DEFAULT_SIDEBAR_IDS);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  const initials = userName
+    ? userName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : (userEmail[0] ?? "?").toUpperCase();
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -121,6 +137,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("storage", onSidebarUpdated);
     };
   }, []);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [accountOpen]);
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (q.length >= 2) {
+      router.push(`/app/search?q=${encodeURIComponent(q)}`);
+    } else if (q.length === 0) {
+      router.push("/app/search");
+    }
+  }
 
   const sidebarItems = sidebarIds
     .map(id => ALL_SIDEBAR_ITEMS.find(item => item.id === id))
@@ -205,13 +242,118 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* ── Desktop fixed top bar (lg and up) ── */}
-      <div className="hidden lg:flex lg:fixed lg:top-0 lg:left-64 lg:right-0 lg:z-40 lg:h-14 items-center justify-end bg-white border-b border-gray-200 px-6">
+      <div className="hidden lg:flex lg:fixed lg:top-0 lg:left-64 lg:right-0 lg:z-40 lg:h-14 items-center gap-4 bg-white border-b border-gray-200 px-6">
+
+        {/* Global search bar */}
+        <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md">
+          <div className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1B3A6B]/30 rounded-lg px-3 py-1.5 transition-colors">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search customers, leads, jobs…"
+              className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder-gray-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-gray-400 hover:text-gray-600 shrink-0"
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </form>
+
+        <div className="flex-1" />
+
+        {/* Notification bell — links to activity log */}
+        <Link
+          href="/app/activity"
+          className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0"
+          title="Activity &amp; notifications"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </Link>
+
+        {/* Offline badge */}
         {!isOnline && (
-          <span className="flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-800 inline-block" />
             Offline
           </span>
         )}
+
+        {/* Account / avatar menu */}
+        <div ref={accountRef} className="relative shrink-0">
+          <button
+            onClick={() => setAccountOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 transition-colors"
+          >
+            <span
+              className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+              style={{ backgroundColor: "#1B3A6B" }}
+            >
+              {initials}
+            </span>
+            <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate hidden xl:block">
+              {userName || userEmail}
+            </span>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400 hidden xl:block" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+
+          {accountOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100">
+                {userName && <p className="text-sm font-semibold text-gray-800 truncate">{userName}</p>}
+                <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+              </div>
+              <div className="py-1">
+                <Link
+                  href="/app/more"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                  </svg>
+                  Settings &amp; More
+                </Link>
+                <Link
+                  href="/app/profile"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="8" r="4" /><path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                  My Profile
+                </Link>
+              </div>
+              <div className="border-t border-gray-100 py-1">
+                <Link
+                  href="/auth/signout"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h6a2 2 0 012 2v1" />
+                  </svg>
+                  Sign out
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {!isOnline && (

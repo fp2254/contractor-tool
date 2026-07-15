@@ -55,12 +55,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
   }
 
+  const userEmail = user.email ?? "";
+  const userMeta = user.user_metadata ?? {};
+  const userName: string =
+    userMeta.full_name ?? userMeta.name ?? userEmail.split("@")[0] ?? "";
+
   return (
     <>
       <OfflineBanner />
       {isDemo && <DemoBanner />}
       {graceDaysLeft !== undefined && <GracePeriodBanner daysLeft={graceDaysLeft} />}
-      <AppShell>{children}</AppShell>
+      <AppShell userEmail={userEmail} userName={userName}>{children}</AppShell>
     </>
   );
 }
