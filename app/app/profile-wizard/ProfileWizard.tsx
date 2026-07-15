@@ -151,11 +151,11 @@ export default function ProfileWizard() {
             Customers can find and contact you at:
           </p>
           <div className="bg-gray-50 rounded-xl px-4 py-3 mb-6 text-sm font-mono text-blue-700 break-all">
-            tradebase.contractors/pro/{done.slug}
+            tradebase.contractors/showcase/{done.slug}
           </div>
           <div className="space-y-3">
             <a
-              href={`/pro/${done.slug}`}
+              href={`/showcase/${done.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full py-3 rounded-xl text-white text-sm font-bold text-center"
@@ -398,7 +398,7 @@ export default function ProfileWizard() {
                 <label className={labelCls}>Your page URL</label>
                 <div className="flex items-center rounded-xl border border-gray-200 overflow-hidden bg-white focus-within:ring-2 focus-within:ring-blue-100">
                   <span className="px-3 py-2.5 text-xs text-gray-400 bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
-                    /pro/
+                    /showcase/
                   </span>
                   <input
                     value={form.slug}
@@ -408,7 +408,7 @@ export default function ProfileWizard() {
                   />
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1.5">
-                  Full URL: <span className="font-mono text-blue-600">tradebase.contractors/pro/{form.slug || "your-slug"}</span>
+                  Full URL: <span className="font-mono text-blue-600">tradebase.contractors/showcase/{form.slug || "your-slug"}</span>
                 </p>
               </div>
             </div>

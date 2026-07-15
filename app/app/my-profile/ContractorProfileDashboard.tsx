@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Star, CheckCircle, DollarSign, Users, Briefcase, Globe,
   Edit3, ExternalLink, MapPin, Phone, Shield, Award,
-  Clock, ChevronRight, TrendingUp, MessageSquare, Wrench,
+  Clock, ChevronRight, TrendingUp, Wrench,
 } from "lucide-react";
 
 type Business = {
@@ -65,8 +65,7 @@ type Job = {
 const TABS = ["Overview", "Reviews", "Services", "Photos"] as const;
 type Tab = typeof TABS[number];
 
-const PRO_BASE = "https://tradebase.contractors/pro";
-const PROFILE_BASE = "https://tradebase.contractors/contractor";
+const SHOWCASE_BASE = "https://tradebase.contractors/showcase";
 
 function StarRating({ rating, size = 13 }: { rating: number; size?: number }) {
   return (
@@ -110,8 +109,8 @@ export default function ContractorProfileDashboard({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
-  const publicUrl = publicProfile?.slug ? `${PRO_BASE}/${publicProfile.slug}` : null;
-  const profileUrl = publicProfile?.slug ? `${PROFILE_BASE}/${publicProfile.slug}` : null;
+  const showcaseUrl = publicProfile?.slug ? `${SHOWCASE_BASE}/${publicProfile.slug}` : null;
+  const showcasePath = publicProfile?.slug ? `/showcase/${publicProfile.slug}` : null;
   const initials = business.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "CO";
 
   return (
@@ -123,11 +122,13 @@ export default function ContractorProfileDashboard({
           <ChevronRight size={20} className="rotate-180" />
         </Link>
         <h1 className="text-xl font-bold text-slate-800 flex-1">My Profile</h1>
-        <Link href="/app/profile/public-profile"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
-          style={{ backgroundColor: "#1B3A6B" }}>
-          <Edit3 size={12} /> Edit Public Profile
-        </Link>
+        {showcasePath && (
+          <a href={showcasePath} target="_blank" rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
+            style={{ backgroundColor: "#1B3A6B" }}>
+            <ExternalLink size={12} /> View Showcase
+          </a>
+        )}
       </div>
 
       {/* Public page status bar */}
@@ -135,12 +136,19 @@ export default function ContractorProfileDashboard({
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${publicProfile?.isPublished ? "bg-green-500" : publicProfile ? "bg-amber-400" : "bg-gray-300"}`} />
           <span className="text-sm font-semibold text-gray-700">
-            Public page: {publicProfile?.isPublished ? "Live" : publicProfile ? "Draft" : "Not set up"}
+            Project showcase: {publicProfile?.isPublished ? "Live ✓" : publicProfile ? "Unpublished" : "Not set up"}
           </span>
         </div>
-        <Link href="/app/profile" className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
-          {publicProfile ? "Manage →" : "Set Up →"}
-        </Link>
+        {showcasePath ? (
+          <a href={showcasePath} target="_blank" rel="noreferrer"
+            className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
+            View →
+          </a>
+        ) : (
+          <Link href="/app/profile/public-profile" className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1B3A6B" }}>
+            Set Up →
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
@@ -167,10 +175,10 @@ export default function ContractorProfileDashboard({
               </div>
               {/* Actions */}
               <div className="absolute bottom-3 right-4 flex gap-2">
-                {publicUrl && (
-                  <a href={publicUrl} target="_blank" rel="noreferrer"
+                {showcaseUrl && (
+                  <a href={showcaseUrl} target="_blank" rel="noreferrer"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 border border-white/20 rounded-lg text-xs font-semibold text-gray-800 shadow-sm">
-                    <ExternalLink size={11} /> View Live Page
+                    <ExternalLink size={11} /> View Showcase
                   </a>
                 )}
                 <Link href="/app/profile/public-profile"
@@ -297,12 +305,10 @@ export default function ContractorProfileDashboard({
                 <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Edit Public Profile",  href: "/app/profile/public-profile",                                  icon: Edit3,         color: "#1B3A6B" },
-                    { label: "View Live Page",       href: publicUrl ?? null,                                              icon: ExternalLink,  color: "#2563EB", external: true },
-                    { label: "Project Showcase",     href: publicProfile?.slug ? `/showcase/${publicProfile.slug}` : null, icon: Briefcase,     color: "#8B5CF6", external: true },
-                    { label: "Completed Projects",   href: "/app/projects",                                                icon: Wrench,        color: "#16A34A" },
-                    { label: "Settings",             href: "/app/profile",                                                 icon: Wrench,        color: "#6B7280" },
-                    { label: "Request a Review",     href: publicUrl ? `${publicUrl}/review` : null,                      icon: MessageSquare, color: "#F59E0B", external: true },
+                    { label: "Edit Showcase Info", href: "/app/profile/public-profile", icon: Edit3,        color: "#1B3A6B", external: false },
+                    { label: "View My Showcase",   href: showcasePath ?? null,           icon: ExternalLink, color: "#2563EB", external: true  },
+                    { label: "Add Projects",       href: "/app/projects",                icon: Briefcase,    color: "#8B5CF6", external: false },
+                    { label: "Settings",           href: "/app/profile",                 icon: Wrench,       color: "#6B7280", external: false },
                   ].filter(a => a.href).map(({ label, href, icon: Icon, color, external }) => (
                     external && href ? (
                       <a key={label} href={href!} target="_blank" rel="noreferrer"
@@ -439,7 +445,7 @@ export default function ContractorProfileDashboard({
             <h3 className="font-bold text-gray-900 mb-3">Business Settings</h3>
             <div className="space-y-2">
               {[
-                { label: "Public Profile & Page", href: "/app/profile", note: publicProfile?.isPublished ? "● Live" : publicProfile ? "● Draft" : "Not set up", noteColor: publicProfile?.isPublished ? "text-green-600" : "text-amber-500" },
+                { label: "Project Showcase", href: showcasePath ?? "/app/profile/public-profile", note: publicProfile?.isPublished ? "● Live" : publicProfile ? "● Unpublished" : "Not set up", noteColor: publicProfile?.isPublished ? "text-green-600" : "text-amber-500" },
                 { label: "Business Identity", href: "/app/profile", note: "Logo, address, license" },
                 { label: "Quote & Invoice Defaults", href: "/app/profile", note: "Terms, pricing, tax" },
                 { label: "Service Presets", href: "/app/profile", note: "Pricing shortcuts" },
@@ -478,17 +484,16 @@ export default function ContractorProfileDashboard({
 
           {/* Profile strength */}
           <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-3">Profile Completeness</h3>
+            <h3 className="font-bold text-gray-900 mb-3">Showcase Completeness</h3>
             {(() => {
               const checks: { label: string; done: boolean; hint: string }[] = [
-                { label: "Template chosen",   done: publicProfile?.selectedTemplate !== undefined && publicProfile?.selectedTemplate !== null, hint: "Pick a style in the Setup Wizard." },
-                { label: "Headline/tagline",  done: !!(publicProfile?.tagline?.trim()), hint: "One-line pitch customers see first." },
-                { label: "Phone on page",     done: !!(business.phone?.trim()), hint: "So customers can call from your page." },
-                { label: "Trade/service set", done: !!(publicProfile?.trade?.trim()), hint: "Tell customers what you do." },
-                { label: "Services listed",   done: (publicProfile?.services?.length ?? 0) > 0, hint: "Add at least one service offering." },
-                { label: "About section",     done: (publicProfile?.aboutBullets?.length ?? 0) > 0, hint: "A few bullet points about your work." },
-                { label: "Page URL set",      done: !!(publicProfile?.slug?.trim()), hint: "Your custom /pro/your-name URL." },
-                { label: "Page published",    done: !!publicProfile?.isPublished, hint: "Go live so customers can find you." },
+                { label: "Showcase published",  done: !!publicProfile?.isPublished,            hint: "Publish so customers can find you." },
+                { label: "Trade/specialty set",  done: !!(publicProfile?.trade?.trim()),        hint: "Tell customers what you do." },
+                { label: "Tagline written",      done: !!(publicProfile?.tagline?.trim()),      hint: "One-line pitch customers see first." },
+                { label: "Phone number added",   done: !!(business.phone?.trim()),              hint: "So customers can call from your page." },
+                { label: "Services listed",      done: (publicProfile?.services?.length ?? 0) > 0, hint: "Add at least one service." },
+                { label: "Reviews collected",    done: stats.reviewCount > 0,                   hint: "Ask happy customers to leave a review." },
+                { label: "Logo / photo uploaded",done: !!(publicProfile?.photoUrl || business.logoUrl), hint: "A photo builds trust instantly." },
               ];
               const done = checks.filter(c => c.done).length;
               const score = Math.round((done / checks.length) * 100);
@@ -518,15 +523,11 @@ export default function ContractorProfileDashboard({
                     ))}
                   </div>
                   {score < 100 && (
-                    <div className="mt-3 space-y-2">
-                      <Link href="/app/onboarding?redo=1"
+                    <div className="mt-3">
+                      <Link href="/app/profile/public-profile"
                         className="block w-full text-center rounded-xl py-2 text-xs font-bold text-white"
                         style={{ backgroundColor: "#1B3A6B" }}>
-                        Complete in Setup Wizard →
-                      </Link>
-                      <Link href="/app/profile/public-profile"
-                        className="block w-full text-center rounded-xl py-1.5 text-[11px] font-semibold text-gray-500 border border-gray-200">
-                        Open Full Editor
+                        Complete My Showcase →
                       </Link>
                     </div>
                   )}

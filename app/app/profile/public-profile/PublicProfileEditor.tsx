@@ -101,7 +101,7 @@ const TEMPLATES = [
   },
 ] as const;
 
-const BASE_URL = "https://tradebase.contractors/pro";
+const BASE_URL = "https://tradebase.contractors/showcase";
 
 function normalizeServices(raw: unknown[]): ServiceItem[] {
   return raw.map((s) => {
@@ -363,12 +363,12 @@ export function PublicProfileEditor() {
               <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
                 <span className="text-[11px] text-white/50">Public profile page</span>
                 <a
-                  href={`/pro/${profile.slug}`}
+                  href={`/showcase/${profile.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[11px] font-semibold text-white/80 hover:text-white underline underline-offset-2"
                 >
-                  /pro/{profile.slug} ↗
+                  /showcase/{profile.slug} ↗
                 </a>
               </div>
             )}

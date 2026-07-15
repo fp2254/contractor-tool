@@ -74,10 +74,10 @@ export default async function ReviewsPage() {
           <p className="text-xs text-blue-600 mb-2">Share this link with customers after a job</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-xs bg-white border border-blue-200 rounded-lg px-2 py-1.5 text-blue-800 truncate">
-              {typeof window !== "undefined" ? window.location.origin : ""}/pro/{profile.slug}/review
+              {typeof window !== "undefined" ? window.location.origin : ""}/showcase/{profile.slug}/review
             </code>
             <a
-              href={`/pro/${profile.slug}/review`}
+              href={`/showcase/${profile.slug}/review`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-bold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-lg whitespace-nowrap"

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const BASE_URL = "https://tradebase.contractors/pro";
+const BASE_URL = "https://tradebase.contractors/showcase";
 
 type Props = {
   initialProfile: {

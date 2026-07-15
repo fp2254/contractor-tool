@@ -389,7 +389,7 @@ function ContactCard({
 
               {contact.linked_profile_slug && (
                 <a
-                  href={`https://tradebase.contractors/pro/${contact.linked_profile_slug}`}
+                  href={`https://tradebase.contractors/showcase/${contact.linked_profile_slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between w-full rounded-xl px-3 py-2.5 text-sm font-semibold"
