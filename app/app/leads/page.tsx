@@ -126,10 +126,20 @@ export default async function LeadsPage({
                 {lead.notes.replace(/^\[Website Quote Request\]\n\n/, "")}
               </p>
             )}
+            {lead.lead_source === "Realtor" && lead.notes && (
+              <p className="text-xs text-gray-500 mt-1.5 ml-13 line-clamp-1">
+                {lead.notes.replace(/^\[Realtor Request from [^\]]+\]\n\n/, "")}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-2 ml-13 flex-wrap">
               {lead.lead_source === "Website" && (
                 <span className="text-xs bg-blue-50 text-blue-600 rounded-full px-2 py-0.5 font-semibold">
                   🌐 Website
+                </span>
+              )}
+              {lead.lead_source === "Realtor" && (
+                <span className="text-xs bg-teal-50 text-teal-700 rounded-full px-2 py-0.5 font-semibold">
+                  🏡 Realtor
                 </span>
               )}
               {lead.job_type && <span className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5">{lead.job_type}</span>}
