@@ -26,7 +26,7 @@ export default async function ProjectsPage() {
         <Link href="/app/more" className="bg-white border-[3px] border-black p-2 rounded-xl shadow-[3px_3px_0_0_#000] hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
           <ChevronLeft className="h-6 w-6 text-black" strokeWidth={3} />
         </Link>
-        <h1 className="text-3xl sm:text-4xl font-black text-black uppercase tracking-tighter">Mission Log</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
       </div>
 
       {projects === null ? (

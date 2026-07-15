@@ -208,6 +208,20 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
   const [activeSection, setActiveSection] = useState("overview");
   const [projectFilter, setProjectFilter] = useState("All Projects");
 
+  /* sidebar drawer */
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true); // always open on desktop
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   /* owner settings — start from server prop, self-correct on client */
   const [ownerVerified, setOwnerVerified] = useState(isOwner);
   const [published, setPublished] = useState(profile.is_published);
@@ -310,14 +324,27 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: GRAY_BG, fontFamily: "system-ui, -apple-system, sans-serif", color: "#1a2035" }}>
 
+      {/* mobile overlay — tap outside to close sidebar */}
+      {sidebarOpen && isMobile && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 39 }}
+        />
+      )}
+
       {/* ══ LEFT SIDEBAR ══ */}
       <aside style={{
-        width: 220, flexShrink: 0, position: "sticky", top: 0, height: "100vh",
+        width: 220, flexShrink: 0,
+        position: "fixed",
+        top: 0, left: sidebarOpen ? 0 : -220,
+        height: "100vh", zIndex: 40,
         background: "white", borderRight: "1px solid #e8ecf2",
         display: "flex", flexDirection: "column", overflowY: "auto",
+        transition: "left 0.25s ease",
+        boxShadow: sidebarOpen ? "4px 0 24px rgba(0,0,0,0.12)" : "none",
       }}>
-        {/* logo */}
-        <div style={{ padding: "18px 14px 14px", borderBottom: "1px solid #f0f2f5" }}>
+        {/* logo + close button */}
+        <div style={{ padding: "14px 14px 14px", borderBottom: "1px solid #f0f2f5" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <div style={{ width: 34, height: 34, borderRadius: 8, background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {profile.photo_url
@@ -325,10 +352,20 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
                 : <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
               }
             </div>
-            <div style={{ lineHeight: 1.2, minWidth: 0 }}>
+            <div style={{ lineHeight: 1.2, minWidth: 0, flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 11, color: NAVY, textTransform: "uppercase", letterSpacing: "0.4px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.name}</p>
               <p style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>{profile.trade}</p>
             </div>
+            {/* close button — only useful on mobile */}
+            {isMobile && (
+              <button
+                onClick={() => setSidebarOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#9ca3af", flexShrink: 0, lineHeight: 1 }}
+                aria-label="Close sidebar"
+              >
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -394,9 +431,9 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
             {/* quick links */}
             <div style={{ borderTop: "1px solid #dbeafe", paddingTop: 7, display: "flex", flexDirection: "column", gap: 4 }}>
               {[
-                { label: "✏️ Edit Full Profile", href: "/app/profile/public-profile" },
-                { label: "🏗️ Add Project",       href: "/app/projects" },
-                { label: "⭐ Manage Reviews",    href: "/app/reviews" },
+                { label: "✏️ Edit Showcase Info", href: "/app/profile/public-profile" },
+                { label: "🏗️ Add Project",        href: "/app/projects" },
+                { label: "⭐ Manage Reviews",     href: "/app/reviews" },
               ].map(({ label, href }) => (
                 <a key={href} href={href} style={{ fontSize: 11, color: NAVY, fontWeight: 600, textDecoration: "none" }}>{label}</a>
               ))}
@@ -446,15 +483,30 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
       </aside>
 
       {/* ══ MAIN CONTENT ══ */}
-      <main style={{ flex: 1, minWidth: 0, padding: "0 0 80px" }}>
+      <main style={{ flex: 1, minWidth: 0, padding: "0 0 80px", marginLeft: sidebarOpen ? 220 : 0, transition: "margin-left 0.25s ease" }}>
 
-        {/* owner back bar */}
-        {ownerVerified && (
-          <div style={{ background: "rgba(27,58,107,0.92)", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <a href="/app/more" style={{ color: "white", fontWeight: 700, fontSize: 12, textDecoration: "none" }}>← Back to App</a>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Viewing your project showcase</span>
-          </div>
-        )}
+        {/* top bar — always shown (hamburger + optional owner info) */}
+        <div style={{ background: ownerVerified ? "rgba(27,58,107,0.92)" : NAVY, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          {/* hamburger */}
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 7, padding: "6px 9px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}
+            aria-label="Toggle sidebar"
+          >
+            <span style={{ display: "block", width: 18, height: 2, background: "white", borderRadius: 2 }} />
+            <span style={{ display: "block", width: 18, height: 2, background: "white", borderRadius: 2 }} />
+            <span style={{ display: "block", width: 18, height: 2, background: "white", borderRadius: 2 }} />
+          </button>
+
+          {ownerVerified ? (
+            <>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", flex: 1, textAlign: "center" }}>Your project showcase</span>
+              <a href="/app/more" style={{ color: "white", fontWeight: 700, fontSize: 12, textDecoration: "none", flexShrink: 0 }}>Back to App →</a>
+            </>
+          ) : (
+            <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", flex: 1 }}>{profile.name}</span>
+          )}
+        </div>
 
         {/* ── HERO ── */}
         <section id="overview" style={{ background: "white", padding: "24px 28px 28px", marginBottom: 14 }}>
