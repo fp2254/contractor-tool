@@ -338,7 +338,7 @@ export default function ClientsListClient({
               {q ? `No clients matching "${q}"` : "No clients yet. Tap + Add Client to get started."}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
               {filtered.map(c => {
                 const name = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.company_name || "Unnamed";
                 const address = [c.address_line1, c.city].filter(Boolean).join(" • ");

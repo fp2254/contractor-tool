@@ -65,7 +65,7 @@ export default async function LeadsPage({
   }
 
   return (
-    <div className="p-4 space-y-3">
+    <div className="p-4 lg:p-6 space-y-3 lg:space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-800">Leads</h1>
         <Link href="/app/search" className="text-gray-500">
@@ -99,9 +99,9 @@ export default async function LeadsPage({
         <LeadsImportModal />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
         {!leads?.length && (
-          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm lg:col-span-2">
             {activeStatus === "all" ? "No leads yet. Tap Add Lead to get started." : `No ${activeStatus} leads.`}
           </div>
         )}

@@ -91,9 +91,9 @@ export default function JobsClient({ jobs, showAssignee = false }: { jobs: Job[]
         <span className="text-lg leading-none">+</span> Add Job
       </Link>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
         {filtered.length === 0 && (
-          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm">
+          <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow-sm lg:col-span-2">
             {activeTab === "All" ? "No jobs yet." : `No ${activeTab.toLowerCase()} jobs.`}
           </div>
         )}

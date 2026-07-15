@@ -120,7 +120,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="p-4 space-y-3 pb-24">
+    <div className="p-4 lg:p-6 space-y-3 lg:space-y-4 pb-24">
       <h1 className="text-xl font-bold text-slate-800">
         {isMember ? "My Invoices" : "Invoices"}
       </h1>
@@ -148,7 +148,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       {shown.length > 0 ? (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{sectionLabel[activeTab]}</p>
-          <div className="space-y-3">
+          <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {shown.map(inv => (
               <InvoiceCard
                 key={inv.id}

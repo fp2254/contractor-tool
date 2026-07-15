@@ -48,7 +48,7 @@ export default async function JobsPage() {
   }));
 
   return (
-    <div className="p-4 space-y-3">
+    <div className="p-4 lg:p-6 space-y-3 lg:space-y-4">
       <h1 className="text-xl font-bold text-slate-800">
         {isMember ? "My Jobs" : "Jobs"}
       </h1>

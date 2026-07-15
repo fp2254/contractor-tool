@@ -83,7 +83,7 @@ export default async function QuotesPage({ searchParams }: PageProps) {
   const shown = buckets[activeTab] ?? [];
 
   return (
-    <div className="p-4 space-y-3 pb-24">
+    <div className="p-4 lg:p-6 space-y-3 lg:space-y-4 pb-24">
       <h1 className="text-xl font-bold text-slate-800">
         {isMember ? "My Quotes" : "Quotes"}
       </h1>

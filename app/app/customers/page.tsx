@@ -81,7 +81,7 @@ export default async function ClientsPage() {
   }));
 
   return (
-    <div className="p-4">
+    <div className="p-4 lg:p-6">
       <Suspense fallback={null}>
         <ClientsListClient clients={clientData} tradeContacts={tradeContacts} />
       </Suspense>

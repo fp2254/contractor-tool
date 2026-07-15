@@ -111,7 +111,7 @@ export default function QuotesListClient({
 
   if (isArchived) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
         {quotes.map(q => (
           <div key={q.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <Link href={`/app/quotes/${q.id}`} className="block p-4 bg-gray-50">
@@ -153,9 +153,9 @@ export default function QuotesListClient({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
       {quotes.length > 1 && (
-        <div className="flex justify-end">
+        <div className="flex justify-end lg:col-span-2">
           <button
             onClick={handleArchiveAll}
             disabled={archivingAll}
