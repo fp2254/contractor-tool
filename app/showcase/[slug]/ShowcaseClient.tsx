@@ -208,6 +208,40 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
   const [activeSection, setActiveSection] = useState("overview");
   const [projectFilter, setProjectFilter] = useState("All Projects");
 
+  /* owner settings */
+  const [published, setPublished] = useState(profile.is_published);
+  const [taglineDraft, setTaglineDraft] = useState(profile.tagline);
+  const [revenueDraft, setRevenueDraft] = useState(profile.revenue_display);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+
+  async function togglePublish() {
+    setSettingsSaving(true);
+    const res = await fetch("/api/profile/public-profile/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: !published }),
+    });
+    if (res.ok) {
+      setPublished(p => !p);
+      setSettingsMsg(!published ? "Page published!" : "Page unpublished");
+      setTimeout(() => setSettingsMsg(null), 3000);
+    }
+    setSettingsSaving(false);
+  }
+
+  async function saveSettings() {
+    setSettingsSaving(true);
+    await fetch("/api/profile/public-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagline: taglineDraft, revenue_display: revenueDraft }),
+    });
+    setSettingsSaving(false);
+    setSettingsMsg("Saved!");
+    setTimeout(() => setSettingsMsg(null), 2500);
+  }
+
   const strength = calcStrength(profile, stats);
   const timeline = buildTimeline(projects, profile.years_experience);
   const specializations = buildSpecializations(profile.serviceNames, projects, stats.projectCount);
@@ -310,6 +344,78 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
           })}
         </nav>
 
+        {/* ── owner settings box ── */}
+        {isOwner && (
+          <div style={{ margin: "0 10px 10px", background: "#f0f4ff", borderRadius: 10, padding: "11px 12px", border: "1px solid #c7d7f5" }}>
+            <p style={{ fontSize: 10.5, fontWeight: 700, color: NAVY, margin: "0 0 9px", display: "flex", alignItems: "center", gap: 5 }}>
+              ⚙️ Page Settings
+            </p>
+
+            {/* publish toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+              <span style={{ fontSize: 11, color: "#374151", fontWeight: 600 }}>
+                {published ? "✅ Published" : "🔒 Unpublished"}
+              </span>
+              <button onClick={togglePublish} disabled={settingsSaving} style={{
+                width: 38, height: 21, borderRadius: 11, border: "none", cursor: "pointer", padding: 0,
+                background: published ? GREEN : "#d1d5db", position: "relative", transition: "background 0.2s",
+                opacity: settingsSaving ? 0.6 : 1,
+              }}>
+                <span style={{
+                  position: "absolute", top: 2.5, left: published ? 19 : 2.5,
+                  width: 16, height: 16, borderRadius: "50%", background: "white",
+                  transition: "left 0.2s", display: "block",
+                }} />
+              </button>
+            </div>
+
+            {/* tagline */}
+            <div style={{ marginBottom: 7 }}>
+              <label style={{ fontSize: 9.5, fontWeight: 700, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: "0.5px", display: "block", marginBottom: 3 }}>Tagline</label>
+              <input
+                value={taglineDraft}
+                onChange={e => setTaglineDraft(e.target.value)}
+                placeholder="e.g. Portland's #1 roofer"
+                style={{ width: "100%", borderRadius: 6, border: "1px solid #c7d7f5", fontSize: 11, padding: "5px 7px", boxSizing: "border-box" as const, color: "#1f2937", background: "white", outline: "none" }}
+              />
+            </div>
+
+            {/* revenue display */}
+            <div style={{ marginBottom: 9 }}>
+              <label style={{ fontSize: 9.5, fontWeight: 700, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: "0.5px", display: "block", marginBottom: 3 }}>Revenue Display</label>
+              <input
+                value={revenueDraft}
+                onChange={e => setRevenueDraft(e.target.value)}
+                placeholder="e.g. $2.4M"
+                style={{ width: "100%", borderRadius: 6, border: "1px solid #c7d7f5", fontSize: 11, padding: "5px 7px", boxSizing: "border-box" as const, color: "#1f2937", background: "white", outline: "none" }}
+              />
+            </div>
+
+            <button onClick={saveSettings} disabled={settingsSaving} style={{
+              display: "block", width: "100%", textAlign: "center", background: NAVY, color: "white",
+              fontWeight: 700, fontSize: 11, padding: "6px", borderRadius: 6, border: "none",
+              cursor: "pointer", marginBottom: settingsMsg ? 5 : 8, opacity: settingsSaving ? 0.6 : 1,
+            }}>
+              {settingsSaving ? "Saving…" : "Save Changes"}
+            </button>
+
+            {settingsMsg && (
+              <p style={{ fontSize: 10, color: GREEN, textAlign: "center", margin: "0 0 8px", fontWeight: 700 }}>{settingsMsg}</p>
+            )}
+
+            {/* quick links */}
+            <div style={{ borderTop: "1px solid #dbeafe", paddingTop: 7, display: "flex", flexDirection: "column", gap: 4 }}>
+              {[
+                { label: "✏️ Edit Full Profile", href: "/app/profile/public-profile" },
+                { label: "🏗️ Add Project",       href: "/app/projects" },
+                { label: "⭐ Manage Reviews",    href: "/app/reviews" },
+              ].map(({ label, href }) => (
+                <a key={href} href={href} style={{ fontSize: 11, color: NAVY, fontWeight: 600, textDecoration: "none" }}>{label}</a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* profile strength */}
         <div style={{ margin: "0 10px 14px", background: "#f8fafc", borderRadius: 10, padding: "11px 12px", border: "1px solid #e8ecf2" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
@@ -336,7 +442,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
         {isOwner && (
           <div style={{ background: "rgba(27,58,107,0.92)", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <a href="/app/more" style={{ color: "white", fontWeight: 700, fontSize: 12, textDecoration: "none" }}>← Back to App</a>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Viewing your portfolio</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Viewing your project showcase</span>
           </div>
         )}
 
