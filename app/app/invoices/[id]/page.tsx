@@ -181,8 +181,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     : null;
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-6 lg:max-w-6xl lg:mx-auto">
+      {/* Header — full width */}
+      <div className="flex items-center gap-3 mb-4">
         <Link href="/app/invoices" className="text-gray-400">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
@@ -204,170 +205,180 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         </span>
       </div>
 
-      {canAssign && memberOptions.length > 0 && (
-        <AssigneeField
-          entityType="invoice"
-          entityId={invoice.id}
-          currentAssigneeId={(invoice as any).assigned_to ?? null}
-          currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
-          members={memberOptions}
-        />
-      )}
-      {!canAssign && (invoice as any).assigned_to && assignedMember && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
-          <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-3xl font-bold text-slate-800">${Number(invoice.total_amount).toLocaleString()}</p>
-            {dueLabel && <p className={`text-xs mt-1 ${dueDays !== null && dueDays < 0 ? "text-red-500" : "text-gray-500"}`}>{dueLabel}</p>}
-          </div>
-          {invoice.job_id && (
-            <Link href={`/app/jobs/${invoice.job_id}`} className="text-sm text-blue-600">View Job →</Link>
+      {/* Two-column layout on desktop */}
+      <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:gap-6 space-y-4 lg:space-y-0">
+        {/* Left — main content */}
+        <div className="space-y-4">
+          {canAssign && memberOptions.length > 0 && (
+            <AssigneeField
+              entityType="invoice"
+              entityId={invoice.id}
+              currentAssigneeId={(invoice as any).assigned_to ?? null}
+              currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
+              members={memberOptions}
+            />
           )}
-        </div>
-        {items && items.length > 0 && (
-          <div className="space-y-2 border-t pt-3">
-            {items.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-slate-700">{item.description} × {item.quantity}</span>
-                <span className="font-medium">${Number(item.total_price).toFixed(2)}</span>
+          {!canAssign && (invoice as any).assigned_to && assignedMember && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
+              <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-3xl font-bold text-slate-800">${Number(invoice.total_amount).toLocaleString()}</p>
+                {dueLabel && <p className={`text-xs mt-1 ${dueDays !== null && dueDays < 0 ? "text-red-500" : "text-gray-500"}`}>{dueLabel}</p>}
               </div>
-            ))}
+              {invoice.job_id && (
+                <Link href={`/app/jobs/${invoice.job_id}`} className="text-sm text-blue-600">View Job →</Link>
+              )}
+            </div>
+            {items && items.length > 0 && (
+              <div className="space-y-2 border-t pt-3">
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-slate-700">{item.description} × {item.quantity}</span>
+                    <span className="font-medium">${Number(item.total_price).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {invoice.status !== "paid" && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase">Collect Payment</p>
+          {invoice.status !== "paid" && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase">Collect Payment</p>
 
-          {squareConnected && (
-            <SquarePaymentButton invoiceId={invoice.id} />
+              {squareConnected && (
+                <SquarePaymentButton invoiceId={invoice.id} />
+              )}
+
+              <form action={markPaid} className="space-y-3">
+                <input type="hidden" name="invoice_id" value={invoice.id} />
+                <p className="text-xs text-gray-400 font-medium">Or mark as paid manually:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {["cash","check","card","venmo","paypal","other"].map(method => (
+                    <label key={method} className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="payment_method" value={method} defaultChecked={method === "cash"}
+                        className="accent-blue-700" />
+                      <span className="text-sm capitalize">{method}</span>
+                    </label>
+                  ))}
+                </div>
+                <button type="submit"
+                  className="w-full rounded-xl py-3 text-white font-semibold text-lg"
+                  style={{ backgroundColor: "#22C55E" }}>
+                  ✅ Mark Paid — ${Number(invoice.total_amount).toLocaleString()}
+                </button>
+              </form>
+            </div>
           )}
 
-          <form action={markPaid} className="space-y-3">
-            <input type="hidden" name="invoice_id" value={invoice.id} />
-            <p className="text-xs text-gray-400 font-medium">Or mark as paid manually:</p>
-            <div className="grid grid-cols-3 gap-2">
-              {["cash","check","card","venmo","paypal","other"].map(method => (
-                <label key={method} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="payment_method" value={method} defaultChecked={method === "cash"}
-                    className="accent-blue-700" />
-                  <span className="text-sm capitalize">{method}</span>
-                </label>
+          {invoice.status === "paid" && (
+            <div className="bg-green-50 rounded-2xl p-4 text-center shadow-sm">
+              <p className="text-green-700 font-semibold">✅ Invoice Paid</p>
+            </div>
+          )}
+
+          {/* Payment options preview */}
+          {Object.keys(paymentLinks).length > 0 ? (
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Payment Options Customers See</p>
+              <div className="space-y-1.5">
+                {paymentLinks.venmo && (
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <span>💜</span><span className="font-medium">Venmo</span><span className="text-gray-400">{paymentLinks.venmo}</span>
+                  </div>
+                )}
+                {paymentLinks.cashapp && (
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <span>💚</span><span className="font-medium">Cash App</span><span className="text-gray-400">{paymentLinks.cashapp}</span>
+                  </div>
+                )}
+                {paymentLinks.paypal && (
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <span>🔵</span><span className="font-medium">PayPal</span><span className="text-gray-400">paypal.me/{paymentLinks.paypal}</span>
+                  </div>
+                )}
+                {paymentLinks.zelle && (
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <span>🟣</span><span className="font-medium">Zelle</span><span className="text-gray-400">{paymentLinks.zelle}</span>
+                  </div>
+                )}
+                {paymentLinks.custom_label && (
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <span>💳</span><span className="font-medium">{paymentLinks.custom_label}</span>
+                  </div>
+                )}
+              </div>
+              <Link href="/app/settings" className="text-xs text-blue-600 mt-2 block">Edit payment options →</Link>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Payment options</p>
+                <p className="text-xs text-gray-400 mt-0.5">Customers don&apos;t see how to pay yet</p>
+              </div>
+              <Link href="/app/settings" className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-3 py-1.5 rounded-xl">Set up →</Link>
+            </div>
+          )}
+        </div>
+
+        {/* Right — sidebar */}
+        <div className="space-y-4">
+          <ShareCard
+            type="invoice"
+            customerName={customerName}
+            customerPhone={customer?.phone ?? null}
+            customerEmail={customer?.email ?? null}
+            amount={Number(invoice.total_amount ?? 0)}
+            customerId={invoice.customer_id ?? ""}
+            portalToken={null}
+            orgName={orgName}
+            entityNumber={invoice.invoice_number ?? undefined}
+            entityId={id}
+          />
+
+          <PortalLinkCard
+            customerId={invoice.customer_id ?? ""}
+            customerPhone={customer?.phone ?? null}
+            customerEmail={customer?.email ?? null}
+            customerName={customerName}
+            orgName={orgName}
+            activeToken={null}
+            invoiceId={invoice.id}
+          />
+
+          <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
+
+          <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
+            <form action={addNote} className="flex gap-2 mb-4">
+              <input type="hidden" name="id" value={invoice.id} />
+              <input name="body" placeholder="Add a note…"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
+              <button type="submit"
+                className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
+                style={{ backgroundColor: "#1B3A6B" }}>Add</button>
+            </form>
+            {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
+            <div className="space-y-2">
+              {notes?.map(note => (
+                <div key={note.id} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-sm text-slate-700">{note.body}</p>
+                  <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+                </div>
               ))}
             </div>
-            <button type="submit"
-              className="w-full rounded-xl py-3 text-white font-semibold text-lg"
-              style={{ backgroundColor: "#22C55E" }}>
-              ✅ Mark Paid — ${Number(invoice.total_amount).toLocaleString()}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {invoice.status === "paid" && (
-        <div className="bg-green-50 rounded-2xl p-4 text-center shadow-sm">
-          <p className="text-green-700 font-semibold">✅ Invoice Paid</p>
-        </div>
-      )}
-
-      <ShareCard
-        type="invoice"
-        customerName={customerName}
-        customerPhone={customer?.phone ?? null}
-        customerEmail={customer?.email ?? null}
-        amount={Number(invoice.total_amount ?? 0)}
-        customerId={invoice.customer_id ?? ""}
-        portalToken={null}
-        orgName={orgName}
-        entityNumber={invoice.invoice_number ?? undefined}
-        entityId={id}
-      />
-
-      {/* Payment options preview */}
-      {Object.keys(paymentLinks).length > 0 ? (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Payment Options Customers See</p>
-          <div className="space-y-1.5">
-            {paymentLinks.venmo && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <span>💜</span><span className="font-medium">Venmo</span><span className="text-gray-400">{paymentLinks.venmo}</span>
-              </div>
-            )}
-            {paymentLinks.cashapp && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <span>💚</span><span className="font-medium">Cash App</span><span className="text-gray-400">{paymentLinks.cashapp}</span>
-              </div>
-            )}
-            {paymentLinks.paypal && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <span>🔵</span><span className="font-medium">PayPal</span><span className="text-gray-400">paypal.me/{paymentLinks.paypal}</span>
-              </div>
-            )}
-            {paymentLinks.zelle && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <span>🟣</span><span className="font-medium">Zelle</span><span className="text-gray-400">{paymentLinks.zelle}</span>
-              </div>
-            )}
-            {paymentLinks.custom_label && (
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <span>💳</span><span className="font-medium">{paymentLinks.custom_label}</span>
-              </div>
-            )}
           </div>
-          <Link href="/app/settings" className="text-xs text-blue-600 mt-2 block">Edit payment options →</Link>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-700">Payment options</p>
-            <p className="text-xs text-gray-400 mt-0.5">Customers don&apos;t see how to pay yet</p>
-          </div>
-          <Link href="/app/settings" className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-3 py-1.5 rounded-xl">Set up →</Link>
-        </div>
-      )}
 
-      <PortalLinkCard
-        customerId={invoice.customer_id ?? ""}
-        customerPhone={customer?.phone ?? null}
-        customerEmail={customer?.email ?? null}
-        customerName={customerName}
-        orgName={orgName}
-        activeToken={null}
-        invoiceId={invoice.id}
-      />
-
-      <WarrantyCard initialText={warrantyText} saveWarranty={boundSaveWarranty} />
-
-      <PhotoGallery entityType="invoice" entityId={invoice.id} initialPhotos={photos ?? []} />
-
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
-        <form action={addNote} className="flex gap-2 mb-4">
-          <input type="hidden" name="id" value={invoice.id} />
-          <input name="body" placeholder="Add a note…"
-            className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
-          <button type="submit"
-            className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
-            style={{ backgroundColor: "#1B3A6B" }}>Add</button>
-        </form>
-        {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
-        <div className="space-y-2">
-          {notes?.map(note => (
-            <div key={note.id} className="bg-gray-50 rounded-xl p-3">
-              <p className="text-sm text-slate-700">{note.body}</p>
-              <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
-            </div>
-          ))}
+          <EntityAiSection entityType="invoice" entityId={invoice.id} initialAttachments={aiAttachments} />
         </div>
       </div>
-      <EntityAiSection entityType="invoice" entityId={invoice.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

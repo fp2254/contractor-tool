@@ -311,8 +311,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const statusLabel = STATUS_LABELS[job.status] ?? job.status;
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-6 lg:max-w-6xl lg:mx-auto">
+      {/* Header — full width */}
+      <div className="flex items-center gap-3 mb-4">
         <Link href="/app/jobs" className="text-gray-400">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
@@ -325,205 +326,213 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <span className={`text-xs font-semibold rounded-full px-3 py-1 ${statusColor}`}>{statusLabel}</span>
       </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
-        {job.scheduled_date && <p className="text-sm text-slate-700">📅 {new Date(job.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>}
-        {job.address && <p className="text-sm text-slate-700">📍 {job.address}</p>}
-        {customer?.phone && <a href={`tel:${customer.phone}`} className="text-sm text-slate-700">📞 {customer.phone}</a>}
-        {job.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mt-2">{job.notes}</p>}
-      </div>
+      {/* Two-column layout on desktop */}
+      <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:gap-6 space-y-4 lg:space-y-0">
+        {/* Left — main content */}
+        <div className="space-y-4">
 
-      {canReview && memberOptions.length > 0 && (
-        <AssigneeField
-          entityType="job"
-          entityId={job.id}
-          currentAssigneeId={(job as any).assigned_to ?? null}
-          currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
-          members={memberOptions}
-        />
-      )}
-      {!canReview && (job as any).assigned_to && assignedMember && (
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
-          <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
-        </div>
-      )}
+          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
+            {job.scheduled_date && <p className="text-sm text-slate-700">📅 {new Date(job.scheduled_date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>}
+            {job.address && <p className="text-sm text-slate-700">📍 {job.address}</p>}
+            {customer?.phone && <a href={`tel:${customer.phone}`} className="text-sm text-slate-700">📞 {customer.phone}</a>}
+            {job.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mt-2">{job.notes}</p>}
+          </div>
 
-      {/* Recurring job info card */}
-      {(job as Record<string, unknown>).is_recurring && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🔁</span>
-              <div>
-                <p className="text-sm font-semibold text-[#1B3A6B]">Recurring Job</p>
-                <p className="text-xs text-blue-600 capitalize">
-                  Repeats {
-                    (job as Record<string, unknown>).recurrence_rule === "biweekly" ? "every 2 weeks" :
-                    (job as Record<string, unknown>).recurrence_rule === "quarterly" ? "quarterly" :
-                    String((job as Record<string, unknown>).recurrence_rule ?? "")
-                  }
-                  {(job as Record<string, unknown>).recurrence_end_date
-                    ? ` · ends ${new Date(String((job as Record<string, unknown>).recurrence_end_date) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                    : ""}
-                </p>
-              </div>
+          {canReview && memberOptions.length > 0 && (
+            <AssigneeField
+              entityType="job"
+              entityId={job.id}
+              currentAssigneeId={(job as any).assigned_to ?? null}
+              currentAssigneeName={assignedMember ? memberDisplayName(assignedMember) : null}
+              members={memberOptions}
+            />
+          )}
+          {!canReview && (job as any).assigned_to && assignedMember && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Assigned To</p>
+              <p className="text-sm font-medium text-slate-700">👤 {memberDisplayName(assignedMember)}</p>
             </div>
-            <form action={stopRecurring}>
+          )}
+
+          {/* Recurring job info card */}
+          {(job as Record<string, unknown>).is_recurring && (
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🔁</span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1B3A6B]">Recurring Job</p>
+                    <p className="text-xs text-blue-600 capitalize">
+                      Repeats {
+                        (job as Record<string, unknown>).recurrence_rule === "biweekly" ? "every 2 weeks" :
+                        (job as Record<string, unknown>).recurrence_rule === "quarterly" ? "quarterly" :
+                        String((job as Record<string, unknown>).recurrence_rule ?? "")
+                      }
+                      {(job as Record<string, unknown>).recurrence_end_date
+                        ? ` · ends ${new Date(String((job as Record<string, unknown>).recurrence_end_date) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+                <form action={stopRecurring}>
+                  <input type="hidden" name="id" value={job.id} />
+                  <button type="submit" className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 bg-white font-medium">
+                    Stop Repeating
+                  </button>
+                </form>
+              </div>
+              <p className="text-xs text-blue-500">Next occurrence will be scheduled automatically when this job is marked complete.</p>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
+            <form action={updateStatus} className="flex flex-wrap gap-2">
               <input type="hidden" name="id" value={job.id} />
-              <button type="submit" className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 bg-white font-medium">
-                Stop Repeating
-              </button>
+              {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                <button key={val} name="status" value={val}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${job.status === val ? "border-transparent " + STATUS_COLORS[val] : "border-gray-200 text-gray-500 bg-white"}`}>
+                  {label}
+                </button>
+              ))}
             </form>
           </div>
-          <p className="text-xs text-blue-500">Next occurrence will be scheduled automatically when this job is marked complete.</p>
-        </div>
-      )}
 
-      <JobBrain
-        jobTitle={job.job_title}
-        description={job.notes}
-        address={job.address}
-        cityState={cityState}
-        notes={notes?.map(n => n.body).join(" | ")}
-        clientHistory={clientHistory}
-        alerts={jobAlerts}
-      />
+          <div className="grid grid-cols-2 gap-3">
+            {job.address && (
+              <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address ?? "")}`} target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl py-3 bg-white border border-gray-200 text-slate-700 font-semibold text-sm shadow-sm">
+                🗺 Navigate
+              </a>
+            )}
+            {!job.invoice_id ? (
+              <form action={createInvoiceFromJob} className={job.address ? "" : "col-span-2"}>
+                <input type="hidden" name="id" value={job.id} />
+                <button type="submit"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
+                  style={{ backgroundColor: "#1B3A6B" }}>
+                  📄 Create Invoice
+                </button>
+              </form>
+            ) : (
+              <Link href={`/app/invoices/${job.invoice_id}`}
+                className={`flex items-center justify-center gap-2 rounded-xl py-3 bg-green-100 text-green-700 font-semibold text-sm ${job.address ? "" : "col-span-2"}`}>
+                ✅ View Invoice
+              </Link>
+            )}
+          </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
-        <form action={updateStatus} className="flex flex-wrap gap-2">
-          <input type="hidden" name="id" value={job.id} />
-          {Object.entries(STATUS_LABELS).map(([val, label]) => (
-            <button key={val} name="status" value={val}
-              className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${job.status === val ? "border-transparent " + STATUS_COLORS[val] : "border-gray-200 text-gray-500 bg-white"}`}>
-              {label}
-            </button>
-          ))}
-        </form>
-      </div>
+          {/* Template assigner — Owner/Admin only */}
+          {canReview && !["completed", "submitted_for_review"].includes(job.status) && (
+            <JobTemplateAssigner
+              jobId={job.id}
+              currentTemplateId={(job as any).template_id ?? null}
+              currentTemplateName={templateName || null}
+              templates={availableTemplates}
+            />
+          )}
 
-      <PermitAssistant
-        defaultDescription={job.job_title}
-        defaultAddress={job.address ?? ""}
-        jobId={job.id}
-      />
+          {/* Phase 2+3: Job Details (template fields) — only shown if template is assigned */}
+          {(job as any).template_id && (
+            <JobDetailsSection
+              jobId={job.id}
+              templateId={(job as any).template_id as string}
+              templateName={templateName}
+              requiredPhotoCount={requiredPhotoCount}
+              currentPhotoCount={photos.length}
+              fields={templateFields}
+              initialResponses={fieldResponses}
+            />
+          )}
 
-      <JobScheduleModal
-        jobId={job.id}
-        jobTitle={job.job_title}
-        initialDate={job.scheduled_date ?? null}
-        initialAddress={job.address ?? null}
-      />
+          {/* Phase 3: Complete Job button — shown when template assigned and job still active */}
+          {(job as any).template_id && !["completed", "cancelled", "submitted_for_review"].includes(job.status) && (
+            <JobCompleteButton
+              jobId={job.id}
+              fields={templateFields}
+              savedResponses={fieldResponses}
+              currentPhotoCount={photos.length}
+              requiredPhotoCount={requiredPhotoCount}
+              isOwnerOrAdmin={canReview}
+            />
+          )}
 
-      <div className="grid grid-cols-2 gap-3">
-        {job.address && (
-          <a href={`https://maps.google.com/?q=${encodeURIComponent(job.address ?? "")}`} target="_blank" rel="noreferrer"
-            className="flex items-center justify-center gap-2 rounded-xl py-3 bg-white border border-gray-200 text-slate-700 font-semibold text-sm shadow-sm">
-            🗺 Navigate
-          </a>
-        )}
-        {!job.invoice_id ? (
-          <form action={createInvoiceFromJob} className={job.address ? "" : "col-span-2"}>
-            <input type="hidden" name="id" value={job.id} />
-            <button type="submit"
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
+          {/* Phase 3: Report link — shown when job has a report (completed or submitted) */}
+          {(job as any).template_id && ["completed", "submitted_for_review"].includes(job.status) && (
+            <Link
+              href={`/app/jobs/${job.id}/report`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl py-3 bg-purple-50 border border-purple-200 text-purple-700 font-semibold text-sm shadow-sm">
+              📋 View Job Report
+            </Link>
+          )}
+
+          {/* Phase 4: Closeout package — shown for completed jobs with a template */}
+          {(job as any).template_id && job.status === "completed" && (
+            <Link
+              href={`/app/jobs/${job.id}/closeout`}
+              className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-white font-bold text-sm shadow-sm"
               style={{ backgroundColor: "#1B3A6B" }}>
-              📄 Create Invoice
-            </button>
-          </form>
-        ) : (
-          <Link href={`/app/invoices/${job.invoice_id}`}
-            className={`flex items-center justify-center gap-2 rounded-xl py-3 bg-green-100 text-green-700 font-semibold text-sm ${job.address ? "" : "col-span-2"}`}>
-            ✅ View Invoice
-          </Link>
-        )}
-      </div>
+              📦 Prepare Closeout Package
+            </Link>
+          )}
 
-      <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
+          {/* Phase 3: Admin review panel — shown when job awaiting review */}
+          {job.status === "submitted_for_review" && canReview && (
+            <JobReviewPanel jobId={job.id} />
+          )}
+        </div>
 
-      {/* Template assigner — Owner/Admin only */}
-      {canReview && !["completed", "submitted_for_review"].includes(job.status) && (
-        <JobTemplateAssigner
-          jobId={job.id}
-          currentTemplateId={(job as any).template_id ?? null}
-          currentTemplateName={templateName || null}
-          templates={availableTemplates}
-        />
-      )}
+        {/* Right — sidebar */}
+        <div className="space-y-4">
+          <JobBrain
+            jobTitle={job.job_title}
+            description={job.notes}
+            address={job.address}
+            cityState={cityState}
+            notes={notes?.map(n => n.body).join(" | ")}
+            clientHistory={clientHistory}
+            alerts={jobAlerts}
+          />
 
-      {/* Phase 2+3: Job Details (template fields) — only shown if template is assigned */}
-      {(job as any).template_id && (
-        <JobDetailsSection
-          jobId={job.id}
-          templateId={(job as any).template_id as string}
-          templateName={templateName}
-          requiredPhotoCount={requiredPhotoCount}
-          currentPhotoCount={photos.length}
-          fields={templateFields}
-          initialResponses={fieldResponses}
-        />
-      )}
+          <PermitAssistant
+            defaultDescription={job.job_title}
+            defaultAddress={job.address ?? ""}
+            jobId={job.id}
+          />
 
-      {/* Phase 3: Complete Job button — shown when template assigned and job still active */}
-      {(job as any).template_id && !["completed", "cancelled", "submitted_for_review"].includes(job.status) && (
-        <JobCompleteButton
-          jobId={job.id}
-          fields={templateFields}
-          savedResponses={fieldResponses}
-          currentPhotoCount={photos.length}
-          requiredPhotoCount={requiredPhotoCount}
-          isOwnerOrAdmin={canReview}
-        />
-      )}
+          <JobScheduleModal
+            jobId={job.id}
+            jobTitle={job.job_title}
+            initialDate={job.scheduled_date ?? null}
+            initialAddress={job.address ?? null}
+          />
 
-      {/* Phase 3: Report link — shown when job has a report (completed or submitted) */}
-      {(job as any).template_id && ["completed", "submitted_for_review"].includes(job.status) && (
-        <Link
-          href={`/app/jobs/${job.id}/report`}
-          className="flex items-center justify-center gap-2 w-full rounded-xl py-3 bg-purple-50 border border-purple-200 text-purple-700 font-semibold text-sm shadow-sm">
-          📋 View Job Report
-        </Link>
-      )}
+          <PhotoGallery entityType="job" entityId={job.id} initialPhotos={photos ?? []} />
 
-      {/* Phase 4: Closeout package — shown for completed jobs with a template */}
-      {(job as any).template_id && job.status === "completed" && (
-        <Link
-          href={`/app/jobs/${job.id}/closeout`}
-          className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 text-white font-bold text-sm shadow-sm"
-          style={{ backgroundColor: "#1B3A6B" }}>
-          📦 Prepare Closeout Package
-        </Link>
-      )}
-
-      {/* Phase 3: Admin review panel — shown when job awaiting review */}
-      {job.status === "submitted_for_review" && canReview && (
-        <JobReviewPanel jobId={job.id} />
-      )}
-      {/* TODO Phase 4: Generate invoice preview from report/template/quote */}
-      {/* TODO Phase 4: Add warranty preview */}
-      {/* TODO Phase 4: Allow trusted techs to send report/invoice/warranty to customer */}
-
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
-        <form action={addNote} className="flex gap-2 mb-4">
-          <input type="hidden" name="id" value={job.id} />
-          <input name="body" placeholder="Add a note…"
-            className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
-          <button type="submit"
-            className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
-            style={{ backgroundColor: "#1B3A6B" }}>Add</button>
-        </form>
-        {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
-        <div className="space-y-2">
-          {notes?.map(note => (
-            <div key={note.id} className="bg-gray-50 rounded-xl p-3">
-              <p className="text-sm text-slate-700">{note.body}</p>
-              <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
+            <form action={addNote} className="flex gap-2 mb-4">
+              <input type="hidden" name="id" value={job.id} />
+              <input name="body" placeholder="Add a note…"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
+              <button type="submit"
+                className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
+                style={{ backgroundColor: "#1B3A6B" }}>Add</button>
+            </form>
+            {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
+            <div className="space-y-2">
+              {notes?.map(note => (
+                <div key={note.id} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-sm text-slate-700">{note.body}</p>
+                  <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <EntityAiSection entityType="job" entityId={job.id} initialAttachments={aiAttachments} />
         </div>
       </div>
-      <EntityAiSection entityType="job" entityId={job.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

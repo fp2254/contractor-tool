@@ -107,8 +107,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const statusColor = STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-600";
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-6 lg:max-w-6xl lg:mx-auto">
+      {/* Header — full width */}
+      <div className="flex items-center gap-3 mb-4">
         <Link href="/app/leads" className="text-gray-400">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
@@ -120,88 +121,97 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </span>
       </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
-        {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-sm text-slate-700">📞 {lead.phone}</a>}
-        {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-sm text-slate-700">✉️ {lead.email}</a>}
-        {lead.address && <p className="text-sm text-slate-600">📍 {[lead.address, lead.city, lead.state].filter(Boolean).join(", ")}</p>}
-        {lead.lead_source && <p className="text-sm text-gray-500">Source: {lead.lead_source}</p>}
-        {lead.job_type && <p className="text-sm text-gray-500">Job type: {lead.job_type}</p>}
-        {lead.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{lead.notes}</p>}
-      </div>
+      {/* Two-column layout on desktop */}
+      <div className="lg:grid lg:grid-cols-[2fr_1fr] lg:gap-6 space-y-4 lg:space-y-0">
+        {/* Left — main content */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-2">
+            {lead.phone && <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-sm text-slate-700">📞 {lead.phone}</a>}
+            {lead.email && <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-sm text-slate-700">✉️ {lead.email}</a>}
+            {lead.address && <p className="text-sm text-slate-600">📍 {[lead.address, lead.city, lead.state].filter(Boolean).join(", ")}</p>}
+            {lead.lead_source && <p className="text-sm text-gray-500">Source: {lead.lead_source}</p>}
+            {lead.job_type && <p className="text-sm text-gray-500">Job type: {lead.job_type}</p>}
+            {lead.notes && <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{lead.notes}</p>}
+          </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
-        <form action={updateStatus} className="flex flex-wrap gap-2">
-          <input type="hidden" name="id" value={lead.id} />
-          {STATUS_OPTIONS.map(s => (
-            <button key={s} name="status" value={s}
-              className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${lead.status === s ? "border-transparent " + STATUS_COLORS[s] : "border-gray-200 text-gray-500 bg-white"}`}>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </form>
-      </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Update Status</p>
+            <form action={updateStatus} className="flex flex-wrap gap-2">
+              <input type="hidden" name="id" value={lead.id} />
+              {STATUS_OPTIONS.map(s => (
+                <button key={s} name="status" value={s}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold border transition ${lead.status === s ? "border-transparent " + STATUS_COLORS[s] : "border-gray-200 text-gray-500 bg-white"}`}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </form>
+          </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {lead.phone && (
-          <a href={`tel:${lead.phone}`}
-            className="flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            📞 Call
-          </a>
-        )}
-        {lead.phone && (
-          <a href={`sms:${lead.phone}`}
-            className="flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            💬 Text
-          </a>
-        )}
-        {!lead.converted_customer_id ? (
-          <form action={convertToCustomer} className="col-span-2">
-            <input type="hidden" name="id" value={lead.id} />
-            <button type="submit"
-              className="w-full rounded-xl py-3 font-semibold text-sm bg-green-600 text-white">
-              ✅ Convert to Customer
-            </button>
-          </form>
-        ) : (
-          <Link href={`/app/customers/${lead.converted_customer_id}`}
-            className="col-span-2 flex items-center justify-center rounded-xl py-3 font-semibold text-sm bg-green-100 text-green-700">
-            👤 View Customer Profile
-          </Link>
-        )}
-        <Link href={`/app/quotes/new?name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone ?? "")}&email=${encodeURIComponent(lead.email ?? "")}`}
-          className="col-span-2 flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
-          style={{ backgroundColor: "#1B3A6B" }}>
-          📋 Create Quote
-        </Link>
-      </div>
+          <div className="grid grid-cols-2 gap-3">
+            {lead.phone && (
+              <a href={`tel:${lead.phone}`}
+                className="flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
+                style={{ backgroundColor: "#1B3A6B" }}>
+                📞 Call
+              </a>
+            )}
+            {lead.phone && (
+              <a href={`sms:${lead.phone}`}
+                className="flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
+                style={{ backgroundColor: "#1B3A6B" }}>
+                💬 Text
+              </a>
+            )}
+            {!lead.converted_customer_id ? (
+              <form action={convertToCustomer} className="col-span-2">
+                <input type="hidden" name="id" value={lead.id} />
+                <button type="submit"
+                  className="w-full rounded-xl py-3 font-semibold text-sm bg-green-600 text-white">
+                  ✅ Convert to Customer
+                </button>
+              </form>
+            ) : (
+              <Link href={`/app/customers/${lead.converted_customer_id}`}
+                className="col-span-2 flex items-center justify-center rounded-xl py-3 font-semibold text-sm bg-green-100 text-green-700">
+                👤 View Customer Profile
+              </Link>
+            )}
+            <Link href={`/app/quotes/new?name=${encodeURIComponent(lead.name)}&phone=${encodeURIComponent(lead.phone ?? "")}&email=${encodeURIComponent(lead.email ?? "")}`}
+              className="col-span-2 flex items-center justify-center gap-2 rounded-xl py-3 text-white font-semibold text-sm"
+              style={{ backgroundColor: "#1B3A6B" }}>
+              📋 Create Quote
+            </Link>
+          </div>
 
-      <PhotoGallery entityType="lead" entityId={lead.id} initialPhotos={photos ?? []} />
+          <PhotoGallery entityType="lead" entityId={lead.id} initialPhotos={photos ?? []} />
+        </div>
 
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
-        <form action={addNote} className="flex gap-2 mb-4">
-          <input type="hidden" name="id" value={lead.id} />
-          <input name="body" placeholder="Add a note…"
-            className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
-          <button type="submit"
-            className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
-            style={{ backgroundColor: "#1B3A6B" }}>Add</button>
-        </form>
-        {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
-        <div className="space-y-2">
-          {notes?.map(note => (
-            <div key={note.id} className="bg-gray-50 rounded-xl p-3">
-              <p className="text-sm text-slate-700">{note.body}</p>
-              <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+        {/* Right — sidebar */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
+            <form action={addNote} className="flex gap-2 mb-4">
+              <input type="hidden" name="id" value={lead.id} />
+              <input name="body" placeholder="Add a note…"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
+              <button type="submit"
+                className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
+                style={{ backgroundColor: "#1B3A6B" }}>Add</button>
+            </form>
+            {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
+            <div className="space-y-2">
+              {notes?.map(note => (
+                <div key={note.id} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-sm text-slate-700">{note.body}</p>
+                  <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <SmsThread leadId={lead.id} />
+          <EntityAiSection entityType="lead" entityId={lead.id} initialAttachments={aiAttachments} />
         </div>
       </div>
-      <SmsThread leadId={lead.id} />
-      <EntityAiSection entityType="lead" entityId={lead.id} initialAttachments={aiAttachments} />
     </div>
   );
 }

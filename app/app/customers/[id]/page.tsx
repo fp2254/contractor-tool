@@ -134,9 +134,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-6 lg:max-w-6xl lg:mx-auto">
+      {/* Header — full width */}
+      <div className="flex items-center gap-3 mb-4">
         <Link href="/app/customers" className="text-gray-400">
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M15 19l-7-7 7-7" />
@@ -150,256 +150,265 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
-      {/* Contact info — inline editable */}
-      <CustomerEditCard customer={{
-        id: customer.id,
-        first_name: customer.first_name,
-        last_name: customer.last_name ?? null,
-        company_name: customer.company_name ?? null,
-        phone: customer.phone ?? null,
-        email: customer.email ?? null,
-        address_line1: customer.address_line1 ?? null,
-        city: customer.city ?? null,
-        state: customer.state ?? null,
-        zip: (customer as Record<string, unknown>).zip as string | null ?? null,
-      }} />
+      {/* Two-column layout on desktop */}
+      <div className="lg:grid lg:grid-cols-[1fr_1fr] lg:gap-6 space-y-4 lg:space-y-0">
+        {/* Left — contact info + insights + actions */}
+        <div className="space-y-4">
+          {/* Contact info — inline editable */}
+          <CustomerEditCard customer={{
+            id: customer.id,
+            first_name: customer.first_name,
+            last_name: customer.last_name ?? null,
+            company_name: customer.company_name ?? null,
+            phone: customer.phone ?? null,
+            email: customer.email ?? null,
+            address_line1: customer.address_line1 ?? null,
+            city: customer.city ?? null,
+            state: customer.state ?? null,
+            zip: (customer as Record<string, unknown>).zip as string | null ?? null,
+          }} />
 
-      {/* Quick action buttons */}
-      <div className="grid grid-cols-3 gap-2">
-        {customer.phone && (
-          <a href={`tel:${customer.phone}`}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
-            <span className="text-xl">📞</span>
-            <span className="text-xs font-semibold text-slate-700">Call</span>
-          </a>
-        )}
-        {customer.phone && (
-          <a href={`sms:${customer.phone}`}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
-            <span className="text-xl">💬</span>
-            <span className="text-xs font-semibold text-slate-700">Text</span>
-          </a>
-        )}
-        {mapsUrl && (
-          <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
-            <span className="text-xl">🗺️</span>
-            <span className="text-xs font-semibold text-slate-700">Navigate</span>
-          </a>
-        )}
-        <Link href={`/app/quotes/new`}
-          className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 text-white shadow-sm active:opacity-90"
-          style={{ backgroundColor: "#1B3A6B" }}>
-          <span className="text-xl">📋</span>
-          <span className="text-xs font-semibold">New Quote</span>
-        </Link>
-        <Link href={`/app/jobs/new`}
-          className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
-          <span className="text-xl">🔨</span>
-          <span className="text-xs font-semibold text-slate-700">Schedule Job</span>
-        </Link>
-      </div>
+          {/* Quick action buttons */}
+          <div className="grid grid-cols-3 gap-2">
+            {customer.phone && (
+              <a href={`tel:${customer.phone}`}
+                className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
+                <span className="text-xl">📞</span>
+                <span className="text-xs font-semibold text-slate-700">Call</span>
+              </a>
+            )}
+            {customer.phone && (
+              <a href={`sms:${customer.phone}`}
+                className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
+                <span className="text-xl">💬</span>
+                <span className="text-xs font-semibold text-slate-700">Text</span>
+              </a>
+            )}
+            {mapsUrl && (
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
+                <span className="text-xl">🗺️</span>
+                <span className="text-xs font-semibold text-slate-700">Navigate</span>
+              </a>
+            )}
+            <Link href={`/app/quotes/new`}
+              className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 text-white shadow-sm active:opacity-90"
+              style={{ backgroundColor: "#1B3A6B" }}>
+              <span className="text-xl">📋</span>
+              <span className="text-xs font-semibold">New Quote</span>
+            </Link>
+            <Link href={`/app/jobs/new`}
+              className="flex flex-col items-center justify-center gap-1 rounded-xl py-3 bg-white border border-gray-200 shadow-sm active:bg-gray-50">
+              <span className="text-xl">🔨</span>
+              <span className="text-xs font-semibold text-slate-700">Schedule Job</span>
+            </Link>
+          </div>
 
-      {/* Client Intelligence Panel */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Client Insights</p>
+          {/* Client Intelligence Panel */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Client Insights</p>
 
-        {flags.length > 0 && (
-          <div className="space-y-2 mb-4">
-            {flags.map((flag, i) => (
-              <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${flag.style}`}>
-                <span className="text-base leading-none">{flag.icon}</span>
-                <span>{flag.label}</span>
+            {flags.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {flags.map((flag, i) => (
+                  <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${flag.style}`}>
+                    <span className="text-base leading-none">{flag.icon}</span>
+                    <span>{flag.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="bg-green-50 rounded-xl p-3">
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Lifetime Value</p>
-            <p className="text-lg font-bold text-green-700">${lifetimeValue.toLocaleString()}</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bg-green-50 rounded-xl p-3">
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Lifetime Value</p>
+                <p className="text-lg font-bold text-green-700">${lifetimeValue.toLocaleString()}</p>
+              </div>
+              <div className={`rounded-xl p-3 ${outstandingBalance > 0 ? "bg-red-50" : "bg-gray-50"}`}>
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Outstanding</p>
+                <p className={`text-lg font-bold ${outstandingBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
+                  ${outstandingBalance.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-3">
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Jobs Completed</p>
+                <p className="text-lg font-bold text-blue-700">{jobsCompleted}</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-3">
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Quotes Sent</p>
+                <p className="text-lg font-bold text-purple-700">{quotesSent}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Last Job</p>
+                <p className="text-sm font-bold text-slate-700">{fmtDate(lastCompletedJobDate)}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Client Since</p>
+                <p className="text-sm font-bold text-slate-700">{fmtDate(clientSince)}</p>
+              </div>
+            </div>
           </div>
-          <div className={`rounded-xl p-3 ${outstandingBalance > 0 ? "bg-red-50" : "bg-gray-50"}`}>
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Outstanding</p>
-            <p className={`text-lg font-bold ${outstandingBalance > 0 ? "text-red-600" : "text-gray-400"}`}>
-              ${outstandingBalance.toLocaleString()}
-            </p>
+
+          <PhotoGallery entityType="customer" entityId={customer.id} initialPhotos={photos ?? []} />
+
+          {/* Notes */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
+            <form action={addNote} className="flex gap-2 mb-4">
+              <input type="hidden" name="id" value={customer.id} />
+              <input
+                name="body"
+                placeholder="Add a note…"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              <button type="submit"
+                className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
+                style={{ backgroundColor: "#1B3A6B" }}>
+                Add
+              </button>
+            </form>
+            {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
+            <div className="space-y-2">
+              {notes?.map(note => (
+                <div key={note.id} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-sm text-slate-700">{note.body}</p>
+                  <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-blue-50 rounded-xl p-3">
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Jobs Completed</p>
-            <p className="text-lg font-bold text-blue-700">{jobsCompleted}</p>
-          </div>
-          <div className="bg-purple-50 rounded-xl p-3">
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Quotes Sent</p>
-            <p className="text-lg font-bold text-purple-700">{quotesSent}</p>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Last Job</p>
-            <p className="text-sm font-bold text-slate-700">{fmtDate(lastCompletedJobDate)}</p>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-[11px] text-gray-500 mb-0.5 font-medium">Client Since</p>
-            <p className="text-sm font-bold text-slate-700">{fmtDate(clientSince)}</p>
-          </div>
+
+          <EntityAiSection entityType="customer" entityId={customer.id} initialAttachments={aiAttachments} />
         </div>
-      </div>
 
-      {/* Quotes */}
-      {quotes && quotes.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-            Quotes ({quotes.length})
-          </p>
-          <div className="divide-y divide-gray-100">
-            {quotes.map(q => (
-              <Link key={q.id} href={`/app/quotes/${q.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Quote #{q.id.slice(0, 8)}</p>
-                  <p className="text-xs text-gray-400">{new Date(q.created_at).toLocaleDateString()}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[q.status] ?? "bg-gray-100"}`}>
-                    {q.status}
-                  </span>
-                  <span className="text-sm font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Jobs */}
-      {jobs && jobs.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-            Jobs ({jobs.length})
-          </p>
-          <div className="divide-y divide-gray-100">
-            {jobs.map(j => (
-              <Link key={j.id} href={`/app/jobs/${j.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">{j.job_title}</p>
-                  {j.scheduled_date && (
-                    <p className="text-xs text-gray-400">
-                      {new Date(j.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  )}
-                </div>
-                <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[j.status] ?? "bg-gray-100"}`}>
-                  {j.status.replace("_", " ")}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Invoices */}
-      {invoices && invoices.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-            Invoices ({invoices.length})
-          </p>
-          <div className="divide-y divide-gray-100">
-            {invoices.map(inv => (
-              <Link key={inv.id} href={`/app/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">{inv.invoice_number ?? `#${inv.id.slice(0, 8)}`}</p>
-                  <p className="text-xs text-gray-400">{new Date(inv.created_at).toLocaleDateString()}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[inv.status] ?? "bg-gray-100"}`}>
-                    {inv.status}
-                  </span>
-                  <span className="text-sm font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Phone Calls */}
-      {customerCalls.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
-            Recent Calls ({customerCalls.length})
-          </p>
-          <div className="divide-y divide-gray-100">
-            {customerCalls.map(call => {
-              const answeredBy = call.answered_by;
-              const mins = call.duration_seconds ? Math.floor(call.duration_seconds / 60) : 0;
-              const secs = call.duration_seconds ? call.duration_seconds % 60 : 0;
-              const durStr = call.duration_seconds ? (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`) : "—";
-              return (
-                <div key={call.id} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">📞</span>
-                      <span className="text-sm font-medium text-slate-700">
-                        {new Date(call.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                      <span className="text-xs text-gray-400">{durStr}</span>
+        {/* Right — history (quotes, jobs, invoices, calls) */}
+        <div className="space-y-4">
+          {/* Quotes */}
+          {quotes && quotes.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+                Quotes ({quotes.length})
+              </p>
+              <div className="divide-y divide-gray-100">
+                {quotes.map(q => (
+                  <Link key={q.id} href={`/app/quotes/${q.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Quote #{q.id.slice(0, 8)}</p>
+                      <p className="text-xs text-gray-400">{new Date(q.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {answeredBy === "contractor" && <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Answered</span>}
-                      {answeredBy === "retell" && <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">AI Handled</span>}
-                      {!answeredBy && <span className="text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Missed</span>}
-                      {call.recording_url && (
-                        <a href={call.recording_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-2 py-0.5 rounded-full">
-                          🎧 Recording
-                        </a>
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[q.status] ?? "bg-gray-100"}`}>
+                        {q.status}
+                      </span>
+                      <span className="text-sm font-bold text-slate-800">${Number(q.total_amount).toLocaleString()}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Jobs */}
+          {jobs && jobs.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+                Jobs ({jobs.length})
+              </p>
+              <div className="divide-y divide-gray-100">
+                {jobs.map(j => (
+                  <Link key={j.id} href={`/app/jobs/${j.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">{j.job_title}</p>
+                      {j.scheduled_date && (
+                        <p className="text-xs text-gray-400">
+                          {new Date(j.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
                       )}
                     </div>
-                  </div>
-                  {(call.call_transcripts as any)?.ai_summary && (
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed pl-6">
-                      {(call.call_transcripts as any).ai_summary}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="px-4 py-2.5 border-t border-gray-100">
-            <a href="/app/phone" className="text-xs font-semibold text-[#1B3A6B]">View all calls →</a>
-          </div>
-        </div>
-      )}
-
-      <PhotoGallery entityType="customer" entityId={customer.id} initialPhotos={photos ?? []} />
-
-      {/* Notes */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Notes</p>
-        <form action={addNote} className="flex gap-2 mb-4">
-          <input type="hidden" name="id" value={customer.id} />
-          <input
-            name="body"
-            placeholder="Add a note…"
-            className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
-          />
-          <button type="submit"
-            className="rounded-xl px-4 py-2 text-white text-sm font-semibold"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            Add
-          </button>
-        </form>
-        {!notes?.length && <p className="text-sm text-gray-400 text-center py-2">No notes yet.</p>}
-        <div className="space-y-2">
-          {notes?.map(note => (
-            <div key={note.id} className="bg-gray-50 rounded-xl p-3">
-              <p className="text-sm text-slate-700">{note.body}</p>
-              <p className="text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleDateString()}</p>
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[j.status] ?? "bg-gray-100"}`}>
+                      {j.status.replace("_", " ")}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          {/* Invoices */}
+          {invoices && invoices.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+                Invoices ({invoices.length})
+              </p>
+              <div className="divide-y divide-gray-100">
+                {invoices.map(inv => (
+                  <Link key={inv.id} href={`/app/invoices/${inv.id}`} className="flex items-center justify-between px-4 py-3 active:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">{inv.invoice_number ?? `#${inv.id.slice(0, 8)}`}</p>
+                      <p className="text-xs text-gray-400">{new Date(inv.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[inv.status] ?? "bg-gray-100"}`}>
+                        {inv.status}
+                      </span>
+                      <span className="text-sm font-bold text-slate-800">${Number(inv.total_amount).toLocaleString()}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Phone Calls */}
+          {customerCalls.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <p className="text-xs font-semibold text-gray-500 uppercase px-4 pt-4 pb-2">
+                Recent Calls ({customerCalls.length})
+              </p>
+              <div className="divide-y divide-gray-100">
+                {customerCalls.map(call => {
+                  const answeredBy = call.answered_by;
+                  const mins = call.duration_seconds ? Math.floor(call.duration_seconds / 60) : 0;
+                  const secs = call.duration_seconds ? call.duration_seconds % 60 : 0;
+                  const durStr = call.duration_seconds ? (mins > 0 ? `${mins}m ${secs}s` : `${secs}s`) : "—";
+                  return (
+                    <div key={call.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">📞</span>
+                          <span className="text-sm font-medium text-slate-700">
+                            {new Date(call.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                          <span className="text-xs text-gray-400">{durStr}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {answeredBy === "contractor" && <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Answered</span>}
+                          {answeredBy === "retell" && <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">AI Handled</span>}
+                          {!answeredBy && <span className="text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Missed</span>}
+                          {call.recording_url && (
+                            <a href={call.recording_url} target="_blank" rel="noopener noreferrer"
+                              className="text-xs font-semibold text-[#1B3A6B] bg-blue-50 px-2 py-0.5 rounded-full">
+                              🎧 Recording
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      {(call.call_transcripts as any)?.ai_summary && (
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed pl-6">
+                          {(call.call_transcripts as any).ai_summary}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="px-4 py-2.5 border-t border-gray-100">
+                <a href="/app/phone" className="text-xs font-semibold text-[#1B3A6B]">View all calls →</a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      <EntityAiSection entityType="customer" entityId={customer.id} initialAttachments={aiAttachments} />
     </div>
   );
 }
