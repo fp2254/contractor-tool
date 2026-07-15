@@ -636,7 +636,6 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
             <div id="reviews" style={{ background: "white", borderRadius: 11, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <p style={{ fontSize: 10.5, fontWeight: 700, color: "#9ca3af", letterSpacing: "1.2px", textTransform: "uppercase" }}>Top Reviews</p>
-                <a href={`/pro/${profile.slug}/review`} style={{ fontSize: 10.5, fontWeight: 600, color: NAVY, textDecoration: "none" }}>View All →</a>
               </div>
               {reviews.length > 0 ? (
                 <>

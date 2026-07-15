@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserOrg } from "@/lib/auth";
 import ShowcaseClient from "./ShowcaseClient";
+import { CONTRACTORS } from "@/app/find-contractors/mockData";
 
 export const dynamic = "force-dynamic";
 
@@ -25,31 +26,42 @@ async function loadShowcase(slug: string) {
     .maybeSingle();
 
   if (!pub) {
-    // Dev fallback: return mock data for the demo slug
-    if (slug === "mike-sullivan-roofing") {
+    // Dev fallback: return mock data for any contractor in the CONTRACTORS array
+    const mockContractor = CONTRACTORS.find(c => c.slug === slug);
+    if (mockContractor) {
+      const certifications = [
+        mockContractor.licensed ? "Licensed & Insured" : null,
+        mockContractor.insured ? "Fully Insured" : null,
+        mockContractor.verified ? "Verified Contractor" : null,
+        mockContractor.veteran_owned ? "Veteran-Owned" : null,
+      ].filter(Boolean) as string[];
       return {
         profile: {
-          name: "Mike Sullivan Roofing",
+          name: mockContractor.name,
           slug,
-          trade: "Roofing & Exteriors",
-          location: "Portland, OR",
+          trade: mockContractor.trade,
+          location: mockContractor.location,
           photo_url: null,
-          tagline: "Fast, reliable roofing in Portland — free quotes same day",
-          years_experience: 8,
-          license_text: "CCB-187432",
+          tagline: mockContractor.tagline,
+          years_experience: mockContractor.years_in_business,
+          license_text: mockContractor.licensed ? "Licensed & Insured" : null,
           is_published: true,
-          phone: "tel:+15035550192",
-          phoneFormatted: "(503) 555-0192",
-          revenue_display: "$380K",
-          certifications: ["Licensed & Insured", "Local Contractor", "Owner-Operated"],
-          serviceNames: ["Roof Replacement", "Roof Repair", "Gutters", "Siding", "Skylights"],
+          phone: "",
+          phoneFormatted: "",
+          revenue_display: "",
+          certifications,
+          serviceNames: mockContractor.services,
         },
-        stats: { projectCount: 47, totalCost: 380000, reviewCount: 23, avgRating: 4.9, recommendRate: 98, certCount: 3 },
+        stats: {
+          projectCount: mockContractor.verified_projects,
+          totalCost: 0,
+          reviewCount: mockContractor.reviews_tb,
+          avgRating: mockContractor.rating_tb,
+          recommendRate: 96,
+          certCount: certifications.length,
+        },
         projects: [],
-        reviews: [
-          { name: "Sarah M.", rating: 5, text: "Mike and his crew were incredible. Showed up on time every day and the roof looks amazing.", jobType: "Full Roof Replacement", location: "Lake Oswego", date: "Jun 2024" },
-          { name: "Tom R.", rating: 5, text: "Fast, professional, honest. Sent me a quote the same day I called. No surprises on the invoice.", jobType: "Gutter Installation", location: "Beaverton", date: "Mar 2024" },
-        ],
+        reviews: [],
         galleryPhotos: [],
       };
     }

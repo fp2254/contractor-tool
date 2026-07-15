@@ -249,10 +249,10 @@ export default async function Page({ params }: Props) {
     <div style={{ background: "#fff", borderTop: "1px solid #e8ecf2", borderBottom: "1px solid #e8ecf2", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <div>
         <p style={{ fontWeight: 700, fontSize: 13, color: "#0f1f3d", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.4px" }}>
-          Full Project Portfolio
+          📁 Project Showcase
         </p>
         <p style={{ fontSize: 11, color: "#8a9ab5", margin: "2px 0 0" }}>
-          See every project with photos, costs &amp; details
+          Browse completed projects with photos &amp; details
         </p>
       </div>
       <a
