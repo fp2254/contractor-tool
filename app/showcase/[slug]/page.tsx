@@ -122,9 +122,10 @@ async function loadShowcase(slug: string) {
   const phone = pub.phone ?? "";
   const phoneDigits = phone.replace(/\D/g, "");
 
-  const galleryPhotos: { url: string; title?: string }[] = (pub.photos ?? [])
-    .filter((p: any) => p?.url)
-    .map((p: any) => ({ url: p.url, title: p.title ?? "" }));
+  // `photos` column on public_profiles is not yet available (migration_public_profile_photos.sql pending)
+  // Once that migration is applied, add `photos` back to the select above and restore this derivation:
+  //   (pub.photos ?? []).filter((p: any) => p?.url).map((p: any) => ({ url: p.url, title: p.title ?? "" }))
+  const galleryPhotos: { url: string; title?: string }[] = [];
 
   return {
     profile: {
