@@ -50,17 +50,18 @@ export default async function MorePage() {
   const isAdmin = isPlatformAdmin(user?.email);
   const { role } = await getUserOrgRole();
 
-  // Fetch (or auto-create) showcase slug
+  // Fetch website URL + showcase slug
   let showcaseSlug: string | null = null;
+  let websiteUrl: string | null = null;
   try {
     const orgId = await ensureUserOrg();
     const admin = createAdminClient() as any;
-    const { data: pub } = await admin
-      .from("public_profiles")
-      .select("slug")
-      .eq("org_id", orgId!)
-      .maybeSingle();
-    showcaseSlug = pub?.slug ?? null;
+    const [pubResult, settingsResult] = await Promise.all([
+      admin.from("public_profiles").select("slug").eq("org_id", orgId!).maybeSingle(),
+      admin.from("org_settings").select("website").eq("org_id", orgId!).maybeSingle(),
+    ]);
+    showcaseSlug = pubResult.data?.slug ?? null;
+    websiteUrl = (settingsResult.data as any)?.website ?? null;
 
     // Auto-provision a profile row for existing orgs that don't have one yet
     if (!showcaseSlug && orgId) {
@@ -82,8 +83,7 @@ export default async function MorePage() {
     }
   } catch { /* ignore */ }
 
-  const businessHref    = showcaseSlug ? `/pro/${showcaseSlug}` : "/app/profile/public-profile";
-  const showcaseHref    = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
+  const showcaseHref = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
 
   return (
     <div className="p-4">
@@ -105,13 +105,23 @@ export default async function MorePage() {
 
       {/* My Pages — two prominent buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <Link href={businessHref}
-          className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
-          style={{ backgroundColor: "#1B3A6B" }}>
-          <span className="text-2xl">🏢</span>
-          <span className="text-[13px] font-bold">My Website</span>
-          <span className="text-[10px] opacity-70">{showcaseSlug ? `/pro/${showcaseSlug}` : "Set up first"}</span>
-        </Link>
+        {websiteUrl ? (
+          <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
+            style={{ backgroundColor: "#1B3A6B" }}>
+            <span className="text-2xl">🏢</span>
+            <span className="text-[13px] font-bold">My Website</span>
+            <span className="text-[10px] opacity-70 truncate max-w-full px-1">{websiteUrl.replace(/^https?:\/\//, "")}</span>
+          </a>
+        ) : (
+          <Link href="/app/profile"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
+            style={{ backgroundColor: "#1B3A6B" }}>
+            <span className="text-2xl">🏢</span>
+            <span className="text-[13px] font-bold">My Website</span>
+            <span className="text-[10px] opacity-70">Add in Settings</span>
+          </Link>
+        )}
         <Link href={showcaseHref}
           className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 shadow-sm border border-purple-200 bg-gradient-to-b from-purple-50 to-white">
           <span className="text-2xl">✨</span>
