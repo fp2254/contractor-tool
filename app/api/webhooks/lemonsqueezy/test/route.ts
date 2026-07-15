@@ -6,6 +6,8 @@ import { autoProvisionIfNeeded } from "@/lib/phone-provision";
 
 export const dynamic = "force-dynamic";
 
+const ALL_ADDON_TYPES = ["phone_ai", "advanced_ai"];
+
 /**
  * DEV-ONLY endpoint to simulate LemonSqueezy webhook events end-to-end.
  * Bypasses signature validation so you can test without real LS credentials.
@@ -125,9 +127,19 @@ export async function GET(req: NextRequest) {
 
   if (!orgId) {
     return NextResponse.json({
-      usage: "GET /api/webhooks/lemonsqueezy/test?orgId=<uuid>&addonType=<type>",
+      usage: "GET /api/webhooks/lemonsqueezy/test?orgId=<uuid>&addonType=<type|all>",
       addonTypes: ["phone_ai", "advanced_ai"],
     });
+  }
+
+  if (addonType === "all") {
+    const results = await Promise.all(
+      ALL_ADDON_TYPES.map(async (type) => ({
+        addonType: type,
+        addonStatus: await getAddonStatus(orgId, type),
+      }))
+    );
+    return NextResponse.json({ orgId, addonType: "all", results });
   }
 
   const result = await getAddonStatus(orgId, addonType);

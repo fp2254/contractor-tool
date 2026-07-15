@@ -13,23 +13,33 @@ type AddonInfo = {
   notes: string | null;
 };
 
+type AddonResult = { addonType: string; addonStatus: AddonInfo };
+
 const ADDON_TYPES = [
+  { value: "all", label: "All Add-ons" },
   { value: "phone_ai", label: "Phone AI" },
   { value: "advanced_ai", label: "Advanced AI" },
 ];
 
+const ADDON_LABELS: Record<string, string> = {
+  phone_ai: "Phone AI",
+  advanced_ai: "Advanced AI",
+};
+
 export default function AddonStatusChecker({ defaultOrgId }: { defaultOrgId: string }) {
   const [orgId, setOrgId] = useState(defaultOrgId);
-  const [addonType, setAddonType] = useState("phone_ai");
+  const [addonType, setAddonType] = useState("all");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ orgId: string; addonType: string; addonStatus: AddonInfo } | null>(null);
+  const [single, setSingle] = useState<{ addonType: string; addonStatus: AddonInfo } | null>(null);
+  const [all, setAll] = useState<AddonResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function checkStatus() {
     const trimmed = orgId.trim();
     if (!trimmed) return;
     setLoading(true);
-    setResult(null);
+    setSingle(null);
+    setAll(null);
     setError(null);
     try {
       const params = new URLSearchParams({ orgId: trimmed, addonType });
@@ -40,7 +50,11 @@ export default function AddonStatusChecker({ defaultOrgId }: { defaultOrgId: str
         return;
       }
       const json = await res.json();
-      setResult(json);
+      if (addonType === "all") {
+        setAll(json.results);
+      } else {
+        setSingle(json);
+      }
     } catch {
       setError("Network error");
     } finally {
@@ -48,7 +62,7 @@ export default function AddonStatusChecker({ defaultOrgId }: { defaultOrgId: str
     }
   }
 
-  const info = result?.addonStatus;
+  const info = single?.addonStatus;
   const noRecord = info?.status === "none";
 
   return (
@@ -97,7 +111,7 @@ export default function AddonStatusChecker({ defaultOrgId }: { defaultOrgId: str
         disabled={loading || !orgId.trim()}
         className="w-full bg-[#1B3A6B] text-white text-sm font-semibold px-4 py-2 rounded-xl disabled:opacity-50 active:scale-95 transition-transform"
       >
-        {loading ? "Checking…" : "Check Status"}
+        {loading ? "Checking…" : addonType === "all" ? "Check All" : "Check Status"}
       </button>
 
       {error && (
@@ -106,10 +120,53 @@ export default function AddonStatusChecker({ defaultOrgId }: { defaultOrgId: str
         </div>
       )}
 
-      {result && !error && (
+      {all && !error && (
+        <div className="rounded-xl p-3 text-xs bg-gray-50 border border-gray-200 space-y-2 overflow-x-auto">
+          <p className="font-semibold text-gray-700">Add-on status summary:</p>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-gray-500 border-b border-gray-200">
+                <th className="py-1 pr-2 font-medium">Add-on</th>
+                <th className="py-1 pr-2 font-medium">Active</th>
+                <th className="py-1 pr-2 font-medium">Status</th>
+                <th className="py-1 pr-2 font-medium">Provider</th>
+                <th className="py-1 pr-2 font-medium">Price / mo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {all.map((row) => {
+                const rowNoRecord = row.addonStatus.status === "none";
+                return (
+                  <tr key={row.addonType} className="border-b border-gray-100 last:border-0">
+                    <td className="py-1.5 pr-2 font-semibold text-slate-700">
+                      {ADDON_LABELS[row.addonType] ?? row.addonType}
+                    </td>
+                    <td className="py-1.5 pr-2">
+                      <span className={`font-semibold ${row.addonStatus.active ? "text-green-700" : "text-red-600"}`}>
+                        {row.addonStatus.active ? "Yes" : "No"}
+                      </span>
+                    </td>
+                    <td className="py-1.5 pr-2 font-mono text-slate-700">
+                      {rowNoRecord ? "no record" : row.addonStatus.status}
+                    </td>
+                    <td className="py-1.5 pr-2 font-mono text-slate-700">
+                      {row.addonStatus.billingProvider ?? "—"}
+                    </td>
+                    <td className="py-1.5 pr-2 font-mono text-slate-700">
+                      {row.addonStatus.priceMonthly != null ? `$${row.addonStatus.priceMonthly}` : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {single && !error && (
         <div className="rounded-xl p-3 text-xs bg-gray-50 border border-gray-200 space-y-2">
           <p className="font-semibold text-gray-700">
-            Add-on status for <span className="font-mono">{result.addonType}</span>:
+            Add-on status for <span className="font-mono">{single.addonType}</span>:
           </p>
           {noRecord ? (
             <p className="text-gray-500 italic">No add-on record found for this org.</p>
