@@ -2,6 +2,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRealtorProfileByUserId } from "@/lib/realtor";
+import { getResendClient, realtorWorkRequestNotificationHtml } from "@/lib/email";
+
+async function sendWorkRequestNotification(opts: {
+  admin: ReturnType<typeof createAdminClient>;
+  org_id: string;
+  profile: { display_name: string; agency_name?: string | null };
+  client_name: string;
+  client_phone?: string;
+  client_email?: string;
+  client_address?: string;
+  job_type?: string;
+  description?: string;
+}) {
+  try {
+    const { data: orgRow } = await (opts.admin as any).from("orgs").select("owner_user_id, name").eq("id", opts.org_id).single();
+    if (!orgRow?.owner_user_id) return;
+    const { data: authUser } = await (opts.admin as any).auth.admin.getUserById(orgRow.owner_user_id);
+    const ownerEmail = authUser?.user?.email;
+    if (!ownerEmail) return;
+
+    const { client, fromEmail } = await getResendClient();
+    const { error: sendError } = await client.emails.send({
+      from: fromEmail,
+      to: ownerEmail,
+      subject: `🏡 New Realtor Referral: ${opts.client_name}${opts.job_type ? ` — ${opts.job_type}` : ""}`,
+      html: realtorWorkRequestNotificationHtml({
+        businessName: orgRow.name ?? "Your Business",
+        realtorName: opts.profile.display_name,
+        realtorAgency: opts.profile.agency_name ?? null,
+        clientName: opts.client_name,
+        clientPhone: opts.client_phone?.trim() || null,
+        clientEmail: opts.client_email?.trim() || null,
+        clientAddress: opts.client_address?.trim() || null,
+        jobType: opts.job_type?.trim() || null,
+        description: opts.description?.trim() || null,
+      }),
+    });
+    if (sendError) console.error("[realtor/work-requests] Resend send error:", sendError);
+  } catch (err) {
+    console.error("[realtor/work-requests] notify email error:", err);
+  }
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -106,10 +148,13 @@ export async function POST(req: NextRequest) {
       };
       const { data: fallbackLead, error: fb } = await admin.from("leads").insert(fallbackRow).select("id").single();
       if (fb) return NextResponse.json({ error: fb.message }, { status: 500 });
+      sendWorkRequestNotification({ admin, org_id, profile, client_name, client_phone, client_email, client_address, job_type, description });
       return NextResponse.json({ ok: true, leadId: fallbackLead?.id, migrationPending: true });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  sendWorkRequestNotification({ admin, org_id, profile, client_name, client_phone, client_email, client_address, job_type, description });
 
   return NextResponse.json({ ok: true, leadId: lead?.id });
 }
