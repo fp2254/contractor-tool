@@ -50,7 +50,7 @@ export function ContractorProfilePage({ profile }: Props) {
             href={`/showcase/${profile.slug}`}
             className="bg-[#1B3A6B] text-white font-semibold text-xs px-4 py-2 rounded-xl hover:bg-[#152e55] transition-colors shrink-0"
           >
-            View Portfolio →
+            View Showcase →
           </a>
         </div>
 

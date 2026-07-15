@@ -115,7 +115,7 @@ export default async function MorePage() {
         <Link href={showcaseHref}
           className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 shadow-sm border border-purple-200 bg-gradient-to-b from-purple-50 to-white">
           <span className="text-2xl">✨</span>
-          <span className="text-[13px] font-bold text-purple-700">My Portfolio</span>
+          <span className="text-[13px] font-bold text-purple-700">Project Showcase</span>
           <span className="text-[10px] text-purple-400">{showcaseSlug ? `/showcase/${showcaseSlug}` : "Set up first"}</span>
         </Link>
       </div>
