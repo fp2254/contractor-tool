@@ -50,6 +50,20 @@ export default async function LeadsPage({
   const counts: Record<string, number> = { all: allLeads?.length ?? 0 };
   allLeads?.forEach((l) => { counts[l.status] = (counts[l.status] ?? 0) + 1; });
 
+  const smsStatusMap: Record<string, string> = {};
+  try {
+    const { data: convos } = await admin
+      .from("sms_conversations")
+      .select("lead_id, status")
+      .eq("org_id", orgId!)
+      .in("status", ["active", "handed_off"])
+      .not("lead_id", "is", null);
+    convos?.forEach((c) => {
+      if (c.lead_id) smsStatusMap[c.lead_id] = c.status;
+    });
+  } catch {
+  }
+
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -122,6 +136,16 @@ export default async function LeadsPage({
               <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-600"}`}>
                 {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
               </span>
+              {smsStatusMap[lead.id] === "active" && (
+                <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-semibold">
+                  💬 AI
+                </span>
+              )}
+              {smsStatusMap[lead.id] === "handed_off" && (
+                <span className="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 font-semibold">
+                  💬 Needs attention
+                </span>
+              )}
             </div>
           </Link>
         ))}
