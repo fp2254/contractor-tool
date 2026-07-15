@@ -204,6 +204,22 @@ export default async function HomePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Link
+              href="/auth/login"
+              className="tb-nav hidden md:inline-flex"
+              style={{
+                color: "rgba(244,241,234,0.75)",
+                textDecoration: "none",
+                fontSize: 13,
+                fontFamily: "'JetBrains Mono', monospace",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                padding: "10px 14px",
+                transition: "color 0.15s",
+              }}
+            >
+              Log In
+            </Link>
+            <Link
               href="/waitlist"
               className="tb-btn-primary hidden md:inline-flex"
               style={{

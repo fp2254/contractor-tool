@@ -87,7 +87,27 @@ export default function HomeMobileNav() {
               {label}
             </a>
           ))}
-          <div style={{ padding: "16px 24px 0" }}>
+          <div style={{ padding: "16px 24px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+            <Link
+              href="/auth/login"
+              onClick={() => setOpen(false)}
+              style={{
+                display: "block",
+                textAlign: "center",
+                background: "transparent",
+                color: BN,
+                padding: "13px 20px",
+                fontFamily: "'Oswald', sans-serif",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                fontSize: 15,
+                textDecoration: "none",
+                border: "1px solid rgba(244,241,234,0.25)",
+              }}
+            >
+              Log In
+            </Link>
             <Link
               href="/waitlist"
               onClick={() => setOpen(false)}
