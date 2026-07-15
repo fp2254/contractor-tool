@@ -208,12 +208,21 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
   const [activeSection, setActiveSection] = useState("overview");
   const [projectFilter, setProjectFilter] = useState("All Projects");
 
-  /* owner settings */
+  /* owner settings — start from server prop, self-correct on client */
+  const [ownerVerified, setOwnerVerified] = useState(isOwner);
   const [published, setPublished] = useState(profile.is_published);
   const [taglineDraft, setTaglineDraft] = useState(profile.tagline);
   const [revenueDraft, setRevenueDraft] = useState(profile.revenue_display);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+
+  /* client-side ownership re-check — fixes stale JS bundle hydration overrides */
+  useEffect(() => {
+    fetch(`/api/showcase/owner-check?slug=${encodeURIComponent(profile.slug)}`)
+      .then(r => r.ok ? r.json() : { isOwner: false })
+      .then(data => setOwnerVerified(!!data.isOwner))
+      .catch(() => {});
+  }, [profile.slug]);
 
   async function togglePublish() {
     setSettingsSaving(true);
@@ -323,7 +332,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
         </div>
 
         {/* ── owner settings box ── */}
-        {isOwner && (
+        {ownerVerified && (
           <div style={{ margin: "8px 10px 10px", background: "#f0f4ff", borderRadius: 10, padding: "11px 12px", border: "1px solid #c7d7f5" }}>
             <p style={{ fontSize: 10.5, fontWeight: 700, color: NAVY, margin: "0 0 9px", display: "flex", alignItems: "center", gap: 5 }}>
               ⚙️ Page Settings
@@ -439,7 +448,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
       <main style={{ flex: 1, minWidth: 0, padding: "0 0 80px" }}>
 
         {/* owner back bar */}
-        {isOwner && (
+        {ownerVerified && (
           <div style={{ background: "rgba(27,58,107,0.92)", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <a href="/app/more" style={{ color: "white", fontWeight: 700, fontSize: 12, textDecoration: "none" }}>← Back to App</a>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Viewing your project showcase</span>
@@ -612,7 +621,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
             <div style={{ background: "white", borderRadius: 11, padding: "28px", textAlign: "center", color: "#9ca3af" }}>
               <p style={{ fontSize: 13.5, fontWeight: 600 }}>No projects yet</p>
               <p style={{ fontSize: 11, marginTop: 3 }}>Add projects to showcase your work</p>
-              {isOwner && (
+              {ownerVerified && (
                 <a href="/app/more" style={{ display: "inline-block", marginTop: 10, background: NAVY, color: "white", fontWeight: 700, fontSize: 11, padding: "7px 16px", borderRadius: 7, textDecoration: "none" }}>Add Projects</a>
               )}
             </div>
