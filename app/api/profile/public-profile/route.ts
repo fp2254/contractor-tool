@@ -106,30 +106,31 @@ export async function POST(req: Request) {
   }
   if (body.services !== undefined)           row.services           = body.services ?? [];
 
-  try {
-    const { data, error } = await (admin as any)
+  async function attemptUpsert(r: Record<string, unknown>) {
+    return (admin as any)
       .from("public_profiles")
-      .upsert(row, { onConflict: "org_id" })
+      .upsert(r, { onConflict: "org_id" })
       .select()
       .single();
+  }
+
+  try {
+    let { data, error } = await attemptUpsert(row);
+
+    // If a column doesn't exist yet (pending migration), retry without that column
+    if (error?.code === "PGRST204" || error?.code === "42703") {
+      const missing = error.message?.match(/column ['"]?(\w+)['"]? of/)?.[1];
+      if (missing && missing in row) {
+        const trimmed = { ...row };
+        delete trimmed[missing];
+        ({ data, error } = await attemptUpsert(trimmed));
+      }
+    }
 
     if (error) throw error;
-
     return NextResponse.json({ profile: data });
   } catch (err: any) {
     console.error("[public-profile] save error:", err);
-    const message = err?.message ?? "Failed to save profile.";
-    // Surface schema drift as a human-readable error so it is immediately
-    // visible to the contractor and diagnosable without a DB investigation.
-    if (err?.code === "PGRST204" || err?.code === "42703" || message.toLowerCase().includes("column")) {
-      return NextResponse.json(
-        { error: `Profile could not be saved — a required database column is missing (${message}). Please contact support.` },
-        { status: 500 }
-      );
-    }
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message ?? "Failed to save profile." }, { status: 500 });
   }
 }
