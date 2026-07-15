@@ -450,3 +450,37 @@ export function realtorWorkRequestNotificationHtml(opts: {
   </div>
 </body></html>`;
 }
+
+export function realtorConnectionAcceptedHtml(opts: {
+  realtorName: string;
+  contractorName: string;
+}): string {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif">
+  <div style="max-width:520px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    <div style="background:#1B3A6B;padding:24px 32px">
+      <h1 style="margin:0;color:#fff;font-size:22px">TradeBase</h1>
+      <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">Realtor Network</p>
+    </div>
+    <div style="padding:32px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:24px">
+        <p style="margin:0;font-size:14px;font-weight:bold;color:#166534">🤝 Your connection request was accepted!</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#15803d"><strong>${opts.contractorName}</strong> has accepted your connection request. You can now send them work requests on behalf of your clients.</p>
+      </div>
+
+      <p style="margin:0 0 24px;font-size:14px;color:#475569;line-height:1.6">
+        Hi ${opts.realtorName},<br><br>
+        Good news — <strong>${opts.contractorName}</strong> is now in your network. Head to your Connections page to send them a work request whenever you have a client who needs their services.
+      </p>
+
+      <a href="https://app.tradebase.contractors/realtor/connections"
+        style="display:block;background:#1B3A6B;color:#fff;text-decoration:none;text-align:center;padding:14px 24px;border-radius:10px;font-size:15px;font-weight:bold;margin-bottom:16px">
+        Send a Work Request →
+      </a>
+      <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center">You received this because you sent a connection request via TradeBase.</p>
+    </div>
+    <div style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center">
+      <p style="margin:0;font-size:12px;color:#94a3b8">TradeBase &middot; Built for contractors &middot; <a href="https://tradebase.contractors" style="color:#94a3b8">tradebase.contractors</a></p>
+    </div>
+  </div>
+</body></html>`;
+}
