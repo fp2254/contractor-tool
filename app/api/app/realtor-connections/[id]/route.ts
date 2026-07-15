@@ -15,31 +15,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const admin = createAdminClient() as any;
 
-  const { error } = await admin
+  // Update scoped to both id + org_id; select back to confirm a row was actually owned + modified
+  const { data: updated, error } = await admin
     .from("realtor_connections")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .select("id, realtor_profile_id")
+    .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // If no row came back, this org doesn't own that connection — don't send any email
+  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Fire-and-forget notification email to realtor when accepted
   if (status === "accepted") {
     (async () => {
       try {
-        // Get connection row to find the realtor profile
-        const { data: conn } = await admin
-          .from("realtor_connections")
-          .select("realtor_profile_id")
-          .eq("id", id)
-          .maybeSingle();
-        if (!conn?.realtor_profile_id) return;
+        const realtorProfileId = updated.realtor_profile_id;
+        if (!realtorProfileId) return;
 
         // Get realtor profile (name + user_id for email lookup)
         const { data: rp } = await admin
           .from("realtor_profiles")
           .select("user_id, display_name")
-          .eq("id", conn.realtor_profile_id)
+          .eq("id", realtorProfileId)
           .maybeSingle();
         if (!rp?.user_id) return;
 
