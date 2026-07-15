@@ -216,13 +216,14 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
-  /* client-side ownership re-check — fixes stale JS bundle hydration overrides */
+  /* client-side ownership re-check — only upgrades to true, never revokes */
   useEffect(() => {
+    if (ownerVerified) return; // server already confirmed owner — skip
     fetch(`/api/showcase/owner-check?slug=${encodeURIComponent(profile.slug)}`)
       .then(r => r.ok ? r.json() : { isOwner: false })
-      .then(data => setOwnerVerified(!!data.isOwner))
+      .then(data => { if (data.isOwner) setOwnerVerified(true); })
       .catch(() => {});
-  }, [profile.slug]);
+  }, [profile.slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function togglePublish() {
     setSettingsSaving(true);
