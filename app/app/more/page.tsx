@@ -6,9 +6,9 @@ import { getUserOrgRole } from "@/lib/orgRole";
 import { ensureUserOrg } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import InstallPrompt from "@/components/InstallPrompt";
+import { WebsiteToggle } from "./WebsiteToggle";
 
 const MENU_ITEMS = [
-  // Daily work
   { label: "Leads",              href: "/app/leads",             emoji: "🎯", color: "#F97316" },
   { label: "Quote Requests",     href: "/app/requests",          emoji: "📬", color: "#F97316" },
   { label: "AI Phone",           href: "/app/phone",             emoji: "📞", color: "#1B3A6B" },
@@ -17,18 +17,14 @@ const MENU_ITEMS = [
   { label: "Scan Receipt",       href: "/app/receipts",          emoji: "🧾", color: "#16A34A" },
   { label: "Activity Log",       href: "/app/activity",          emoji: "📋", color: "#1B3A6B" },
   { label: "Customize Sidebar",  href: "/app/more/sidebar",      emoji: "📌", color: "#1B3A6B" },
-  // Business growth
-  { label: "My Website",          href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
   { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
   { label: "Find Contractors",   href: "/find-contractors",      emoji: "🔍", color: "#1B3A6B" },
   { label: "Earn With TradeBase",href: "/app/referral",          emoji: "💰", color: "#16A34A" },
-  // Management
   { label: "Realtor Requests",   href: "/app/realtor-requests",  emoji: "🏡", color: "#1B3A6B" },
   { label: "Team",               href: "/app/team",              emoji: "🧑‍🤝‍🧑", color: "#1B3A6B" },
   { label: "Trade Contacts",     href: "/app/trade-contacts",    emoji: "👥", color: "#1B3A6B" },
   { label: "Inventory",          href: "/app/inventory",         emoji: "📦", color: "#8B4513" },
   { label: "Completed Projects", href: "/app/projects",          emoji: "🏗️", color: "#1B3A6B" },
-  // Admin & settings
   { label: "Reports",            href: "/app/reports",           emoji: "📊", color: "#1B3A6B" },
   { label: "Accounting Export",  href: "/app/export",            emoji: "📤", color: "#16A34A" },
   { label: "Setup Wizard",       href: "/app/onboarding?redo=1", emoji: "🧭", color: "#1B3A6B" },
@@ -50,20 +46,21 @@ export default async function MorePage() {
   const isAdmin = isPlatformAdmin(user?.email);
   const { role } = await getUserOrgRole();
 
-  // Fetch website URL + showcase slug
   let showcaseSlug: string | null = null;
   let websiteUrl: string | null = null;
+  let preferredSource: "external" | "tradebase" | null = null;
+
   try {
     const orgId = await ensureUserOrg();
     const admin = createAdminClient() as any;
     const [pubResult, settingsResult] = await Promise.all([
       admin.from("public_profiles").select("slug").eq("org_id", orgId!).maybeSingle(),
-      admin.from("org_settings").select("website").eq("org_id", orgId!).maybeSingle(),
+      admin.from("org_settings").select("website,preferred_website_source").eq("org_id", orgId!).maybeSingle(),
     ]);
     showcaseSlug = pubResult.data?.slug ?? null;
     websiteUrl = (settingsResult.data as any)?.website ?? null;
+    preferredSource = (settingsResult.data as any)?.preferred_website_source ?? null;
 
-    // Auto-provision a profile row for existing orgs that don't have one yet
     if (!showcaseSlug && orgId) {
       const { data: org } = await admin.from("orgs").select("name").eq("id", orgId).maybeSingle();
       const orgName: string = org?.name ?? "contractor";
@@ -83,18 +80,22 @@ export default async function MorePage() {
     }
   } catch { /* ignore */ }
 
-  const showcaseHref = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
-
-  // Ensure website URL has a protocol so it opens as an external link
+  // Normalize external URL so it always opens as an external link
   const normalizedWebsiteUrl = websiteUrl
     ? /^https?:\/\//i.test(websiteUrl) ? websiteUrl : `https://${websiteUrl}`
     : null;
+
+  const proHref = showcaseSlug ? `/pro/${showcaseSlug}` : "/app/profile/public-profile";
+  const showcaseHref = showcaseSlug ? `/showcase/${showcaseSlug}` : "/app/profile/public-profile";
+
+  // Default: if they have an external site, default to "external"; otherwise "tradebase"
+  const initialSource: "external" | "tradebase" =
+    preferredSource ?? (normalizedWebsiteUrl ? "external" : "tradebase");
 
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-800 mb-4">More</h1>
 
-      {/* Nudge: no public page set up yet */}
       {!showcaseSlug && (
         <Link href="/app/profile/public-profile"
           className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-4 text-white shadow-sm"
@@ -108,25 +109,13 @@ export default async function MorePage() {
         </Link>
       )}
 
-      {/* My Pages — two prominent buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        {normalizedWebsiteUrl ? (
-          <a href={normalizedWebsiteUrl} target="_blank" rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            <span className="text-2xl">🏢</span>
-            <span className="text-[13px] font-bold">My Website</span>
-            <span className="text-[10px] opacity-70 truncate max-w-full px-1">{websiteUrl.replace(/^https?:\/\//, "")}</span>
-          </a>
-        ) : (
-          <Link href="/app/profile"
-            className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
-            style={{ backgroundColor: "#1B3A6B" }}>
-            <span className="text-2xl">🏢</span>
-            <span className="text-[13px] font-bold">My Website</span>
-            <span className="text-[10px] opacity-70">Add in Settings</span>
-          </Link>
-        )}
+        <WebsiteToggle
+          initialSource={initialSource}
+          externalUrl={normalizedWebsiteUrl}
+          tradebaseUrl={proHref}
+          tradebaseLabel={showcaseSlug ? `/pro/${showcaseSlug}` : "Set up first"}
+        />
         <Link href={showcaseHref}
           className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 shadow-sm border border-purple-200 bg-gradient-to-b from-purple-50 to-white">
           <span className="text-2xl">✨</span>

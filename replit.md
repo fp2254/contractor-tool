@@ -98,6 +98,7 @@ supabase/
   migration_realtor.sql                ⬜ pending — creates realtor_profiles table (separate Realtor account type) + RLS
   migration_realtor_connections.sql    ⬜ pending — creates realtor_connections, realtor_contacts; adds is_realtor_request + realtor_connection_id + realtor_profile_id to leads
   migration_realtor_map.sql            ⬜ pending — adds lat/lng/geocoded_at to realtor_profiles (map pins on /find-contractors)
+  migration_website_preference.sql     ⬜ pending — adds preferred_website_source to org_settings (toggle: external vs TradeBase page)
 ```
 
 ## Environment Variables
