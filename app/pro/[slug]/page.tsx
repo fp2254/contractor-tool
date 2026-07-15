@@ -297,14 +297,13 @@ export default async function Page({ params }: Props) {
 
   const debugPanel = isOwner ? <OwnerDebugPanel profile={profile} /> : null;
 
-  if (profile.selectedTemplate === "classic") {
-    return <>{isOwner && <BackBar />}<ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
-  }
   if (profile.selectedTemplate === "modern") {
     return <>{isOwner && <BackBar />}<ModernProTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
   if (profile.selectedTemplate === "trust") {
     return <>{isOwner && <BackBar />}<TrustContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
   }
-  return <>{isOwner && <BackBar />}<PortfolioTemplate profile={profile} />{debugPanel}</>;
+  // Default to Classic (quote-request focused website) for any contractor
+  // who hasn't explicitly chosen a template, including legacy PortfolioTemplate users.
+  return <>{isOwner && <BackBar />}<ClassicContractorTemplate profile={profile} />{portfolioLink}{reviewLink}{debugPanel}</>;
 }
