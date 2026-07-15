@@ -1,6 +1,8 @@
 /**
  * GET /api/sms/thread?leadId=xxx
  * Returns the SMS conversation + messages for a given lead.
+ * Also returns leadPhone so the UI can offer to start a manual conversation
+ * even when no sms_conversations row exists yet.
  */
 import { NextResponse } from "next/server";
 import { ensureUserOrg } from "@/lib/auth";
@@ -18,6 +20,17 @@ export async function GET(req: Request) {
 
   const admin = createAdminClient();
 
+  // Load lead phone so the UI can offer to start a manual thread even if no conversation exists
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: lead } = await (admin as any)
+    .from("leads")
+    .select("phone")
+    .eq("id", leadId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  const leadPhone: string | null = lead?.phone ?? null;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: conversations } = await (admin as any)
     .from("sms_conversations")
@@ -28,7 +41,7 @@ export async function GET(req: Request) {
     .limit(5);
 
   if (!conversations?.length) {
-    return NextResponse.json({ conversation: null, messages: [] });
+    return NextResponse.json({ conversation: null, messages: [], leadPhone });
   }
 
   const conv = conversations[0];
@@ -40,5 +53,5 @@ export async function GET(req: Request) {
     .eq("conversation_id", conv.id)
     .order("sent_at", { ascending: true });
 
-  return NextResponse.json({ conversation: conv, messages: messages ?? [] });
+  return NextResponse.json({ conversation: conv, messages: messages ?? [], leadPhone });
 }

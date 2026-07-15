@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface SmsMessage {
   id: string;
@@ -41,8 +41,16 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 export function SmsThread({ leadId }: Props) {
   const [conversation, setConversation] = useState<SmsConversation | null>(null);
   const [messages, setMessages] = useState<SmsMessage[]>([]);
+  const [leadPhone, setLeadPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [takingOver, setTakingOver] = useState(false);
+
+  // Reply box state
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +59,7 @@ export function SmsThread({ leadId }: Props) {
       const data = await res.json();
       setConversation(data.conversation ?? null);
       setMessages(data.messages ?? []);
+      setLeadPhone(data.leadPhone ?? null);
     } catch {
       // silent
     } finally {
@@ -59,6 +68,11 @@ export function SmsThread({ leadId }: Props) {
   }, [leadId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function takeOver() {
     if (!conversation) return;
@@ -79,8 +93,113 @@ export function SmsThread({ leadId }: Props) {
     }
   }
 
+  async function sendReply() {
+    if (!replyText.trim() || sending) return;
+    setSendError(null);
+    setSending(true);
+
+    const payload: Record<string, string> = { message: replyText.trim() };
+    if (conversation) {
+      payload.conversationId = conversation.id;
+    } else {
+      payload.leadId = leadId;
+    }
+
+    // Optimistic update
+    const optimisticId = `opt-${Date.now()}`;
+    const optimisticMsg: SmsMessage = {
+      id: optimisticId,
+      direction: "outbound",
+      body: replyText.trim(),
+      sent_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+    setReplyText("");
+
+    try {
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Roll back optimistic message
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+        setReplyText(optimisticMsg.body);
+        setSendError(data.error ?? "Failed to send message");
+        return;
+      }
+
+      // Replace optimistic message with real one from server
+      if (data.message) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticId ? data.message : m))
+        );
+      }
+
+      // If we just created the first conversation, update local state
+      if (!conversation && data.conversationId) {
+        // Reload to get full conversation data
+        load();
+      } else if (conversation && conversation.status !== "handed_off" && data.ok) {
+        setConversation((prev) => prev ? { ...prev, status: "handed_off" } : prev);
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setReplyText(optimisticMsg.body);
+      setSendError("Network error — please try again");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendReply();
+    }
+  }
+
   if (loading) return null;
-  if (!conversation) return null;
+
+  // Show the reply box when:
+  // 1. No conversation exists yet (contractor wants to initiate) — only if lead has a phone
+  // 2. Conversation is handed_off (contractor has taken over from AI)
+  const canReply =
+    (!conversation && !!leadPhone) ||
+    (conversation?.status === "handed_off");
+
+  // Don't render if there's no conversation and lead has no phone
+  if (!conversation && !leadPhone) return null;
+
+  // If no conversation and lead has phone, show a minimal "start a thread" card
+  if (!conversation) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="text-sm font-semibold text-slate-700">💬 SMS</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+            No thread yet
+          </span>
+        </div>
+        <div className="p-4">
+          <p className="text-sm text-gray-400 text-center py-2 mb-3">No messages yet.</p>
+          <ReplyBox
+            value={replyText}
+            onChange={setReplyText}
+            onSend={sendReply}
+            onKeyDown={handleKeyDown}
+            sending={sending}
+            error={sendError}
+            placeholder={`Text ${leadPhone}…`}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const badge = STATUS_BADGE[conversation.status] ?? { label: conversation.status, cls: "bg-gray-100 text-gray-600" };
 
@@ -130,20 +249,72 @@ export function SmsThread({ leadId }: Props) {
             </span>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      {conversation.status === "handed_off" && (
-        <div className="px-4 py-2 bg-blue-50 border-t border-blue-100">
-          <p className="text-xs text-blue-600">
-            AI is paused — you have taken over this conversation. Reply directly by texting the customer.
-          </p>
-        </div>
-      )}
       {conversation.status === "opted_out" && (
         <div className="px-4 py-2 bg-red-50 border-t border-red-100">
           <p className="text-xs text-red-500">This customer has opted out of SMS messages.</p>
         </div>
       )}
+
+      {canReply && (
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+          <ReplyBox
+            value={replyText}
+            onChange={setReplyText}
+            onSend={sendReply}
+            onKeyDown={handleKeyDown}
+            sending={sending}
+            error={sendError}
+            placeholder="Type a message… (Enter to send)"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Extracted reply box so it can be reused for both "no conversation" and "handed_off" states ──
+
+interface ReplyBoxProps {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  sending: boolean;
+  error: string | null;
+  placeholder?: string;
+}
+
+function ReplyBox({ value, onChange, onSend, onKeyDown, sending, error, placeholder }: ReplyBoxProps) {
+  return (
+    <div className="space-y-1.5">
+      {error && (
+        <p className="text-xs text-red-500 px-1">{error}</p>
+      )}
+      <div className="flex gap-2 items-end">
+        <textarea
+          className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-slate-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 min-h-[40px] max-h-32"
+          rows={1}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder ?? "Type a message…"}
+          disabled={sending}
+        />
+        <button
+          onClick={onSend}
+          disabled={sending || !value.trim()}
+          className="flex-shrink-0 text-sm font-semibold text-white px-4 py-2 rounded-xl disabled:opacity-40 transition-opacity"
+          style={{ backgroundColor: "#1B3A6B" }}
+        >
+          {sending ? "…" : "Send"}
+        </button>
+      </div>
+      <p className="text-[10px] text-gray-400 px-1">
+        Enter to send · Shift+Enter for new line
+      </p>
     </div>
   );
 }
