@@ -18,7 +18,7 @@ const MENU_ITEMS = [
   { label: "Activity Log",       href: "/app/activity",          emoji: "📋", color: "#1B3A6B" },
   { label: "Customize Sidebar",  href: "/app/more/sidebar",      emoji: "📌", color: "#1B3A6B" },
   // Business growth
-  { label: "My Profile",         href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
+  { label: "My Website",          href: "/app/my-profile",        emoji: "🌐", color: "#1B3A6B" },
   { label: "My Reviews",         href: "/app/reviews",           emoji: "⭐", color: "#F59E0B" },
   { label: "Find Contractors",   href: "/find-contractors",      emoji: "🔍", color: "#1B3A6B" },
   { label: "Earn With TradeBase",href: "/app/referral",          emoji: "💰", color: "#16A34A" },
@@ -109,7 +109,7 @@ export default async function MorePage() {
           className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 px-3 text-white shadow-sm"
           style={{ backgroundColor: "#1B3A6B" }}>
           <span className="text-2xl">🏢</span>
-          <span className="text-[13px] font-bold">My Business Page</span>
+          <span className="text-[13px] font-bold">My Website</span>
           <span className="text-[10px] opacity-70">{showcaseSlug ? `/pro/${showcaseSlug}` : "Set up first"}</span>
         </Link>
         <Link href={showcaseHref}

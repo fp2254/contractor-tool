@@ -40,10 +40,10 @@ export function ContractorProfilePage({ profile }: Props) {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between gap-4">
           <div>
             <p className="font-bold text-slate-800 text-sm">
-              Full Project Portfolio
+              📁 Project Showcase
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              See every project with photos, costs & details
+              Browse completed projects with photos &amp; details
             </p>
           </div>
           <a

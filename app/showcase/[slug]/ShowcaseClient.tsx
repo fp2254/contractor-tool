@@ -404,7 +404,7 @@ export default function ShowcaseClient({ profile, stats, projects, reviews, gall
                 </div>
               )}
               {/* fast response badge */}
-              <div style={{ position: "absolute", bottom: -14, right: 10, background: "white", borderRadius: 9, padding: "7px 11px", boxShadow: "0 4px 14px rgba(0,0,0,0.13)", display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ position: "absolute", bottom: 8, right: 10, background: "white", borderRadius: 9, padding: "7px 11px", boxShadow: "0 4px 14px rgba(0,0,0,0.13)", display: "flex", alignItems: "center", gap: 7 }}>
                 <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={2}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                 </div>
