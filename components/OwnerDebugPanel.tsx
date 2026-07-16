@@ -17,7 +17,6 @@ function buildChecks(p: ContractorProfile): Check[] {
     { label: "Trust highlights",     ok: p.trustItems.length > 0, fix: "Add trust bullet points" },
     { label: "Project photos",       ok: p.photos.length > 0, fix: "Upload project photos" },
     { label: "Years in business",    ok: p.stats.yearsExperience > 0, fix: "Set years in business" },
-    { label: "Template selected",    ok: !!p.selectedTemplate, fix: "Pick a template in the editor" },
   ];
 }
 
