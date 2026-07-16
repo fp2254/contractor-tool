@@ -279,17 +279,14 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           {/* Tagline line */}
           <div className="flex items-center gap-3 mb-5">
             <span className="text-xs font-bold tracking-widest uppercase" style={{ color: GOLD }}>
-              {tagline || `Reliable. Professional. ${serviceArea || "Local"}.`}
+              {trade ? `${trade}. ${serviceArea || "Local"}.` : `Reliable. Professional. ${serviceArea || "Local"}.`}
             </span>
             <div className="flex-1 h-px max-w-[60px]" style={{ background: GOLD }} />
           </div>
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
-            Quality Work.<br />Built on{" "}
-            <span style={{ color: GOLD }}>
-              {trade || "Trust"}.
-            </span>
+            {tagline || <>Quality Work.<br />Built on{" "}<span style={{ color: GOLD }}>Trust.</span></>}
           </h1>
 
           {/* Description */}

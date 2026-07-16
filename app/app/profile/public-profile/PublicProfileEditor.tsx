@@ -429,11 +429,11 @@ export function PublicProfileEditor() {
             />
           </Field>
 
-          <Field label="Tagline">
+          <Field label="Headline">
             <input
               value={profile.tagline}
               onChange={(e) => update("tagline", e.target.value)}
-              placeholder="e.g. Fast, reliable roofing — free quotes same day"
+              placeholder="e.g. Quality Work. Built on Trust."
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
             />
           </Field>
@@ -458,11 +458,11 @@ export function PublicProfileEditor() {
             </Field>
           </div>
 
-          <Field label="Availability (optional)">
+          <Field label="Description (optional)">
             <input
               value={profile.urgency_line}
               onChange={(e) => update("urgency_line", e.target.value)}
-              placeholder="e.g. Booking 2–3 days out"
+              placeholder="e.g. Honest pricing. Top-quality service. Results that last."
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
             />
           </Field>
