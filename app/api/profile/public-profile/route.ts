@@ -119,7 +119,7 @@ export async function POST(req: Request) {
 
     // If a column doesn't exist yet (pending migration), retry without that column
     if (error?.code === "PGRST204" || error?.code === "42703") {
-      const missing = error.message?.match(/column ['"]?(\w+)['"]? of/)?.[1];
+      const missing = (error.message?.match(/'(\w+)'\s+column\s+of/) ?? error.message?.match(/column\s+'(\w+)'\s+of/))?.[1];
       if (missing && missing in row) {
         const trimmed = { ...row };
         delete trimmed[missing];
