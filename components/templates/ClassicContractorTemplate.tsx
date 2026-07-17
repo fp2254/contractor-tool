@@ -425,7 +425,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           <div className="flex-1">
             <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: GOLD }}>ABOUT US</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 leading-tight" style={{ color: NAVY }}>
-              Local. Reliable.<br />Professional.
+              {profile.aboutHeading || <>Local. Reliable.<br />Professional.</>}
             </h2>
             {profile.urgencyLine && (
               <p className="text-gray-600 mb-6 leading-relaxed text-sm max-w-md">

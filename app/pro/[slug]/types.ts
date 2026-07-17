@@ -72,6 +72,7 @@ export type ContractorProfile = {
   serviceArea: string;
   photoUrl?: string;
   aboutPhoto?: string;
+  aboutHeading?: string;
   selectedTemplate?: string;
   statLabel?: string;
   sectionsConfig: SectionsConfig;

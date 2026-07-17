@@ -30,6 +30,7 @@ type EditorProfile = {
   license_text: string;
   photo_url: string;
   about_photo: string;
+  about_heading: string;
   selected_template: string;
   services: ServiceItem[];
   about_text: string; // UI-only: textarea → saved as about_bullets
@@ -65,6 +66,7 @@ const EMPTY: EditorProfile = {
   license_text: "",
   photo_url: "",
   about_photo: "",
+  about_heading: "",
   selected_template: "classic",
   services: [],
   about_text: "",
@@ -151,6 +153,7 @@ export function PublicProfileEditor() {
           license_text: p.license_text || "",
           photo_url: p.photo_url || "",
           about_photo: p.about_photo || "",
+          about_heading: p.about_heading || "",
           selected_template: p.selected_template ?? "classic",
           slug: p.slug || "",
           // UI simplifications
@@ -469,6 +472,16 @@ export function PublicProfileEditor() {
               placeholder="e.g. Honest pricing. Top-quality service. Results that last."
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
             />
+          </Field>
+
+          <Field label="About Section Heading">
+            <input
+              value={profile.about_heading}
+              onChange={(e) => update("about_heading", e.target.value)}
+              placeholder="e.g. Local. Reliable. Professional."
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+            <p className="text-[11px] text-gray-400 mt-1">The big heading in your About Us section.</p>
           </Field>
 
           <Field label="About You">

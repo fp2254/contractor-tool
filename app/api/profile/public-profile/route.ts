@@ -95,6 +95,7 @@ export async function POST(req: Request) {
   if (body.license_text !== undefined)       row.license_text       = body.license_text ?? "";
   if (body.photo_url !== undefined)          row.photo_url          = body.photo_url ?? "";
   if (body.about_photo !== undefined)        row.about_photo        = body.about_photo ?? "";
+  if (body.about_heading !== undefined)      row.about_heading      = body.about_heading ?? "";
   if (body.photos !== undefined)             row.photos             = body.photos ?? [];
   if (body.is_published !== undefined)       row.is_published       = !!body.is_published;
   if (body.trust_highlights !== undefined)   row.trust_highlights   = body.trust_highlights ?? [];
