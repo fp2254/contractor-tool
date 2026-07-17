@@ -28,6 +28,7 @@ const MENU_ITEMS = [
   { label: "Reports",            href: "/app/reports",           emoji: "📊", color: "#1B3A6B" },
   { label: "Accounting Export",  href: "/app/export",            emoji: "📤", color: "#16A34A" },
   { label: "Setup Wizard",       href: "/app/onboarding?redo=1", emoji: "🧭", color: "#1B3A6B" },
+  { label: "Edit Your Profile",  href: "/app/profile/public-profile", emoji: "🌐", color: "#1B3A6B" },
   { label: "Settings",           href: "/app/profile",           emoji: "⚙️", color: "#6B7280" },
   { label: "App Settings",       href: "/app/settings",          emoji: "🔧", color: "#6B7280" },
   { label: "Support",            href: "/app/support",           emoji: "❓", color: "#6B7280" },
