@@ -416,7 +416,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
   );
 
   /* ── About ─────────────────────────────────────────────────────────────── */
-  const aboutImage = photos[1]?.url || photos[0]?.url || null;
+  const aboutImage = profile.aboutPhoto || photos[1]?.url || photos[0]?.url || null;
   const About = showAbout && (
     <section id="about" className="py-16" style={{ background: "#F8F9FA" }}>
       <div className="max-w-6xl mx-auto px-5">

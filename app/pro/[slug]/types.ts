@@ -71,6 +71,7 @@ export type ContractorProfile = {
   licenseNumber?: string;
   serviceArea: string;
   photoUrl?: string;
+  aboutPhoto?: string;
   selectedTemplate?: string;
   statLabel?: string;
   sectionsConfig: SectionsConfig;

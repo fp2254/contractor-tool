@@ -130,6 +130,7 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       licenseNumber: pub.license_text ?? undefined,
       serviceArea: pub.service_area ?? "",
       photoUrl: pub.photo_url || undefined,
+      aboutPhoto: pub.about_photo || undefined,
       photos: (pub.photos ?? []).map((p: any) => ({
         url: p.url ?? "",
         title: p.title ?? "",

@@ -29,6 +29,7 @@ type EditorProfile = {
   years_experience: number;
   license_text: string;
   photo_url: string;
+  about_photo: string;
   selected_template: string;
   services: ServiceItem[];
   about_text: string; // UI-only: textarea → saved as about_bullets
@@ -63,6 +64,7 @@ const EMPTY: EditorProfile = {
   years_experience: 0,
   license_text: "",
   photo_url: "",
+  about_photo: "",
   selected_template: "classic",
   services: [],
   about_text: "",
@@ -148,6 +150,7 @@ export function PublicProfileEditor() {
           urgency_line: p.urgency_line || "",
           license_text: p.license_text || "",
           photo_url: p.photo_url || "",
+          about_photo: p.about_photo || "",
           selected_template: p.selected_template ?? "classic",
           slug: p.slug || "",
           // UI simplifications
@@ -477,6 +480,62 @@ export function PublicProfileEditor() {
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white resize-none"
             />
             <p className="text-[11px] text-gray-400 mt-1">Each line becomes a bullet point on your page.</p>
+          </Field>
+
+          <Field label="About Section Photo">
+            <div className="flex items-center gap-3">
+              {profile.about_photo ? (
+                <img src={profile.about_photo} alt="About" className="w-20 h-16 object-cover rounded-xl border border-gray-200 shrink-0" />
+              ) : (
+                <div className="w-20 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center shrink-0 bg-gray-50">
+                  <span className="text-xl text-gray-300">🖼️</span>
+                </div>
+              )}
+              <div className="flex-1 space-y-1.5">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  id="about-photo-input"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const local = URL.createObjectURL(file);
+                    update("about_photo", local);
+                    try {
+                      const fd = new FormData();
+                      fd.append("file", file);
+                      const res = await fetch("/api/upload/profile-photo", { method: "POST", body: fd });
+                      const j = await res.json() as { url?: string; error?: string };
+                      if (j.url) update("about_photo", j.url);
+                      else throw new Error(j.error ?? "Upload failed");
+                    } catch (err: any) {
+                      update("about_photo", "");
+                      alert(err.message ?? "Photo upload failed");
+                    } finally {
+                      (document.getElementById("about-photo-input") as HTMLInputElement).value = "";
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("about-photo-input")?.click()}
+                  className="w-full rounded-xl py-2 text-sm font-semibold border border-gray-200 text-slate-700 bg-gray-50 active:bg-gray-100 transition-colors"
+                >
+                  {profile.about_photo ? "Change Photo" : "Upload Photo"}
+                </button>
+                {profile.about_photo && (
+                  <button
+                    type="button"
+                    onClick={() => update("about_photo", "")}
+                    className="w-full rounded-xl py-1.5 text-xs font-semibold text-red-500 border border-red-100 bg-red-50"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400">Shows on the right side of your About Us section.</p>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

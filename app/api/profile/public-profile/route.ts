@@ -94,6 +94,7 @@ export async function POST(req: Request) {
   if (body.stat_label !== undefined)         row.stat_label         = body.stat_label ?? "";
   if (body.license_text !== undefined)       row.license_text       = body.license_text ?? "";
   if (body.photo_url !== undefined)          row.photo_url          = body.photo_url ?? "";
+  if (body.about_photo !== undefined)        row.about_photo        = body.about_photo ?? "";
   if (body.photos !== undefined)             row.photos             = body.photos ?? [];
   if (body.is_published !== undefined)       row.is_published       = !!body.is_published;
   if (body.trust_highlights !== undefined)   row.trust_highlights   = body.trust_highlights ?? [];
