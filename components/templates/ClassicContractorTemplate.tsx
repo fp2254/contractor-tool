@@ -276,12 +276,26 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
       <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-stretch min-h-[420px] md:min-h-[520px]">
         {/* Left: Text */}
         <div className="flex-1 py-14 md:py-20 flex flex-col justify-center pr-0 md:pr-12">
-          {/* Tagline line */}
+          {/* Company name + logo strip */}
           <div className="flex items-center gap-3 mb-5">
-            <span className="text-xs font-bold tracking-widest uppercase" style={{ color: GOLD }}>
-              {trade ? `${trade}. ${serviceArea || "Local"}.` : `Reliable. Professional. ${serviceArea || "Local"}.`}
-            </span>
-            <div className="flex-1 h-px max-w-[60px]" style={{ background: GOLD }} />
+            {photoUrl && (
+              <img
+                src={photoUrl}
+                alt={name}
+                className="w-12 h-12 rounded-lg object-cover shrink-0 border-2"
+                style={{ borderColor: GOLD }}
+              />
+            )}
+            <div>
+              <p className="text-base font-extrabold tracking-wide uppercase leading-tight" style={{ color: GOLD }}>
+                {name}
+              </p>
+              {(trade || serviceArea) && (
+                <p className="text-xs font-medium tracking-widest uppercase mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  {trade ? `${trade}${serviceArea ? ` · ${serviceArea}` : ""}` : serviceArea}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Headline */}
