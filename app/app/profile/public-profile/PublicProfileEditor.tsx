@@ -618,18 +618,30 @@ export function PublicProfileEditor() {
             </div>
           )}
 
-          <input
-            value={serviceInput}
-            onChange={(e) => setServiceInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                addService();
-              }
-            }}
-            placeholder="Type a service and hit Enter"
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
-          />
+          <div className="flex gap-2">
+            <input
+              value={serviceInput}
+              onChange={(e) => setServiceInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  addService();
+                }
+              }}
+              placeholder="Type a service…"
+              className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+            <button
+              type="button"
+              onClick={addService}
+              disabled={!serviceInput.trim()}
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0 disabled:opacity-30"
+              style={{ background: "#16A34A" }}
+              aria-label="Add service"
+            >
+              ✓
+            </button>
+          </div>
           <p className="text-[11px] text-gray-400">Examples: Roofing, Siding, Gutters, Radon Mitigation</p>
         </div>
       </div>
@@ -661,22 +673,40 @@ export function PublicProfileEditor() {
               ))}
             </div>
           )}
-          <input
-            value={trustInput}
-            onChange={(e) => setTrustInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
+          <div className="flex gap-2">
+            <input
+              value={trustInput}
+              onChange={(e) => setTrustInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = trustInput.trim();
+                  if (val && !profile.trust_highlights.includes(val)) {
+                    update("trust_highlights", [...profile.trust_highlights, val]);
+                  }
+                  setTrustInput("");
+                }
+              }}
+              placeholder="Type a highlight…"
+              className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+            />
+            <button
+              type="button"
+              onClick={() => {
                 const val = trustInput.trim();
                 if (val && !profile.trust_highlights.includes(val)) {
                   update("trust_highlights", [...profile.trust_highlights, val]);
                 }
                 setTrustInput("");
-              }
-            }}
-            placeholder="Type a highlight and press Enter"
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
-          />
+              }}
+              disabled={!trustInput.trim()}
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0 disabled:opacity-30"
+              style={{ background: "#16A34A" }}
+              aria-label="Add highlight"
+            >
+              ✓
+            </button>
+          </div>
           <p className="text-[11px] text-gray-400">Examples: Licensed & Insured since 2015 · Free estimates · 5★ rated on Google</p>
         </div>
       </div>
