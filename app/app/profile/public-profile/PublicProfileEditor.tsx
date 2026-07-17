@@ -419,6 +419,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">1</span>
           <p className="font-semibold text-slate-800 text-sm">Tell People Who You Are</p>
         </div>
+        <PageDiagram highlight="hero" />
         <div className="px-4 py-3 space-y-3">
           <Field label="Trade / Specialty">
             <input
@@ -537,6 +538,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">2</span>
           <p className="font-semibold text-slate-800 text-sm">What Do You Do?</p>
         </div>
+        <PageDiagram highlight="services" />
         <div className="px-4 py-3 space-y-3">
           {/* Service chips with optional photo */}
           {profile.services.length > 0 && (
@@ -638,6 +640,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">3</span>
           <p className="font-semibold text-slate-800 text-sm">Trust Highlights</p>
         </div>
+        <PageDiagram highlight="trust" />
         <div className="px-4 py-3 space-y-3">
           <p className="text-xs text-gray-500">These appear as bullet points in your hero and as the trust bar strip. Leave empty to skip both.</p>
           {profile.trust_highlights.length > 0 && (
@@ -684,6 +687,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">4</span>
           <p className="font-semibold text-slate-800 text-sm">Custom Sections</p>
         </div>
+        <PageDiagram highlight="about" />
         <div className="px-4 py-3 space-y-3">
           <p className="text-xs text-gray-500">Add your own cards — warranty info, financing, your process, promos, anything. They appear on your site after the About section.</p>
 
@@ -849,6 +853,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">5</span>
           <p className="font-semibold text-slate-800 text-sm">Photos</p>
         </div>
+        <PageDiagram highlight={["hero", "gallery"]} />
         <div className="px-4 py-3 space-y-4">
           {/* Logo / Headshot */}
           <div className="flex items-center gap-4">
@@ -1008,6 +1013,7 @@ export function PublicProfileEditor() {
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">6</span>
           <p className="font-semibold text-slate-800 text-sm">Sections on Your Page</p>
         </div>
+        <PageDiagram highlight={["services", "trust", "about", "reviews", "gallery"]} />
         <div className="px-4 py-3 space-y-1">
           <p className="text-xs text-gray-500 mb-3">Turn off any section you don't want on your public profile. Sections with no content are always hidden automatically.</p>
           {SECTION_LABELS.map(({ key, label, desc }) => {
@@ -1095,6 +1101,64 @@ export function PublicProfileEditor() {
 
       <div className="h-4" />
 
+    </div>
+  );
+}
+
+// ─── Page Diagram ────────────────────────────────────────────────────────────
+
+type DiagramSection = "hero" | "services" | "trust" | "about" | "reviews" | "gallery";
+
+const DIAGRAM_SECTIONS: Array<{ id: DiagramSection; label: string; flex: number }> = [
+  { id: "hero",     label: "Hero",     flex: 6 },
+  { id: "services", label: "Services", flex: 4 },
+  { id: "trust",    label: "Trust bar",flex: 3 },
+  { id: "about",    label: "About",    flex: 4 },
+  { id: "reviews",  label: "Reviews",  flex: 4 },
+  { id: "gallery",  label: "Gallery",  flex: 3 },
+];
+
+function PageDiagram({ highlight }: { highlight: DiagramSection | DiagramSection[] }) {
+  const active = new Set(Array.isArray(highlight) ? highlight : [highlight]);
+  return (
+    <div className="bg-slate-50 border-b border-gray-100 px-4 py-2.5">
+      <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+        Where this appears on your page
+      </p>
+      <div className="rounded overflow-hidden border border-gray-200" style={{ height: 82 }}>
+        <div style={{ height: 8, background: "#1B3A6B" }} />
+        <div style={{ display: "flex", flexDirection: "column", height: 74 }}>
+          {DIAGRAM_SECTIONS.map((sec, i) => {
+            const isActive = active.has(sec.id);
+            return (
+              <div
+                key={sec.id}
+                style={{
+                  flex: sec.flex,
+                  background: isActive ? "#1B3A6B" : i % 2 === 0 ? "#F3F4F6" : "#EAECF0",
+                  borderTop: "1px solid #fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                }}
+              >
+                {isActive && <span style={{ fontSize: 8, color: "#F5A623" }}>▶</span>}
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: isActive ? 700 : 400,
+                  color: isActive ? "white" : "#9CA3AF",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}>
+                  {sec.label}
+                </span>
+                {isActive && <span style={{ fontSize: 8, color: "#F5A623" }}>◀</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
