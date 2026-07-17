@@ -101,6 +101,7 @@ export async function POST(req: Request) {
   if (body.trust_highlights !== undefined)   row.trust_highlights   = body.trust_highlights ?? [];
   if (body.sections_config !== undefined)    row.sections_config    = body.sections_config ?? {};
   if (body.custom_blocks !== undefined)      row.custom_blocks      = body.custom_blocks ?? [];
+  if (body.page_text !== undefined)          row.page_text          = body.page_text ?? {};
   if (body.about_text !== undefined) {
     row.about_bullets = String(body.about_text).split("\n").map((s) => s.trim()).filter(Boolean);
   } else if (body.about_bullets !== undefined) {
@@ -119,14 +120,13 @@ export async function POST(req: Request) {
   try {
     let { data, error } = await attemptUpsert(row);
 
-    // If a column doesn't exist yet (pending migration), retry without that column
-    if (error?.code === "PGRST204" || error?.code === "42703") {
+    // If columns don't exist yet (pending migrations), retry without each missing column
+    const trimmed = { ...row };
+    for (let i = 0; i < 8 && (error?.code === "PGRST204" || error?.code === "42703"); i++) {
       const missing = (error.message?.match(/'(\w+)'\s+column\s+of/) ?? error.message?.match(/column\s+'(\w+)'\s+of/))?.[1];
-      if (missing && missing in row) {
-        const trimmed = { ...row };
-        delete trimmed[missing];
-        ({ data, error } = await attemptUpsert(trimmed));
-      }
+      if (!missing || !(missing in trimmed)) break;
+      delete trimmed[missing];
+      ({ data, error } = await attemptUpsert(trimmed));
     }
 
     if (error) throw error;

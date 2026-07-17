@@ -138,11 +138,12 @@ function Stars({ count = 5 }: { count?: number }) {
 }
 
 /* ─── Section heading ─────────────────────────────────────────────────────── */
-function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
+function SectionHeading({ title, subtitle }: { title?: string; subtitle?: string }) {
+  if (!title && !subtitle) return null;
   return (
     <div className="text-center mb-10">
-      <h2 className="text-3xl font-bold mb-2" style={{ color: NAVY }}>{title}</h2>
-      <div className="w-12 h-0.5 mx-auto mb-3" style={{ background: GOLD }} />
+      {title && <h2 className="text-3xl font-bold mb-2" style={{ color: NAVY }}>{title}</h2>}
+      {title && <div className="w-12 h-0.5 mx-auto mb-3" style={{ background: GOLD }} />}
       {subtitle && <p className="text-gray-500 text-sm max-w-md mx-auto">{subtitle}</p>}
     </div>
   );
@@ -173,6 +174,9 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
     trustItems, serviceArea, photoUrl,
     rating, reviewCount, sectionsConfig,
   } = profile;
+
+  const pt = profile.pageText || {};
+  const quoteButtonLabel = pt.quote_button?.trim() || "REQUEST A FREE QUOTE →";
 
   const showServices = sectionsConfig.services !== false && services.length > 0;
   const showAbout    = sectionsConfig.about    !== false && about.length > 0;
@@ -233,7 +237,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           <button onClick={() => setQuoteOpen(true)}
             className="px-4 py-2 rounded text-white text-sm font-bold hidden sm:block transition-opacity hover:opacity-90"
             style={{ background: GOLD }}>
-            GET A QUOTE →
+            {quoteButtonLabel}
           </button>
           {phone && (
             <a href={phone} className="hidden lg:flex items-center gap-1.5 text-sm font-semibold" style={{ color: NAVY }}>
@@ -263,7 +267,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           <button onClick={() => { setMenuOpen(false); setQuoteOpen(true); }}
             className="block w-full mt-3 py-3 rounded text-white font-bold text-sm text-center"
             style={{ background: GOLD }}>
-            Get a Free Quote →
+            {quoteButtonLabel}
           </button>
         </div>
       )}
@@ -299,21 +303,25 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
-            {tagline || <>Quality Work.<br />Built on{" "}<span style={{ color: GOLD }}>Trust.</span></>}
-          </h1>
+          {tagline && (
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
+              {tagline}
+            </h1>
+          )}
 
           {/* Description */}
-          <p className="text-gray-300 text-base mb-8 max-w-md leading-relaxed">
-            {profile.urgencyLine || "Honest pricing. Top-quality service. Results that last."}
-          </p>
+          {profile.urgencyLine && (
+            <p className="text-gray-300 text-base mb-8 max-w-md leading-relaxed">
+              {profile.urgencyLine}
+            </p>
+          )}
 
           {/* CTAs */}
           <div className="flex flex-wrap gap-3 mb-10">
             <button onClick={() => setQuoteOpen(true)}
               className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-90 flex items-center gap-1.5"
               style={{ background: GOLD, color: NAVY }}>
-              REQUEST A FREE QUOTE →
+              {quoteButtonLabel}
             </button>
             {showServices && (
               <button onClick={() => scrollTo("services")}
@@ -325,7 +333,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           </div>
 
           {/* Trust badges */}
-          {trustItems.length > 0 ? (
+          {trustItems.length > 0 && (
             <div className="flex flex-wrap gap-5">
               {trustItems.slice(0, 3).map((t, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -333,19 +341,6 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
                     <span style={{ color: GOLD }}>{t.icon}</span>
                   </div>
                   <span className="text-xs font-semibold text-gray-300">{t.text}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-6">
-              {["Licensed & Insured", "Quality Guarantee", "On-Time Every Time"].map((b, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke={GOLD} strokeWidth="2">
-                    {i === 0 && <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round"/>}
-                    {i === 1 && <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" strokeLinecap="round" strokeLinejoin="round"/>}
-                    {i === 2 && <><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" strokeLinecap="round"/></>}
-                  </svg>
-                  <span className="text-xs font-semibold text-gray-300">{b}</span>
                 </div>
               ))}
             </div>
@@ -392,7 +387,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
   const Services = showServices && (
     <section id="services" className="py-16 bg-white">
       <div className="max-w-6xl mx-auto px-5">
-        <SectionHeading title="Our Services" subtitle="Professional solutions for your home or business." />
+        <SectionHeading title={pt.services_heading?.trim() || undefined} subtitle={pt.services_subtitle?.trim() || undefined} />
         <div className={`grid gap-6 ${services.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" : services.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"}`}>
           {services.map((s, i) => (
             <div key={i} className="text-center p-6 border border-gray-100 rounded-xl hover:shadow-md transition-shadow bg-white group">
@@ -408,7 +403,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
           <button onClick={() => setQuoteOpen(true)}
             className="px-8 py-3 rounded font-bold text-sm transition-opacity hover:opacity-90"
             style={{ background: GOLD, color: NAVY }}>
-            REQUEST A FREE QUOTE →
+            {quoteButtonLabel}
           </button>
         </div>
       </div>
@@ -423,13 +418,17 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
         <div className="flex flex-col md:flex-row items-center gap-12">
           {/* Text */}
           <div className="flex-1">
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: GOLD }}>ABOUT US</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 leading-tight" style={{ color: NAVY }}>
-              {profile.aboutHeading || <>Local. Reliable.<br />Professional.</>}
-            </h2>
-            {profile.urgencyLine && (
+            {pt.about_label?.trim() && (
+              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: GOLD }}>{pt.about_label.trim()}</p>
+            )}
+            {profile.aboutHeading && (
+              <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 leading-tight" style={{ color: NAVY }}>
+                {profile.aboutHeading}
+              </h2>
+            )}
+            {pt.about_paragraph?.trim() && (
               <p className="text-gray-600 mb-6 leading-relaxed text-sm max-w-md">
-                We&apos;re a team of skilled professionals committed to delivering top-quality work with honesty and integrity. Your satisfaction is our priority.
+                {pt.about_paragraph.trim()}
               </p>
             )}
             {/* Bullets */}
@@ -448,7 +447,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
               style={{ borderColor: GOLD, color: GOLD, background: "transparent" }}
               onMouseEnter={e => { (e.target as HTMLElement).style.background = GOLD; (e.target as HTMLElement).style.color = NAVY; }}
               onMouseLeave={e => { (e.target as HTMLElement).style.background = "transparent"; (e.target as HTMLElement).style.color = GOLD; }}>
-              LEARN MORE ABOUT US →
+              {pt.learn_more_button?.trim() || "GET IN TOUCH →"}
             </button>
           </div>
           {/* Image */}
@@ -470,7 +469,7 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
   const Projects = showGallery && (
     <section id="projects" className="py-16 bg-white">
       <div className="max-w-6xl mx-auto px-5">
-        <SectionHeading title="Recent Projects" subtitle="See our work across the region." />
+        <SectionHeading title={pt.projects_heading?.trim() || undefined} subtitle={pt.projects_subtitle?.trim() || undefined} />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
           {photos.slice(0, 6).map((p, i) => (
             <button key={i} onClick={() => setLightbox(p.url)}
@@ -565,14 +564,14 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
             </svg>
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">Ready to get started?</h3>
-            <p className="text-gray-400 text-sm mt-0.5">Let&apos;s talk about your project. Fast, easy, and hassle-free.</p>
+            {pt.cta_heading?.trim() && <h3 className="text-xl font-bold text-white">{pt.cta_heading.trim()}</h3>}
+            {pt.cta_subtitle?.trim() && <p className="text-gray-400 text-sm mt-0.5">{pt.cta_subtitle.trim()}</p>}
           </div>
         </div>
         <button onClick={() => setQuoteOpen(true)}
           className="px-8 py-3 rounded font-bold text-sm whitespace-nowrap shrink-0 transition-opacity hover:opacity-90"
           style={{ background: GOLD, color: NAVY }}>
-          REQUEST A FREE QUOTE →
+          {quoteButtonLabel}
         </button>
       </div>
     </section>
@@ -594,9 +593,11 @@ export function ClassicContractorTemplate({ profile }: { profile: ContractorProf
             )}
             <span className="font-bold text-white text-sm">{name}</span>
           </div>
-          <p className="text-gray-500 text-xs leading-relaxed mb-4">
-            Proudly serving our community with reliable, top-quality service.{serviceArea ? ` Serving ${serviceArea}.` : ""}
-          </p>
+          {(pt.footer_line?.trim() || serviceArea) && (
+            <p className="text-gray-500 text-xs leading-relaxed mb-4">
+              {pt.footer_line?.trim() || ""}{pt.footer_line?.trim() && serviceArea ? " " : ""}{serviceArea ? `Serving ${serviceArea}.` : ""}
+            </p>
+          )}
           {/* Social placeholders */}
           <div className="flex gap-2">
             {["f", "in", "tw", "yt"].map((s, i) => (

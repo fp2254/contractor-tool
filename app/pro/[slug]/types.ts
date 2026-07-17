@@ -77,4 +77,5 @@ export type ContractorProfile = {
   statLabel?: string;
   sectionsConfig: SectionsConfig;
   customBlocks: CustomBlock[];
+  pageText: Record<string, string>;
 };

@@ -19,6 +19,19 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+const DEFAULT_PAGE_TEXT: Record<string, string> = {
+  quote_button: "REQUEST A FREE QUOTE →",
+  services_heading: "Our Services",
+  services_subtitle: "Professional solutions for your home or business.",
+  about_label: "ABOUT US",
+  learn_more_button: "GET IN TOUCH →",
+  projects_heading: "Recent Projects",
+  projects_subtitle: "See our work across the region.",
+  cta_heading: "Ready to get started?",
+  cta_subtitle: "Let's talk about your project. Fast, easy, and hassle-free.",
+  footer_line: "Proudly serving our community with reliable, top-quality service.",
+};
+
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (digits.length === 10) {
@@ -145,6 +158,11 @@ async function loadProfile(slug: string): Promise<ContractorProfile | null> {
       customBlocks: Array.isArray(pub.custom_blocks)
         ? (pub.custom_blocks as CustomBlock[]).filter((b) => b?.title)
         : [],
+      // If the page_text column doesn't exist yet (pending migration), fall back
+      // to the classic default wording so live pages don't lose their text.
+      pageText: (pub.page_text && typeof pub.page_text === "object" && !Array.isArray(pub.page_text))
+        ? pub.page_text as Record<string, string>
+        : DEFAULT_PAGE_TEXT,
     };
 
     return profile;

@@ -38,6 +38,7 @@ type EditorProfile = {
   trust_highlights: string[];  // hero bullet points + trust bar
   sections_config: SectionsConfig;
   custom_blocks: CustomBlock[];
+  page_text: Record<string, string>;
   // Preserved from old editor — not shown in UI
   revenue_display: string;
   stat_label: string;
@@ -74,11 +75,26 @@ const EMPTY: EditorProfile = {
   trust_highlights: [],
   sections_config: {},
   custom_blocks: [],
+  page_text: {},
   revenue_display: "",
   stat_label: "",
 };
 
 const BASE_URL = "https://tradebase.contractors/showcase";
+
+const PAGE_TEXT_FIELDS: Array<{ key: string; label: string; suggestion: string; hint?: string }> = [
+  { key: "quote_button",      label: "Quote Button Label",       suggestion: "REQUEST A FREE QUOTE →", hint: "Used on all the gold quote buttons." },
+  { key: "services_heading",  label: "Services Heading",         suggestion: "Our Services" },
+  { key: "services_subtitle", label: "Services Subtitle",        suggestion: "Professional solutions for your home or business." },
+  { key: "about_label",       label: "About Section Label",      suggestion: "ABOUT US", hint: "Small gold label above your About heading." },
+  { key: "about_paragraph",   label: "About Paragraph",          suggestion: "We're a team of skilled professionals committed to delivering top-quality work with honesty and integrity.", hint: "Short paragraph under your About heading." },
+  { key: "learn_more_button", label: "About Button Label",       suggestion: "GET IN TOUCH →" },
+  { key: "projects_heading",  label: "Projects Heading",         suggestion: "Recent Projects" },
+  { key: "projects_subtitle", label: "Projects Subtitle",        suggestion: "See our work across the region." },
+  { key: "cta_heading",       label: "Bottom Banner Heading",    suggestion: "Ready to get started?" },
+  { key: "cta_subtitle",      label: "Bottom Banner Subtitle",   suggestion: "Let's talk about your project. Fast, easy, and hassle-free." },
+  { key: "footer_line",       label: "Footer Line",              suggestion: "Proudly serving our community with reliable, top-quality service." },
+];
 
 function normalizeServices(raw: unknown[]): ServiceItem[] {
   return raw.map((s) => {
@@ -167,6 +183,7 @@ export function PublicProfileEditor() {
           trust_highlights: Array.isArray(p.trust_highlights) ? p.trust_highlights.filter(Boolean) : [],
           sections_config: (p.sections_config && typeof p.sections_config === "object") ? p.sections_config : {},
           custom_blocks: Array.isArray(p.custom_blocks) ? p.custom_blocks : [],
+          page_text: (p.page_text && typeof p.page_text === "object" && !Array.isArray(p.page_text)) ? p.page_text : {},
           revenue_display: p.revenue_display ?? "",
           stat_label: p.stat_label ?? "",
         });
@@ -197,6 +214,7 @@ export function PublicProfileEditor() {
       trust_highlights: profile.trust_highlights.filter(Boolean),
       sections_config: profile.sections_config,
       custom_blocks: profile.custom_blocks,
+      page_text: profile.page_text,
       revenue_display: profile.revenue_display,
       stat_label: profile.stat_label,
     };
@@ -1152,10 +1170,45 @@ export function PublicProfileEditor() {
         </div>
       </div>
 
-      {/* ── Step 7: URL ── */}
+      {/* ── Step 7: Page Text ── */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">7</span>
+          <p className="font-semibold text-slate-800 text-sm">Page Text</p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <p className="text-xs text-gray-500">
+            Every headline and button on your page is yours to write. Leave a field blank to hide that text. Tap a suggestion to use it.
+          </p>
+          {PAGE_TEXT_FIELDS.map(({ key, label, suggestion, hint }) => (
+            <Field key={key} label={label}>
+              <input
+                value={profile.page_text[key] ?? ""}
+                onChange={(e) => update("page_text", { ...profile.page_text, [key]: e.target.value })}
+                placeholder={suggestion}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+              />
+              <div className="flex items-center justify-between mt-1 gap-2">
+                {hint ? <p className="text-[11px] text-gray-400">{hint}</p> : <span />}
+                {!(profile.page_text[key] ?? "").trim() && (
+                  <button
+                    type="button"
+                    onClick={() => update("page_text", { ...profile.page_text, [key]: suggestion })}
+                    className="text-[11px] font-semibold text-[#1B3A6B] shrink-0"
+                  >
+                    Use suggestion
+                  </button>
+                )}
+              </div>
+            </Field>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Step 8: URL ── */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#1B3A6B] text-white text-xs font-bold flex items-center justify-center">8</span>
           <p className="font-semibold text-slate-800 text-sm">Your Public URL</p>
         </div>
         <div className="px-4 py-3">

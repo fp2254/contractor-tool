@@ -67,6 +67,7 @@ export const MOCK_PROFILES: Record<string, ContractorProfile> = {
     serviceArea: "Portland metro & surrounding areas",
     sectionsConfig: {},
     customBlocks: [],
+    pageText: {},
   },
 };
 

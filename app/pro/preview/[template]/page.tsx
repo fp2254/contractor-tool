@@ -89,6 +89,7 @@ const SAMPLE_PROFILE: ContractorProfile = {
   selectedTemplate: "",
   sectionsConfig: {},
   customBlocks: [],
+  pageText: {},
 };
 
 // URL slug → { display name, internal template id }

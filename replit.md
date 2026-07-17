@@ -94,8 +94,9 @@ supabase/
   migration_phone_system.sql           ✅ applied — creates org_phone_numbers, org_phone_settings, call_logs, call_transcripts
   migration_addons_v2.sql              ✅ applied — adds external_subscription_id + billing_provider to org_addons
   migration_sms_bot.sql                ⬜ pending — creates sms_conversations, sms_messages, opted_out_numbers
-  migration_public_profile_photos.sql  ✅ applied — adds photos JSONB column to public_profiles (gallery photos)
-  migration_about_photo.sql            ✅ applied — adds about_photo TEXT column to public_profiles
+  migration_public_profile_photos.sql  ⬜ pending in Supabase — adds photos JSONB column to public_profiles (gallery photos)
+  migration_about_photo.sql            ⬜ pending in Supabase — adds about_photo TEXT column (also included in migration_page_text.sql)
+  migration_page_text.sql              ⬜ pending — adds page_text JSONB + about_heading + about_photo to public_profiles, seeds old wording into existing rows
   migration_realtor.sql                ⬜ pending — creates realtor_profiles table (separate Realtor account type) + RLS
   migration_realtor_connections.sql    ⬜ pending — creates realtor_connections, realtor_contacts; adds is_realtor_request + realtor_connection_id + realtor_profile_id to leads
   migration_realtor_map.sql            ⬜ pending — adds lat/lng/geocoded_at to realtor_profiles (map pins on /find-contractors)
