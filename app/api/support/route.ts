@@ -7,17 +7,14 @@ import { requirePlatformAdmin } from "@/lib/admin";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  let userId: string | null = null;
-  let userEmail: string | null = null;
-
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    userId = user?.id ?? null;
-    userEmail = user?.email ?? null;
-  } catch {
-    // Allow unauthenticated fallback — still save the ticket
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const userId = user.id;
+  const userEmail = user.email ?? null;
 
   const body = await req.json() as {
     type: string;
