@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     const slug = cleanString(body.slug);
-    const name = cleanString(body.name);
+    const name = cleanString(body.name).replace(/[\r\n]+/g, " ");
     const phone = cleanString(body.phone);
     const email = cleanString(body.email);
     const address = cleanString(body.address);
@@ -85,20 +85,23 @@ export async function POST(req: Request) {
 
     // Suppress accidental retries and basic duplicate spam without requiring an account.
     const duplicateCutoff = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString();
-    const { data: recentLead, error: duplicateCheckError } = await admin
+    const { data: recentLeads, error: duplicateCheckError } = await admin
       .from("leads")
-      .select("id")
+      .select("phone")
       .eq("org_id", pub.org_id)
-      .eq("phone", phone)
       .eq("lead_source", "Website")
       .gte("created_at", duplicateCutoff)
-      .limit(1)
-      .maybeSingle();
+      .limit(50);
 
     if (duplicateCheckError) {
       console.error("[public/quote-request] duplicate check error:", duplicateCheckError.message);
-    } else if (recentLead) {
-      return NextResponse.json({ ok: true });
+    } else {
+      const duplicate = recentLeads?.some(
+        (recentLead) => recentLead.phone?.replace(/\D/g, "") === phoneDigits
+      );
+      if (duplicate) {
+        return NextResponse.json({ ok: true });
+      }
     }
 
     // Insert lead
