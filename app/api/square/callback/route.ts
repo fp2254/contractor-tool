@@ -1,16 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureUserOrg } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+const SQUARE_OAUTH_STATE_COOKIE = "square_oauth_state";
+
+function redirectToSettings(appUrl: string, result: "connected" | "error") {
+  const response = NextResponse.redirect(`${appUrl}/app/settings?square=${result}`);
+  response.cookies.set(SQUARE_OAUTH_STATE_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const orgId = searchParams.get("state");
+  const returnedState = searchParams.get("state");
+  const storedState = req.cookies.get(SQUARE_OAUTH_STATE_COOKIE)?.value;
   const error = searchParams.get("error");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
-  if (error || !code || !orgId) {
-    return NextResponse.redirect(`${appUrl}/app/settings?square=error`);
+  if (
+    error ||
+    !code ||
+    !returnedState ||
+    !storedState ||
+    returnedState !== storedState
+  ) {
+    return redirectToSettings(appUrl, "error");
+  }
+
+  const orgId = await ensureUserOrg();
+  if (!orgId) {
+    return redirectToSettings(appUrl, "error");
   }
 
   const clientId = process.env.SQUARE_APP_ID!;
@@ -47,7 +74,7 @@ export async function GET(req: NextRequest) {
 
   if (!tokenRes.ok || !tokenData.access_token) {
     console.error("[Square OAuth] Token exchange failed:", tokenData.errors);
-    return NextResponse.redirect(`${appUrl}/app/settings?square=error`);
+    return redirectToSettings(appUrl, "error");
   }
 
   // Fetch the default location
@@ -66,7 +93,7 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Upsert org_settings with Square credentials
+  // Upsert org_settings with Square credentials for the authenticated user's org
   const { error: dbErr } = await (admin as any)
     .from("org_settings")
     .upsert({
@@ -80,8 +107,8 @@ export async function GET(req: NextRequest) {
 
   if (dbErr) {
     console.error("[Square OAuth] DB save failed:", dbErr.message);
-    return NextResponse.redirect(`${appUrl}/app/settings?square=error`);
+    return redirectToSettings(appUrl, "error");
   }
 
-  return NextResponse.redirect(`${appUrl}/app/settings?square=connected`);
+  return redirectToSettings(appUrl, "connected");
 }

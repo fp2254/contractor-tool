@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { ensureUserOrg } from "@/lib/auth";
 
+const SQUARE_OAUTH_STATE_COOKIE = "square_oauth_state";
+const OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60;
+
 export async function GET() {
   const orgId = await ensureUserOrg();
   if (!orgId) return NextResponse.redirect("/auth/login");
@@ -20,15 +23,31 @@ export async function GET() {
     "INVOICES_WRITE",
     "CUSTOMERS_READ",
     "CUSTOMERS_WRITE",
-  ].join("+");
+  ].join(" ");
 
   const baseUrl = process.env.SQUARE_SANDBOX === "true"
     ? "https://connect.squareupsandbox.com"
     : "https://connect.squareup.com";
 
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/square/callback`;
+  const state = crypto.randomUUID();
+  const authorizeUrl = new URL("/oauth2/authorize", baseUrl);
+  authorizeUrl.search = new URLSearchParams({
+    client_id: clientId,
+    scope,
+    session: "false",
+    state,
+    redirect_uri: redirectUri,
+  }).toString();
 
-  const url = `${baseUrl}/oauth2/authorize?client_id=${clientId}&scope=${scope}&session=false&state=${orgId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  const response = NextResponse.redirect(authorizeUrl);
+  response.cookies.set(SQUARE_OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: OAUTH_STATE_MAX_AGE_SECONDS,
+  });
 
-  return NextResponse.redirect(url);
+  return response;
 }
