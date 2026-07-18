@@ -21,7 +21,13 @@ function verifySquareSignature(
     .createHmac("sha256", webhookSecret)
     .update(combined)
     .digest("base64");
-  return hmac === signatureHeader;
+  const expectedSignature = Buffer.from(hmac);
+  const receivedSignature = Buffer.from(signatureHeader);
+
+  return (
+    expectedSignature.length === receivedSignature.length &&
+    crypto.timingSafeEqual(expectedSignature, receivedSignature)
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -31,12 +37,20 @@ export async function POST(req: NextRequest) {
   const signatureHeader = req.headers.get("x-square-hmacsha256-signature") ?? "";
   const webhookUrl = process.env.SQUARE_WEBHOOK_URL ?? req.url;
 
-  if (webhookSecret) {
-    const valid = verifySquareSignature(rawBody, signatureHeader, webhookSecret, webhookUrl);
-    if (!valid) {
-      console.error("[Square Webhook] Invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
+  if (!webhookSecret) {
+    console.error("[Square Webhook] SQUARE_WEBHOOK_SIGNATURE_KEY is not configured");
+    return NextResponse.json({ error: "Webhook verification is not configured" }, { status: 500 });
+  }
+
+  if (!signatureHeader) {
+    console.error("[Square Webhook] Missing signature");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const valid = verifySquareSignature(rawBody, signatureHeader, webhookSecret, webhookUrl);
+  if (!valid) {
+    console.error("[Square Webhook] Invalid signature");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   let event: any;
