@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/heic": "heic",
+  "image/heif": "heif",
+};
+
 export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const admin = createAdminClient();
 
   const formData = await req.formData();
@@ -12,9 +29,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const allowedExts = ["jpg", "jpeg", "png", "webp", "gif", "heic"];
-  if (!allowedExts.includes(ext)) {
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: "File too large (max 8 MB)" }, { status: 413 });
+  }
+
+  const ext = ALLOWED_IMAGE_TYPES[file.type];
+  if (!ext) {
     return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
   }
 
