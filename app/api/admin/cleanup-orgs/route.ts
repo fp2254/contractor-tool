@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { requirePlatformAdmin } from "@/lib/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +27,7 @@ const OPTIONAL_TABLES = [
 ];
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  const { id: userId } = await requirePlatformAdmin();
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
@@ -38,7 +35,7 @@ export async function POST() {
   const { data: members, error: membersErr } = await db
     .from("org_members")
     .select("org_id, created_at")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   if (membersErr || !members || members.length === 0) {
@@ -84,7 +81,7 @@ export async function POST() {
     .from("org_members")
     .delete()
     .in("org_id", duplicateOrgIds)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   for (const orgId of duplicateOrgIds) {
     try {
