@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getResendClient } from "@/lib/email";
+import { requirePlatformAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     userId = user?.id ?? null;
     userEmail = user?.email ?? null;
   } catch {
-    // Allow unauthenticated fallback — still save the ticket
+    // Allow unauthenticated fallback â€” still save the ticket
   }
 
   const body = await req.json() as {
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
   if (adminEmail) {
     try {
       const { client, fromEmail } = await getResendClient();
-      const typeLabel = body.type === "bug" ? "🐛 Bug Report" : body.type === "feature" ? "💡 Feature Request" : "💬 General Feedback";
+      const typeLabel = body.type === "bug" ? "ðŸ› Bug Report" : body.type === "feature" ? "ðŸ’¡ Feature Request" : "ðŸ’¬ General Feedback";
       const { error: sendError } = await client.emails.send({
         from: fromEmail,
         to: adminEmail,
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
           <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
             <div style="background:#1B3A6B;padding:20px 24px">
               <h2 style="margin:0;color:#fff;font-size:18px">${typeLabel}</h2>
-              <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">New support ticket — TradeBase</p>
+              <p style="margin:4px 0 0;color:#94b4e0;font-size:13px">New support ticket â€” TradeBase</p>
             </div>
             <div style="padding:24px">
               <p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">Title</p>
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
               <p style="margin:0 0 16px;font-size:14px;color:#334155;line-height:1.6;white-space:pre-wrap">${body.description}</p>
               ${body.screenshot_url ? `<p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px">Screenshot</p><p style="margin:0 0 16px"><a href="${body.screenshot_url}" style="color:#1B3A6B">View screenshot</a></p>` : ""}
               <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-top:8px">
-                <p style="margin:0;font-size:12px;color:#64748b">From: ${userEmail ?? "Unknown"} &nbsp;·&nbsp; Ticket ID: ${ticket?.id ?? "—"}</p>
+                <p style="margin:0;font-size:12px;color:#64748b">From: ${userEmail ?? "Unknown"} &nbsp;Â·&nbsp; Ticket ID: ${ticket?.id ?? "â€”"}</p>
               </div>
               <p style="margin:20px 0 0"><a href="https://tradebase.contractors/app/admin/support" style="background:#1B3A6B;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">View in Admin Panel</a></p>
             </div>
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  await requirePlatformAdmin();
   const admin = createAdminClient();
   try {
     const { data } = await (admin as any)
@@ -104,3 +106,4 @@ export async function GET() {
     return NextResponse.json({ tickets: [] });
   }
 }
+
