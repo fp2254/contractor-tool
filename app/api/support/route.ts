@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getResendClient } from "@/lib/email";
+import { requirePlatformAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  await requirePlatformAdmin();
   const admin = createAdminClient();
   try {
     const { data } = await (admin as any)
