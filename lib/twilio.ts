@@ -144,7 +144,7 @@ export function validateTwilioSignature(
 /**
  * Verify a Twilio webhook request.
  * Uses APP_BASE_URL + the request path+query as the canonical URL.
- * Returns true if signature is valid, or if in dev mode and AUTH_TOKEN is unset.
+ * Fails closed in every environment when credentials, signatures, or configuration are invalid.
  */
 export function verifyTwilioWebhook(
   reqUrl: string,
@@ -152,16 +152,15 @@ export function verifyTwilioWebhook(
   signatureHeader: string
 ): boolean {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const isDev = process.env.NODE_ENV !== "production";
 
   if (!authToken) {
-    if (isDev) return true;
-    console.error("[Twilio] TWILIO_AUTH_TOKEN not set — rejecting webhook in production");
+    console.error("[Twilio] TWILIO_AUTH_TOKEN not set — rejecting webhook");
     return false;
   }
 
   if (!signatureHeader) {
-    return isDev; // allow unsigned requests in dev only
+    console.error("[Twilio] Missing webhook signature");
+    return false;
   }
 
   try {
@@ -169,15 +168,10 @@ export function verifyTwilioWebhook(
     const parsed = new URL(reqUrl);
     // Full URL = configured base + path + any query string (orgId, callSid, etc.)
     const fullUrl = `${appBase}${parsed.pathname}${parsed.search}`;
-    const valid = validateTwilioSignature(authToken, fullUrl, bodyParams, signatureHeader);
-    if (!valid && isDev) {
-      console.warn(`[Twilio] Signature mismatch (allowed in dev). URL: ${fullUrl}`);
-      return true;
-    }
-    return valid;
+    return validateTwilioSignature(authToken, fullUrl, bodyParams, signatureHeader);
   } catch (err) {
     console.error("[Twilio] verifyTwilioWebhook error:", err);
-    return isDev;
+    return false;
   }
 }
 
