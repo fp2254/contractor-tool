@@ -30,6 +30,7 @@
     "react-dom": "19.0.0",
     "react-leaflet": "^5.0.0",
     "resend": "^6.9.4",
+    "sharp": "^0.35.3",
     "zod": "^3.25.76",
     "zod-validation-error": "^5.0.0"
   },
